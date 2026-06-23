@@ -204,6 +204,9 @@ create table if not exists public.clubs (
   constraint clubs_slug_format check (slug ~ '^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$')
 );
 
+-- Existing Supabase projects may already have public.clubs from an older
+-- schema. Keep this non-destructive patch so rerunning the schema adds the
+-- optional category field without dropping data.
 alter table public.clubs
   add column if not exists category text;
 
