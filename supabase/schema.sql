@@ -194,6 +194,7 @@ create table if not exists public.clubs (
   name text not null,
   slug text not null,
   description text,
+  category text,
   status public.club_status not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -202,6 +203,9 @@ create table if not exists public.clubs (
   constraint clubs_name_not_blank check (length(btrim(name)) > 0),
   constraint clubs_slug_format check (slug ~ '^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$')
 );
+
+alter table public.clubs
+  add column if not exists category text;
 
 create table if not exists public.club_memberships (
   id uuid primary key default gen_random_uuid(),
