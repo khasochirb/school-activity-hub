@@ -242,6 +242,7 @@ create table if not exists public.events (
   approved_by_profile_id uuid references public.profiles(id) on delete set null,
   title text not null,
   description text,
+  category text,
   location text,
   starts_at timestamptz not null,
   ends_at timestamptz not null,
@@ -260,6 +261,9 @@ create table if not exists public.events (
     references public.clubs(id, school_id)
     on delete restrict
 );
+
+alter table public.events
+  add column if not exists category text;
 
 create index if not exists events_school_status_starts_at_idx
   on public.events (school_id, status, starts_at);
