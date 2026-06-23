@@ -75,7 +75,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
   return (
     <button
-      className="h-11 w-full rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400 sm:w-auto"
+      className="h-11 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400 sm:w-auto"
       disabled={disabled || pending}
       type="submit"
     >

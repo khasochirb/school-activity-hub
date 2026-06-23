@@ -59,7 +59,7 @@ export function LoginForm() {
       </label>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <button
-        className="h-11 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        className="h-11 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
         disabled={isSubmitting}
         type="submit"
       >

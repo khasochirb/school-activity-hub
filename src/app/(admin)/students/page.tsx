@@ -186,7 +186,7 @@ function InactiveForm({ student }: { student: Student }) {
     <form action={markStudentInactive}>
       <input name="student_id" type="hidden" value={student.id} />
       <button
-        className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
         Mark inactive

@@ -42,7 +42,7 @@ export function AppShell({
       <header className="border-b border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Link className="text-lg font-semibold" href="/dashboard">
+            <Link className="cursor-pointer text-lg font-semibold" href="/dashboard">
               School Activity Hub
             </Link>
             <div className="flex flex-col gap-2 text-sm text-zinc-600 sm:items-end">
@@ -54,7 +54,7 @@ export function AppShell({
             <nav className="flex gap-2 overflow-x-auto pb-1">
               {visibleNavItems.map((item) => (
                 <Link
-                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                  className="cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
                   href={item.href}
                   key={item.href}
                 >
@@ -64,7 +64,7 @@ export function AppShell({
             </nav>
             <form action={logout}>
               <button
-                className="h-10 w-full rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 sm:w-auto"
+                className="h-10 w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 sm:w-auto"
                 type="submit"
               >
                 Log out

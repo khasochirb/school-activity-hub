@@ -193,7 +193,7 @@ export default async function ClubsPage() {
                                   value={membership.id}
                                 />
                                 <button
-                                  className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+                                  className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
                                   type="submit"
                                 >
                                   Make leader
@@ -239,7 +239,7 @@ function ClubActions({
       <form action={archiveClub}>
         <input name="club_id" type="hidden" value={club.id} />
         <button
-          className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           type="submit"
         >
           Archive
@@ -258,8 +258,8 @@ function ClubActions({
       <button
         className={
           isJoined
-            ? "h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-            : "h-9 rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+            ? "h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+            : "h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
         }
         type="submit"
       >

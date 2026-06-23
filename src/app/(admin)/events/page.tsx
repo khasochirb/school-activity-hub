@@ -228,7 +228,7 @@ function EventActions({
       <form action={cancelEvent}>
         <input name="event_id" type="hidden" value={event.id} />
         <button
-          className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           type="submit"
         >
           Cancel event
@@ -246,7 +246,7 @@ function EventActions({
       <form action={cancelEventRegistration}>
         <input name="event_id" type="hidden" value={event.id} />
         <button
-          className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           type="submit"
         >
           Cancel registration
@@ -259,7 +259,7 @@ function EventActions({
     <form action={joinEvent}>
       <input name="event_id" type="hidden" value={event.id} />
       <button
-        className="h-9 rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
         disabled={isFull}
         type="submit"
       >

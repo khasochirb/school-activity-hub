@@ -202,7 +202,7 @@ function RevokeForm({ invite }: { invite: InviteCode }) {
     <form action={revokeInviteCode}>
       <input name="invite_code_id" type="hidden" value={invite.id} />
       <button
-        className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
         Revoke
