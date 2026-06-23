@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -106,6 +107,7 @@ export default async function EventAttendancePage({
   });
 
   const checkInPath = `/check-in/${event.id}`;
+  const checkInUrl = await getAbsoluteCheckInUrl(checkInPath);
 
   return (
     <div className="flex flex-col gap-6">
@@ -135,11 +137,11 @@ export default async function EventAttendancePage({
           Students must be logged in and registered for this event.
         </p>
         <div className="mt-4 break-all rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800">
-          {checkInPath}
+          {checkInUrl}
         </div>
         <Link
           className="mt-4 inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-          href={checkInPath}
+          href={checkInUrl}
         >
           Open check-in page
         </Link>
@@ -291,6 +293,44 @@ async function getSuccessfulCheckins(
     .returns<AttendanceCheckin[]>();
 
   return checkins ?? [];
+}
+
+async function getAbsoluteCheckInUrl(path: string) {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const baseUrl = configuredSiteUrl
+    ? normalizeBaseUrl(configuredSiteUrl)
+    : await getRequestOrigin();
+
+  return baseUrl ? `${baseUrl}${path}` : path;
+}
+
+async function getRequestOrigin() {
+  const headersList = await headers();
+  const forwardedHost = getFirstHeaderValue(headersList.get("x-forwarded-host"));
+  const host = forwardedHost ?? getFirstHeaderValue(headersList.get("host"));
+
+  if (!host) {
+    return "";
+  }
+
+  const forwardedProto = getFirstHeaderValue(headersList.get("x-forwarded-proto"));
+  const protocol = forwardedProto ?? getDefaultProtocol(host);
+
+  return `${protocol}://${host}`;
+}
+
+function getFirstHeaderValue(value: string | null) {
+  return value?.split(",")[0]?.trim() || null;
+}
+
+function getDefaultProtocol(host: string) {
+  return host.startsWith("localhost") || host.startsWith("127.0.0.1")
+    ? "http"
+    : "https";
+}
+
+function normalizeBaseUrl(value: string) {
+  return value.replace(/\/+$/, "");
 }
 
 function isSchoolStaff(profile: StaffProfile) {
