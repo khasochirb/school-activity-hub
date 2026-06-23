@@ -1,0 +1,339 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+
+type StaffProfile = {
+  id: string;
+  school_id: string;
+  role: "school_admin" | "teacher" | "student";
+};
+
+type EventRecord = {
+  id: string;
+  title: string;
+  location: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: string;
+};
+
+type EventAttendee = {
+  id: string;
+  student_roster_id: string;
+  status: string;
+  registered_at: string;
+  checked_in_at: string | null;
+};
+
+type StudentRoster = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  grade_level: string | null;
+  homeroom: string | null;
+  student_number: string | null;
+};
+
+type AttendanceCheckin = {
+  id: string;
+  student_roster_id: string;
+  method: string;
+  result: string;
+  checked_in_at: string;
+};
+
+export default async function EventAttendancePage({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}) {
+  const { eventId } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, school_id, role")
+    .eq("id", user.id)
+    .maybeSingle<StaffProfile>();
+
+  if (!profile || !isSchoolStaff(profile)) {
+    redirect("/dashboard");
+  }
+
+  const admin = createAdminClient();
+  const { data: event } = await admin
+    .from("events")
+    .select("id, title, location, starts_at, ends_at, status")
+    .eq("id", eventId)
+    .eq("school_id", profile.school_id)
+    .eq("status", "approved")
+    .maybeSingle<EventRecord>();
+
+  if (!event) {
+    redirect("/events");
+  }
+
+  const { data: attendees } = await admin
+    .from("event_attendees")
+    .select("id, student_roster_id, status, registered_at, checked_in_at")
+    .eq("event_id", event.id)
+    .eq("school_id", profile.school_id)
+    .order("registered_at", { ascending: true })
+    .returns<EventAttendee[]>();
+
+  const rosterIds = (attendees ?? []).map((attendee) => attendee.student_roster_id);
+  const rosters = rosterIds.length
+    ? await getStudentRosters(admin, profile.school_id, rosterIds)
+    : [];
+  const checkins = rosterIds.length
+    ? await getSuccessfulCheckins(admin, profile.school_id, event.id)
+    : [];
+  const rosterById = new Map(rosters.map((student) => [student.id, student]));
+  const checkinByStudentId = new Map<string, AttendanceCheckin>();
+
+  checkins.forEach((checkin) => {
+    if (!checkinByStudentId.has(checkin.student_roster_id)) {
+      checkinByStudentId.set(checkin.student_roster_id, checkin);
+    }
+  });
+
+  const checkInPath = `/check-in/${event.id}`;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-950">
+              Attendance
+            </h1>
+            <p className="mt-2 text-sm text-zinc-600">{event.title}</p>
+            <p className="mt-1 text-sm text-zinc-600">
+              {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
+            </p>
+          </div>
+          <Link
+            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+            href="/events"
+          >
+            Back to events
+          </Link>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-zinc-950">Check-in link</h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          Students must be logged in and registered for this event.
+        </p>
+        <div className="mt-4 break-all rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800">
+          {checkInPath}
+        </div>
+        <Link
+          className="mt-4 inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+          href={checkInPath}
+        >
+          Open check-in page
+        </Link>
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+        <div className="border-b border-zinc-200 p-6">
+          <h2 className="text-lg font-semibold text-zinc-950">
+            Attendance list
+          </h2>
+          <p className="mt-2 text-sm text-zinc-600">
+            {attendees?.length ?? 0} registered student
+            {(attendees?.length ?? 0) === 1 ? "" : "s"}
+          </p>
+        </div>
+        {attendees?.length ? (
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Student</th>
+                    <th className="px-4 py-3 font-medium">Grade</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Checked in</th>
+                    <th className="px-4 py-3 font-medium">Method</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200">
+                  {attendees.map((attendee) => {
+                    const student = rosterById.get(attendee.student_roster_id);
+                    const checkin = checkinByStudentId.get(
+                      attendee.student_roster_id,
+                    );
+
+                    return (
+                      <tr key={attendee.id}>
+                        <td className="px-4 py-3 font-medium text-zinc-950">
+                          {studentName(student)}
+                          {student?.student_number ? (
+                            <span className="block text-xs font-normal text-zinc-500">
+                              {student.student_number}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700">
+                          {student?.grade_level || "-"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={attendee.status} />
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700">
+                          {checkin
+                            ? formatDateTime(checkin.checked_in_at)
+                            : attendee.checked_in_at
+                              ? formatDateTime(attendee.checked_in_at)
+                              : "-"}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700">
+                          {checkin?.method ?? "-"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="divide-y divide-zinc-200 md:hidden">
+              {attendees.map((attendee) => {
+                const student = rosterById.get(attendee.student_roster_id);
+                const checkin = checkinByStudentId.get(
+                  attendee.student_roster_id,
+                );
+
+                return (
+                  <article className="p-4" key={attendee.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-medium text-zinc-950">
+                          {studentName(student)}
+                        </h3>
+                        <p className="mt-1 text-sm text-zinc-600">
+                          Grade {student?.grade_level || "-"}
+                          {student?.homeroom ? `, ${student.homeroom}` : ""}
+                        </p>
+                      </div>
+                      <StatusBadge status={attendee.status} />
+                    </div>
+                    <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-zinc-500">Checked in</dt>
+                        <dd className="text-zinc-800">
+                          {checkin
+                            ? formatDateTime(checkin.checked_in_at)
+                            : attendee.checked_in_at
+                              ? formatDateTime(attendee.checked_in_at)
+                              : "-"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-zinc-500">Method</dt>
+                        <dd className="text-zinc-800">
+                          {checkin?.method ?? "-"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <p className="p-6 text-sm text-zinc-600">
+            No students are registered for this event yet.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+async function getStudentRosters(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+  rosterIds: string[],
+) {
+  const { data: rosters } = await admin
+    .from("student_rosters")
+    .select("id, first_name, last_name, grade_level, homeroom, student_number")
+    .eq("school_id", schoolId)
+    .in("id", rosterIds)
+    .returns<StudentRoster[]>();
+
+  return rosters ?? [];
+}
+
+async function getSuccessfulCheckins(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+  eventId: string,
+) {
+  const { data: checkins } = await admin
+    .from("attendance_checkins")
+    .select("id, student_roster_id, method, result, checked_in_at")
+    .eq("school_id", schoolId)
+    .eq("event_id", eventId)
+    .eq("result", "success")
+    .order("checked_in_at", { ascending: false })
+    .returns<AttendanceCheckin[]>();
+
+  return checkins ?? [];
+}
+
+function isSchoolStaff(profile: StaffProfile) {
+  return profile.role === "school_admin" || profile.role === "teacher";
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const isAttended = status === "attended";
+
+  return (
+    <span
+      className={
+        isAttended
+          ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+          : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
+      }
+    >
+      {status}
+    </span>
+  );
+}
+
+function studentName(student: StudentRoster | undefined) {
+  if (!student) {
+    return "Roster student";
+  }
+
+  return `${student.first_name} ${student.last_name}`;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}

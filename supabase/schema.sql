@@ -323,6 +323,10 @@ create index if not exists attendance_checkins_school_event_idx
 create index if not exists attendance_checkins_school_student_idx
   on public.attendance_checkins (school_id, student_roster_id, checked_in_at desc);
 
+create unique index if not exists attendance_checkins_one_success_per_event_student
+  on public.attendance_checkins (event_id, student_roster_id)
+  where result = 'success';
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql

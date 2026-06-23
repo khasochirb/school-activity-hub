@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -225,15 +226,23 @@ function EventActions({
 }) {
   if (isStaff) {
     return (
-      <form action={cancelEvent}>
-        <input name="event_id" type="hidden" value={event.id} />
-        <button
-          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-          type="submit"
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Link
+          className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+          href={`/events/${event.id}/attendance`}
         >
-          Cancel event
-        </button>
-      </form>
+          Attendance
+        </Link>
+        <form action={cancelEvent}>
+          <input name="event_id" type="hidden" value={event.id} />
+          <button
+            className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+            type="submit"
+          >
+            Cancel event
+          </button>
+        </form>
+      </div>
     );
   }
 
