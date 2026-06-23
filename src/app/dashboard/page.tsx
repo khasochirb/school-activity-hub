@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
@@ -9,6 +10,10 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (!(await hasAnySchool())) {
+    redirect("/setup");
   }
 
   return (
