@@ -1,8 +1,13 @@
 import { redirect } from "next/navigation";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
+import { AppShell } from "./_components/app-shell";
 
-export default async function DashboardPage() {
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,11 +21,15 @@ export default async function DashboardPage() {
     redirect("/setup");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-6">
-      <h1 className="text-3xl font-semibold text-zinc-950">
-        School Activity Hub Dashboard
-      </h1>
-    </main>
+    <AppShell email={user.email ?? null} profile={profile}>
+      {children}
+    </AppShell>
   );
 }
