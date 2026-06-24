@@ -12,6 +12,7 @@ const navItems: Array<NavItem & {
   roles?: Role[];
 }> = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/profile", label: "Profile" },
   { href: "/announcements", label: "Announcements" },
   { href: "/students", label: "Students", roles: ["school_admin", "teacher"] },
   {
