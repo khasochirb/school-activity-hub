@@ -21,6 +21,7 @@ type EventRecord = {
   id: string;
   school_id: string;
   status: string;
+  shared_with_connected_schools: boolean;
 };
 
 type EventAttendee = {
@@ -70,8 +71,7 @@ export async function checkInToEvent(
     .from("attendance_checkins")
     .select("id")
     .eq("event_id", event.id)
-    .eq("school_id", profile.school_id)
-    .eq("student_roster_id", student.id)
+    .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${student.id}`)
     .eq("result", "success")
     .maybeSingle<{ id: string }>();
 
@@ -81,10 +81,13 @@ export async function checkInToEvent(
 
   const checkedInAt = new Date().toISOString();
   const { error: insertError } = await admin.from("attendance_checkins").insert({
-    school_id: profile.school_id,
+    school_id: event.school_id,
     event_id: event.id,
-    student_roster_id: student.id,
+    student_roster_id:
+      event.school_id === profile.school_id ? student.id : null,
     event_attendee_id: attendee.id,
+    attendee_school_id: profile.school_id,
+    attendee_profile_id: profile.id,
     checked_in_by_profile_id: profile.id,
     method: "qr",
     result: "success",
@@ -114,7 +117,7 @@ export async function checkInToEvent(
       checked_in_by_profile_id: profile.id,
     })
     .eq("id", attendee.id)
-    .eq("school_id", profile.school_id)
+    .eq("school_id", event.school_id)
     .eq("status", "registered");
 
   revalidatePath(`/check-in/${event.id}`);
@@ -166,13 +169,22 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
 
   const { data: event } = await admin
     .from("events")
-    .select("id, school_id, status")
+    .select("id, school_id, status, shared_with_connected_schools")
     .eq("id", eventId)
-    .eq("school_id", profile.school_id)
     .eq("status", "approved")
     .maybeSingle<EventRecord>();
 
-  if (!event) {
+  const canAccessEvent =
+    event &&
+    (event.school_id === profile.school_id ||
+      (event.shared_with_connected_schools &&
+        (await schoolsHaveApprovedConnection(
+          admin,
+          event.school_id,
+          profile.school_id,
+        ))));
+
+  if (!event || !canAccessEvent) {
     return {
       message: "This event is not available for check-in.",
       ok: false,
@@ -184,8 +196,7 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
     .from("event_attendees")
     .select("id, status, checked_in_at")
     .eq("event_id", event.id)
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
+    .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${student.id}`)
     .maybeSingle<EventAttendee>();
 
   if (!attendee || attendee.status === "canceled") {
@@ -218,6 +229,26 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
     },
     ok: true,
   };
+}
+
+async function schoolsHaveApprovedConnection(
+  admin: ReturnType<typeof createAdminClient>,
+  firstSchoolId: string,
+  secondSchoolId: string,
+) {
+  const { data: connection } = await admin
+    .from("school_connections")
+    .select("id")
+    .eq("status", "approved")
+    .or(
+      [
+        `and(requester_school_id.eq.${firstSchoolId},receiver_school_id.eq.${secondSchoolId})`,
+        `and(requester_school_id.eq.${secondSchoolId},receiver_school_id.eq.${firstSchoolId})`,
+      ].join(","),
+    )
+    .maybeSingle<{ id: string }>();
+
+  return Boolean(connection);
 }
 
 function createCheckInLinkHash(eventId: string) {

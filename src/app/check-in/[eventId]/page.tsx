@@ -17,11 +17,13 @@ type StudentRoster = {
 
 type EventRecord = {
   id: string;
+  school_id: string;
   title: string;
   location: string | null;
   starts_at: string;
   ends_at: string;
   status: string;
+  shared_with_connected_schools: boolean;
 };
 
 type EventAttendee = {
@@ -74,13 +76,22 @@ export default async function StudentCheckInPage({
 
   const { data: event } = await admin
     .from("events")
-    .select("id, title, location, starts_at, ends_at, status")
+    .select("id, school_id, title, location, starts_at, ends_at, status, shared_with_connected_schools")
     .eq("id", eventId)
-    .eq("school_id", profile.school_id)
     .eq("status", "approved")
     .maybeSingle<EventRecord>();
 
-  if (!student || !event) {
+  const canAccessEvent =
+    event &&
+    (event.school_id === profile.school_id ||
+      (event.shared_with_connected_schools &&
+        (await schoolsHaveApprovedConnection(
+          admin,
+          event.school_id,
+          profile.school_id,
+        ))));
+
+  if (!student || !event || !canAccessEvent) {
     return (
       <CheckInShell>
         <UnavailableMessage
@@ -98,16 +109,14 @@ export default async function StudentCheckInPage({
     .from("event_attendees")
     .select("id, status, checked_in_at")
     .eq("event_id", event.id)
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
+    .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${student.id}`)
     .maybeSingle<EventAttendee>();
 
   const { data: existingCheckin } = await admin
     .from("attendance_checkins")
     .select("id")
     .eq("event_id", event.id)
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
+    .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${student.id}`)
     .eq("result", "success")
     .maybeSingle<AttendanceCheckin>();
 
@@ -204,6 +213,26 @@ function StatusMessage({
       {message}
     </p>
   );
+}
+
+async function schoolsHaveApprovedConnection(
+  admin: ReturnType<typeof createAdminClient>,
+  firstSchoolId: string,
+  secondSchoolId: string,
+) {
+  const { data: connection } = await admin
+    .from("school_connections")
+    .select("id")
+    .eq("status", "approved")
+    .or(
+      [
+        `and(requester_school_id.eq.${firstSchoolId},receiver_school_id.eq.${secondSchoolId})`,
+        `and(requester_school_id.eq.${secondSchoolId},receiver_school_id.eq.${firstSchoolId})`,
+      ].join(","),
+    )
+    .maybeSingle<{ id: string }>();
+
+  return Boolean(connection);
 }
 
 function formatDateTime(value: string) {

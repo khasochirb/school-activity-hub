@@ -6,6 +6,7 @@ import {
   cancelEvent,
   cancelEventRegistration,
   joinEvent,
+  updateEventSharing,
 } from "./actions";
 import { CreateEventForm } from "./create-event-form";
 
@@ -24,8 +25,14 @@ type StudentRoster = {
   id: string;
 };
 
+type SchoolOption = {
+  id: string;
+  name: string;
+};
+
 type Event = {
   id: string;
+  school_id: string;
   club_id: string | null;
   title: string;
   description: string | null;
@@ -35,19 +42,25 @@ type Event = {
   ends_at: string;
   capacity: number | null;
   status: string;
+  shared_with_connected_schools: boolean;
+  allow_connected_school_registration: boolean;
 };
 
 type EventAttendee = {
   event_id: string;
-  student_roster_id: string;
+  student_roster_id: string | null;
+  attendee_profile_id: string | null;
+  attendee_school_id: string;
   status: string;
 };
 
 type EventFilter = "upcoming" | "registered" | "club";
+type EventScope = "mine" | "shared";
 
 type EventsSearchParams = {
   category?: string | string[];
   filter?: string | string[];
+  scope?: string | string[];
 };
 
 export default async function EventsPage({
@@ -57,6 +70,7 @@ export default async function EventsPage({
 }) {
   const params = await searchParams;
   const selectedFilter = parseEventFilter(getSearchValue(params.filter));
+  const selectedScope = parseEventScope(getSearchValue(params.scope));
   const selectedCategory = normalizeCategory(getSearchValue(params.category));
   const supabase = await createClient();
   const {
@@ -84,44 +98,61 @@ export default async function EventsPage({
   const [
     clubOptions,
     leaderClubOptions,
-    categoryOptions,
     registeredEventIds,
+    connectedSchoolIds,
   ] = await Promise.all([
     getSchoolClubOptions(admin, profile.school_id),
     getLeaderClubOptions(admin, profile, currentStudent),
-    getCategoryOptions(admin, profile.school_id, now),
     getCurrentStudentRegisteredEventIds(
       admin,
-      profile.school_id,
+      profile,
       currentStudent,
     ),
+    getConnectedSchoolIds(admin, profile.school_id),
   ]);
+  const categoryOptions = await getCategoryOptions(admin, {
+    connectedSchoolIds,
+    now,
+    schoolId: profile.school_id,
+    scope: selectedScope,
+  });
   const createClubOptions = isStaff ? clubOptions : leaderClubOptions;
   const canCreate = isStaff || leaderClubOptions.length > 0;
   const { error: eventsError, events } = await getFilteredEvents(admin, {
+    connectedSchoolIds,
     filter: selectedFilter,
     registeredEventIds,
     schoolId: profile.school_id,
     selectedCategory,
+    scope: selectedScope,
     now,
   });
 
   const eventIds = events.map((event) => event.id);
   const attendees = eventIds.length
-    ? await getEventAttendees(admin, profile.school_id, eventIds)
+    ? await getEventAttendees(admin, eventIds)
     : [];
   const attendeeCounts = countActiveAttendees(attendees);
   const currentStudentRegistrationByEventId = mapCurrentStudentRegistrations(
     attendees,
+    profile,
     currentStudent,
   );
   const linkedClubIds = events
+    .filter((event) => event.school_id === profile.school_id)
     .map((event) => event.club_id)
     .filter((clubId): clubId is string => Boolean(clubId));
   const linkedClubs = linkedClubIds.length
     ? await getClubsById(admin, profile.school_id, linkedClubIds)
     : [];
   const clubNameById = new Map(linkedClubs.map((club) => [club.id, club.name]));
+  const ownerSchoolIds = Array.from(new Set(events.map((event) => event.school_id)));
+  const ownerSchools = ownerSchoolIds.length
+    ? await getSchoolsById(admin, ownerSchoolIds)
+    : [];
+  const schoolNameById = new Map(
+    ownerSchools.map((school) => [school.id, school.name]),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -150,17 +181,18 @@ export default async function EventsPage({
         </section>
       ) : null}
 
-      <EventFilters
-        categoryOptions={categoryOptions}
-        currentStudent={currentStudent}
-        selectedCategory={selectedCategory}
-        selectedFilter={selectedFilter}
-      />
+        <EventFilters
+          categoryOptions={categoryOptions}
+          currentStudent={currentStudent}
+          selectedCategory={selectedCategory}
+          selectedFilter={selectedFilter}
+          selectedScope={selectedScope}
+        />
 
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
           <h2 className="text-lg font-semibold text-zinc-950">
-            {eventListTitle(selectedFilter, selectedCategory)}
+            {eventListTitle(selectedFilter, selectedCategory, selectedScope)}
           </h2>
           {eventsError ? (
             <p className="mt-2 text-sm text-red-600">
@@ -195,8 +227,12 @@ export default async function EventsPage({
                   isFull={isFull}
                   isStaff={isStaff}
                   key={event.id}
+                  ownerSchoolName={
+                    schoolNameById.get(event.school_id) ?? "Connected school"
+                  }
                   registeredCount={registeredCount}
                   registrationStatus={registrationStatus}
+                  userSchoolId={profile.school_id}
                 />
               );
             })}
@@ -216,19 +252,50 @@ function EventFilters({
   currentStudent,
   selectedCategory,
   selectedFilter,
+  selectedScope,
 }: {
   categoryOptions: string[];
   currentStudent: StudentRoster | null;
   selectedCategory: string | null;
   selectedFilter: EventFilter;
+  selectedScope: EventScope;
 }) {
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-zinc-950">Find events</h2>
       <div className="mt-4 flex flex-wrap gap-2">
         <FilterLink
+          active={selectedScope === "mine"}
+          href={eventsHref({
+            category: selectedCategory,
+            filter: selectedFilter,
+            scope: "mine",
+          })}
+        >
+          My school events
+        </FilterLink>
+        <FilterLink
+          active={selectedScope === "shared"}
+          href={eventsHref({
+            category: selectedCategory,
+            filter: selectedFilter,
+            scope: "shared",
+          })}
+        >
+          Shared events
+        </FilterLink>
+      </div>
+      <div className="mt-4 border-t border-zinc-200 pt-4">
+        <p className="text-sm font-medium text-zinc-700">Event view</p>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <FilterLink
           active={selectedFilter === "upcoming"}
-          href={eventsHref({ category: selectedCategory, filter: "upcoming" })}
+          href={eventsHref({
+            category: selectedCategory,
+            filter: "upcoming",
+            scope: selectedScope,
+          })}
         >
           Upcoming
         </FilterLink>
@@ -238,6 +305,7 @@ function EventFilters({
             href={eventsHref({
               category: selectedCategory,
               filter: "registered",
+              scope: selectedScope,
             })}
           >
             My registered events
@@ -245,7 +313,11 @@ function EventFilters({
         ) : null}
         <FilterLink
           active={selectedFilter === "club"}
-          href={eventsHref({ category: selectedCategory, filter: "club" })}
+          href={eventsHref({
+            category: selectedCategory,
+            filter: "club",
+            scope: selectedScope,
+          })}
         >
           Club events
         </FilterLink>
@@ -257,14 +329,21 @@ function EventFilters({
           <div className="mt-2 flex flex-wrap gap-2">
             <FilterLink
               active={!selectedCategory}
-              href={eventsHref({ filter: selectedFilter })}
+              href={eventsHref({
+                filter: selectedFilter,
+                scope: selectedScope,
+              })}
             >
               All categories
             </FilterLink>
             {categoryOptions.map((category) => (
               <FilterLink
                 active={selectedCategory === category}
-                href={eventsHref({ category, filter: selectedFilter })}
+                href={eventsHref({
+                  category,
+                  filter: selectedFilter,
+                  scope: selectedScope,
+                })}
                 key={category}
               >
                 {category}
@@ -306,19 +385,24 @@ function EventCard({
   event,
   isFull,
   isStaff,
+  ownerSchoolName,
   registeredCount,
   registrationStatus,
+  userSchoolId,
 }: {
   clubName: string | null;
   currentStudent: StudentRoster | null;
   event: Event;
   isFull: boolean;
   isStaff: boolean;
+  ownerSchoolName: string;
   registeredCount: number;
   registrationStatus: string | undefined;
+  userSchoolId: string;
 }) {
   const isJoined =
     registrationStatus === "registered" || registrationStatus === "attended";
+  const isOwnSchoolEvent = event.school_id === userSchoolId;
 
   return (
     <article className="rounded-lg border border-zinc-200 p-4">
@@ -337,6 +421,7 @@ function EventCard({
           isFull={isFull}
           isStaff={isStaff}
           registrationStatus={registrationStatus}
+          userSchoolId={userSchoolId}
         />
       </div>
 
@@ -348,6 +433,10 @@ function EventCard({
         ) : null}
         {clubName ? <Badge>{clubName}</Badge> : null}
         {event.category ? <Badge>{event.category}</Badge> : null}
+        <Badge variant={event.shared_with_connected_schools ? "info" : "default"}>
+          {sharingLabel(event)}
+        </Badge>
+        {!isOwnSchoolEvent ? <Badge variant="info">{ownerSchoolName}</Badge> : null}
       </div>
 
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
@@ -372,6 +461,12 @@ function EventCard({
           <dt className="text-zinc-500">Event type</dt>
           <dd className="text-zinc-800">{clubName ? "Club event" : "School event"}</dd>
         </div>
+        <div>
+          <dt className="text-zinc-500">Hosted by</dt>
+          <dd className="text-zinc-800">
+            {isOwnSchoolEvent ? "My school" : ownerSchoolName}
+          </dd>
+        </div>
       </dl>
 
       {event.description ? (
@@ -389,16 +484,20 @@ function EventActions({
   isFull,
   isStaff,
   registrationStatus,
+  userSchoolId,
 }: {
   currentStudent: StudentRoster | null;
   event: Event;
   isFull: boolean;
   isStaff: boolean;
   registrationStatus: string | undefined;
+  userSchoolId: string;
 }) {
-  if (isStaff) {
+  const isOwnSchoolEvent = event.school_id === userSchoolId;
+
+  if (isStaff && isOwnSchoolEvent) {
     return (
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2">
         <Link
           className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
           href={`/events/${event.id}/attendance`}
@@ -414,7 +513,16 @@ function EventActions({
             Cancel event
           </button>
         </form>
+        <SharingForm event={event} />
       </div>
+    );
+  }
+
+  if (isStaff) {
+    return (
+      <span className="inline-flex h-9 items-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+        Shared event
+      </span>
     );
   }
 
@@ -444,6 +552,14 @@ function EventActions({
     );
   }
 
+  if (!canCurrentStudentRegister(event, userSchoolId)) {
+    return (
+      <span className="inline-flex h-9 items-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+        Registration unavailable
+      </span>
+    );
+  }
+
   return (
     <form action={joinEvent}>
       <input name="event_id" type="hidden" value={event.id} />
@@ -458,18 +574,43 @@ function EventActions({
   );
 }
 
+function SharingForm({ event }: { event: Event }) {
+  return (
+    <form action={updateEventSharing} className="flex flex-col gap-2 sm:flex-row">
+      <input name="event_id" type="hidden" value={event.id} />
+      <select
+        className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none transition focus:border-zinc-900"
+        defaultValue={sharingMode(event)}
+        name="sharing"
+      >
+        <option value="internal">Internal only</option>
+        <option value="shared_view">Shared view only</option>
+        <option value="shared_registration">Shared + registration</option>
+      </select>
+      <button
+        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        type="submit"
+      >
+        Save sharing
+      </button>
+    </form>
+  );
+}
+
 function Badge({
   children,
   variant = "default",
 }: {
   children: React.ReactNode;
-  variant?: "default" | "success";
+  variant?: "default" | "info" | "success";
 }) {
   return (
     <span
       className={
         variant === "success"
           ? "rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+          : variant === "info"
+            ? "rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
           : "rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
       }
     >
@@ -478,34 +619,77 @@ function Badge({
   );
 }
 
+function canCurrentStudentRegister(event: Event, userSchoolId: string) {
+  return (
+    event.school_id === userSchoolId ||
+    (event.shared_with_connected_schools &&
+      event.allow_connected_school_registration)
+  );
+}
+
+function sharingMode(event: Event) {
+  if (!event.shared_with_connected_schools) {
+    return "internal";
+  }
+
+  return event.allow_connected_school_registration
+    ? "shared_registration"
+    : "shared_view";
+}
+
+function sharingLabel(event: Event) {
+  if (!event.shared_with_connected_schools) {
+    return "Internal only";
+  }
+
+  return event.allow_connected_school_registration
+    ? "Shared with registration"
+    : "Shared view only";
+}
+
 async function getFilteredEvents(
   admin: ReturnType<typeof createAdminClient>,
   {
+    connectedSchoolIds,
     filter,
     now,
     registeredEventIds,
     schoolId,
     selectedCategory,
+    scope,
   }: {
+    connectedSchoolIds: string[];
     filter: EventFilter;
     now: string;
     registeredEventIds: string[];
     schoolId: string;
     selectedCategory: string | null;
+    scope: EventScope;
   },
 ) {
   if (filter === "registered" && registeredEventIds.length === 0) {
     return { error: null, events: [] };
   }
 
+  if (scope === "shared" && connectedSchoolIds.length === 0) {
+    return { error: null, events: [] };
+  }
+
   let query = admin
     .from("events")
     .select(
-      "id, club_id, title, description, category, location, starts_at, ends_at, capacity, status",
+      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, shared_with_connected_schools, allow_connected_school_registration",
     )
-    .eq("school_id", schoolId)
     .eq("status", "approved")
     .gte("starts_at", now);
+
+  if (scope === "shared") {
+    query = query
+      .in("school_id", connectedSchoolIds)
+      .eq("shared_with_connected_schools", true);
+  } else {
+    query = query.eq("school_id", schoolId);
+  }
 
   if (filter === "registered") {
     query = query.in("id", registeredEventIds);
@@ -560,6 +744,34 @@ async function getSchoolClubOptions(
   return clubs ?? [];
 }
 
+async function getConnectedSchoolIds(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { data: connections } = await admin
+    .from("school_connections")
+    .select("requester_school_id, receiver_school_id")
+    .eq("status", "approved")
+    .or(
+      [
+        `requester_school_id.eq.${schoolId}`,
+        `receiver_school_id.eq.${schoolId}`,
+      ].join(","),
+    )
+    .returns<
+      Array<{
+        requester_school_id: string;
+        receiver_school_id: string;
+      }>
+    >();
+
+  return (connections ?? []).map((connection) =>
+    connection.requester_school_id === schoolId
+      ? connection.receiver_school_id
+      : connection.requester_school_id,
+  );
+}
+
 async function getClubsById(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
@@ -573,6 +785,19 @@ async function getClubsById(
     .returns<ClubOption[]>();
 
   return clubs ?? [];
+}
+
+async function getSchoolsById(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolIds: string[],
+) {
+  const { data: schools } = await admin
+    .from("schools")
+    .select("id, name")
+    .in("id", schoolIds)
+    .returns<SchoolOption[]>();
+
+  return schools ?? [];
 }
 
 async function getLeaderClubOptions(
@@ -600,16 +825,38 @@ async function getLeaderClubOptions(
 
 async function getCategoryOptions(
   admin: ReturnType<typeof createAdminClient>,
-  schoolId: string,
-  now: string,
+  {
+    connectedSchoolIds,
+    now,
+    schoolId,
+    scope,
+  }: {
+    connectedSchoolIds: string[];
+    now: string;
+    schoolId: string;
+    scope: EventScope;
+  },
 ) {
-  const { data: events } = await admin
+  if (scope === "shared" && connectedSchoolIds.length === 0) {
+    return [];
+  }
+
+  let query = admin
     .from("events")
     .select("category")
-    .eq("school_id", schoolId)
     .eq("status", "approved")
     .gte("starts_at", now)
-    .not("category", "is", null)
+    .not("category", "is", null);
+
+  if (scope === "shared") {
+    query = query
+      .in("school_id", connectedSchoolIds)
+      .eq("shared_with_connected_schools", true);
+  } else {
+    query = query.eq("school_id", schoolId);
+  }
+
+  const { data: events } = await query
     .order("category", { ascending: true })
     .returns<Array<{ category: string | null }>>();
 
@@ -624,7 +871,7 @@ async function getCategoryOptions(
 
 async function getCurrentStudentRegisteredEventIds(
   admin: ReturnType<typeof createAdminClient>,
-  schoolId: string,
+  profile: Profile,
   currentStudent: StudentRoster | null,
 ) {
   if (!currentStudent) {
@@ -634,8 +881,7 @@ async function getCurrentStudentRegisteredEventIds(
   const { data: attendees } = await admin
     .from("event_attendees")
     .select("event_id")
-    .eq("school_id", schoolId)
-    .eq("student_roster_id", currentStudent.id)
+    .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${currentStudent.id}`)
     .in("status", ["registered", "attended"])
     .returns<Array<{ event_id: string }>>();
 
@@ -644,13 +890,11 @@ async function getCurrentStudentRegisteredEventIds(
 
 async function getEventAttendees(
   admin: ReturnType<typeof createAdminClient>,
-  schoolId: string,
   eventIds: string[],
 ) {
   const { data: attendees } = await admin
     .from("event_attendees")
-    .select("event_id, student_roster_id, status")
-    .eq("school_id", schoolId)
+    .select("event_id, student_roster_id, attendee_profile_id, attendee_school_id, status")
     .in("event_id", eventIds)
     .in("status", ["registered", "attended"])
     .returns<EventAttendee[]>();
@@ -670,6 +914,7 @@ function countActiveAttendees(attendees: EventAttendee[]) {
 
 function mapCurrentStudentRegistrations(
   attendees: EventAttendee[],
+  profile: Profile,
   currentStudent: StudentRoster | null,
 ) {
   const registrations = new Map<string, string>();
@@ -679,7 +924,10 @@ function mapCurrentStudentRegistrations(
   }
 
   attendees.forEach((attendee) => {
-    if (attendee.student_roster_id === currentStudent.id) {
+    if (
+      attendee.attendee_profile_id === profile.id ||
+      attendee.student_roster_id === currentStudent.id
+    ) {
       registrations.set(attendee.event_id, attendee.status);
     }
   });
@@ -695,6 +943,10 @@ function parseEventFilter(value: string | undefined): EventFilter {
   return "upcoming";
 }
 
+function parseEventScope(value: string | undefined): EventScope {
+  return value === "shared" ? "shared" : "mine";
+}
+
 function getSearchValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -708,11 +960,17 @@ function normalizeCategory(value: string | undefined) {
 function eventsHref({
   category,
   filter,
+  scope,
 }: {
   category?: string | null;
   filter: EventFilter;
+  scope: EventScope;
 }) {
   const params = new URLSearchParams();
+
+  if (scope === "shared") {
+    params.set("scope", scope);
+  }
 
   if (filter !== "upcoming") {
     params.set("filter", filter);
@@ -727,15 +985,21 @@ function eventsHref({
   return query ? `/events?${query}` : "/events";
 }
 
-function eventListTitle(filter: EventFilter, category: string | null) {
+function eventListTitle(
+  filter: EventFilter,
+  category: string | null,
+  scope: EventScope,
+) {
   const baseTitle =
     filter === "registered"
       ? "My registered events"
       : filter === "club"
         ? "Club events"
         : "Upcoming events";
+  const scopedTitle =
+    scope === "shared" ? `Shared ${baseTitle.toLowerCase()}` : baseTitle;
 
-  return category ? `${baseTitle}: ${category}` : baseTitle;
+  return category ? `${scopedTitle}: ${category}` : scopedTitle;
 }
 
 function formatDateTime(value: string) {

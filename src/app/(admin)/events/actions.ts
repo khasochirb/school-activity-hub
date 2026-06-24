@@ -21,6 +21,8 @@ type EventRecord = {
   status: string;
   starts_at: string;
   capacity: number | null;
+  shared_with_connected_schools: boolean;
+  allow_connected_school_registration: boolean;
 };
 
 export type CreateEventState = {
@@ -111,6 +113,8 @@ export async function createEvent(
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
     capacity,
+    shared_with_connected_schools: false,
+    allow_connected_school_registration: false,
     status,
     submitted_at: now,
     approved_at: isStaff ? now : null,
@@ -153,19 +157,18 @@ export async function joinEvent(formData: FormData) {
     return;
   }
 
-  const event = await getJoinableEvent(admin, profile.school_id, eventId);
+  const event = await getJoinableEvent(admin, profile, eventId);
 
   if (!event || (await isEventFull(admin, event))) {
     return;
   }
 
-  const { data: existingAttendee } = await admin
-    .from("event_attendees")
-    .select("id, status")
-    .eq("event_id", event.id)
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
-    .maybeSingle<{ id: string; status: string }>();
+  const existingAttendee = await getCurrentStudentAttendee(
+    admin,
+    event.id,
+    profile,
+    student,
+  );
 
   if (existingAttendee?.status === "registered" || existingAttendee?.status === "attended") {
     return;
@@ -176,12 +179,15 @@ export async function joinEvent(formData: FormData) {
       .from("event_attendees")
       .update({ status: "registered", registered_at: new Date().toISOString() })
       .eq("id", existingAttendee.id)
-      .eq("school_id", profile.school_id);
+      .eq("school_id", event.school_id);
   } else {
     await admin.from("event_attendees").insert({
-      school_id: profile.school_id,
+      school_id: event.school_id,
       event_id: event.id,
-      student_roster_id: student.id,
+      student_roster_id:
+        event.school_id === profile.school_id ? student.id : null,
+      attendee_school_id: profile.school_id,
+      attendee_profile_id: profile.id,
       status: "registered",
     });
   }
@@ -209,12 +215,21 @@ export async function cancelEventRegistration(formData: FormData) {
     return;
   }
 
+  const attendee = await getCurrentStudentAttendee(
+    admin,
+    eventId,
+    profile,
+    student,
+  );
+
+  if (!attendee) {
+    return;
+  }
+
   await admin
     .from("event_attendees")
     .update({ status: "canceled" })
-    .eq("event_id", eventId)
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
+    .eq("id", attendee.id)
     .eq("status", "registered");
 
   revalidatePath("/events");
@@ -237,6 +252,49 @@ export async function cancelEvent(formData: FormData) {
   await supabase
     .from("events")
     .update({ status: "canceled" })
+    .eq("id", eventId)
+    .eq("school_id", profile.school_id)
+    .eq("status", "approved");
+
+  revalidatePath("/events");
+}
+
+export async function updateEventSharing(formData: FormData) {
+  const profile = await getCurrentProfile();
+
+  if (!profile || !isSchoolStaff(profile)) {
+    redirect("/events");
+  }
+
+  const eventId = String(formData.get("event_id") ?? "").trim();
+  const sharing = String(formData.get("sharing") ?? "").trim();
+
+  const sharingState =
+    sharing === "internal"
+      ? {
+          allow_connected_school_registration: false,
+          shared_with_connected_schools: false,
+        }
+      : sharing === "shared_view"
+        ? {
+            allow_connected_school_registration: false,
+            shared_with_connected_schools: true,
+          }
+        : sharing === "shared_registration"
+          ? {
+              allow_connected_school_registration: true,
+              shared_with_connected_schools: true,
+            }
+          : null;
+
+  if (!eventId || !sharingState) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await supabase
+    .from("events")
+    .update(sharingState)
     .eq("id", eventId)
     .eq("school_id", profile.school_id)
     .eq("status", "approved");
@@ -280,19 +338,72 @@ async function getCurrentStudentRoster(
 
 async function getJoinableEvent(
   admin: ReturnType<typeof createAdminClient>,
-  schoolId: string,
+  profile: Profile,
   eventId: string,
 ) {
   const { data: event } = await admin
     .from("events")
-    .select("id, school_id, status, starts_at, capacity")
+    .select(
+      "id, school_id, status, starts_at, capacity, shared_with_connected_schools, allow_connected_school_registration",
+    )
     .eq("id", eventId)
-    .eq("school_id", schoolId)
     .eq("status", "approved")
     .gte("starts_at", new Date().toISOString())
     .maybeSingle<EventRecord>();
 
-  return event;
+  if (!event) {
+    return null;
+  }
+
+  if (event.school_id === profile.school_id) {
+    return event;
+  }
+
+  if (
+    event.shared_with_connected_schools &&
+    event.allow_connected_school_registration &&
+    (await schoolsHaveApprovedConnection(admin, event.school_id, profile.school_id))
+  ) {
+    return event;
+  }
+
+  return null;
+}
+
+async function getCurrentStudentAttendee(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  profile: Profile,
+  student: StudentRoster,
+) {
+  const { data: attendee } = await admin
+    .from("event_attendees")
+    .select("id, status")
+    .eq("event_id", eventId)
+    .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${student.id}`)
+    .maybeSingle<{ id: string; status: string }>();
+
+  return attendee;
+}
+
+async function schoolsHaveApprovedConnection(
+  admin: ReturnType<typeof createAdminClient>,
+  firstSchoolId: string,
+  secondSchoolId: string,
+) {
+  const { data: connection } = await admin
+    .from("school_connections")
+    .select("id")
+    .eq("status", "approved")
+    .or(
+      [
+        `and(requester_school_id.eq.${firstSchoolId},receiver_school_id.eq.${secondSchoolId})`,
+        `and(requester_school_id.eq.${secondSchoolId},receiver_school_id.eq.${firstSchoolId})`,
+      ].join(","),
+    )
+    .maybeSingle<{ id: string }>();
+
+  return Boolean(connection);
 }
 
 async function isEventFull(

@@ -21,7 +21,9 @@ type EventRecord = {
 
 type EventAttendee = {
   id: string;
-  student_roster_id: string;
+  student_roster_id: string | null;
+  attendee_school_id: string;
+  attendee_profile_id: string | null;
   status: string;
   registered_at: string;
   checked_in_at: string | null;
@@ -38,10 +40,22 @@ type StudentRoster = {
 
 type AttendanceCheckin = {
   id: string;
-  student_roster_id: string;
+  event_attendee_id: string | null;
+  student_roster_id: string | null;
+  attendee_profile_id: string | null;
   method: string;
   result: string;
   checked_in_at: string;
+};
+
+type AttendeeProfile = {
+  id: string;
+  full_name: string;
+};
+
+type SchoolSummary = {
+  id: string;
+  name: string;
 };
 
 export default async function EventAttendancePage({
@@ -84,24 +98,52 @@ export default async function EventAttendancePage({
 
   const { data: attendees } = await admin
     .from("event_attendees")
-    .select("id, student_roster_id, status, registered_at, checked_in_at")
+    .select(
+      "id, student_roster_id, attendee_school_id, attendee_profile_id, status, registered_at, checked_in_at",
+    )
     .eq("event_id", event.id)
     .eq("school_id", profile.school_id)
     .order("registered_at", { ascending: true })
     .returns<EventAttendee[]>();
 
-  const rosterIds = (attendees ?? []).map((attendee) => attendee.student_roster_id);
+  const rosterIds = (attendees ?? [])
+    .map((attendee) => attendee.student_roster_id)
+    .filter((id): id is string => Boolean(id));
+  const attendeeProfileIds = (attendees ?? [])
+    .map((attendee) => attendee.attendee_profile_id)
+    .filter((id): id is string => Boolean(id));
+  const attendeeSchoolIds = Array.from(
+    new Set((attendees ?? []).map((attendee) => attendee.attendee_school_id)),
+  );
   const rosters = rosterIds.length
     ? await getStudentRosters(admin, profile.school_id, rosterIds)
     : [];
-  const checkins = rosterIds.length
+  const attendeeProfiles = attendeeProfileIds.length
+    ? await getProfilesById(admin, attendeeProfileIds)
+    : [];
+  const attendeeSchools = attendeeSchoolIds.length
+    ? await getSchoolsById(admin, attendeeSchoolIds)
+    : [];
+  const checkins = (attendees ?? []).length
     ? await getSuccessfulCheckins(admin, profile.school_id, event.id)
     : [];
   const rosterById = new Map(rosters.map((student) => [student.id, student]));
+  const profileById = new Map(
+    attendeeProfiles.map((attendeeProfile) => [
+      attendeeProfile.id,
+      attendeeProfile,
+    ]),
+  );
+  const schoolById = new Map(attendeeSchools.map((school) => [school.id, school]));
+  const checkinByAttendeeId = new Map<string, AttendanceCheckin>();
   const checkinByStudentId = new Map<string, AttendanceCheckin>();
 
   checkins.forEach((checkin) => {
-    if (!checkinByStudentId.has(checkin.student_roster_id)) {
+    if (checkin.event_attendee_id && !checkinByAttendeeId.has(checkin.event_attendee_id)) {
+      checkinByAttendeeId.set(checkin.event_attendee_id, checkin);
+    }
+
+    if (checkin.student_roster_id && !checkinByStudentId.has(checkin.student_roster_id)) {
       checkinByStudentId.set(checkin.student_roster_id, checkin);
     }
   });
@@ -164,6 +206,7 @@ export default async function EventAttendancePage({
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
                   <tr>
                     <th className="px-4 py-3 font-medium">Student</th>
+                    <th className="px-4 py-3 font-medium">School</th>
                     <th className="px-4 py-3 font-medium">Grade</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Checked in</th>
@@ -172,20 +215,31 @@ export default async function EventAttendancePage({
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
                   {attendees.map((attendee) => {
-                    const student = rosterById.get(attendee.student_roster_id);
-                    const checkin = checkinByStudentId.get(
-                      attendee.student_roster_id,
-                    );
+                    const student = attendee.student_roster_id
+                      ? rosterById.get(attendee.student_roster_id)
+                      : undefined;
+                    const attendeeProfile = attendee.attendee_profile_id
+                      ? profileById.get(attendee.attendee_profile_id)
+                      : undefined;
+                    const attendeeSchool = schoolById.get(attendee.attendee_school_id);
+                    const checkin =
+                      checkinByAttendeeId.get(attendee.id) ??
+                      (attendee.student_roster_id
+                        ? checkinByStudentId.get(attendee.student_roster_id)
+                        : undefined);
 
                     return (
                       <tr key={attendee.id}>
                         <td className="px-4 py-3 font-medium text-zinc-950">
-                          {studentName(student)}
+                          {attendeeName(student, attendeeProfile)}
                           {student?.student_number ? (
                             <span className="block text-xs font-normal text-zinc-500">
                               {student.student_number}
                             </span>
                           ) : null}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-700">
+                          {attendeeSchool?.name ?? "-"}
                         </td>
                         <td className="px-4 py-3 text-zinc-700">
                           {student?.grade_level || "-"}
@@ -211,19 +265,29 @@ export default async function EventAttendancePage({
             </div>
             <div className="divide-y divide-zinc-200 md:hidden">
               {attendees.map((attendee) => {
-                const student = rosterById.get(attendee.student_roster_id);
-                const checkin = checkinByStudentId.get(
-                  attendee.student_roster_id,
-                );
+                const student = attendee.student_roster_id
+                  ? rosterById.get(attendee.student_roster_id)
+                  : undefined;
+                const attendeeProfile = attendee.attendee_profile_id
+                  ? profileById.get(attendee.attendee_profile_id)
+                  : undefined;
+                const attendeeSchool = schoolById.get(attendee.attendee_school_id);
+                const checkin =
+                  checkinByAttendeeId.get(attendee.id) ??
+                  (attendee.student_roster_id
+                    ? checkinByStudentId.get(attendee.student_roster_id)
+                    : undefined);
 
                 return (
                   <article className="p-4" key={attendee.id}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="font-medium text-zinc-950">
-                          {studentName(student)}
+                          {attendeeName(student, attendeeProfile)}
                         </h3>
                         <p className="mt-1 text-sm text-zinc-600">
+                          {attendeeSchool?.name ?? "School"}
+                          {" - "}
                           Grade {student?.grade_level || "-"}
                           {student?.homeroom ? `, ${student.homeroom}` : ""}
                         </p>
@@ -285,7 +349,9 @@ async function getSuccessfulCheckins(
 ) {
   const { data: checkins } = await admin
     .from("attendance_checkins")
-    .select("id, student_roster_id, method, result, checked_in_at")
+    .select(
+      "id, event_attendee_id, student_roster_id, attendee_profile_id, method, result, checked_in_at",
+    )
     .eq("school_id", schoolId)
     .eq("event_id", eventId)
     .eq("result", "success")
@@ -293,6 +359,32 @@ async function getSuccessfulCheckins(
     .returns<AttendanceCheckin[]>();
 
   return checkins ?? [];
+}
+
+async function getProfilesById(
+  admin: ReturnType<typeof createAdminClient>,
+  profileIds: string[],
+) {
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", profileIds)
+    .returns<AttendeeProfile[]>();
+
+  return profiles ?? [];
+}
+
+async function getSchoolsById(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolIds: string[],
+) {
+  const { data: schools } = await admin
+    .from("schools")
+    .select("id, name")
+    .in("id", schoolIds)
+    .returns<SchoolSummary[]>();
+
+  return schools ?? [];
 }
 
 async function getAbsoluteCheckInUrl(path: string) {
@@ -353,12 +445,15 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function studentName(student: StudentRoster | undefined) {
-  if (!student) {
-    return "Roster student";
+function attendeeName(
+  student: StudentRoster | undefined,
+  attendeeProfile: AttendeeProfile | undefined,
+) {
+  if (student) {
+    return `${student.first_name} ${student.last_name}`;
   }
 
-  return `${student.first_name} ${student.last_name}`;
+  return attendeeProfile?.full_name ?? "Registered student";
 }
 
 function formatDateTime(value: string) {
