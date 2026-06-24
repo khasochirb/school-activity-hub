@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f4f5;
+  --foreground: #18181b;
 }
 
 @theme inline {
@@ -14,13 +14,43 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f4f4f5;
+    --foreground: #18181b;
   }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+:where(a[href], button, input[type="button"], input[type="submit"], label:has(input[type="checkbox"]), label:has(input[type="radio"])) {
+  cursor: pointer;
+}
+
+:where(button:disabled, input:disabled, select:disabled, textarea:disabled) {
+  cursor: not-allowed;
+}
+
+:where(input, select, textarea, button) {
+  font: inherit;
+}
+
+:where(a[href], button, input, select, textarea):focus-visible {
+  outline: 2px solid #18181b;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #d4d4d8;
+  color: #18181b;
 }
