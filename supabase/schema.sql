@@ -89,6 +89,13 @@ end $$;
 
 do $$
 begin
+  create type public.event_risk_level as enum ('low', 'medium', 'high');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
   create type public.event_attendee_status as enum (
     'registered',
     'attended',
@@ -307,6 +314,9 @@ create table if not exists public.events (
   ends_at timestamptz not null,
   capacity integer,
   allow_connected_school_registration boolean not null default false,
+  risk_level public.event_risk_level not null default 'low',
+  permission_required boolean not null default false,
+  permission_note text,
   status public.event_status not null default 'draft',
   submitted_at timestamptz,
   approved_at timestamptz,
@@ -327,6 +337,15 @@ alter table public.events
 
 alter table public.events
   add column if not exists allow_connected_school_registration boolean not null default false;
+
+alter table public.events
+  add column if not exists risk_level public.event_risk_level not null default 'low';
+
+alter table public.events
+  add column if not exists permission_required boolean not null default false;
+
+alter table public.events
+  add column if not exists permission_note text;
 
 alter table public.events
   drop constraint if exists events_connected_registration_requires_shared;

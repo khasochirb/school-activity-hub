@@ -17,6 +17,9 @@ type PendingEvent = {
   starts_at: string;
   ends_at: string;
   capacity: number | null;
+  risk_level: "low" | "medium" | "high";
+  permission_required: boolean;
+  permission_note: string | null;
   submitted_at: string | null;
   created_at: string;
 };
@@ -53,7 +56,7 @@ export default async function ApprovalsPage() {
     supabase
       .from("events")
       .select(
-        "id, club_id, title, description, category, location, starts_at, ends_at, capacity, submitted_at, created_at",
+        "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, submitted_at, created_at",
       )
       .eq("school_id", profile.school_id)
       .eq("status", "pending_approval")
@@ -120,6 +123,12 @@ export default async function ApprovalsPage() {
                   {event.club_id ? (
                     <Badge>{clubNameById.get(event.club_id) ?? "Club event"}</Badge>
                   ) : null}
+                  <Badge variant={riskBadgeVariant(event.risk_level)}>
+                    {riskLabel(event.risk_level)}
+                  </Badge>
+                  {event.permission_required ? (
+                    <Badge variant="warning">Permission required</Badge>
+                  ) : null}
                 </div>
                 <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                   <div>
@@ -138,7 +147,23 @@ export default async function ApprovalsPage() {
                         : formatDate(event.created_at)}
                     </dd>
                   </div>
+                  <div>
+                    <dt className="text-zinc-500">Safety</dt>
+                    <dd className="text-zinc-800">{riskLabel(event.risk_level)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-zinc-500">Permission</dt>
+                    <dd className="text-zinc-800">
+                      {event.permission_required ? "May be required" : "Not required"}
+                    </dd>
+                  </div>
                 </dl>
+                {event.permission_note ? (
+                  <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+                    <p className="font-medium text-zinc-900">Permission note</p>
+                    <p className="mt-1 leading-6">{event.permission_note}</p>
+                  </div>
+                ) : null}
                 {event.description ? (
                   <p className="mt-4 text-sm leading-6 text-zinc-600">
                     {event.description}
@@ -173,12 +198,42 @@ export default async function ApprovalsPage() {
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Badge({
+  children,
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  variant?: "danger" | "default" | "warning";
+}) {
   return (
-    <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700">
+    <span
+      className={
+        variant === "danger"
+          ? "rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700"
+          : variant === "warning"
+            ? "rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800"
+            : "rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
+      }
+    >
       {children}
     </span>
   );
+}
+
+function riskBadgeVariant(riskLevel: PendingEvent["risk_level"]) {
+  return riskLevel === "high"
+    ? "danger"
+    : riskLevel === "medium"
+      ? "warning"
+      : "default";
+}
+
+function riskLabel(riskLevel: PendingEvent["risk_level"]) {
+  if (riskLevel === "high") {
+    return "High risk";
+  }
+
+  return riskLevel === "medium" ? "Medium risk" : "Low risk";
 }
 
 function formatDateTime(value: string) {

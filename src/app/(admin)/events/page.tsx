@@ -6,6 +6,7 @@ import {
   cancelEvent,
   cancelEventRegistration,
   joinEvent,
+  updateEventSafety,
   updateEventSharing,
 } from "./actions";
 import { CreateEventForm } from "./create-event-form";
@@ -43,6 +44,9 @@ type Event = {
   capacity: number | null;
   status: string;
   allow_connected_school_registration: boolean;
+  risk_level: "low" | "medium" | "high";
+  permission_required: boolean;
+  permission_note: string | null;
 };
 
 type EventAttendee = {
@@ -461,6 +465,12 @@ function EventCard({
         ) : null}
         {clubName ? <Badge>{clubName}</Badge> : null}
         {event.category ? <Badge>{event.category}</Badge> : null}
+        <Badge variant={riskBadgeVariant(event.risk_level)}>
+          {riskLabel(event.risk_level)}
+        </Badge>
+        {event.permission_required ? (
+          <Badge variant="warning">Permission required</Badge>
+        ) : null}
         <Badge variant={sharedSchoolIds.length ? "info" : "default"}>
           {sharingLabel(event, sharedSchoolIds)}
         </Badge>
@@ -495,7 +505,24 @@ function EventCard({
             {isOwnSchoolEvent ? "My school" : ownerSchoolName}
           </dd>
         </div>
+        <div>
+          <dt className="text-zinc-500">Safety</dt>
+          <dd className="text-zinc-800">{riskLabel(event.risk_level)}</dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">Permission</dt>
+          <dd className="text-zinc-800">
+            {event.permission_required ? "May be required" : "Not required"}
+          </dd>
+        </div>
       </dl>
+
+      {event.permission_note ? (
+        <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+          <p className="font-medium text-zinc-900">Permission note</p>
+          <p className="mt-1 leading-6">{event.permission_note}</p>
+        </div>
+      ) : null}
 
       {event.description ? (
         <p className="mt-4 text-sm leading-6 text-zinc-600">
@@ -550,6 +577,7 @@ function EventActions({
           event={event}
           sharedSchoolIds={sharedSchoolIds}
         />
+        <SafetyForm event={event} />
       </div>
     );
   }
@@ -597,14 +625,65 @@ function EventActions({
   }
 
   return (
-    <form action={joinEvent}>
+    <div className="flex flex-col gap-2">
+      {event.permission_required ? (
+        <p className="max-w-64 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+          This event may require school/parent permission.
+        </p>
+      ) : null}
+      <form action={joinEvent}>
+        <input name="event_id" type="hidden" value={event.id} />
+        <button
+          className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          disabled={isFull}
+          type="submit"
+        >
+          {isFull ? "Full" : "Join"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function SafetyForm({ event }: { event: Event }) {
+  return (
+    <form action={updateEventSafety} className="flex flex-col gap-2">
       <input name="event_id" type="hidden" value={event.id} />
+      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
+        Risk level
+        <select
+          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition focus:border-zinc-900"
+          defaultValue={event.risk_level}
+          name="risk_level"
+        >
+          <option value="low">Low risk</option>
+          <option value="medium">Medium risk</option>
+          <option value="high">High risk</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-sm text-zinc-700">
+        <input
+          className="h-4 w-4 cursor-pointer"
+          defaultChecked={event.permission_required}
+          name="permission_required"
+          type="checkbox"
+          value="true"
+        />
+        Permission required
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
+        Permission note
+        <textarea
+          className="min-h-16 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none transition focus:border-zinc-900"
+          defaultValue={event.permission_note ?? ""}
+          name="permission_note"
+        />
+      </label>
       <button
-        className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-        disabled={isFull}
+        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
-        {isFull ? "Full" : "Join"}
+        Save safety
       </button>
     </form>
   );
@@ -678,7 +757,7 @@ function Badge({
   variant = "default",
 }: {
   children: React.ReactNode;
-  variant?: "default" | "info" | "success";
+  variant?: "default" | "danger" | "info" | "success" | "warning";
 }) {
   return (
     <span
@@ -687,12 +766,32 @@ function Badge({
           ? "rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
           : variant === "info"
             ? "rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
-          : "rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
+            : variant === "warning"
+              ? "rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800"
+              : variant === "danger"
+                ? "rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700"
+                : "rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
       }
     >
       {children}
     </span>
   );
+}
+
+function riskBadgeVariant(riskLevel: Event["risk_level"]) {
+  if (riskLevel === "high") {
+    return "danger";
+  }
+
+  return riskLevel === "medium" ? "warning" : "success";
+}
+
+function riskLabel(riskLevel: Event["risk_level"]) {
+  if (riskLevel === "high") {
+    return "High risk";
+  }
+
+  return riskLevel === "medium" ? "Medium risk" : "Low risk";
 }
 
 function canCurrentStudentRegister(event: Event, userSchoolId: string) {
@@ -753,7 +852,7 @@ async function getFilteredEvents(
   let query = admin
     .from("events")
     .select(
-      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration",
+      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note",
     )
     .eq("status", "approved")
     .gte("starts_at", now);

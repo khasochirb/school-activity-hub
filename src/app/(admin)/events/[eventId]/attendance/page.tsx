@@ -16,6 +16,9 @@ type EventRecord = {
   location: string | null;
   starts_at: string;
   ends_at: string;
+  risk_level: "low" | "medium" | "high";
+  permission_required: boolean;
+  permission_note: string | null;
   status: string;
 };
 
@@ -86,7 +89,7 @@ export default async function EventAttendancePage({
   const admin = createAdminClient();
   const { data: event } = await admin
     .from("events")
-    .select("id, title, location, starts_at, ends_at, status")
+    .select("id, title, location, starts_at, ends_at, risk_level, permission_required, permission_note, status")
     .eq("id", eventId)
     .eq("school_id", profile.school_id)
     .eq("status", "approved")
@@ -163,6 +166,19 @@ export default async function EventAttendancePage({
             <p className="mt-1 text-sm text-zinc-600">
               {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
             </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <SafetyBadge riskLevel={event.risk_level} />
+              {event.permission_required ? (
+                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                  Permission required
+                </span>
+              ) : null}
+            </div>
+            {event.permission_note ? (
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+                {event.permission_note}
+              </p>
+            ) : null}
           </div>
           <Link
             className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
@@ -441,6 +457,33 @@ function StatusBadge({ status }: { status: string }) {
       }
     >
       {status}
+    </span>
+  );
+}
+
+function SafetyBadge({
+  riskLevel,
+}: {
+  riskLevel: EventRecord["risk_level"];
+}) {
+  const label =
+    riskLevel === "high"
+      ? "High risk"
+      : riskLevel === "medium"
+        ? "Medium risk"
+        : "Low risk";
+
+  return (
+    <span
+      className={
+        riskLevel === "high"
+          ? "rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700"
+          : riskLevel === "medium"
+            ? "rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800"
+            : "rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+      }
+    >
+      {label}
     </span>
   );
 }

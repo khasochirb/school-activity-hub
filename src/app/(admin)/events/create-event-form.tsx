@@ -101,11 +101,40 @@ export function CreateEventForm({
           ))}
         </select>
       </label>
+      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+        Risk level
+        <select
+          className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-900"
+          defaultValue="low"
+          name="risk_level"
+        >
+          <option value="low">Low risk</option>
+          <option value="medium">Medium risk</option>
+          <option value="high">High risk</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-sm font-medium text-zinc-800">
+        <input
+          className="h-4 w-4 cursor-pointer"
+          name="permission_required"
+          type="checkbox"
+          value="true"
+        />
+        Permission required
+      </label>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:col-span-2">
         Description
         <textarea
           className="min-h-24 rounded-md border border-zinc-300 px-3 py-2 text-base outline-none transition focus:border-zinc-900"
           name="description"
+        />
+      </label>
+      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:col-span-2">
+        Permission note
+        <textarea
+          className="min-h-20 rounded-md border border-zinc-300 px-3 py-2 text-base outline-none transition focus:border-zinc-900"
+          name="permission_note"
+          placeholder="Optional note for staff, students, or families"
         />
       </label>
       {state.message ? (

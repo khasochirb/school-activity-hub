@@ -22,6 +22,9 @@ type EventRecord = {
   location: string | null;
   starts_at: string;
   ends_at: string;
+  risk_level: "low" | "medium" | "high";
+  permission_required: boolean;
+  permission_note: string | null;
   status: string;
 };
 
@@ -75,7 +78,7 @@ export default async function StudentCheckInPage({
 
   const { data: event } = await admin
     .from("events")
-    .select("id, school_id, title, location, starts_at, ends_at, status")
+    .select("id, school_id, title, location, starts_at, ends_at, risk_level, permission_required, permission_note, status")
     .eq("id", eventId)
     .eq("status", "approved")
     .maybeSingle<EventRecord>();
@@ -143,7 +146,30 @@ export default async function StudentCheckInPage({
             <dt className="text-zinc-500">Location</dt>
             <dd className="text-zinc-800">{event.location || "-"}</dd>
           </div>
+          <div>
+            <dt className="text-zinc-500">Safety</dt>
+            <dd className="text-zinc-800">{riskLabel(event.risk_level)}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">Permission</dt>
+            <dd className="text-zinc-800">
+              {event.permission_required ? "May be required" : "Not required"}
+            </dd>
+          </div>
         </dl>
+
+        {event.permission_required ? (
+          <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+            This event may require school/parent permission.
+          </p>
+        ) : null}
+
+        {event.permission_note ? (
+          <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+            <p className="font-medium text-zinc-900">Permission note</p>
+            <p className="mt-1 leading-6">{event.permission_note}</p>
+          </div>
+        ) : null}
 
         {canCheckIn ? <CheckInForm eventId={event.id} /> : null}
 
@@ -264,4 +290,12 @@ function formatTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function riskLabel(riskLevel: EventRecord["risk_level"]) {
+  if (riskLevel === "high") {
+    return "High risk";
+  }
+
+  return riskLevel === "medium" ? "Medium risk" : "Low risk";
 }

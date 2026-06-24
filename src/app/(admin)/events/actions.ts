@@ -15,6 +15,8 @@ type StudentRoster = {
   id: string;
 };
 
+type EventRiskLevel = "low" | "medium" | "high";
+
 type EventRecord = {
   id: string;
   school_id: string;
@@ -47,6 +49,10 @@ export async function createEvent(
   const endsAtInput = String(formData.get("ends_at") ?? "").trim();
   const maxParticipantsInput = String(formData.get("max_participants") ?? "").trim();
   const clubId = String(formData.get("club_id") ?? "").trim();
+  const riskLevel = parseRiskLevel(formData.get("risk_level"));
+  const permissionRequired =
+    String(formData.get("permission_required") ?? "") === "true";
+  const permissionNote = String(formData.get("permission_note") ?? "").trim();
   const isStaff = isSchoolStaff(profile);
   const isLeaderEvent = !isStaff;
 
@@ -76,6 +82,10 @@ export async function createEvent(
       message: "Max participants must be a positive number.",
       success: false,
     };
+  }
+
+  if (!riskLevel) {
+    return { message: "Choose a valid risk level.", success: false };
   }
 
   if (isLeaderEvent && !clubId) {
@@ -113,6 +123,9 @@ export async function createEvent(
     ends_at: endsAt.toISOString(),
     capacity,
     allow_connected_school_registration: false,
+    risk_level: riskLevel,
+    permission_required: permissionRequired,
+    permission_note: permissionNote || null,
     status,
     submitted_at: now,
     approved_at: isStaff ? now : null,
@@ -255,6 +268,38 @@ export async function cancelEvent(formData: FormData) {
     .eq("status", "approved");
 
   revalidatePath("/events");
+}
+
+export async function updateEventSafety(formData: FormData) {
+  const profile = await getCurrentProfile();
+
+  if (!profile || !isSchoolStaff(profile)) {
+    redirect("/events");
+  }
+
+  const eventId = String(formData.get("event_id") ?? "").trim();
+  const riskLevel = parseRiskLevel(formData.get("risk_level"));
+  const permissionRequired =
+    String(formData.get("permission_required") ?? "") === "true";
+  const permissionNote = String(formData.get("permission_note") ?? "").trim();
+
+  if (!eventId || !riskLevel) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await supabase
+    .from("events")
+    .update({
+      risk_level: riskLevel,
+      permission_required: permissionRequired,
+      permission_note: permissionNote || null,
+    })
+    .eq("id", eventId)
+    .eq("school_id", profile.school_id);
+
+  revalidatePath("/events");
+  revalidatePath("/approvals");
 }
 
 export async function updateEventSharing(formData: FormData) {
@@ -523,6 +568,20 @@ async function isClubInCurrentSchool(profile: Profile, clubId: string) {
 
 function isSchoolStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
+}
+
+function parseRiskLevel(value: FormDataEntryValue | null): EventRiskLevel | null {
+  const riskLevel = String(value ?? "").trim();
+
+  if (
+    riskLevel === "low" ||
+    riskLevel === "medium" ||
+    riskLevel === "high"
+  ) {
+    return riskLevel;
+  }
+
+  return null;
 }
 
 function parseDateTime(value: string) {
