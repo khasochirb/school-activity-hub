@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -57,6 +58,12 @@ export function LoginForm() {
           required
         />
       </label>
+      <Link
+        className="w-fit cursor-pointer text-sm font-medium text-zinc-700 transition hover:text-zinc-950"
+        href="/reset-password"
+      >
+        Forgot password?
+      </Link>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <button
         className="h-11 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
