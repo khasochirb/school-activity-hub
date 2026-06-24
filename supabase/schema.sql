@@ -27,6 +27,13 @@ end $$;
 
 do $$
 begin
+  create type public.announcement_status as enum ('active', 'archived');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
   create type public.roster_status as enum ('active', 'inactive', 'graduated', 'withdrawn');
 exception
   when duplicate_object then null;
@@ -160,6 +167,25 @@ create unique index if not exists student_rosters_school_student_number_unique
 create unique index if not exists student_rosters_profile_unique
   on public.student_rosters (profile_id)
   where profile_id is not null;
+
+create table if not exists public.announcements (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schools(id) on delete cascade,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  title text not null,
+  body text not null,
+  audience text not null default 'all_students',
+  status public.announcement_status not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint announcements_id_school_unique unique (id, school_id),
+  constraint announcements_title_not_blank check (length(btrim(title)) > 0),
+  constraint announcements_body_not_blank check (length(btrim(body)) > 0),
+  constraint announcements_audience_not_blank check (length(btrim(audience)) > 0)
+);
+
+create index if not exists announcements_school_status_created_at_idx
+  on public.announcements (school_id, status, created_at desc);
 
 create table if not exists public.invite_codes (
   id uuid primary key default gen_random_uuid(),
@@ -352,6 +378,11 @@ create trigger set_student_rosters_updated_at
   before update on public.student_rosters
   for each row execute function public.set_updated_at();
 
+drop trigger if exists set_announcements_updated_at on public.announcements;
+create trigger set_announcements_updated_at
+  before update on public.announcements
+  for each row execute function public.set_updated_at();
+
 drop trigger if exists set_invite_codes_updated_at on public.invite_codes;
 create trigger set_invite_codes_updated_at
   before update on public.invite_codes
@@ -484,6 +515,7 @@ $$;
 alter table public.schools enable row level security;
 alter table public.profiles enable row level security;
 alter table public.student_rosters enable row level security;
+alter table public.announcements enable row level security;
 alter table public.invite_codes enable row level security;
 alter table public.clubs enable row level security;
 alter table public.club_memberships enable row level security;
@@ -587,6 +619,35 @@ create policy "School staff can create rosters"
 drop policy if exists "School staff can update rosters" on public.student_rosters;
 create policy "School staff can update rosters"
   on public.student_rosters
+  for update
+  to authenticated
+  using (public.current_user_can_manage_school(school_id))
+  with check (public.current_user_can_manage_school(school_id));
+
+drop policy if exists "Announcements are visible to school members" on public.announcements;
+create policy "Announcements are visible to school members"
+  on public.announcements
+  for select
+  to authenticated
+  using (
+    public.current_user_can_manage_school(school_id)
+    or (
+      school_id = public.current_profile_school_id()
+      and status = 'active'
+      and audience = 'all_students'
+    )
+  );
+
+drop policy if exists "School staff can create announcements" on public.announcements;
+create policy "School staff can create announcements"
+  on public.announcements
+  for insert
+  to authenticated
+  with check (public.current_user_can_manage_school(school_id));
+
+drop policy if exists "School staff can update announcements" on public.announcements;
+create policy "School staff can update announcements"
+  on public.announcements
   for update
   to authenticated
   using (public.current_user_can_manage_school(school_id))
