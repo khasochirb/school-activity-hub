@@ -21,7 +21,6 @@ type EventRecord = {
   status: string;
   starts_at: string;
   capacity: number | null;
-  shared_with_connected_schools: boolean;
   allow_connected_school_registration: boolean;
 };
 
@@ -113,7 +112,6 @@ export async function createEvent(
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
     capacity,
-    shared_with_connected_schools: false,
     allow_connected_school_registration: false,
     status,
     submitted_at: now,
@@ -317,7 +315,6 @@ export async function updateEventSharing(formData: FormData) {
     .update({
       allow_connected_school_registration:
         shareSchoolIds.length > 0 && allowConnectedRegistration,
-      shared_with_connected_schools: shareSchoolIds.length > 0,
     })
     .eq("id", event.id)
     .eq("school_id", profile.school_id);
@@ -367,7 +364,7 @@ async function getJoinableEvent(
   const { data: event } = await admin
     .from("events")
     .select(
-      "id, school_id, status, starts_at, capacity, shared_with_connected_schools, allow_connected_school_registration",
+      "id, school_id, status, starts_at, capacity, allow_connected_school_registration",
     )
     .eq("id", eventId)
     .eq("status", "approved")

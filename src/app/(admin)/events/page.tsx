@@ -42,7 +42,6 @@ type Event = {
   ends_at: string;
   capacity: number | null;
   status: string;
-  shared_with_connected_schools: boolean;
   allow_connected_school_registration: boolean;
 };
 
@@ -754,7 +753,7 @@ async function getFilteredEvents(
   let query = admin
     .from("events")
     .select(
-      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, shared_with_connected_schools, allow_connected_school_registration",
+      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration",
     )
     .eq("status", "approved")
     .gte("starts_at", now);

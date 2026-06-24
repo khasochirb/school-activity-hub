@@ -1,19 +1,18 @@
 alter table public.events
-  add column if not exists shared_with_connected_schools boolean not null default false;
+  drop constraint if exists events_connected_registration_requires_shared;
 
 alter table public.events
   add column if not exists allow_connected_school_registration boolean not null default false;
 
-do $$
-begin
-  alter table public.events
-    add constraint events_connected_registration_requires_shared check (
-      not allow_connected_school_registration
-      or shared_with_connected_schools
-    );
-exception
-  when duplicate_object then null;
-end $$;
+create table if not exists public.event_school_shares (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.events(id) on delete cascade,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (event_id, school_id)
+);
+
+alter table public.event_school_shares enable row level security;
 
 alter table public.event_attendees
   add column if not exists attendee_school_id uuid references public.schools(id) on delete cascade;
@@ -103,6 +102,41 @@ as $$
     )
 $$;
 
+create or replace function public.current_user_can_manage_event_owner_school(target_event_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.events e
+    where e.id = target_event_id
+      and public.current_user_can_manage_school(e.school_id)
+  )
+$$;
+
+create or replace function public.current_user_can_share_event_with_school(
+  target_event_id uuid,
+  target_school_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.events e
+    where e.id = target_event_id
+      and e.status = 'approved'
+      and public.current_user_can_manage_school(e.school_id)
+      and public.schools_have_approved_connection(e.school_id, target_school_id)
+  )
+$$;
+
 drop policy if exists "Events are visible by role and approval state" on public.events;
 create policy "Events are visible by role and approval state"
   on public.events
@@ -116,13 +150,46 @@ create policy "Events are visible by role and approval state"
     )
     or (
       status = 'approved'
-      and shared_with_connected_schools
+      and exists (
+        select 1
+        from public.event_school_shares ess
+        where ess.event_id = events.id
+          and ess.school_id = public.current_profile_school_id()
+      )
       and public.schools_have_approved_connection(
         school_id,
         public.current_profile_school_id()
       )
     )
     or public.current_user_is_club_leader(club_id)
+  );
+
+drop policy if exists "Event shares are visible to owner and target schools" on public.event_school_shares;
+create policy "Event shares are visible to owner and target schools"
+  on public.event_school_shares
+  for select
+  to authenticated
+  using (
+    school_id = public.current_profile_school_id()
+    or public.current_user_can_manage_event_owner_school(event_id)
+  );
+
+drop policy if exists "Event owner staff can create connected school shares" on public.event_school_shares;
+create policy "Event owner staff can create connected school shares"
+  on public.event_school_shares
+  for insert
+  to authenticated
+  with check (
+    public.current_user_can_share_event_with_school(event_id, school_id)
+  );
+
+drop policy if exists "Event owner staff can remove connected school shares" on public.event_school_shares;
+create policy "Event owner staff can remove connected school shares"
+  on public.event_school_shares
+  for delete
+  to authenticated
+  using (
+    public.current_user_can_manage_event_owner_school(event_id)
   );
 
 drop policy if exists "Event attendees are visible to managers and self" on public.event_attendees;
@@ -164,8 +231,13 @@ create policy "Students can register themselves for approved events"
         and (
           e.school_id = public.current_profile_school_id()
           or (
-            e.shared_with_connected_schools
-            and e.allow_connected_school_registration
+            e.allow_connected_school_registration
+            and exists (
+              select 1
+              from public.event_school_shares ess
+              where ess.event_id = e.id
+                and ess.school_id = public.current_profile_school_id()
+            )
             and public.schools_have_approved_connection(
               e.school_id,
               public.current_profile_school_id()
