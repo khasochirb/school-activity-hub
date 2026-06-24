@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { markStudentInactive } from "./actions";
 import { CreateStudentForm } from "./create-student-form";
+import { ImportStudentsForm } from "./import-students-form";
 
 type StaffProfile = {
   school_id: string;
@@ -53,7 +54,8 @@ export default async function StudentsPage() {
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">Students</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Add students manually and manage basic roster status.
+          Add students manually, import CSV files, and manage basic roster
+          status.
         </p>
       </section>
 
@@ -61,6 +63,18 @@ export default async function StudentsPage() {
         <h2 className="text-lg font-semibold text-zinc-950">Add student</h2>
         <div className="mt-4">
           <CreateStudentForm />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-zinc-950">
+          Import students
+        </h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          Upload a CSV with one row per student.
+        </p>
+        <div className="mt-4">
+          <ImportStudentsForm />
         </div>
       </section>
 
