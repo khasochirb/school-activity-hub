@@ -50,7 +50,6 @@ export async function createAnnouncement(
     created_by_profile_id: profile.id,
     title,
     body,
-    audience: "all_students",
     status,
   });
 

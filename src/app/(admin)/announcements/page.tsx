@@ -13,7 +13,6 @@ type Announcement = {
   id: string;
   title: string;
   body: string;
-  audience: string;
   status: string;
   created_at: string;
 };
@@ -41,14 +40,12 @@ export default async function AnnouncementsPage() {
   const isStaff = isSchoolStaff(profile);
   let announcementsQuery = supabase
     .from("announcements")
-    .select("id, title, body, audience, status, created_at")
+    .select("id, title, body, status, created_at")
     .eq("school_id", profile.school_id)
     .order("created_at", { ascending: false });
 
   if (!isStaff) {
-    announcementsQuery = announcementsQuery
-      .eq("status", "active")
-      .eq("audience", "all_students");
+    announcementsQuery = announcementsQuery.eq("status", "active");
   }
 
   const { data: announcements, error } =
@@ -104,7 +101,6 @@ export default async function AnnouncementsPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <AudienceBadge audience={announcement.audience} />
                     <StatusBadge status={announcement.status} />
                     {isStaff ? (
                       <ArchiveForm announcement={announcement} />
@@ -145,14 +141,6 @@ function ArchiveForm({ announcement }: { announcement: Announcement }) {
   );
 }
 
-function AudienceBadge({ audience }: { audience: string }) {
-  return (
-    <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
-      {formatAudience(audience)}
-    </span>
-  );
-}
-
 function StatusBadge({ status }: { status: string }) {
   const color =
     status === "active"
@@ -168,13 +156,6 @@ function StatusBadge({ status }: { status: string }) {
 
 function isSchoolStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
-}
-
-function formatAudience(audience: string) {
-  return audience
-    .split("_")
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function formatDateTime(value: string) {

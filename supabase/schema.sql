@@ -27,13 +27,6 @@ end $$;
 
 do $$
 begin
-  create type public.announcement_status as enum ('active', 'archived');
-exception
-  when duplicate_object then null;
-end $$;
-
-do $$
-begin
   create type public.roster_status as enum ('active', 'inactive', 'graduated', 'withdrawn');
 exception
   when duplicate_object then null;
@@ -174,14 +167,9 @@ create table if not exists public.announcements (
   created_by_profile_id uuid references public.profiles(id) on delete set null,
   title text not null,
   body text not null,
-  audience text not null default 'all_students',
-  status public.announcement_status not null default 'active',
+  status text not null default 'active',
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint announcements_id_school_unique unique (id, school_id),
-  constraint announcements_title_not_blank check (length(btrim(title)) > 0),
-  constraint announcements_body_not_blank check (length(btrim(body)) > 0),
-  constraint announcements_audience_not_blank check (length(btrim(audience)) > 0)
+  updated_at timestamptz not null default now()
 );
 
 create index if not exists announcements_school_status_created_at_idx
@@ -630,11 +618,10 @@ create policy "Announcements are visible to school members"
   for select
   to authenticated
   using (
-    public.current_user_can_manage_school(school_id)
-    or (
-      school_id = public.current_profile_school_id()
-      and status = 'active'
-      and audience = 'all_students'
+    school_id = public.current_profile_school_id()
+    and (
+      status = 'active'
+      or public.current_user_can_manage_school(school_id)
     )
   );
 
@@ -643,7 +630,10 @@ create policy "School staff can create announcements"
   on public.announcements
   for insert
   to authenticated
-  with check (public.current_user_can_manage_school(school_id));
+  with check (
+    public.current_user_can_manage_school(school_id)
+    and status in ('active', 'archived')
+  );
 
 drop policy if exists "School staff can update announcements" on public.announcements;
 create policy "School staff can update announcements"
@@ -651,7 +641,10 @@ create policy "School staff can update announcements"
   for update
   to authenticated
   using (public.current_user_can_manage_school(school_id))
-  with check (public.current_user_can_manage_school(school_id));
+  with check (
+    public.current_user_can_manage_school(school_id)
+    and status in ('active', 'archived')
+  );
 
 drop policy if exists "Invite codes are visible to school staff only" on public.invite_codes;
 create policy "Invite codes are visible to school staff only"
