@@ -164,6 +164,9 @@ create table if not exists public.school_connections (
   )
 );
 
+alter table public.school_connections
+  add column if not exists requested_at timestamptz not null default now();
+
 create unique index if not exists school_connections_school_pair_unique
   on public.school_connections (
     least(requester_school_id::text, receiver_school_id::text),
