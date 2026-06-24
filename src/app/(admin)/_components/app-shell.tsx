@@ -15,6 +15,7 @@ const navItems: Array<NavItem & {
   { href: "/profile", label: "Profile" },
   { href: "/announcements", label: "Announcements" },
   { href: "/staff", label: "Staff", roles: ["school_admin"] },
+  { href: "/settings", label: "Settings", roles: ["school_admin"] },
   { href: "/students", label: "Students", roles: ["school_admin", "teacher"] },
   {
     href: "/invite-codes",
