@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { revokeInviteCode } from "./actions";
+import { BulkGenerateInviteForm } from "./bulk-generate-invite-form";
 import { GenerateInviteForm } from "./generate-invite-form";
 
 type StaffProfile = {
@@ -13,6 +14,9 @@ type ActiveStudent = {
   first_name: string;
   last_name: string;
   grade_level: string | null;
+  homeroom: string | null;
+  profile_id: string | null;
+  student_number: string | null;
 };
 
 type InviteCode = {
@@ -49,7 +53,7 @@ export default async function InviteCodesPage() {
     await Promise.all([
       supabase
         .from("student_rosters")
-        .select("id, first_name, last_name, grade_level")
+        .select("id, first_name, last_name, grade_level, homeroom, profile_id, student_number")
         .eq("school_id", profile.school_id)
         .eq("status", "active")
         .order("last_name", { ascending: true })
@@ -84,6 +88,24 @@ export default async function InviteCodesPage() {
         ) : null}
         <div className="mt-4">
           <GenerateInviteForm students={activeStudents ?? []} />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-zinc-950">
+          Bulk generate invite codes
+        </h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          Generate one-time codes for active students who have not linked a
+          student account yet.
+        </p>
+        {studentsError ? (
+          <p className="mt-2 text-sm text-red-600">
+            Students could not be loaded: {studentsError.message}
+          </p>
+        ) : null}
+        <div className="mt-4">
+          <BulkGenerateInviteForm students={activeStudents ?? []} />
         </div>
       </section>
 
