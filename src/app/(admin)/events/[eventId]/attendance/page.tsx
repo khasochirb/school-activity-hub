@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { updateAttendeePermissionStatus } from "./actions";
 
 type StaffProfile = {
   id: string;
@@ -27,10 +28,17 @@ type EventAttendee = {
   student_roster_id: string | null;
   attendee_school_id: string;
   attendee_profile_id: string | null;
+  permission_status: EventPermissionStatus;
   status: string;
   registered_at: string;
   checked_in_at: string | null;
 };
+
+type EventPermissionStatus =
+  | "declined"
+  | "not_required"
+  | "pending"
+  | "received";
 
 type StudentRoster = {
   id: string;
@@ -102,7 +110,7 @@ export default async function EventAttendancePage({
   const { data: attendees } = await admin
     .from("event_attendees")
     .select(
-      "id, student_roster_id, attendee_school_id, attendee_profile_id, status, registered_at, checked_in_at",
+      "id, student_roster_id, attendee_school_id, attendee_profile_id, permission_status, status, registered_at, checked_in_at",
     )
     .eq("event_id", event.id)
     .eq("school_id", profile.school_id)
@@ -224,6 +232,7 @@ export default async function EventAttendancePage({
                     <th className="px-4 py-3 font-medium">Student</th>
                     <th className="px-4 py-3 font-medium">School</th>
                     <th className="px-4 py-3 font-medium">Grade</th>
+                    <th className="px-4 py-3 font-medium">Permission</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Checked in</th>
                     <th className="px-4 py-3 font-medium">Method</th>
@@ -259,6 +268,12 @@ export default async function EventAttendancePage({
                         </td>
                         <td className="px-4 py-3 text-zinc-700">
                           {student?.grade_level || "-"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <PermissionCell
+                            attendee={attendee}
+                            event={event}
+                          />
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={attendee.status} />
@@ -311,6 +326,15 @@ export default async function EventAttendancePage({
                       <StatusBadge status={attendee.status} />
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-zinc-500">Permission</dt>
+                        <dd className="text-zinc-800">
+                          <PermissionCell
+                            attendee={attendee}
+                            event={event}
+                          />
+                        </dd>
+                      </div>
                       <div>
                         <dt className="text-zinc-500">Checked in</dt>
                         <dd className="text-zinc-800">
@@ -459,6 +483,85 @@ function StatusBadge({ status }: { status: string }) {
       {status}
     </span>
   );
+}
+
+function PermissionCell({
+  attendee,
+  event,
+}: {
+  attendee: EventAttendee;
+  event: EventRecord;
+}) {
+  const needsWarning =
+    event.permission_required && attendee.permission_status !== "received";
+
+  if (!event.permission_required) {
+    return <PermissionBadge status={attendee.permission_status} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <PermissionBadge status={attendee.permission_status} />
+      {needsWarning ? (
+        <p className="max-w-64 text-xs leading-5 text-amber-800">
+          Permission has not been received for this registered student.
+        </p>
+      ) : null}
+      <form action={updateAttendeePermissionStatus} className="flex flex-wrap gap-2">
+        <input name="attendee_id" type="hidden" value={attendee.id} />
+        <input name="event_id" type="hidden" value={event.id} />
+        <select
+          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition focus:border-zinc-900"
+          defaultValue={attendee.permission_status}
+          name="permission_status"
+        >
+          <option value="pending">Pending</option>
+          <option value="received">Received</option>
+          <option value="declined">Declined</option>
+        </select>
+        <button
+          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          type="submit"
+        >
+          Save
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function PermissionBadge({ status }: { status: EventPermissionStatus }) {
+  return (
+    <span
+      className={
+        status === "received"
+          ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+          : status === "declined"
+            ? "inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700"
+            : status === "pending"
+              ? "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800"
+              : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
+      }
+    >
+      {permissionLabel(status)}
+    </span>
+  );
+}
+
+function permissionLabel(status: EventPermissionStatus) {
+  if (status === "received") {
+    return "Permission received";
+  }
+
+  if (status === "declined") {
+    return "Permission declined";
+  }
+
+  if (status === "pending") {
+    return "Permission pending";
+  }
+
+  return "Permission not required";
 }
 
 function SafetyBadge({

@@ -16,6 +16,11 @@ type StudentRoster = {
 };
 
 type EventRiskLevel = "low" | "medium" | "high";
+type EventPermissionStatus =
+  | "declined"
+  | "not_required"
+  | "pending"
+  | "received";
 
 type EventRecord = {
   id: string;
@@ -24,6 +29,7 @@ type EventRecord = {
   starts_at: string;
   capacity: number | null;
   allow_connected_school_registration: boolean;
+  permission_required: boolean;
 };
 
 export type CreateEventState = {
@@ -185,10 +191,19 @@ export async function joinEvent(formData: FormData) {
     return;
   }
 
+  const permissionStatus = getRegistrationPermissionStatus(
+    event,
+    existingAttendee?.permission_status,
+  );
+
   if (existingAttendee) {
     await admin
       .from("event_attendees")
-      .update({ status: "registered", registered_at: new Date().toISOString() })
+      .update({
+        permission_status: permissionStatus,
+        registered_at: new Date().toISOString(),
+        status: "registered",
+      })
       .eq("id", existingAttendee.id)
       .eq("school_id", event.school_id);
   } else {
@@ -199,6 +214,7 @@ export async function joinEvent(formData: FormData) {
         event.school_id === profile.school_id ? student.id : null,
       attendee_school_id: profile.school_id,
       attendee_profile_id: profile.id,
+      permission_status: permissionStatus,
       status: "registered",
     });
   }
@@ -409,7 +425,7 @@ async function getJoinableEvent(
   const { data: event } = await admin
     .from("events")
     .select(
-      "id, school_id, status, starts_at, capacity, allow_connected_school_registration",
+      "id, school_id, status, starts_at, capacity, allow_connected_school_registration, permission_required",
     )
     .eq("id", eventId)
     .eq("status", "approved")
@@ -443,10 +459,14 @@ async function getCurrentStudentAttendee(
 ) {
   const { data: attendee } = await admin
     .from("event_attendees")
-    .select("id, status")
+    .select("id, status, permission_status")
     .eq("event_id", eventId)
     .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${student.id}`)
-    .maybeSingle<{ id: string; status: string }>();
+    .maybeSingle<{
+      id: string;
+      permission_status: EventPermissionStatus;
+      status: string;
+    }>();
 
   return attendee;
 }
@@ -582,6 +602,17 @@ function parseRiskLevel(value: FormDataEntryValue | null): EventRiskLevel | null
   }
 
   return null;
+}
+
+function getRegistrationPermissionStatus(
+  event: EventRecord,
+  existingStatus: EventPermissionStatus | undefined,
+): EventPermissionStatus {
+  if (!event.permission_required) {
+    return "not_required";
+  }
+
+  return existingStatus === "received" ? "received" : "pending";
 }
 
 function parseDateTime(value: string) {

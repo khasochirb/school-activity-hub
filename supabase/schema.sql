@@ -108,6 +108,18 @@ end $$;
 
 do $$
 begin
+  create type public.event_permission_status as enum (
+    'not_required',
+    'pending',
+    'received',
+    'declined'
+  );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
   create type public.checkin_method as enum ('qr', 'manual', 'admin');
 exception
   when duplicate_object then null;
@@ -372,6 +384,7 @@ create table if not exists public.event_attendees (
   attendee_school_id uuid not null references public.schools(id) on delete cascade,
   attendee_profile_id uuid references public.profiles(id) on delete set null,
   status public.event_attendee_status not null default 'registered',
+  permission_status public.event_permission_status not null default 'not_required',
   registered_at timestamptz not null default now(),
   checked_in_at timestamptz,
   checked_in_by_profile_id uuid references public.profiles(id) on delete set null,
@@ -394,6 +407,9 @@ alter table public.event_attendees
   add column if not exists attendee_profile_id uuid references public.profiles(id) on delete set null;
 
 alter table public.event_attendees
+  add column if not exists permission_status public.event_permission_status not null default 'not_required';
+
+alter table public.event_attendees
   alter column student_roster_id drop not null;
 
 update public.event_attendees
@@ -409,6 +425,16 @@ where ea.student_roster_id = sr.id
 
 alter table public.event_attendees
   alter column attendee_school_id set not null;
+
+update public.event_attendees ea
+set permission_status = case
+  when e.permission_required then 'pending'::public.event_permission_status
+  else 'not_required'::public.event_permission_status
+end
+from public.events e
+where e.id = ea.event_id
+  and e.school_id = ea.school_id
+  and ea.permission_status = 'not_required';
 
 create index if not exists event_attendees_school_student_idx
   on public.event_attendees (school_id, student_roster_id);
@@ -1139,6 +1165,22 @@ create policy "Students can register themselves for approved events"
     attendee_school_id = public.current_profile_school_id()
     and attendee_profile_id = auth.uid()
     and status = 'registered'
+    and exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.school_id = event_attendees.school_id
+        and (
+          (
+            e.permission_required
+            and permission_status = 'pending'
+          )
+          or (
+            not e.permission_required
+            and permission_status = 'not_required'
+          )
+        )
+    )
     and (
       (
         school_id = public.current_profile_school_id()

@@ -54,6 +54,18 @@ type EventAttendee = {
   student_roster_id: string | null;
   attendee_profile_id: string | null;
   attendee_school_id: string;
+  permission_status: EventPermissionStatus;
+  status: string;
+};
+
+type EventPermissionStatus =
+  | "declined"
+  | "not_required"
+  | "pending"
+  | "received";
+
+type CurrentStudentRegistration = {
+  permission_status: EventPermissionStatus;
   status: string;
 };
 
@@ -232,6 +244,7 @@ export default async function EventsPage({
               const registrationStatus = currentStudentRegistrationByEventId.get(
                 event.id,
               );
+              const permissionStatus = registrationStatus?.permission_status;
               const sharedSchoolIds =
                 event.school_id === profile.school_id
                   ? sharedSchoolIdsByEventId.get(event.id) ?? []
@@ -255,7 +268,8 @@ export default async function EventsPage({
                     schoolNameById.get(event.school_id) ?? "Connected school"
                   }
                   registeredCount={registeredCount}
-                  registrationStatus={registrationStatus}
+                  registrationStatus={registrationStatus?.status}
+                  permissionStatus={permissionStatus}
                   connectedSchools={connectedSchools}
                   sharedSchoolIds={sharedSchoolIds}
                   userSchoolId={profile.school_id}
@@ -415,6 +429,7 @@ function EventCard({
   ownerSchoolName,
   registeredCount,
   registrationStatus,
+  permissionStatus,
   sharedSchoolIds,
   userSchoolId,
 }: {
@@ -425,6 +440,7 @@ function EventCard({
   isFull: boolean;
   isStaff: boolean;
   ownerSchoolName: string;
+  permissionStatus: EventPermissionStatus | undefined;
   registeredCount: number;
   registrationStatus: string | undefined;
   sharedSchoolIds: string[];
@@ -470,6 +486,11 @@ function EventCard({
         </Badge>
         {event.permission_required ? (
           <Badge variant="warning">Permission required</Badge>
+        ) : null}
+        {currentStudent && registrationStatus && event.permission_required ? (
+          <Badge variant={permissionBadgeVariant(permissionStatus)}>
+            {permissionLabel(permissionStatus)}
+          </Badge>
         ) : null}
         <Badge variant={sharedSchoolIds.length ? "info" : "default"}>
           {sharingLabel(event, sharedSchoolIds)}
@@ -1095,7 +1116,7 @@ async function getEventAttendees(
 ) {
   const { data: attendees } = await admin
     .from("event_attendees")
-    .select("event_id, student_roster_id, attendee_profile_id, attendee_school_id, status")
+    .select("event_id, student_roster_id, attendee_profile_id, attendee_school_id, permission_status, status")
     .in("event_id", eventIds)
     .in("status", ["registered", "attended"])
     .returns<EventAttendee[]>();
@@ -1130,7 +1151,7 @@ function mapCurrentStudentRegistrations(
   profile: Profile,
   currentStudent: StudentRoster | null,
 ) {
-  const registrations = new Map<string, string>();
+  const registrations = new Map<string, CurrentStudentRegistration>();
 
   if (!currentStudent) {
     return registrations;
@@ -1141,11 +1162,44 @@ function mapCurrentStudentRegistrations(
       attendee.attendee_profile_id === profile.id ||
       attendee.student_roster_id === currentStudent.id
     ) {
-      registrations.set(attendee.event_id, attendee.status);
+      registrations.set(attendee.event_id, {
+        permission_status: attendee.permission_status,
+        status: attendee.status,
+      });
     }
   });
 
   return registrations;
+}
+
+function permissionBadgeVariant(
+  permissionStatus: EventPermissionStatus | undefined,
+) {
+  if (permissionStatus === "received") {
+    return "success";
+  }
+
+  if (permissionStatus === "declined") {
+    return "danger";
+  }
+
+  return permissionStatus === "pending" ? "warning" : "default";
+}
+
+function permissionLabel(permissionStatus: EventPermissionStatus | undefined) {
+  if (permissionStatus === "received") {
+    return "Permission received";
+  }
+
+  if (permissionStatus === "declined") {
+    return "Permission declined";
+  }
+
+  if (permissionStatus === "pending") {
+    return "Permission pending";
+  }
+
+  return "Permission not required";
 }
 
 function parseEventFilter(value: string | undefined): EventFilter {
