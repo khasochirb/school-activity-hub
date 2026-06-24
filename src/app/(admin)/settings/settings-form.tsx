@@ -14,10 +14,10 @@ const initialState: UpdateSchoolSettingsState = {
 
 export function SchoolSettingsForm({
   name,
-  timezone,
+  province,
 }: {
   name: string;
-  timezone: string;
+  province: string | null;
 }) {
   const [state, formAction] = useActionState(
     updateSchoolSettings,
@@ -36,13 +36,12 @@ export function SchoolSettingsForm({
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-        Timezone
+        Province
         <input
           className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
-          defaultValue={timezone}
-          name="timezone"
-          placeholder="America/Vancouver"
-          required
+          defaultValue={province ?? ""}
+          name="province"
+          placeholder="British Columbia"
         />
       </label>
       {state.message ? (

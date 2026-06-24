@@ -12,7 +12,7 @@ type School = {
   id: string;
   name: string;
   slug: string;
-  timezone: string;
+  province: string | null;
   status: string;
 };
 
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
 
   const { data: school, error: schoolError } = await supabase
     .from("schools")
-    .select("id, name, slug, timezone, status")
+    .select("id, name, slug, province, status")
     .eq("id", profile.school_id)
     .maybeSingle<School>();
 
@@ -64,7 +64,7 @@ export default async function SettingsPage() {
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <DetailItem label="School name" value={school.name} />
             <DetailItem label="Slug" value={school.slug} />
-            <DetailItem label="Timezone" value={school.timezone} />
+            <DetailItem label="Province" value={school.province ?? "-"} />
             <DetailItem label="Status" value={school.status} />
           </dl>
         ) : (
@@ -80,13 +80,13 @@ export default async function SettingsPage() {
             Update school settings
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            You can update the school name and timezone. Slug, status, and
+            You can update the school name and province. Slug, status, and
             school ownership are managed separately.
           </p>
           <div className="mt-4">
             <SchoolSettingsForm
               name={school.name}
-              timezone={school.timezone}
+              province={school.province}
             />
           </div>
         </section>

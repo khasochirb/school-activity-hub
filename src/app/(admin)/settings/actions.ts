@@ -29,27 +29,16 @@ export async function updateSchoolSettings(
   }
 
   const name = String(formData.get("name") ?? "").trim();
-  const timezone = String(formData.get("timezone") ?? "").trim();
+  const province = String(formData.get("province") ?? "").trim();
 
   if (!name) {
     return { message: "School name is required.", success: false };
   }
 
-  if (!timezone) {
-    return { message: "Timezone is required.", success: false };
-  }
-
-  if (!isValidTimeZone(timezone)) {
-    return {
-      message: "Enter a valid timezone, such as America/Vancouver.",
-      success: false,
-    };
-  }
-
   const supabase = await createClient();
   const { error } = await supabase
     .from("schools")
-    .update({ name, timezone })
+    .update({ name, province: province || null })
     .eq("id", profile.school_id);
 
   if (error) {
@@ -85,13 +74,4 @@ async function getCurrentSchoolAdminProfile(): Promise<AdminProfile | null> {
   }
 
   return profile;
-}
-
-function isValidTimeZone(timezone: string) {
-  try {
-    new Intl.DateTimeFormat("en", { timeZone: timezone }).format(new Date());
-    return true;
-  } catch {
-    return false;
-  }
 }

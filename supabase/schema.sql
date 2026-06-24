@@ -104,6 +104,7 @@ create table if not exists public.schools (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
+  province text,
   timezone text not null default 'America/Vancouver',
   status public.school_status not null default 'active',
   created_at timestamptz not null default now(),
@@ -855,11 +856,12 @@ create policy "Event managers can create checkins"
 -- removed or replaced before production. No auth.users are created here because
 -- Supabase Auth should own login identities.
 
-insert into public.schools (id, name, slug, timezone, status)
+insert into public.schools (id, name, slug, province, timezone, status)
 values (
   '00000000-0000-4000-8000-000000000001',
   'Demo Valley School',
   'demo-valley-school',
+  'British Columbia',
   'America/Vancouver',
   'active'
 )
