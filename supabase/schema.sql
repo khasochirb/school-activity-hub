@@ -353,6 +353,14 @@ create index if not exists events_school_status_starts_at_idx
 create index if not exists events_school_club_idx
   on public.events (school_id, club_id);
 
+create table if not exists public.event_school_shares (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.events(id) on delete cascade,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (event_id, school_id)
+);
+
 create table if not exists public.event_attendees (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schools(id) on delete cascade,
@@ -695,6 +703,7 @@ alter table public.invite_codes enable row level security;
 alter table public.clubs enable row level security;
 alter table public.club_memberships enable row level security;
 alter table public.events enable row level security;
+alter table public.event_school_shares enable row level security;
 alter table public.event_attendees enable row level security;
 alter table public.attendance_checkins enable row level security;
 
@@ -979,7 +988,12 @@ create policy "Events are visible by role and approval state"
     )
     or (
       status = 'approved'
-      and shared_with_connected_schools
+      and exists (
+        select 1
+        from public.event_school_shares ess
+        where ess.event_id = events.id
+          and ess.school_id = public.current_profile_school_id()
+      )
       and public.schools_have_approved_connection(
         school_id,
         public.current_profile_school_id()
@@ -1027,6 +1041,51 @@ create policy "Club leaders can update draft club events"
     school_id = public.current_profile_school_id()
     and public.current_user_is_club_leader(club_id)
     and status in ('draft', 'pending_approval')
+  );
+
+drop policy if exists "Event shares are visible to owner and target schools" on public.event_school_shares;
+create policy "Event shares are visible to owner and target schools"
+  on public.event_school_shares
+  for select
+  to authenticated
+  using (
+    school_id = public.current_profile_school_id()
+    or exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and public.current_user_can_manage_school(e.school_id)
+    )
+  );
+
+drop policy if exists "Event owner staff can create connected school shares" on public.event_school_shares;
+create policy "Event owner staff can create connected school shares"
+  on public.event_school_shares
+  for insert
+  to authenticated
+  with check (
+    exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.status = 'approved'
+        and public.current_user_can_manage_school(e.school_id)
+        and public.schools_have_approved_connection(e.school_id, school_id)
+    )
+  );
+
+drop policy if exists "Event owner staff can remove connected school shares" on public.event_school_shares;
+create policy "Event owner staff can remove connected school shares"
+  on public.event_school_shares
+  for delete
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and public.current_user_can_manage_school(e.school_id)
+    )
   );
 
 drop policy if exists "Event attendees are visible to managers and self" on public.event_attendees;
@@ -1078,8 +1137,13 @@ create policy "Students can register themselves for approved events"
         and (
           e.school_id = public.current_profile_school_id()
           or (
-            e.shared_with_connected_schools
-            and e.allow_connected_school_registration
+            e.allow_connected_school_registration
+            and exists (
+              select 1
+              from public.event_school_shares ess
+              where ess.event_id = e.id
+                and ess.school_id = public.current_profile_school_id()
+            )
             and public.schools_have_approved_connection(
               e.school_id,
               public.current_profile_school_id()

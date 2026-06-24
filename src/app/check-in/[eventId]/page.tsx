@@ -23,7 +23,6 @@ type EventRecord = {
   starts_at: string;
   ends_at: string;
   status: string;
-  shared_with_connected_schools: boolean;
 };
 
 type EventAttendee = {
@@ -76,7 +75,7 @@ export default async function StudentCheckInPage({
 
   const { data: event } = await admin
     .from("events")
-    .select("id, school_id, title, location, starts_at, ends_at, status, shared_with_connected_schools")
+    .select("id, school_id, title, location, starts_at, ends_at, status")
     .eq("id", eventId)
     .eq("status", "approved")
     .maybeSingle<EventRecord>();
@@ -84,7 +83,7 @@ export default async function StudentCheckInPage({
   const canAccessEvent =
     event &&
     (event.school_id === profile.school_id ||
-      (event.shared_with_connected_schools &&
+      ((await isEventSharedWithSchool(admin, event.id, profile.school_id)) &&
         (await schoolsHaveApprovedConnection(
           admin,
           event.school_id,
@@ -233,6 +232,21 @@ async function schoolsHaveApprovedConnection(
     .maybeSingle<{ id: string }>();
 
   return Boolean(connection);
+}
+
+async function isEventSharedWithSchool(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  schoolId: string,
+) {
+  const { data: share } = await admin
+    .from("event_school_shares")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("school_id", schoolId)
+    .maybeSingle<{ id: string }>();
+
+  return Boolean(share);
 }
 
 function formatDateTime(value: string) {

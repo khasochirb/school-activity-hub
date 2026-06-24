@@ -21,7 +21,6 @@ type EventRecord = {
   id: string;
   school_id: string;
   status: string;
-  shared_with_connected_schools: boolean;
 };
 
 type EventAttendee = {
@@ -169,7 +168,7 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
 
   const { data: event } = await admin
     .from("events")
-    .select("id, school_id, status, shared_with_connected_schools")
+    .select("id, school_id, status")
     .eq("id", eventId)
     .eq("status", "approved")
     .maybeSingle<EventRecord>();
@@ -177,7 +176,7 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
   const canAccessEvent =
     event &&
     (event.school_id === profile.school_id ||
-      (event.shared_with_connected_schools &&
+      ((await isEventSharedWithSchool(admin, event.id, profile.school_id)) &&
         (await schoolsHaveApprovedConnection(
           admin,
           event.school_id,
@@ -249,6 +248,21 @@ async function schoolsHaveApprovedConnection(
     .maybeSingle<{ id: string }>();
 
   return Boolean(connection);
+}
+
+async function isEventSharedWithSchool(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  schoolId: string,
+) {
+  const { data: share } = await admin
+    .from("event_school_shares")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("school_id", schoolId)
+    .maybeSingle<{ id: string }>();
+
+  return Boolean(share);
 }
 
 function createCheckInLinkHash(eventId: string) {

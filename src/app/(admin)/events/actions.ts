@@ -267,37 +267,60 @@ export async function updateEventSharing(formData: FormData) {
   }
 
   const eventId = String(formData.get("event_id") ?? "").trim();
-  const sharing = String(formData.get("sharing") ?? "").trim();
+  const requestedSchoolIds = Array.from(
+    new Set(
+      formData
+        .getAll("share_school_ids")
+        .map((value) => String(value).trim())
+        .filter(Boolean),
+    ),
+  );
+  const allowConnectedRegistration =
+    String(formData.get("allow_connected_registration") ?? "") === "true";
 
-  const sharingState =
-    sharing === "internal"
-      ? {
-          allow_connected_school_registration: false,
-          shared_with_connected_schools: false,
-        }
-      : sharing === "shared_view"
-        ? {
-            allow_connected_school_registration: false,
-            shared_with_connected_schools: true,
-          }
-        : sharing === "shared_registration"
-          ? {
-              allow_connected_school_registration: true,
-              shared_with_connected_schools: true,
-            }
-          : null;
-
-  if (!eventId || !sharingState) {
+  if (!eventId) {
     return;
   }
 
-  const supabase = await createClient();
-  await supabase
+  const admin = createAdminClient();
+  const { data: event } = await admin
     .from("events")
-    .update(sharingState)
+    .select("id")
     .eq("id", eventId)
     .eq("school_id", profile.school_id)
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .maybeSingle<{ id: string }>();
+
+  if (!event) {
+    return;
+  }
+
+  const connectedSchoolIds = await getConnectedSchoolIds(admin, profile.school_id);
+  const connectedSchoolIdSet = new Set(connectedSchoolIds);
+  const shareSchoolIds = requestedSchoolIds.filter((schoolId) =>
+    connectedSchoolIdSet.has(schoolId),
+  );
+
+  await admin.from("event_school_shares").delete().eq("event_id", event.id);
+
+  if (shareSchoolIds.length) {
+    await admin.from("event_school_shares").insert(
+      shareSchoolIds.map((schoolId) => ({
+        event_id: event.id,
+        school_id: schoolId,
+      })),
+    );
+  }
+
+  await admin
+    .from("events")
+    .update({
+      allow_connected_school_registration:
+        shareSchoolIds.length > 0 && allowConnectedRegistration,
+      shared_with_connected_schools: shareSchoolIds.length > 0,
+    })
+    .eq("id", event.id)
+    .eq("school_id", profile.school_id);
 
   revalidatePath("/events");
 }
@@ -360,8 +383,8 @@ async function getJoinableEvent(
   }
 
   if (
-    event.shared_with_connected_schools &&
     event.allow_connected_school_registration &&
+    (await isEventSharedWithSchool(admin, event.id, profile.school_id)) &&
     (await schoolsHaveApprovedConnection(admin, event.school_id, profile.school_id))
   ) {
     return event;
@@ -384,6 +407,49 @@ async function getCurrentStudentAttendee(
     .maybeSingle<{ id: string; status: string }>();
 
   return attendee;
+}
+
+async function isEventSharedWithSchool(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  schoolId: string,
+) {
+  const { data: share } = await admin
+    .from("event_school_shares")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("school_id", schoolId)
+    .maybeSingle<{ id: string }>();
+
+  return Boolean(share);
+}
+
+async function getConnectedSchoolIds(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { data: connections } = await admin
+    .from("school_connections")
+    .select("requester_school_id, receiver_school_id")
+    .eq("status", "approved")
+    .or(
+      [
+        `requester_school_id.eq.${schoolId}`,
+        `receiver_school_id.eq.${schoolId}`,
+      ].join(","),
+    )
+    .returns<
+      Array<{
+        requester_school_id: string;
+        receiver_school_id: string;
+      }>
+    >();
+
+  return (connections ?? []).map((connection) =>
+    connection.requester_school_id === schoolId
+      ? connection.receiver_school_id
+      : connection.requester_school_id,
+  );
 }
 
 async function schoolsHaveApprovedConnection(

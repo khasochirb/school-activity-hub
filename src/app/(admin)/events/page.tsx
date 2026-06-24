@@ -54,6 +54,11 @@ type EventAttendee = {
   status: string;
 };
 
+type EventShare = {
+  event_id: string;
+  school_id: string;
+};
+
 type EventFilter = "upcoming" | "registered" | "club";
 type EventScope = "mine" | "shared";
 
@@ -110,8 +115,12 @@ export default async function EventsPage({
     ),
     getConnectedSchoolIds(admin, profile.school_id),
   ]);
+  const sharedEventIds = connectedSchoolIds.length
+    ? await getSharedEventIdsForSchool(admin, profile.school_id)
+    : [];
   const categoryOptions = await getCategoryOptions(admin, {
     connectedSchoolIds,
+    sharedEventIds,
     now,
     schoolId: profile.school_id,
     scope: selectedScope,
@@ -124,14 +133,19 @@ export default async function EventsPage({
     registeredEventIds,
     schoolId: profile.school_id,
     selectedCategory,
+    sharedEventIds,
     scope: selectedScope,
     now,
   });
 
   const eventIds = events.map((event) => event.id);
-  const attendees = eventIds.length
-    ? await getEventAttendees(admin, eventIds)
-    : [];
+  const [attendees, eventShares, connectedSchools] = await Promise.all([
+    eventIds.length ? getEventAttendees(admin, eventIds) : Promise.resolve([]),
+    eventIds.length ? getEventShares(admin, eventIds) : Promise.resolve([]),
+    connectedSchoolIds.length
+      ? getSchoolsById(admin, connectedSchoolIds)
+      : Promise.resolve([]),
+  ]);
   const attendeeCounts = countActiveAttendees(attendees);
   const currentStudentRegistrationByEventId = mapCurrentStudentRegistrations(
     attendees,
@@ -153,6 +167,7 @@ export default async function EventsPage({
   const schoolNameById = new Map(
     ownerSchools.map((school) => [school.id, school.name]),
   );
+  const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
 
   return (
     <div className="flex flex-col gap-6">
@@ -214,6 +229,12 @@ export default async function EventsPage({
               const registrationStatus = currentStudentRegistrationByEventId.get(
                 event.id,
               );
+              const sharedSchoolIds =
+                event.school_id === profile.school_id
+                  ? sharedSchoolIdsByEventId.get(event.id) ?? []
+                  : sharedEventIds.includes(event.id)
+                    ? [profile.school_id]
+                    : [];
 
               return (
                 <EventCard
@@ -232,6 +253,8 @@ export default async function EventsPage({
                   }
                   registeredCount={registeredCount}
                   registrationStatus={registrationStatus}
+                  connectedSchools={connectedSchools}
+                  sharedSchoolIds={sharedSchoolIds}
                   userSchoolId={profile.school_id}
                 />
               );
@@ -381,6 +404,7 @@ function FilterLink({
 
 function EventCard({
   clubName,
+  connectedSchools,
   currentStudent,
   event,
   isFull,
@@ -388,9 +412,11 @@ function EventCard({
   ownerSchoolName,
   registeredCount,
   registrationStatus,
+  sharedSchoolIds,
   userSchoolId,
 }: {
   clubName: string | null;
+  connectedSchools: SchoolOption[];
   currentStudent: StudentRoster | null;
   event: Event;
   isFull: boolean;
@@ -398,6 +424,7 @@ function EventCard({
   ownerSchoolName: string;
   registeredCount: number;
   registrationStatus: string | undefined;
+  sharedSchoolIds: string[];
   userSchoolId: string;
 }) {
   const isJoined =
@@ -416,11 +443,13 @@ function EventCard({
           </p>
         </div>
         <EventActions
+          connectedSchools={connectedSchools}
           currentStudent={currentStudent}
           event={event}
           isFull={isFull}
           isStaff={isStaff}
           registrationStatus={registrationStatus}
+          sharedSchoolIds={sharedSchoolIds}
           userSchoolId={userSchoolId}
         />
       </div>
@@ -433,8 +462,8 @@ function EventCard({
         ) : null}
         {clubName ? <Badge>{clubName}</Badge> : null}
         {event.category ? <Badge>{event.category}</Badge> : null}
-        <Badge variant={event.shared_with_connected_schools ? "info" : "default"}>
-          {sharingLabel(event)}
+        <Badge variant={sharedSchoolIds.length ? "info" : "default"}>
+          {sharingLabel(event, sharedSchoolIds)}
         </Badge>
         {!isOwnSchoolEvent ? <Badge variant="info">{ownerSchoolName}</Badge> : null}
       </div>
@@ -479,18 +508,22 @@ function EventCard({
 }
 
 function EventActions({
+  connectedSchools,
   currentStudent,
   event,
   isFull,
   isStaff,
   registrationStatus,
+  sharedSchoolIds,
   userSchoolId,
 }: {
+  connectedSchools: SchoolOption[];
   currentStudent: StudentRoster | null;
   event: Event;
   isFull: boolean;
   isStaff: boolean;
   registrationStatus: string | undefined;
+  sharedSchoolIds: string[];
   userSchoolId: string;
 }) {
   const isOwnSchoolEvent = event.school_id === userSchoolId;
@@ -513,7 +546,11 @@ function EventActions({
             Cancel event
           </button>
         </form>
-        <SharingForm event={event} />
+        <SharingForm
+          connectedSchools={connectedSchools}
+          event={event}
+          sharedSchoolIds={sharedSchoolIds}
+        />
       </div>
     );
   }
@@ -574,21 +611,61 @@ function EventActions({
   );
 }
 
-function SharingForm({ event }: { event: Event }) {
+function SharingForm({
+  connectedSchools,
+  event,
+  sharedSchoolIds,
+}: {
+  connectedSchools: SchoolOption[];
+  event: Event;
+  sharedSchoolIds: string[];
+}) {
+  const sharedSchoolIdSet = new Set(sharedSchoolIds);
+
   return (
-    <form action={updateEventSharing} className="flex flex-col gap-2 sm:flex-row">
+    <form action={updateEventSharing} className="flex flex-col gap-2">
       <input name="event_id" type="hidden" value={event.id} />
-      <select
-        className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none transition focus:border-zinc-900"
-        defaultValue={sharingMode(event)}
-        name="sharing"
-      >
-        <option value="internal">Internal only</option>
-        <option value="shared_view">Shared view only</option>
-        <option value="shared_registration">Shared + registration</option>
-      </select>
+      {connectedSchools.length ? (
+        <fieldset className="rounded-md border border-zinc-200 p-3">
+          <legend className="px-1 text-xs font-medium text-zinc-600">
+            Share with
+          </legend>
+          <div className="flex flex-col gap-2">
+            {connectedSchools.map((school) => (
+              <label
+                className="flex items-center gap-2 text-sm text-zinc-700"
+                key={school.id}
+              >
+                <input
+                  className="h-4 w-4 cursor-pointer"
+                  defaultChecked={sharedSchoolIdSet.has(school.id)}
+                  name="share_school_ids"
+                  type="checkbox"
+                  value={school.id}
+                />
+                {school.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <p className="text-sm text-zinc-500">
+          No approved school connections yet.
+        </p>
+      )}
+      <label className="flex items-center gap-2 text-sm text-zinc-700">
+        <input
+          className="h-4 w-4 cursor-pointer"
+          defaultChecked={event.allow_connected_school_registration}
+          name="allow_connected_registration"
+          type="checkbox"
+          value="true"
+        />
+        Allow connected students to register
+      </label>
       <button
-        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
+        disabled={!connectedSchools.length && !sharedSchoolIds.length}
         type="submit"
       >
         Save sharing
@@ -622,29 +699,23 @@ function Badge({
 function canCurrentStudentRegister(event: Event, userSchoolId: string) {
   return (
     event.school_id === userSchoolId ||
-    (event.shared_with_connected_schools &&
-      event.allow_connected_school_registration)
+    event.allow_connected_school_registration
   );
 }
 
-function sharingMode(event: Event) {
-  if (!event.shared_with_connected_schools) {
-    return "internal";
-  }
-
-  return event.allow_connected_school_registration
-    ? "shared_registration"
-    : "shared_view";
-}
-
-function sharingLabel(event: Event) {
-  if (!event.shared_with_connected_schools) {
+function sharingLabel(event: Event, sharedSchoolIds: string[]) {
+  if (!sharedSchoolIds.length) {
     return "Internal only";
   }
 
+  const base =
+    sharedSchoolIds.length === 1
+      ? "Shared with 1 school"
+      : `Shared with ${sharedSchoolIds.length} schools`;
+
   return event.allow_connected_school_registration
-    ? "Shared with registration"
-    : "Shared view only";
+    ? `${base} + registration`
+    : base;
 }
 
 async function getFilteredEvents(
@@ -656,6 +727,7 @@ async function getFilteredEvents(
     registeredEventIds,
     schoolId,
     selectedCategory,
+    sharedEventIds,
     scope,
   }: {
     connectedSchoolIds: string[];
@@ -664,6 +736,7 @@ async function getFilteredEvents(
     registeredEventIds: string[];
     schoolId: string;
     selectedCategory: string | null;
+    sharedEventIds: string[];
     scope: EventScope;
   },
 ) {
@@ -671,7 +744,10 @@ async function getFilteredEvents(
     return { error: null, events: [] };
   }
 
-  if (scope === "shared" && connectedSchoolIds.length === 0) {
+  if (
+    scope === "shared" &&
+    (connectedSchoolIds.length === 0 || sharedEventIds.length === 0)
+  ) {
     return { error: null, events: [] };
   }
 
@@ -684,9 +760,7 @@ async function getFilteredEvents(
     .gte("starts_at", now);
 
   if (scope === "shared") {
-    query = query
-      .in("school_id", connectedSchoolIds)
-      .eq("shared_with_connected_schools", true);
+    query = query.in("id", sharedEventIds).in("school_id", connectedSchoolIds);
   } else {
     query = query.eq("school_id", schoolId);
   }
@@ -772,6 +846,19 @@ async function getConnectedSchoolIds(
   );
 }
 
+async function getSharedEventIdsForSchool(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { data: shares } = await admin
+    .from("event_school_shares")
+    .select("event_id")
+    .eq("school_id", schoolId)
+    .returns<Array<{ event_id: string }>>();
+
+  return (shares ?? []).map((share) => share.event_id);
+}
+
 async function getClubsById(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
@@ -798,6 +885,19 @@ async function getSchoolsById(
     .returns<SchoolOption[]>();
 
   return schools ?? [];
+}
+
+async function getEventShares(
+  admin: ReturnType<typeof createAdminClient>,
+  eventIds: string[],
+) {
+  const { data: shares } = await admin
+    .from("event_school_shares")
+    .select("event_id, school_id")
+    .in("event_id", eventIds)
+    .returns<EventShare[]>();
+
+  return shares ?? [];
 }
 
 async function getLeaderClubOptions(
@@ -829,15 +929,20 @@ async function getCategoryOptions(
     connectedSchoolIds,
     now,
     schoolId,
+    sharedEventIds,
     scope,
   }: {
     connectedSchoolIds: string[];
     now: string;
     schoolId: string;
+    sharedEventIds: string[];
     scope: EventScope;
   },
 ) {
-  if (scope === "shared" && connectedSchoolIds.length === 0) {
+  if (
+    scope === "shared" &&
+    (connectedSchoolIds.length === 0 || sharedEventIds.length === 0)
+  ) {
     return [];
   }
 
@@ -849,9 +954,7 @@ async function getCategoryOptions(
     .not("category", "is", null);
 
   if (scope === "shared") {
-    query = query
-      .in("school_id", connectedSchoolIds)
-      .eq("shared_with_connected_schools", true);
+    query = query.in("id", sharedEventIds).in("school_id", connectedSchoolIds);
   } else {
     query = query.eq("school_id", schoolId);
   }
@@ -910,6 +1013,18 @@ function countActiveAttendees(attendees: EventAttendee[]) {
   });
 
   return counts;
+}
+
+function mapSharedSchoolIds(shares: EventShare[]) {
+  const sharesByEventId = new Map<string, string[]>();
+
+  shares.forEach((share) => {
+    const schoolIds = sharesByEventId.get(share.event_id) ?? [];
+    schoolIds.push(share.school_id);
+    sharesByEventId.set(share.event_id, schoolIds);
+  });
+
+  return sharesByEventId;
 }
 
 function mapCurrentStudentRegistrations(
