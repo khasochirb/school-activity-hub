@@ -22,6 +22,7 @@ const navItems: Array<{
   { href: "/clubs", label: "Clubs" },
   { href: "/events", label: "Events" },
   { href: "/approvals", label: "Approvals", roles: ["school_admin", "teacher"] },
+  { href: "/reports", label: "Reports", roles: ["school_admin", "teacher"] },
 ];
 
 export function AppShell({
