@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  ACTIVITY_CATEGORIES,
+  parseActivityCategory,
+} from "@/lib/activity-categories";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -91,7 +95,7 @@ export default async function EventsPage({
   const params = await searchParams;
   const selectedFilter = parseEventFilter(getSearchValue(params.filter));
   const selectedScope = parseEventScope(getSearchValue(params.scope));
-  const selectedCategory = normalizeCategory(getSearchValue(params.category));
+  const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const supabase = await createClient();
   const {
     data: { user },
@@ -133,13 +137,7 @@ export default async function EventsPage({
   const sharedEventIds = connectedSchoolIds.length
     ? await getSharedEventIdsForSchool(admin, profile.school_id)
     : [];
-  const categoryOptions = await getCategoryOptions(admin, {
-    connectedSchoolIds,
-    sharedEventIds,
-    now,
-    schoolId: profile.school_id,
-    scope: selectedScope,
-  });
+  const categoryOptions = ACTIVITY_CATEGORIES;
   const createClubOptions = isStaff ? clubOptions : leaderClubOptions;
   const canCreate = isStaff || leaderClubOptions.length > 0;
   const { error: eventsError, events } = await getFilteredEvents(admin, {
@@ -294,7 +292,7 @@ function EventFilters({
   selectedFilter,
   selectedScope,
 }: {
-  categoryOptions: string[];
+  categoryOptions: readonly string[];
   currentStudent: StudentRoster | null;
   selectedCategory: string | null;
   selectedFilter: EventFilter;
@@ -1042,55 +1040,6 @@ async function getLeaderClubOptions(
     .filter((club): club is ClubOption => Boolean(club));
 }
 
-async function getCategoryOptions(
-  admin: ReturnType<typeof createAdminClient>,
-  {
-    connectedSchoolIds,
-    now,
-    schoolId,
-    sharedEventIds,
-    scope,
-  }: {
-    connectedSchoolIds: string[];
-    now: string;
-    schoolId: string;
-    sharedEventIds: string[];
-    scope: EventScope;
-  },
-) {
-  if (
-    scope === "shared" &&
-    (connectedSchoolIds.length === 0 || sharedEventIds.length === 0)
-  ) {
-    return [];
-  }
-
-  let query = admin
-    .from("events")
-    .select("category")
-    .eq("status", "approved")
-    .gte("starts_at", now)
-    .not("category", "is", null);
-
-  if (scope === "shared") {
-    query = query.in("id", sharedEventIds).in("school_id", connectedSchoolIds);
-  } else {
-    query = query.eq("school_id", schoolId);
-  }
-
-  const { data: events } = await query
-    .order("category", { ascending: true })
-    .returns<Array<{ category: string | null }>>();
-
-  return Array.from(
-    new Set(
-      (events ?? [])
-        .map((event) => event.category?.trim())
-        .filter((category): category is string => Boolean(category)),
-    ),
-  );
-}
-
 async function getCurrentStudentRegisteredEventIds(
   admin: ReturnType<typeof createAdminClient>,
   profile: Profile,
@@ -1216,12 +1165,6 @@ function parseEventScope(value: string | undefined): EventScope {
 
 function getSearchValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function normalizeCategory(value: string | undefined) {
-  const category = value?.trim();
-
-  return category || null;
 }
 
 function eventsHref({

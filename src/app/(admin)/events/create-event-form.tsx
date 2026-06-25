@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { ACTIVITY_CATEGORIES } from "@/lib/activity-categories";
 import { createEvent, type CreateEventState } from "./actions";
 
 type ClubOption = {
@@ -46,10 +47,17 @@ export function CreateEventForm({
       </label>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
         Category
-        <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+        <select
+          className="h-11 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-900"
           name="category"
-        />
+        >
+          <option value="">No category</option>
+          {ACTIVITY_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
         Location

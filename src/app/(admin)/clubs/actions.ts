@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { parseActivityCategory } from "@/lib/activity-categories";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,7 +36,8 @@ export async function createClub(
 
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const category = String(formData.get("category") ?? "").trim();
+  const categoryInput = String(formData.get("category") ?? "").trim();
+  const category = parseActivityCategory(categoryInput);
   const status = String(formData.get("status") ?? "active");
 
   if (!name) {
@@ -44,6 +46,10 @@ export async function createClub(
 
   if (!["active", "archived"].includes(status)) {
     return { message: "Choose a valid club status.", success: false };
+  }
+
+  if (categoryInput && !category) {
+    return { message: "Choose a valid category.", success: false };
   }
 
   const slug = toSlug(name);

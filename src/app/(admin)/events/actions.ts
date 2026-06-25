@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { parseActivityCategory } from "@/lib/activity-categories";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -49,7 +50,8 @@ export async function createEvent(
 
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const category = String(formData.get("category") ?? "").trim();
+  const categoryInput = String(formData.get("category") ?? "").trim();
+  const category = parseActivityCategory(categoryInput);
   const location = String(formData.get("location") ?? "").trim();
   const startsAtInput = String(formData.get("starts_at") ?? "").trim();
   const endsAtInput = String(formData.get("ends_at") ?? "").trim();
@@ -68,6 +70,10 @@ export async function createEvent(
 
   if (!location) {
     return { message: "Location is required.", success: false };
+  }
+
+  if (categoryInput && !category) {
+    return { message: "Choose a valid category.", success: false };
   }
 
   const startsAt = parseDateTime(startsAtInput);

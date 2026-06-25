@@ -1,4 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  ACTIVITY_CATEGORIES,
+  parseActivityCategory,
+} from "@/lib/activity-categories";
 import { createClient } from "@/lib/supabase/server";
 import {
   archiveClub,
@@ -39,7 +44,17 @@ type ClubMembership = {
   } | null;
 };
 
-export default async function ClubsPage() {
+type ClubsSearchParams = {
+  category?: string | string[];
+};
+
+export default async function ClubsPage({
+  searchParams,
+}: {
+  searchParams: Promise<ClubsSearchParams>;
+}) {
+  const params = await searchParams;
+  const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const supabase = await createClient();
   const {
     data: { user },
@@ -61,11 +76,17 @@ export default async function ClubsPage() {
 
   const isStaff = profile.role === "school_admin" || profile.role === "teacher";
 
-  const { data: clubs, error: clubsError } = await supabase
+  let clubsQuery = supabase
     .from("clubs")
     .select("id, name, description, category, status, created_at")
     .eq("school_id", profile.school_id)
-    .eq("status", "active")
+    .eq("status", "active");
+
+  if (selectedCategory) {
+    clubsQuery = clubsQuery.eq("category", selectedCategory);
+  }
+
+  const { data: clubs, error: clubsError } = await clubsQuery
     .order("name", { ascending: true })
     .returns<Club[]>();
 
@@ -111,6 +132,24 @@ export default async function ClubsPage() {
           </div>
         </section>
       ) : null}
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-zinc-950">Find clubs</h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <CategoryFilterLink active={!selectedCategory} href="/clubs">
+            All categories
+          </CategoryFilterLink>
+          {ACTIVITY_CATEGORIES.map((category) => (
+            <CategoryFilterLink
+              active={selectedCategory === category}
+              href={`/clubs?category=${encodeURIComponent(category)}`}
+              key={category}
+            >
+              {category}
+            </CategoryFilterLink>
+          ))}
+        </div>
+      </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
@@ -269,6 +308,29 @@ function ClubActions({
   );
 }
 
+function CategoryFilterLink({
+  active,
+  children,
+  href,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  href: string;
+}) {
+  return (
+    <Link
+      className={
+        active
+          ? "inline-flex h-9 cursor-pointer items-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white"
+          : "inline-flex h-9 cursor-pointer items-center rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+      }
+      href={href}
+    >
+      {children}
+    </Link>
+  );
+}
+
 function groupMembershipsByClub(memberships: ClubMembership[]) {
   const grouped = new Map<string, ClubMembership[]>();
 
@@ -289,4 +351,8 @@ function memberName(membership: ClubMembership) {
   }
 
   return `${student.first_name} ${student.last_name}`;
+}
+
+function getSearchValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
