@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { createClient } from "@/lib/supabase/server";
 import {
   requestSchoolConnection,
@@ -332,12 +333,12 @@ function RequestConnectionForm({ schoolId }: { schoolId: string }) {
   return (
     <form action={requestSchoolConnection}>
       <input name="receiver_school_id" type="hidden" value={schoolId} />
-      <button
+      <PendingSubmitButton
         className="h-10 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 sm:w-auto"
-        type="submit"
+        pendingLabel="Requesting..."
       >
         Request connection
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }
@@ -355,16 +356,16 @@ function ConnectionResponseForm({
     <form action={respondToSchoolConnection}>
       <input name="connection_id" type="hidden" value={connectionId} />
       <input name="decision" type="hidden" value={decision} />
-      <button
+      <PendingSubmitButton
         className={
           isApprove
             ? "h-10 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
             : "h-10 cursor-pointer rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         }
-        type="submit"
+        pendingLabel={isApprove ? "Approving..." : "Rejecting..."}
       >
         {isApprove ? "Approve" : "Reject"}
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }

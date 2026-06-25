@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { createClient } from "@/lib/supabase/server";
 import { archiveAnnouncement } from "./actions";
 import { CreateAnnouncementForm } from "./create-announcement-form";
@@ -140,12 +141,12 @@ function ArchiveForm({ announcement }: { announcement: Announcement }) {
   return (
     <form action={archiveAnnouncement}>
       <input name="announcement_id" type="hidden" value={announcement.id} />
-      <button
+      <PendingSubmitButton
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-        type="submit"
+        pendingLabel="Archiving..."
       >
         Archive notice
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }

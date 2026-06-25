@@ -83,7 +83,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Creating..." : "Create club"}
+      {pending ? "Creating club..." : "Create club"}
     </button>
   );
 }

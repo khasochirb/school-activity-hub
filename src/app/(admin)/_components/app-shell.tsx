@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { logout } from "../actions";
 import { AppNav, type NavItem } from "./app-nav";
 
@@ -67,12 +68,12 @@ export function AppShell({
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <AppNav items={visibleNavItems} />
             <form action={logout} className="lg:shrink-0">
-              <button
+              <PendingSubmitButton
                 className="h-10 w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:border-zinc-400 hover:bg-zinc-100 lg:w-auto"
-                type="submit"
+                pendingLabel="Logging out..."
               >
                 Log out
-              </button>
+              </PendingSubmitButton>
             </form>
           </div>
         </div>

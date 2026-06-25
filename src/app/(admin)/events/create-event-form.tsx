@@ -174,7 +174,9 @@ function SubmitButton({ isStaff }: { isStaff: boolean }) {
       type="submit"
     >
       {pending
-        ? "Saving..."
+        ? isStaff
+          ? "Creating event..."
+          : "Submitting..."
         : isStaff
           ? "Create approved event"
           : "Submit for approval"}

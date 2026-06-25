@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
   parseActivityCategory,
@@ -237,12 +238,12 @@ export default async function ClubsPage({
                                   type="hidden"
                                   value={membership.id}
                                 />
-                                <button
+                                <PendingSubmitButton
                                   className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-                                  type="submit"
+                                  pendingLabel="Saving..."
                                 >
                                   Make club leader
-                                </button>
+                                </PendingSubmitButton>
                               </form>
                             ) : null}
                           </li>
@@ -289,12 +290,12 @@ function ClubActions({
     return (
       <form action={archiveClub}>
         <input name="club_id" type="hidden" value={club.id} />
-        <button
+        <PendingSubmitButton
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-          type="submit"
+          pendingLabel="Archiving..."
         >
           Archive club
-        </button>
+        </PendingSubmitButton>
       </form>
     );
   }
@@ -306,16 +307,16 @@ function ClubActions({
   return (
     <form action={isJoined ? leaveClub : joinClub}>
       <input name="club_id" type="hidden" value={club.id} />
-      <button
+      <PendingSubmitButton
         className={
           isJoined
             ? "h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
             : "h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
         }
-        type="submit"
+        pendingLabel={isJoined ? "Leaving..." : "Joining..."}
       >
         {isJoined ? "Leave club" : "Join club"}
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }

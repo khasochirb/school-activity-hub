@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { createClient } from "@/lib/supabase/server";
 import { approveEvent, rejectEvent } from "./actions";
 
@@ -109,12 +110,12 @@ export default async function ApprovalsPage() {
                   </div>
                   <form action={approveEvent}>
                     <input name="event_id" type="hidden" value={event.id} />
-                    <button
+                    <PendingSubmitButton
                       className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
-                      type="submit"
+                      pendingLabel="Approving..."
                     >
                       Approve event
-                    </button>
+                    </PendingSubmitButton>
                   </form>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -178,12 +179,12 @@ export default async function ApprovalsPage() {
                       name="rejection_reason"
                     />
                   </label>
-                  <button
+                  <PendingSubmitButton
                     className="h-9 w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 sm:w-fit"
-                    type="submit"
+                    pendingLabel="Rejecting..."
                   >
                     Reject event
-                  </button>
+                  </PendingSubmitButton>
                 </form>
               </article>
             ))}

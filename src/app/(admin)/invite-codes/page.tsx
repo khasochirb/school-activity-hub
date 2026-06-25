@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { createClient } from "@/lib/supabase/server";
 import { revokeInviteCode } from "./actions";
 import { BulkGenerateInviteForm } from "./bulk-generate-invite-form";
@@ -239,12 +240,12 @@ function RevokeForm({ invite }: { invite: InviteCode }) {
   return (
     <form action={revokeInviteCode}>
       <input name="invite_code_id" type="hidden" value={invite.id} />
-      <button
+      <PendingSubmitButton
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-        type="submit"
+        pendingLabel="Revoking..."
       >
         Revoke code
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }

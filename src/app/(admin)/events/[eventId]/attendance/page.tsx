@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   createQrCodeMatrix,
   createQrSvgPath,
@@ -557,12 +558,12 @@ function PermissionCell({
           <option value="received">Received</option>
           <option value="declined">Declined</option>
         </select>
-        <button
+        <PendingSubmitButton
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-          type="submit"
+          pendingLabel="Saving..."
         >
           Save permission
-        </button>
+        </PendingSubmitButton>
       </form>
     </div>
   );

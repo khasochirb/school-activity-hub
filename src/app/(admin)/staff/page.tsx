@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { updateTeacherStatus } from "./actions";
@@ -217,12 +218,12 @@ function TeacherStatusForm({
     <form action={updateTeacherStatus}>
       <input name="profile_id" type="hidden" value={staff.id} />
       <input name="status" type="hidden" value={nextStatus} />
-      <button
+      <PendingSubmitButton
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-        type="submit"
+        pendingLabel="Saving..."
       >
         {nextStatus === "inactive" ? "Deactivate teacher" : "Reactivate teacher"}
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }

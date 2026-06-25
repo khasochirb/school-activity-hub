@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
   parseActivityCategory,
@@ -595,12 +596,12 @@ function EventActions({
         </Link>
         <form action={cancelEvent}>
           <input name="event_id" type="hidden" value={event.id} />
-          <button
+          <PendingSubmitButton
             className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-            type="submit"
+            pendingLabel="Cancelling..."
           >
             Cancel event
-          </button>
+          </PendingSubmitButton>
         </form>
         <SharingForm
           connectedSchools={connectedSchools}
@@ -628,12 +629,12 @@ function EventActions({
     return (
       <form action={cancelEventRegistration}>
         <input name="event_id" type="hidden" value={event.id} />
-        <button
+        <PendingSubmitButton
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-          type="submit"
+          pendingLabel="Cancelling..."
         >
           Cancel my registration
-        </button>
+        </PendingSubmitButton>
       </form>
     );
   }
@@ -663,13 +664,13 @@ function EventActions({
       ) : null}
       <form action={joinEvent}>
         <input name="event_id" type="hidden" value={event.id} />
-        <button
+        <PendingSubmitButton
           className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
           disabled={isFull}
-          type="submit"
+          pendingLabel="Joining..."
         >
           {isFull ? "Event full" : "Join event"}
-        </button>
+        </PendingSubmitButton>
       </form>
     </div>
   );
@@ -709,12 +710,12 @@ function SafetyForm({ event }: { event: Event }) {
           name="permission_note"
         />
       </label>
-      <button
+      <PendingSubmitButton
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-        type="submit"
+        pendingLabel="Saving..."
       >
         Save safety details
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }
@@ -771,13 +772,13 @@ function SharingForm({
         />
         Allow connected students to register
       </label>
-      <button
+      <PendingSubmitButton
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
         disabled={!connectedSchools.length && !sharedSchoolIds.length}
-        type="submit"
+        pendingLabel="Saving..."
       >
         Save sharing settings
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }
