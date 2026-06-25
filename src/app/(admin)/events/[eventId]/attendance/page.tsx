@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  createQrCodeMatrix,
+  createQrSvgPath,
+  getQrSvgViewBox,
+} from "@/lib/qr-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { updateAttendeePermissionStatus } from "./actions";
+import { CopyCheckInLinkButton } from "./copy-check-in-link-button";
 
 type StaffProfile = {
   id: string;
@@ -161,6 +167,9 @@ export default async function EventAttendancePage({
 
   const checkInPath = `/check-in/${event.id}`;
   const checkInUrl = await getAbsoluteCheckInUrl(checkInPath);
+  const qrCodeMatrix = createQrCodeMatrix(checkInUrl);
+  const qrCodePath = createQrSvgPath(qrCodeMatrix);
+  const qrCodeViewBox = getQrSvgViewBox(qrCodeMatrix);
 
   return (
     <div className="flex flex-col gap-6">
@@ -202,15 +211,37 @@ export default async function EventAttendancePage({
         <p className="mt-2 text-sm text-zinc-600">
           Students must be logged in and registered for this event.
         </p>
-        <div className="mt-4 break-all rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800">
-          {checkInUrl}
+        <div className="mt-4 grid gap-4 lg:grid-cols-[220px_1fr] lg:items-start">
+          <div className="flex justify-center rounded-lg border border-zinc-200 bg-white p-4">
+            <svg
+              aria-label="QR code for the event check-in link"
+              className="h-44 w-44 text-zinc-950"
+              role="img"
+              shapeRendering="crispEdges"
+              viewBox={qrCodeViewBox}
+            >
+              <rect height="100%" width="100%" fill="white" />
+              <path d={qrCodePath} fill="currentColor" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-zinc-800">
+              Full check-in URL
+            </p>
+            <div className="mt-2 break-all rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800">
+              {checkInUrl}
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <CopyCheckInLinkButton url={checkInUrl} />
+              <Link
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+                href={checkInUrl}
+              >
+                Open check-in link
+              </Link>
+            </div>
+          </div>
         </div>
-        <Link
-          className="mt-4 inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-          href={checkInUrl}
-        >
-          Open check-in page
-        </Link>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
