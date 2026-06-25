@@ -67,7 +67,8 @@ export default async function StaffPage() {
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">Staff</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Manage teacher accounts for {school?.name ?? "this school"}.
+          Create teacher accounts and manage staff access for{" "}
+          {school?.name ?? "this school"}.
         </p>
       </section>
 
@@ -172,7 +173,14 @@ export default async function StaffPage() {
             </div>
           </>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">No staff profiles yet.</p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No staff profiles yet
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Teacher accounts created by the school admin will appear here.
+            </p>
+          </div>
         )}
       </section>
     </div>
@@ -200,7 +208,7 @@ function TeacherStatusForm({
   staff: StaffProfile;
 }) {
   if (staff.role !== "teacher" || staff.id === currentAdminId) {
-    return <span className="text-sm text-zinc-500">No action</span>;
+    return <span className="text-sm text-zinc-500">Protected account</span>;
   }
 
   const nextStatus = staff.status === "active" ? "inactive" : "active";
@@ -213,7 +221,7 @@ function TeacherStatusForm({
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
-        {nextStatus === "inactive" ? "Deactivate" : "Reactivate"}
+        {nextStatus === "inactive" ? "Deactivate teacher" : "Reactivate teacher"}
       </button>
     </form>
   );

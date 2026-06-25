@@ -52,8 +52,8 @@ export default async function DashboardPage() {
   if (!profile) {
     return (
       <DashboardShell
-        description="Your account is authenticated, but no school profile was found yet."
-        title="School Activity Hub Dashboard"
+        description="Your account is signed in, but it is not connected to a school profile yet."
+        title="Dashboard"
       >
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <p className="text-sm text-zinc-600">
@@ -84,8 +84,8 @@ function StaffDashboard({
 }) {
   return (
     <DashboardShell
-      description="School-wide activity metrics for the current roster and events."
-      title="School Activity Hub Dashboard"
+      description="A quick view of roster, club, event, registration, and attendance activity for your school."
+      title="Dashboard"
     >
       <MetricGrid>
         <MetricCard label="Active students" value={analytics.activeStudents} />
@@ -104,6 +104,8 @@ function StaffDashboard({
         />
       </MetricGrid>
 
+      <DemoWorkflow />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <UpcomingEventsSection events={analytics.upcomingEvents} />
         <RecentCheckinsSection checkins={analytics.recentCheckins} />
@@ -119,8 +121,8 @@ function StudentDashboard({
 }) {
   return (
     <DashboardShell
-      description="Your clubs, upcoming registrations, and attended events."
-      title="School Activity Hub Dashboard"
+      description="Your clubs, upcoming registrations, and attendance history in one place."
+      title="Dashboard"
     >
       {!analytics.currentStudent ? (
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
@@ -165,7 +167,11 @@ function DashboardShell({
 }
 
 function MetricGrid({ children }: { children: React.ReactNode }) {
-  return <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{children}</section>;
+  return (
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {children}
+    </section>
+  );
 }
 
 function MetricCard({ label, value }: { label: string; value: number }) {
@@ -186,6 +192,9 @@ function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
         <h2 className="text-lg font-semibold text-zinc-950">
           Upcoming approved events
         </h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          The next approved activities on your school calendar.
+        </p>
       </div>
       {events.length ? (
         <ul className="divide-y divide-zinc-200">
@@ -202,7 +211,10 @@ function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
           ))}
         </ul>
       ) : (
-        <EmptyState message="No upcoming approved events yet." />
+        <EmptyState
+          description="Approved future events will appear here once staff or club leaders create them."
+          title="No upcoming events yet"
+        />
       )}
     </section>
   );
@@ -215,6 +227,9 @@ function RecentCheckinsSection({ checkins }: { checkins: RecentCheckin[] }) {
         <h2 className="text-lg font-semibold text-zinc-950">
           Recent check-ins
         </h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          The latest successful attendance check-ins for approved events.
+        </p>
       </div>
       {checkins.length ? (
         <ul className="divide-y divide-zinc-200">
@@ -240,14 +255,61 @@ function RecentCheckinsSection({ checkins }: { checkins: RecentCheckin[] }) {
           ))}
         </ul>
       ) : (
-        <EmptyState message="No attendance check-ins recorded yet." />
+        <EmptyState
+          description="After students check in with an event QR link, recent check-ins will appear here."
+          title="No attendance check-ins yet"
+        />
       )}
     </section>
   );
 }
 
-function EmptyState({ message }: { message: string }) {
-  return <p className="p-6 text-sm text-zinc-600">{message}</p>;
+function DemoWorkflow() {
+  const steps = [
+    "Add students",
+    "Generate invite codes",
+    "Students join",
+    "Create clubs/events",
+    "Track attendance",
+  ];
+
+  return (
+    <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-zinc-950">Demo workflow</h2>
+      <p className="mt-2 text-sm leading-6 text-zinc-600">
+        Use these steps for a clean school pilot without adding real production
+        student data.
+      </p>
+      <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {steps.map((step, index) => (
+          <li
+            className="rounded-md border border-zinc-200 bg-zinc-50 p-4"
+            key={step}
+          >
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Step {index + 1}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-zinc-950">{step}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function EmptyState({
+  description,
+  title,
+}: {
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="p-6">
+      <p className="text-sm font-medium text-zinc-950">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-zinc-600">{description}</p>
+    </div>
+  );
 }
 
 async function getStaffAnalytics(

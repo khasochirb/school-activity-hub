@@ -58,15 +58,18 @@ export default async function AnnouncementsPage() {
           Announcements
         </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          School notices for students and staff.
+          Post school notices that students and staff can see after login.
         </p>
       </section>
 
       {isStaff ? (
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Create announcement
+            Post announcement
           </h2>
+          <p className="mt-2 text-sm text-zinc-600">
+            Keep notices short and school-wide for this pilot.
+          </p>
           <div className="mt-4">
             <CreateAnnouncementForm />
           </div>
@@ -114,9 +117,15 @@ export default async function AnnouncementsPage() {
             ))}
           </div>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">
-            No announcements to show.
-          </p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No announcements yet
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Staff can post a school notice when there is something students
+              should see.
+            </p>
+          </div>
         )}
       </section>
     </div>
@@ -135,7 +144,7 @@ function ArchiveForm({ announcement }: { announcement: Announcement }) {
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
-        Archive
+        Archive notice
       </button>
     </form>
   );

@@ -187,7 +187,8 @@ export default async function EventsPage({
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">Events</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Discover approved school events and manage registrations.
+          Create approved activities, manage student registrations, and open
+          attendance check-in when an event begins.
         </p>
       </section>
 
@@ -196,8 +197,8 @@ export default async function EventsPage({
           <h2 className="text-lg font-semibold text-zinc-950">Create event</h2>
           <p className="mt-2 text-sm text-zinc-600">
             {isStaff
-              ? "School staff events are approved immediately."
-              : "Club leader events are submitted for approval."}
+              ? "School staff events are approved immediately and appear for students when they are upcoming."
+              : "Club leader events are submitted to staff for approval before students can join."}
           </p>
           <div className="mt-4">
             <CreateEventForm
@@ -276,9 +277,15 @@ export default async function EventsPage({
             })}
           </div>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">
-            No events match the selected filters.
-          </p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No events match these filters
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Create an approved event, wait for a club event to be approved,
+              or adjust the filters.
+            </p>
+          </div>
         )}
       </section>
     </div>
@@ -301,6 +308,10 @@ function EventFilters({
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-zinc-950">Find events</h2>
+      <p className="mt-2 text-sm text-zinc-600">
+        Switch between your school events, shared events, registrations, club
+        events, and categories.
+      </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <FilterLink
           active={selectedScope === "mine"}
@@ -580,7 +591,7 @@ function EventActions({
           className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
           href={`/events/${event.id}/attendance`}
         >
-          View attendance
+          Attendance and QR
         </Link>
         <form action={cancelEvent}>
           <input name="event_id" type="hidden" value={event.id} />
@@ -621,7 +632,7 @@ function EventActions({
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           type="submit"
         >
-          Cancel registration
+          Cancel my registration
         </button>
       </form>
     );
@@ -657,7 +668,7 @@ function EventActions({
           disabled={isFull}
           type="submit"
         >
-          {isFull ? "Full" : "Join"}
+          {isFull ? "Event full" : "Join event"}
         </button>
       </form>
     </div>
@@ -702,7 +713,7 @@ function SafetyForm({ event }: { event: Event }) {
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
-        Save safety
+        Save safety details
       </button>
     </form>
   );
@@ -765,7 +776,7 @@ function SharingForm({
         disabled={!connectedSchools.length && !sharedSchoolIds.length}
         type="submit"
       >
-        Save sharing
+        Save sharing settings
       </button>
     </form>
   );

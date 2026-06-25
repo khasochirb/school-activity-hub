@@ -128,7 +128,7 @@ export default async function SchoolConnectionsPage({
     <div className="flex flex-col gap-6">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">
-          School Connections
+          School connections
         </h1>
         <p className="mt-2 text-sm text-zinc-600">
           Request and approve school-to-school connections. Student rosters and
@@ -209,9 +209,15 @@ export default async function SchoolConnectionsPage({
             })}
           </div>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">
-            No incoming requests are pending.
-          </p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No incoming requests
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Connection requests from other schools will appear here for admin
+              review.
+            </p>
+          </div>
         )}
       </section>
 
@@ -262,9 +268,15 @@ export default async function SchoolConnectionsPage({
             })}
           </div>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">
-            No other active schools are available yet.
-          </p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No other active schools yet
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Other active schools will appear here when they join the
+              platform.
+            </p>
+          </div>
         )}
       </section>
 
@@ -302,9 +314,14 @@ export default async function SchoolConnectionsPage({
             })}
           </div>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">
-            No school connections yet.
-          </p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No school connections yet
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Approved, rejected, and pending connections will be listed here.
+            </p>
+          </div>
         )}
       </section>
     </div>

@@ -54,13 +54,16 @@ export default async function StudentsPage() {
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">Students</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Add students manually, import CSV files, and manage basic roster
-          status.
+          Build the school roster first. Students can only join after staff add
+          them here and generate an invite code.
         </p>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Add student</h2>
+        <h2 className="text-lg font-semibold text-zinc-950">Add one student</h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          Use this for quick additions or small pilot rosters.
+        </p>
         <div className="mt-4">
           <CreateStudentForm />
         </div>
@@ -71,7 +74,8 @@ export default async function StudentsPage() {
           Import students
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          Upload a CSV with one row per student.
+          Upload a CSV with one row per student when you are preparing a larger
+          roster.
         </p>
         <div className="mt-4">
           <ImportStudentsForm />
@@ -168,7 +172,13 @@ export default async function StudentsPage() {
             </div>
           </>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">No students yet.</p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">No students yet</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Add one student manually or import a CSV before generating invite
+              codes.
+            </p>
+          </div>
         )}
       </section>
     </div>
@@ -193,7 +203,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function InactiveForm({ student }: { student: Student }) {
   if (student.status !== "active") {
-    return <span className="text-sm text-zinc-500">No action</span>;
+    return <span className="text-sm text-zinc-500">Already inactive</span>;
   }
 
   return (
@@ -203,7 +213,7 @@ function InactiveForm({ student }: { student: Student }) {
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
-        Mark inactive
+        Mark as inactive
       </button>
     </form>
   );

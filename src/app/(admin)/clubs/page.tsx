@@ -120,13 +120,16 @@ export default async function ClubsPage({
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">Clubs</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Browse active school clubs and manage membership.
+          Create clubs students can join, and assign student leaders when ready.
         </p>
       </section>
 
       {isStaff ? (
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-zinc-950">Create club</h2>
+          <p className="mt-2 text-sm text-zinc-600">
+            Add an active club for students to discover and join.
+          </p>
           <div className="mt-4">
             <CreateClubForm />
           </div>
@@ -135,6 +138,9 @@ export default async function ClubsPage({
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-zinc-950">Find clubs</h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          Filter the active club list by activity category.
+        </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <CategoryFilterLink active={!selectedCategory} href="/clubs">
             All categories
@@ -235,7 +241,7 @@ export default async function ClubsPage({
                                   className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
                                   type="submit"
                                 >
-                                  Make leader
+                                  Make club leader
                                 </button>
                               </form>
                             ) : null}
@@ -244,7 +250,8 @@ export default async function ClubsPage({
                       </ul>
                     ) : (
                       <p className="mt-2 text-sm text-zinc-600">
-                        No active members yet.
+                        No members yet. Students will appear here after they
+                        join this club.
                       </p>
                     )}
                   </div>
@@ -253,7 +260,12 @@ export default async function ClubsPage({
             })}
           </div>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">No active clubs yet.</p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">No clubs yet</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Create the first club so students have something to join.
+            </p>
+          </div>
         )}
       </section>
     </div>
@@ -281,7 +293,7 @@ function ClubActions({
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           type="submit"
         >
-          Archive
+          Archive club
         </button>
       </form>
     );
@@ -302,7 +314,7 @@ function ClubActions({
         }
         type="submit"
       >
-        {isJoined ? "Leave" : "Join"}
+        {isJoined ? "Leave club" : "Join club"}
       </button>
     </form>
   );

@@ -4,23 +4,24 @@ import { createClient } from "@/lib/supabase/server";
 const platformPoints = [
   {
     title: "Verified students only",
-    body: "Students join from a school roster through one-time invite codes, not open self-registration.",
+    body: "Students activate accounts from a school roster with one-time invite codes, so access starts with staff approval.",
   },
   {
     title: "Clubs and events",
-    body: "Students can discover school-approved activities, join clubs, and register for upcoming events.",
+    body: "Students can find approved activities, join clubs, register for events, and see what is coming up next.",
   },
   {
-    title: "Teacher oversight",
-    body: "School admins and teachers manage rosters, invite codes, approvals, attendance, and reports.",
+    title: "Staff oversight",
+    body: "School admins and teachers manage rosters, invite codes, approvals, safety notes, attendance, and reports.",
   },
 ];
 
-const howItWorks = [
+const demoWorkflow = [
   "School adds students",
   "Staff generate invite codes",
-  "Students join clubs/events",
-  "Attendance can be checked in",
+  "Students join",
+  "Create clubs/events",
+  "Track attendance",
 ];
 
 export default async function HomePage() {
@@ -54,7 +55,7 @@ export default async function HomePage() {
                   className="hidden h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 sm:inline-flex"
                   href="/join"
                 >
-                  Join
+                  Join with invite code
                 </Link>
               </>
             )}
@@ -68,13 +69,14 @@ export default async function HomePage() {
             Private school activity platform
           </p>
           <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight text-zinc-950 sm:text-5xl">
-            Clubs, events, and attendance for school communities with verified
-            student access.
+            A pilot-ready hub for clubs, events, and verified student
+            participation.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg">
-            School Activity Hub helps staff manage rosters, invite-code student
-            registration, club membership, event approvals, and QR attendance
-            check-in without exposing public student data.
+            School Activity Hub gives private schools a focused way to manage
+            activity rosters, invite-code student registration, club
+            membership, event approvals, and QR attendance check-in without
+            opening access to the public.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             {user ? (
@@ -105,10 +107,10 @@ export default async function HomePage() {
 
         <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-sm font-medium text-zinc-500">Today</p>
+            <p className="text-sm font-medium text-zinc-500">Pilot snapshot</p>
             <div className="mt-4 space-y-3">
-              <ActivityRow label="Robotics club" value="Approved event" />
-              <ActivityRow label="Art showcase" value="Pending review" />
+              <ActivityRow label="Student roster" value="Staff managed" />
+              <ActivityRow label="Invite access" value="One-time codes" />
               <ActivityRow label="Attendance" value="QR check-in ready" />
             </div>
           </div>
@@ -135,9 +137,13 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-semibold text-zinc-950">How it works</h2>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {howItWorks.map((step, index) => (
+        <h2 className="text-2xl font-semibold text-zinc-950">Demo workflow</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+          A simple pilot can walk through the full school activity flow without
+          using real student data.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {demoWorkflow.map((step, index) => (
             <article
               className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm"
               key={step}

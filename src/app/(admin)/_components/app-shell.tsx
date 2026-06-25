@@ -18,13 +18,13 @@ const navItems: Array<NavItem & {
   { href: "/settings", label: "Settings", roles: ["school_admin"] },
   {
     href: "/school-connections",
-    label: "School Connections",
+    label: "School connections",
     roles: ["school_admin"],
   },
   { href: "/students", label: "Students", roles: ["school_admin", "teacher"] },
   {
     href: "/invite-codes",
-    label: "Invite Codes",
+    label: "Invite codes",
     roles: ["school_admin", "teacher"],
   },
   { href: "/clubs", label: "Clubs" },

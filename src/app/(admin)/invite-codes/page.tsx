@@ -73,14 +73,20 @@ export default async function InviteCodesPage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Invite Codes</h1>
+        <h1 className="text-2xl font-semibold text-zinc-950">Invite codes</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Generate one-time invite codes for rostered students.
+          Create one-time codes that let rostered students activate their own
+          accounts.
         </p>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Create invite code</h2>
+        <h2 className="text-lg font-semibold text-zinc-950">
+          Create one invite code
+        </h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          Generate a single code for an active student.
+        </p>
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
             Students could not be loaded: {studentsError.message}
@@ -96,8 +102,8 @@ export default async function InviteCodesPage() {
           Bulk generate invite codes
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          Generate one-time codes for active students who have not linked a
-          student account yet.
+          Generate one-time codes for multiple active students who have not
+          linked a student account yet.
         </p>
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
@@ -111,7 +117,9 @@ export default async function InviteCodesPage() {
 
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-950">Existing codes</h2>
+          <h2 className="text-lg font-semibold text-zinc-950">
+            Invite code history
+          </h2>
           {invitesError ? (
             <p className="mt-2 text-sm text-red-600">
               Invite codes could not be loaded: {invitesError.message}
@@ -192,7 +200,15 @@ export default async function InviteCodesPage() {
             </div>
           </>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">No invite codes yet.</p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No invite codes yet
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Generate a code when an active roster student is ready to create
+              their account.
+            </p>
+          </div>
         )}
       </section>
     </div>
@@ -217,7 +233,7 @@ function RevokeForm({ invite }: { invite: InviteCode }) {
     invite.status === "active" && invite.use_count === 0 && !invite.redeemed_at;
 
   if (!canRevoke) {
-    return <span className="text-sm text-zinc-500">No action</span>;
+    return <span className="text-sm text-zinc-500">Already used or inactive</span>;
   }
 
   return (
@@ -227,7 +243,7 @@ function RevokeForm({ invite }: { invite: InviteCode }) {
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         type="submit"
       >
-        Revoke
+        Revoke code
       </button>
     </form>
   );

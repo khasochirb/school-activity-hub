@@ -177,7 +177,7 @@ export default async function EventAttendancePage({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-950">
-              Attendance
+              Event attendance
             </h1>
             <p className="mt-2 text-sm text-zinc-600">{event.title}</p>
             <p className="mt-1 text-sm text-zinc-600">
@@ -209,7 +209,8 @@ export default async function EventAttendancePage({
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-zinc-950">Check-in link</h2>
         <p className="mt-2 text-sm text-zinc-600">
-          Students must be logged in and registered for this event.
+          Share this link or QR code with registered students when check-in is
+          open.
         </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-[220px_1fr] lg:items-start">
           <div className="flex justify-center rounded-lg border border-zinc-200 bg-white p-4">
@@ -389,9 +390,15 @@ export default async function EventAttendancePage({
             </div>
           </>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">
-            No students are registered for this event yet.
-          </p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No registered students yet
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Students who join this event will appear here for permission
+              tracking and check-in.
+            </p>
+          </div>
         )}
       </section>
     </div>
@@ -554,7 +561,7 @@ function PermissionCell({
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           type="submit"
         >
-          Save
+          Save permission
         </button>
       </form>
     </div>

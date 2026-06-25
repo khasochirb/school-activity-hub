@@ -76,7 +76,7 @@ export default async function ApprovalsPage() {
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">Approvals</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Review club leader events that are waiting for staff approval.
+          Review club leader event requests before they appear to students.
         </p>
       </section>
 
@@ -113,7 +113,7 @@ export default async function ApprovalsPage() {
                       className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
                       type="submit"
                     >
-                      Approve
+                      Approve event
                     </button>
                   </form>
                 </div>
@@ -182,16 +182,22 @@ export default async function ApprovalsPage() {
                     className="h-9 w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 sm:w-fit"
                     type="submit"
                   >
-                    Reject
+                    Reject event
                   </button>
                 </form>
               </article>
             ))}
           </div>
         ) : (
-          <p className="p-6 text-sm text-zinc-600">
-            No events are waiting for approval.
-          </p>
+          <div className="p-6">
+            <p className="text-sm font-medium text-zinc-950">
+              No event approvals pending
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Club leader submissions will appear here when they need staff
+              review.
+            </p>
+          </div>
         )}
       </section>
     </div>

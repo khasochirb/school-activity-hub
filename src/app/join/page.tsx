@@ -16,8 +16,8 @@ export default function JoinPage() {
             Join with invite code
           </h1>
           <p className="mt-3 text-sm leading-6 text-zinc-600">
-            Enter the one-time code from your school to create your student
-            account.
+            Enter the one-time invite code from your school to activate your
+            student account.
           </p>
           <JoinForm />
         </section>

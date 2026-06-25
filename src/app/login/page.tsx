@@ -28,7 +28,8 @@ export default async function LoginPage() {
             Sign in
           </h1>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
-            Use your school activity account email and password.
+            Use your school activity account to manage or join verified school
+            activities.
           </p>
           <LoginForm />
         </section>
