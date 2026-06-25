@@ -48,28 +48,42 @@ export function AppShell({
   });
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-950">
-      <header className="border-b border-zinc-200 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <Link
-              className="w-fit cursor-pointer text-lg font-semibold tracking-tight text-zinc-950"
-              href="/dashboard"
-            >
-              School Activity Hub
-            </Link>
-            <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 sm:text-right">
+    <div className="app-surface">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <Link
+                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md bg-teal-700 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
+                href="/dashboard"
+                aria-label="School Activity Hub dashboard"
+              >
+                SAH
+              </Link>
+              <div>
+                <Link
+                  className="w-fit cursor-pointer text-lg font-bold tracking-tight text-slate-950 transition hover:text-teal-800"
+                  href="/dashboard"
+                >
+                  School Activity Hub
+                </Link>
+                <p className="text-sm text-slate-500">
+                  Clubs, events, invites, and attendance
+                </p>
+              </div>
+            </div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 md:text-right">
               <p className="break-all">{email}</p>
-              <p className="mt-1 font-medium text-zinc-900">
+              <p className="mt-1 font-semibold text-slate-900">
                 {profile ? formatRole(profile.role) : "No profile yet"}
               </p>
             </div>
           </div>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <AppNav items={visibleNavItems} />
-            <form action={logout} className="lg:shrink-0">
+            <form action={logout} className="xl:shrink-0">
               <PendingSubmitButton
-                className="h-10 w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:border-zinc-400 hover:bg-zinc-100 lg:w-auto"
+                className="btn btn-secondary w-full xl:w-auto"
                 pendingLabel="Logging out..."
               >
                 Log out
@@ -78,7 +92,7 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {children}
       </main>
     </div>

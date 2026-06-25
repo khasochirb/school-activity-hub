@@ -20,26 +20,26 @@ export function CreateAnnouncementForm() {
 
   return (
     <form action={formAction} className="grid gap-4">
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Title
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="title"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Body
         <textarea
-          className="min-h-32 rounded-md border border-zinc-300 px-3 py-2 text-base outline-none transition focus:border-zinc-900"
+          className="min-h-32 rounded-md border px-3 py-2 text-base outline-none transition"
           name="body"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:max-w-xs">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:max-w-xs">
         Status
         <select
-          className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
           defaultValue="active"
           name="status"
         >
@@ -49,7 +49,11 @@ export function CreateAnnouncementForm() {
       </label>
       {state.message ? (
         <p
-          className={state.success ? "text-sm text-emerald-700" : "text-sm text-red-600"}
+          className={
+            state.success
+              ? "notice-box notice-success"
+              : "notice-box notice-danger"
+          }
           role="status"
         >
           {state.message}
@@ -65,7 +69,7 @@ function SubmitButton() {
 
   return (
     <button
-      className="h-11 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400 sm:w-fit"
+      className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit"
       disabled={pending}
       type="submit"
     >

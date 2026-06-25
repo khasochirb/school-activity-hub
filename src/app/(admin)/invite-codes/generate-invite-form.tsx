@@ -27,10 +27,10 @@ export function GenerateInviteForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Active student
         <select
-          className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
           disabled={!hasStudents}
           name="student_roster_id"
           required
@@ -45,21 +45,25 @@ export function GenerateInviteForm({
         </select>
       </label>
       {!hasStudents ? (
-        <p className="text-sm text-zinc-600">
+        <p className="notice-box">
           Add an active student before creating invite codes.
         </p>
       ) : null}
       {state.message ? (
         <p
-          className={state.success ? "text-sm text-emerald-700" : "text-sm text-red-600"}
+          className={
+            state.success
+              ? "notice-box notice-success"
+              : "notice-box notice-danger"
+          }
           role="status"
         >
           {state.message}
         </p>
       ) : null}
       {state.code ? (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-sm font-medium text-emerald-900">Plain invite code</p>
+        <div className="notice-box notice-success">
+          <p className="text-sm font-bold text-emerald-900">Plain invite code</p>
           <p className="mt-2 break-all font-mono text-lg font-semibold text-emerald-950">
             {state.code}
           </p>
@@ -75,7 +79,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
   return (
     <button
-      className="h-11 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400 sm:w-auto"
+      className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       disabled={disabled || pending}
       type="submit"
     >

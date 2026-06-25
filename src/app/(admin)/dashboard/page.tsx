@@ -55,8 +55,8 @@ export default async function DashboardPage() {
         description="Your account is signed in, but it is not connected to a school profile yet."
         title="Dashboard"
       >
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-zinc-600">
+        <section className="section-card section-card-padded">
+          <p className="text-sm text-slate-600">
             Ask a school admin to finish setting up your profile.
           </p>
         </section>
@@ -125,8 +125,8 @@ function StudentDashboard({
       title="Dashboard"
     >
       {!analytics.currentStudent ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-zinc-600">
+        <section className="notice-box notice-warning">
+          <p>
             Your account is not linked to an active roster student yet.
           </p>
         </section>
@@ -156,10 +156,11 @@ function DashboardShell({
   title: string;
 }) {
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">{title}</h1>
-        <p className="mt-2 text-sm text-zinc-600">{description}</p>
+    <div className="page-stack">
+      <section className="page-header">
+        <p className="page-eyebrow">School activity overview</p>
+        <h1 className="page-title">{title}</h1>
+        <p className="page-description">{description}</p>
       </section>
       {children}
     </div>
@@ -176,35 +177,31 @@ function MetricGrid({ children }: { children: React.ReactNode }) {
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <article className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-zinc-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-zinc-950">
-        {formatNumber(value)}
-      </p>
+    <article className="stat-card">
+      <p className="stat-label">{label}</p>
+      <p className="stat-value">{formatNumber(value)}</p>
     </article>
   );
 }
 
 function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-      <div className="border-b border-zinc-200 p-6">
-        <h2 className="text-lg font-semibold text-zinc-950">
-          Upcoming approved events
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600">
+    <section className="section-card">
+      <div className="section-header">
+        <h2 className="section-title">Upcoming approved events</h2>
+        <p className="section-description">
           The next approved activities on your school calendar.
         </p>
       </div>
       {events.length ? (
-        <ul className="divide-y divide-zinc-200">
+        <ul className="divide-y divide-slate-200">
           {events.map((event) => (
             <li className="p-4" key={event.id}>
-              <p className="font-medium text-zinc-950">{event.title}</p>
-              <p className="mt-1 text-sm text-zinc-600">
+              <p className="font-semibold text-slate-950">{event.title}</p>
+              <p className="mt-1 text-sm text-slate-600">
                 {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
               </p>
-              <p className="mt-1 text-sm text-zinc-600">
+              <p className="mt-1 text-sm text-slate-600">
                 {event.location || "Location not set"}
               </p>
             </li>
@@ -222,33 +219,31 @@ function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
 
 function RecentCheckinsSection({ checkins }: { checkins: RecentCheckin[] }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-      <div className="border-b border-zinc-200 p-6">
-        <h2 className="text-lg font-semibold text-zinc-950">
-          Recent check-ins
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600">
+    <section className="section-card">
+      <div className="section-header">
+        <h2 className="section-title">Recent check-ins</h2>
+        <p className="section-description">
           The latest successful attendance check-ins for approved events.
         </p>
       </div>
       {checkins.length ? (
-        <ul className="divide-y divide-zinc-200">
+        <ul className="divide-y divide-slate-200">
           {checkins.map((checkin) => (
             <li className="p-4" key={checkin.id}>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="font-medium text-zinc-950">
+                  <p className="font-semibold text-slate-950">
                     {studentName(checkin.student_rosters)}
                   </p>
-                  <p className="mt-1 text-sm text-zinc-600">
+                  <p className="mt-1 text-sm text-slate-600">
                     {checkin.events?.title ?? "Event"}
                   </p>
                 </div>
-                <span className="w-fit rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                <span className="badge badge-success w-fit">
                   {checkin.method}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-zinc-600">
+              <p className="mt-2 text-sm text-slate-600">
                 {formatDateTime(checkin.checked_in_at)}
               </p>
             </li>
@@ -274,22 +269,22 @@ function DemoWorkflow() {
   ];
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-zinc-950">Demo workflow</h2>
-      <p className="mt-2 text-sm leading-6 text-zinc-600">
+    <section className="section-card section-card-padded">
+      <h2 className="section-title">Demo workflow</h2>
+      <p className="section-description">
         Use these steps for a clean school pilot without adding real production
         student data.
       </p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {steps.map((step, index) => (
           <li
-            className="rounded-md border border-zinc-200 bg-zinc-50 p-4"
+            className="detail-card"
             key={step}
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
               Step {index + 1}
             </p>
-            <p className="mt-2 text-sm font-semibold text-zinc-950">{step}</p>
+            <p className="mt-2 text-sm font-bold text-slate-950">{step}</p>
           </li>
         ))}
       </ol>
@@ -305,9 +300,9 @@ function EmptyState({
   title: string;
 }) {
   return (
-    <div className="p-6">
-      <p className="text-sm font-medium text-zinc-950">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-zinc-600">{description}</p>
+    <div className="m-4 empty-state">
+      <p className="text-sm font-bold text-slate-950">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
     </div>
   );
 }

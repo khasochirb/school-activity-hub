@@ -28,7 +28,7 @@ export function CreateEventForm({
 
   if (!canCreate) {
     return (
-      <p className="text-sm text-zinc-600">
+      <p className="notice-box">
         Club leaders can submit events after they are assigned as leader for a
         club.
       </p>
@@ -37,18 +37,18 @@ export function CreateEventForm({
 
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:col-span-2">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
         Title
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="title"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Category
         <select
-          className="h-11 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
           name="category"
         >
           <option value="">No category</option>
@@ -59,45 +59,45 @@ export function CreateEventForm({
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Location
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="location"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Starts at
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="starts_at"
           type="datetime-local"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Ends at
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="ends_at"
           type="datetime-local"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Max participants
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           min={1}
           name="max_participants"
           type="number"
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Club
         <select
-          className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
           name="club_id"
           required={!isStaff}
         >
@@ -109,10 +109,10 @@ export function CreateEventForm({
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Risk level
         <select
-          className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
           defaultValue="low"
           name="risk_level"
         >
@@ -121,7 +121,7 @@ export function CreateEventForm({
           <option value="high">High risk</option>
         </select>
       </label>
-      <label className="flex items-center gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
         <input
           className="h-4 w-4 cursor-pointer"
           name="permission_required"
@@ -130,17 +130,17 @@ export function CreateEventForm({
         />
         Permission required
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:col-span-2">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
         Description
         <textarea
-          className="min-h-24 rounded-md border border-zinc-300 px-3 py-2 text-base outline-none transition focus:border-zinc-900"
+          className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
           name="description"
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:col-span-2">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
         Permission note
         <textarea
-          className="min-h-20 rounded-md border border-zinc-300 px-3 py-2 text-base outline-none transition focus:border-zinc-900"
+          className="min-h-20 rounded-md border px-3 py-2 text-base outline-none transition"
           name="permission_note"
           placeholder="Optional note for staff, students, or families"
         />
@@ -149,8 +149,8 @@ export function CreateEventForm({
         <p
           className={
             state.success
-              ? "text-sm text-emerald-700 sm:col-span-2"
-              : "text-sm text-red-600 sm:col-span-2"
+              ? "notice-box notice-success sm:col-span-2"
+              : "notice-box notice-danger sm:col-span-2"
           }
           role="status"
         >
@@ -169,7 +169,7 @@ function SubmitButton({ isStaff }: { isStaff: boolean }) {
 
   return (
     <button
-      className="h-11 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400 sm:w-auto"
+      className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       disabled={pending}
       type="submit"
     >

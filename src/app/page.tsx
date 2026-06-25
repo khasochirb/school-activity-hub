@@ -4,21 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 const platformPoints = [
   {
     title: "Verified students only",
-    body: "Students activate accounts from a school roster with one-time invite codes, so access starts with staff approval.",
+    body: "Students activate accounts from a staff-managed roster with one-time invite codes.",
   },
   {
     title: "Clubs and events",
-    body: "Students can find approved activities, join clubs, register for events, and see what is coming up next.",
+    body: "Students discover active clubs, register for approved events, and keep track of what is coming up.",
   },
   {
-    title: "Staff oversight",
-    body: "School admins and teachers manage rosters, invite codes, approvals, safety notes, attendance, and reports.",
+    title: "Teacher oversight",
+    body: "School admins and teachers manage approvals, safety notes, attendance, and reporting from one place.",
   },
 ];
 
 const demoWorkflow = [
-  "School adds students",
-  "Staff generate invite codes",
+  "Add students",
+  "Generate invite codes",
   "Students join",
   "Create clubs/events",
   "Track attendance",
@@ -31,30 +31,29 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-950">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <span className="text-lg font-semibold">School Activity Hub</span>
+    <main className="min-h-screen bg-slate-50 text-slate-950">
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <Link
+            className="flex cursor-pointer items-center gap-3 transition hover:text-teal-800"
+            href="/"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-teal-700 text-sm font-bold text-white">
+              SAH
+            </span>
+            <span className="font-bold tracking-tight">School Activity Hub</span>
+          </Link>
           <nav className="flex items-center gap-2">
             {user ? (
-              <Link
-                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-                href="/dashboard"
-              >
+              <Link className="btn btn-primary" href="/dashboard">
                 Go to dashboard
               </Link>
             ) : (
               <>
-                <Link
-                  className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-                  href="/login"
-                >
+                <Link className="btn btn-secondary" href="/login">
                   Sign in
                 </Link>
-                <Link
-                  className="hidden h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 sm:inline-flex"
-                  href="/join"
-                >
+                <Link className="btn btn-primary hidden sm:inline-flex" href="/join">
                   Join with invite code
                 </Link>
               </>
@@ -63,41 +62,28 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-20">
+      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:py-16">
         <div className="flex flex-col justify-center">
-          <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-            Private school activity platform
-          </p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight text-zinc-950 sm:text-5xl">
-            A pilot-ready hub for clubs, events, and verified student
-            participation.
+          <p className="page-eyebrow">Private school activity platform</p>
+          <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
+            A calm, pilot-ready hub for verified student activities.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg">
-            School Activity Hub gives private schools a focused way to manage
-            activity rosters, invite-code student registration, club
-            membership, event approvals, and QR attendance check-in without
-            opening access to the public.
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            School Activity Hub helps private schools manage rosters, invite
+            code registration, clubs, event approvals, safety notes, and QR
+            attendance without opening access to the public.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             {user ? (
-              <Link
-                className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-5 text-sm font-medium text-white transition hover:bg-zinc-800"
-                href="/dashboard"
-              >
+              <Link className="btn btn-primary" href="/dashboard">
                 Go to dashboard
               </Link>
             ) : (
               <>
-                <Link
-                  className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-5 text-sm font-medium text-white transition hover:bg-zinc-800"
-                  href="/login"
-                >
+                <Link className="btn btn-primary" href="/login">
                   Sign in
                 </Link>
-                <Link
-                  className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-                  href="/join"
-                >
+                <Link className="btn btn-secondary" href="/join">
                   Join with invite code
                 </Link>
               </>
@@ -105,55 +91,66 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-sm font-medium text-zinc-500">Pilot snapshot</p>
-            <div className="mt-4 space-y-3">
-              <ActivityRow label="Student roster" value="Staff managed" />
-              <ActivityRow label="Invite access" value="One-time codes" />
-              <ActivityRow label="Attendance" value="QR check-in ready" />
+        <div className="section-card section-card-padded">
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-500">
+                  School pilot snapshot
+                </p>
+                <p className="mt-1 text-lg font-bold text-slate-950">
+                  Activity week overview
+                </p>
+              </div>
+              <span className="badge badge-success">Verified access</span>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <MiniStat label="Students" value="Rostered" />
+              <MiniStat label="Events" value="Approved" />
+              <MiniStat label="Check-in" value="QR ready" />
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <MiniStat label="Roster" value="Verified" />
-            <MiniStat label="Access" value="Invite codes" />
+
+          <div className="mt-4 grid gap-3">
+            <ActivityRow
+              label="Invite access"
+              value="One-time student codes"
+            />
+            <ActivityRow label="Club events" value="Teacher approved" />
+            <ActivityRow label="Attendance" value="Live check-in records" />
           </div>
         </div>
       </section>
 
-      <section className="border-y border-zinc-200 bg-white">
-        <div className="mx-auto grid max-w-6xl gap-4 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8">
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8">
           {platformPoints.map((point) => (
-            <article className="rounded-lg border border-zinc-200 p-5" key={point.title}>
-              <h2 className="text-base font-semibold text-zinc-950">
-                {point.title}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">
-                {point.body}
-              </p>
+            <article className="section-card section-card-padded" key={point.title}>
+              <h2 className="section-title">{point.title}</h2>
+              <p className="section-description">{point.body}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-semibold text-zinc-950">Demo workflow</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-          A simple pilot can walk through the full school activity flow without
-          using real student data.
-        </p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {demoWorkflow.map((step, index) => (
-            <article
-              className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm"
-              key={step}
-            >
-              <p className="text-sm font-medium text-zinc-500">
-                Step {index + 1}
-              </p>
-              <p className="mt-2 font-semibold text-zinc-950">{step}</p>
-            </article>
-          ))}
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="page-header">
+          <p className="page-eyebrow">Demo workflow</p>
+          <h2 className="page-title">Run a clean school pilot in five steps.</h2>
+          <p className="page-description">
+            Walk through the full activity flow using demo records first, then
+            replace them with real school data when the pilot is ready.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {demoWorkflow.map((step, index) => (
+              <article className="detail-card" key={step}>
+                <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+                  Step {index + 1}
+                </p>
+                <p className="mt-2 text-sm font-bold text-slate-950">{step}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </main>
@@ -162,18 +159,18 @@ export default async function HomePage() {
 
 function ActivityRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-md bg-white px-3 py-2 text-sm">
-      <span className="font-medium text-zinc-900">{label}</span>
-      <span className="text-zinc-500">{value}</span>
+    <div className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-3 py-3 text-sm">
+      <span className="font-semibold text-slate-900">{label}</span>
+      <span className="text-right text-slate-500">{value}</span>
     </div>
   );
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-zinc-200 p-4">
-      <p className="text-sm text-zinc-500">{label}</p>
-      <p className="mt-1 font-semibold text-zinc-950">{value}</p>
+    <div className="rounded-md border border-slate-200 bg-white p-4">
+      <p className="text-sm text-slate-500">{label}</p>
+      <p className="mt-1 font-bold text-slate-950">{value}</p>
     </div>
   );
 }

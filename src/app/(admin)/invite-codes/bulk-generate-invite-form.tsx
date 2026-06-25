@@ -50,7 +50,7 @@ export function BulkGenerateInviteForm({
     <div className="flex flex-col gap-4">
       <form action={formAction} className="flex flex-col gap-4">
         <fieldset className="flex flex-col gap-3">
-          <legend className="text-sm font-medium text-zinc-800">
+          <legend className="text-sm font-semibold text-slate-800">
             Generation scope
           </legend>
           <RadioOption
@@ -80,10 +80,10 @@ export function BulkGenerateInviteForm({
         </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
             Grade
             <select
-              className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition disabled:bg-zinc-100 focus:border-zinc-900"
+              className="h-11 rounded-md border bg-white px-3 text-base outline-none transition disabled:bg-slate-100"
               disabled={mode !== "filtered" || !gradeOptions.length}
               name="grade"
             >
@@ -95,10 +95,10 @@ export function BulkGenerateInviteForm({
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
             Class group
             <select
-              className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition disabled:bg-zinc-100 focus:border-zinc-900"
+              className="h-11 rounded-md border bg-white px-3 text-base outline-none transition disabled:bg-slate-100"
               disabled={mode !== "filtered" || !classGroupOptions.length}
               name="class_group"
             >
@@ -112,17 +112,17 @@ export function BulkGenerateInviteForm({
           </label>
         </div>
 
-        <div className="rounded-md border border-zinc-200">
-          <div className="border-b border-zinc-200 p-4">
-            <p className="text-sm font-medium text-zinc-800">
+        <div className="rounded-md border border-slate-200">
+          <div className="border-b border-slate-200 p-4">
+            <p className="text-sm font-semibold text-slate-800">
               Select students
             </p>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-slate-600">
               Only active students without linked profiles are listed.
             </p>
           </div>
           {hasEligibleStudents ? (
-            <div className="max-h-72 divide-y divide-zinc-200 overflow-y-auto">
+            <div className="max-h-72 divide-y divide-slate-200 overflow-y-auto">
               {eligibleStudents.map((student) => (
                 <label
                   className="flex cursor-pointer items-start gap-3 p-4 text-sm"
@@ -136,10 +136,10 @@ export function BulkGenerateInviteForm({
                     value={student.id}
                   />
                   <span>
-                    <span className="font-medium text-zinc-950">
+                    <span className="font-semibold text-slate-950">
                       {studentName(student)}
                     </span>
-                    <span className="mt-1 block text-zinc-600">
+                    <span className="mt-1 block text-slate-600">
                       Grade {student.grade_level || "-"}
                       {student.homeroom ? `, ${student.homeroom}` : ""}
                       {student.student_number
@@ -151,7 +151,7 @@ export function BulkGenerateInviteForm({
               ))}
             </div>
           ) : (
-            <p className="p-4 text-sm text-zinc-600">
+            <p className="p-4 text-sm text-slate-600">
               No active unlinked students are available for bulk invite codes.
             </p>
           )}
@@ -160,7 +160,9 @@ export function BulkGenerateInviteForm({
         {state.message ? (
           <p
             className={
-              state.success ? "text-sm text-emerald-700" : "text-sm text-red-600"
+              state.success
+                ? "notice-box notice-success"
+                : "notice-box notice-danger"
             }
             role="status"
           >
@@ -194,7 +196,7 @@ function RadioOption({
   value: string;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-md border border-zinc-200 p-3">
+    <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-white p-3 transition hover:border-teal-200 hover:bg-teal-50">
       <input
         checked={checked}
         className="mt-1 cursor-pointer"
@@ -204,8 +206,8 @@ function RadioOption({
         value={value}
       />
       <span>
-        <span className="block text-sm font-medium text-zinc-900">{label}</span>
-        <span className="mt-1 block text-sm text-zinc-600">{description}</span>
+        <span className="block text-sm font-semibold text-slate-900">{label}</span>
+        <span className="mt-1 block text-sm text-slate-600">{description}</span>
       </span>
     </label>
   );
@@ -216,7 +218,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
   return (
     <button
-      className="h-11 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400 sm:w-auto"
+      className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       disabled={disabled || pending}
       type="submit"
     >
@@ -227,8 +229,8 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
 function GeneratedCodesPanel({ csv, text }: { csv: string; text: string }) {
   return (
-    <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
-      <p className="text-sm font-medium text-emerald-900">
+    <div className="notice-box notice-success">
+      <p className="text-sm font-bold text-emerald-900">
         Generated invite codes
       </p>
       <textarea
@@ -238,14 +240,14 @@ function GeneratedCodesPanel({ csv, text }: { csv: string; text: string }) {
       />
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <button
-          className="h-10 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+          className="btn btn-primary"
           onClick={() => void navigator.clipboard.writeText(text)}
           type="button"
         >
           Copy text list
         </button>
         <button
-          className="h-10 cursor-pointer rounded-md border border-emerald-300 bg-white px-4 text-sm font-medium text-emerald-900 transition hover:bg-emerald-100"
+          className="btn btn-secondary border-emerald-300 text-emerald-900 hover:bg-emerald-100"
           onClick={() => downloadCsv(csv)}
           type="button"
         >

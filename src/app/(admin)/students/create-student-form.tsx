@@ -14,33 +14,33 @@ export function CreateStudentForm() {
 
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:col-span-2">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
         Full name
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="full_name"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Grade
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="grade"
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         Class group / homeroom
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="class_group"
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 sm:col-span-2">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
         Student number
         <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
+          className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="student_number"
         />
       </label>
@@ -48,8 +48,8 @@ export function CreateStudentForm() {
         <p
           className={
             state.success
-              ? "text-sm text-emerald-700 sm:col-span-2"
-              : "text-sm text-red-600 sm:col-span-2"
+              ? "notice-box notice-success sm:col-span-2"
+              : "notice-box notice-danger sm:col-span-2"
           }
           role="status"
         >
@@ -68,7 +68,7 @@ function SubmitButton() {
 
   return (
     <button
-      className="h-11 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400 sm:w-auto"
+      className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       disabled={pending}
       type="submit"
     >

@@ -14,7 +14,7 @@ export function AppNav({ items }: { items: NavItem[] }) {
   return (
     <nav
       aria-label="Primary navigation"
-      className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
+      className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible"
     >
       {items.map((item) => {
         const active = isActivePath(pathname, item.href);
@@ -24,8 +24,8 @@ export function AppNav({ items }: { items: NavItem[] }) {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-3 text-center text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800"
-                : "inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-200 bg-white px-3 text-center text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950"
+                ? "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-teal-700 px-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+                : "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-center text-sm font-semibold text-slate-700 transition hover:border-teal-200 hover:bg-teal-50 hover:text-teal-900"
             }
             href={item.href}
             key={item.href}

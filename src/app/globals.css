@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f4f5;
-  --foreground: #18181b;
+  --background: #f5f7fb;
+  --foreground: #172033;
+  --card: #ffffff;
+  --card-soft: #f8fafc;
+  --border: #dbe3ea;
+  --border-strong: #c4d0dc;
+  --muted: #64748b;
+  --primary: #0f766e;
+  --primary-strong: #115e59;
+  --primary-soft: #ccfbf1;
+  --accent: #2563eb;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --success: #047857;
 }
 
 @theme inline {
@@ -14,8 +26,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #f4f4f5;
-    --foreground: #18181b;
+    --background: #f5f7fb;
+    --foreground: #172033;
   }
 }
 
@@ -25,12 +37,17 @@
 
 html {
   background: var(--background);
+  scroll-padding-top: 1rem;
 }
 
 body {
-  background: var(--background);
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 247, 251, 0.96)),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 :where(a[href], button, input[type="button"], input[type="submit"], label:has(input[type="checkbox"]), label:has(input[type="radio"])) {
@@ -46,11 +63,364 @@ body {
 }
 
 :where(a[href], button, input, select, textarea):focus-visible {
-  outline: 2px solid #18181b;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  border-color: var(--border-strong);
+  background-color: #ffffff;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea):focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.13);
+}
+
+:where(input::placeholder, textarea::placeholder) {
+  color: #94a3b8;
+}
+
+:where(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+:where(thead) {
+  background: #f8fafc;
+}
+
+:where(tbody tr) {
+  transition: background-color 140ms ease;
+}
+
+:where(tbody tr:hover) {
+  background-color: #f8fafc;
+}
+
+:where(pre) {
+  border: 1px solid var(--border);
+}
+
+:where(.rounded-lg.border.border-zinc-200.bg-white) {
+  border-color: var(--border);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+:where(.rounded-md.border.border-zinc-200.bg-zinc-50) {
+  border-color: var(--border);
+  background-color: var(--card-soft);
+}
+
+:where(.border-zinc-200) {
+  border-color: var(--border);
+}
+
+:where(.bg-zinc-50) {
+  background-color: var(--card-soft);
+}
+
+:where(.bg-zinc-950.text-white) {
+  background-color: var(--primary);
+}
+
+:where(.hover\:bg-zinc-800:hover) {
+  background-color: var(--primary-strong);
+}
+
+main > .flex.flex-col.gap-6 > section:first-child.rounded-lg.border.border-zinc-200.bg-white {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 68%, #eefcf8 100%);
+}
+
+main > .flex.flex-col.gap-6 > section:first-child.rounded-lg.border.border-zinc-200.bg-white::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--accent), #f59e0b);
+  content: "";
+}
+
+main > .flex.flex-col.gap-6 > section:first-child h1 {
+  color: var(--foreground);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+main > .flex.flex-col.gap-6 > section:first-child p {
+  max-width: 48rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 ::selection {
-  background: #d4d4d8;
-  color: #18181b;
+  background: var(--primary-soft);
+  color: var(--foreground);
+}
+
+.app-surface {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(240, 253, 250, 0.7), rgba(245, 247, 251, 0.94) 28rem),
+    var(--background);
+  color: var(--foreground);
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page-header {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 68%, #eefcf8 100%);
+  padding: 1.5rem;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+}
+
+.page-header::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--accent), #f59e0b);
+  content: "";
+}
+
+.page-eyebrow {
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-title {
+  margin-top: 0.35rem;
+  color: var(--foreground);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.page-description {
+  margin-top: 0.65rem;
+  max-width: 48rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.section-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+.section-card-padded {
+  padding: 1.5rem;
+}
+
+.section-header {
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem;
+}
+
+.section-title {
+  color: var(--foreground);
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.section-description {
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  padding: 1.25rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.stat-value {
+  margin-top: 0.6rem;
+  color: var(--foreground);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.detail-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card-soft);
+  padding: 1rem;
+}
+
+.empty-state {
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  padding: 1.5rem;
+}
+
+.notice-box {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  padding: 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.notice-success {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.notice-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.notice-danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.btn {
+  display: inline-flex;
+  min-height: 2.5rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  transform: none;
+}
+
+.btn-primary {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 8px 16px rgba(15, 118, 110, 0.18);
+}
+
+.btn-primary:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}
+
+.btn-secondary {
+  border: 1px solid var(--border-strong);
+  background: #ffffff;
+  color: #334155;
+}
+
+.btn-secondary:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: var(--foreground);
+}
+
+.btn-danger {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  border-color: #fca5a5;
+  background: #fee2e2;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  background: #eef2f7;
+  color: #475569;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.category-badge {
+  background: #eefcf8;
+  color: var(--primary-strong);
+}
+
+@media (max-width: 640px) {
+  .page-header,
+  .section-card-padded,
+  .section-header {
+    padding: 1.1rem;
+  }
+
+  .stat-value {
+    font-size: 1.65rem;
+  }
 }
