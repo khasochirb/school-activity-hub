@@ -26,7 +26,6 @@ type Club = {
   description: string | null;
   category: string | null;
   status: string;
-  created_at: string;
 };
 
 type StudentRoster = {
@@ -38,7 +37,6 @@ type ClubMembership = {
   club_id: string;
   student_roster_id: string;
   role: "member" | "leader";
-  status: string;
   student_rosters: {
     first_name: string;
     last_name: string;
@@ -79,7 +77,7 @@ export default async function ClubsPage({
 
   let clubsQuery = supabase
     .from("clubs")
-    .select("id, name, description, category, status, created_at")
+    .select("id, name, description, category, status")
     .eq("school_id", profile.school_id)
     .eq("status", "active");
 
@@ -102,12 +100,18 @@ export default async function ClubsPage({
           .maybeSingle<StudentRoster>()
       : { data: null };
 
-  const { data: memberships } = await supabase
-    .from("club_memberships")
-    .select("id, club_id, student_roster_id, role, status, student_rosters(first_name, last_name)")
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .returns<ClubMembership[]>();
+  const clubIds = (clubs ?? []).map((club) => club.id);
+  const { data: memberships } = clubIds.length
+    ? await supabase
+        .from("club_memberships")
+        .select(
+          "id, club_id, student_roster_id, role, student_rosters(first_name, last_name)",
+        )
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .in("club_id", clubIds)
+        .returns<ClubMembership[]>()
+    : { data: [] };
 
   const membershipsByClub = groupMembershipsByClub(memberships ?? []);
   const currentStudentMemberships = new Set(

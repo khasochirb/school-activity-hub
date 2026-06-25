@@ -351,8 +351,9 @@ async function getStudentAnalytics(
   profile: Profile,
 ) {
   const now = new Date().toISOString();
-  const currentStudent = await getCurrentStudent(admin, profile);
+  const currentStudentPromise = getCurrentStudent(admin, profile);
   const upcomingEventsPromise = getUpcomingEvents(admin, profile.school_id, now);
+  const currentStudent = await currentStudentPromise;
 
   if (!currentStudent) {
     return {

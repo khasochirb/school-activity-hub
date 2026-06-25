@@ -58,7 +58,6 @@ type EventAttendee = {
   event_id: string;
   student_roster_id: string | null;
   attendee_profile_id: string | null;
-  attendee_school_id: string;
   permission_status: EventPermissionStatus;
   status: string;
 };
@@ -120,22 +119,30 @@ export default async function EventsPage({
   const isStaff = profile.role === "school_admin" || profile.role === "teacher";
   const currentStudent = await getCurrentStudent(admin, profile);
   const now = new Date().toISOString();
+  const needsConnectedSchools = isStaff || selectedScope === "shared";
   const [
     clubOptions,
     leaderClubOptions,
     registeredEventIds,
     connectedSchoolIds,
   ] = await Promise.all([
-    getSchoolClubOptions(admin, profile.school_id),
-    getLeaderClubOptions(admin, profile, currentStudent),
+    isStaff
+      ? getSchoolClubOptions(admin, profile.school_id)
+      : Promise.resolve([]),
+    profile.role === "student"
+      ? getLeaderClubOptions(admin, profile, currentStudent)
+      : Promise.resolve([]),
     getCurrentStudentRegisteredEventIds(
       admin,
       profile,
       currentStudent,
+      now,
     ),
-    getConnectedSchoolIds(admin, profile.school_id),
+    needsConnectedSchools
+      ? getConnectedSchoolIds(admin, profile.school_id)
+      : Promise.resolve([]),
   ]);
-  const sharedEventIds = connectedSchoolIds.length
+  const sharedEventIds = selectedScope === "shared" && connectedSchoolIds.length
     ? await getSharedEventIdsForSchool(admin, profile.school_id)
     : [];
   const categoryOptions = ACTIVITY_CATEGORIES;
@@ -156,7 +163,7 @@ export default async function EventsPage({
   const [attendees, eventShares, connectedSchools] = await Promise.all([
     eventIds.length ? getEventAttendees(admin, eventIds) : Promise.resolve([]),
     eventIds.length ? getEventShares(admin, eventIds) : Promise.resolve([]),
-    connectedSchoolIds.length
+    isStaff && connectedSchoolIds.length
       ? getSchoolsById(admin, connectedSchoolIds)
       : Promise.resolve([]),
   ]);
@@ -166,15 +173,25 @@ export default async function EventsPage({
     profile,
     currentStudent,
   );
-  const linkedClubIds = events
-    .filter((event) => event.school_id === profile.school_id)
-    .map((event) => event.club_id)
-    .filter((clubId): clubId is string => Boolean(clubId));
+  const linkedClubIds = Array.from(
+    new Set(
+      events
+        .filter((event) => event.school_id === profile.school_id)
+        .map((event) => event.club_id)
+        .filter((clubId): clubId is string => Boolean(clubId)),
+    ),
+  );
   const linkedClubs = linkedClubIds.length
     ? await getClubsById(admin, profile.school_id, linkedClubIds)
     : [];
   const clubNameById = new Map(linkedClubs.map((club) => [club.id, club.name]));
-  const ownerSchoolIds = Array.from(new Set(events.map((event) => event.school_id)));
+  const ownerSchoolIds = Array.from(
+    new Set(
+      events
+        .map((event) => event.school_id)
+        .filter((schoolId) => schoolId !== profile.school_id),
+    ),
+  );
   const ownerSchools = ownerSchoolIds.length
     ? await getSchoolsById(admin, ownerSchoolIds)
     : [];
@@ -211,13 +228,13 @@ export default async function EventsPage({
         </section>
       ) : null}
 
-        <EventFilters
-          categoryOptions={categoryOptions}
-          currentStudent={currentStudent}
-          selectedCategory={selectedCategory}
-          selectedFilter={selectedFilter}
-          selectedScope={selectedScope}
-        />
+      <EventFilters
+        categoryOptions={categoryOptions}
+        currentStudent={currentStudent}
+        selectedCategory={selectedCategory}
+        selectedFilter={selectedFilter}
+        selectedScope={selectedScope}
+      />
 
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
@@ -1056,6 +1073,7 @@ async function getCurrentStudentRegisteredEventIds(
   admin: ReturnType<typeof createAdminClient>,
   profile: Profile,
   currentStudent: StudentRoster | null,
+  now: string,
 ) {
   if (!currentStudent) {
     return [];
@@ -1063,9 +1081,13 @@ async function getCurrentStudentRegisteredEventIds(
 
   const { data: attendees } = await admin
     .from("event_attendees")
-    .select("event_id")
-    .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${currentStudent.id}`)
+    .select("event_id, events!inner(id)")
+    .or(
+      `attendee_profile_id.eq.${profile.id},student_roster_id.eq.${currentStudent.id}`,
+    )
     .in("status", ["registered", "attended"])
+    .eq("events.status", "approved")
+    .gte("events.starts_at", now)
     .returns<Array<{ event_id: string }>>();
 
   return (attendees ?? []).map((attendee) => attendee.event_id);
@@ -1077,7 +1099,7 @@ async function getEventAttendees(
 ) {
   const { data: attendees } = await admin
     .from("event_attendees")
-    .select("event_id, student_roster_id, attendee_profile_id, attendee_school_id, permission_status, status")
+    .select("event_id, student_roster_id, attendee_profile_id, permission_status, status")
     .in("event_id", eventIds)
     .in("status", ["registered", "attended"])
     .returns<EventAttendee[]>();

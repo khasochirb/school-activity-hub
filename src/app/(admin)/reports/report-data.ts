@@ -18,12 +18,6 @@ type StudentRoster = {
   created_at: string;
 };
 
-type Club = {
-  id: string;
-  name: string;
-  status: string;
-};
-
 type EventRecord = {
   id: string;
   title: string;
@@ -36,7 +30,7 @@ type EventRecord = {
 type EventAttendee = {
   id: string;
   event_id: string;
-  student_roster_id: string;
+  student_roster_id: string | null;
   status: string;
   registered_at: string;
   checked_in_at: string | null;
@@ -46,11 +40,21 @@ type EventAttendee = {
 type AttendanceCheckin = {
   id: string;
   event_id: string;
-  student_roster_id: string;
+  student_roster_id: string | null;
   method: string;
   result: string;
   checked_in_at: string;
   created_at: string;
+};
+
+type ReportCountRow = {
+  event_id: string | null;
+  student_roster_id: string | null;
+};
+
+type CountBucket = {
+  count: number;
+  id: string;
 };
 
 export type ReportSummary = {
@@ -77,14 +81,6 @@ export type ReportsData = {
   summary: ReportSummary;
 };
 
-type ReportSourceData = {
-  attendees: EventAttendee[];
-  checkins: AttendanceCheckin[];
-  clubs: Club[];
-  events: EventRecord[];
-  students: StudentRoster[];
-};
-
 export async function getCurrentStaffProfile() {
   const supabase = await createClient();
   const {
@@ -109,87 +105,103 @@ export async function getCurrentStaffProfile() {
 }
 
 export async function getReportsData(schoolId: string): Promise<ReportsData> {
-  const sourceData = await getReportSourceData(schoolId);
-  const activeRegistrations = getActiveRegistrations(sourceData.attendees);
-  const successfulCheckins = sourceData.checkins.filter(
-    (checkin) => checkin.result === "success",
+  const admin = createAdminClient();
+  const [summary, activeRegistrations, successfulCheckins] = await Promise.all([
+    getReportSummary(admin, schoolId),
+    getActiveRegistrationRows(admin, schoolId),
+    getSuccessfulCheckinRows(admin, schoolId),
+  ]);
+  const studentsWithMostRegistrations = summarizeBy(
+    activeRegistrations,
+    "student_roster_id",
   );
-  const studentsById = new Map(
-    sourceData.students.map((student) => [student.id, student]),
+  const studentsWithMostCheckins = summarizeBy(
+    successfulCheckins,
+    "student_roster_id",
   );
-  const eventsById = new Map(sourceData.events.map((event) => [event.id, event]));
+  const eventsWithMostRegistrations = summarizeBy(
+    activeRegistrations,
+    "event_id",
+  );
+  const eventsWithMostCheckins = summarizeBy(successfulCheckins, "event_id");
+  const [students, events] = await Promise.all([
+    getStudentsByIds(
+      admin,
+      schoolId,
+      uniqueIds([
+        ...studentsWithMostRegistrations.map((row) => row.id),
+        ...studentsWithMostCheckins.map((row) => row.id),
+      ]),
+    ),
+    getEventsByIds(
+      admin,
+      schoolId,
+      uniqueIds([
+        ...eventsWithMostRegistrations.map((row) => row.id),
+        ...eventsWithMostCheckins.map((row) => row.id),
+      ]),
+    ),
+  ]);
+  const studentsById = new Map(students.map((student) => [student.id, student]));
+  const eventsById = new Map(events.map((event) => [event.id, event]));
 
   return {
     eventsWithMostCheckins: summarizeEvents(
-      successfulCheckins,
+      eventsWithMostCheckins,
       eventsById,
-      "event_id",
     ),
     eventsWithMostRegistrations: summarizeEvents(
-      activeRegistrations,
+      eventsWithMostRegistrations,
       eventsById,
-      "event_id",
     ),
     studentsWithMostCheckins: summarizeStudents(
-      successfulCheckins,
+      studentsWithMostCheckins,
       studentsById,
-      "student_roster_id",
     ),
     studentsWithMostRegistrations: summarizeStudents(
-      activeRegistrations,
+      studentsWithMostRegistrations,
       studentsById,
-      "student_roster_id",
     ),
-    summary: {
-      activeClubs: sourceData.clubs.filter((club) => club.status === "active")
-        .length,
-      activeStudents: sourceData.students.filter(
-        (student) => student.status === "active",
-      ).length,
-      approvedEvents: sourceData.events.filter(
-        (event) => event.status === "approved",
-      ).length,
-      attendanceCheckins: successfulCheckins.length,
-      attendanceRate: activeRegistrations.length
-        ? successfulCheckins.length / activeRegistrations.length
-        : null,
-      eventRegistrations: activeRegistrations.length,
-    },
+    summary,
   };
 }
 
 export async function getReportCsvExport(type: string, schoolId: string) {
-  const sourceData = await getReportSourceData(schoolId);
-  const studentsById = new Map(
-    sourceData.students.map((student) => [student.id, student]),
-  );
-  const eventsById = new Map(sourceData.events.map((event) => [event.id, event]));
+  const admin = createAdminClient();
 
   if (type === "student-roster") {
+    const students = await getStudentRosters(admin, schoolId);
+
     return {
-      csv: createStudentRosterCsv(sourceData.students),
+      csv: createStudentRosterCsv(students),
       filename: "student-roster.csv",
     };
   }
 
   if (type === "event-registrations") {
+    const attendees = await getEventAttendees(admin, schoolId);
+    const { eventsById, studentsById } = await getRelatedReportRecords(
+      admin,
+      schoolId,
+      attendees,
+    );
+
     return {
-      csv: createEventRegistrationsCsv(
-        sourceData.attendees,
-        studentsById,
-        eventsById,
-      ),
+      csv: createEventRegistrationsCsv(attendees, studentsById, eventsById),
       filename: "event-registrations.csv",
     };
   }
 
   if (type === "attendance-checkins") {
+    const checkins = await getAttendanceCheckins(admin, schoolId);
+    const { eventsById, studentsById } = await getRelatedReportRecords(
+      admin,
+      schoolId,
+      checkins,
+    );
+
     return {
-      csv: createAttendanceCheckinsCsv(
-        sourceData.checkins,
-        studentsById,
-        eventsById,
-      ),
+      csv: createAttendanceCheckinsCsv(checkins, studentsById, eventsById),
       filename: "attendance-checkins.csv",
     };
   }
@@ -197,25 +209,157 @@ export async function getReportCsvExport(type: string, schoolId: string) {
   return null;
 }
 
-async function getReportSourceData(
+async function getReportSummary(
+  admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
-): Promise<ReportSourceData> {
-  const admin = createAdminClient();
-  const [students, clubs, events, attendees, checkins] = await Promise.all([
-    getStudentRosters(admin, schoolId),
-    getClubs(admin, schoolId),
-    getEvents(admin, schoolId),
-    getEventAttendees(admin, schoolId),
-    getAttendanceCheckins(admin, schoolId),
+): Promise<ReportSummary> {
+  const [
+    activeStudents,
+    activeClubs,
+    approvedEvents,
+    eventRegistrations,
+    attendanceCheckins,
+  ] = await Promise.all([
+    getActiveStudentCount(admin, schoolId),
+    getActiveClubCount(admin, schoolId),
+    getApprovedEventCount(admin, schoolId),
+    getActiveRegistrationCount(admin, schoolId),
+    getSuccessfulCheckinCount(admin, schoolId),
   ]);
 
   return {
-    attendees,
-    checkins,
-    clubs,
-    events,
-    students,
+    activeClubs,
+    activeStudents,
+    approvedEvents,
+    attendanceCheckins,
+    attendanceRate: eventRegistrations
+      ? attendanceCheckins / eventRegistrations
+      : null,
+    eventRegistrations,
   };
+}
+
+async function getRelatedReportRecords(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+  rows: ReportCountRow[],
+) {
+  const [students, events] = await Promise.all([
+    getStudentsByIds(
+      admin,
+      schoolId,
+      uniqueIds(
+        rows
+          .map((row) => row.student_roster_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ),
+    getEventsByIds(
+      admin,
+      schoolId,
+      uniqueIds(
+        rows.map((row) => row.event_id).filter((id): id is string => Boolean(id)),
+      ),
+    ),
+  ]);
+
+  return {
+    eventsById: new Map(events.map((event) => [event.id, event])),
+    studentsById: new Map(students.map((student) => [student.id, student])),
+  };
+}
+
+async function getActiveStudentCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await admin
+    .from("student_rosters")
+    .select("id", { count: "exact", head: true })
+    .eq("school_id", schoolId)
+    .eq("status", "active");
+
+  return count ?? 0;
+}
+
+async function getActiveClubCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await admin
+    .from("clubs")
+    .select("id", { count: "exact", head: true })
+    .eq("school_id", schoolId)
+    .eq("status", "active");
+
+  return count ?? 0;
+}
+
+async function getApprovedEventCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await admin
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("school_id", schoolId)
+    .eq("status", "approved");
+
+  return count ?? 0;
+}
+
+async function getActiveRegistrationCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await admin
+    .from("event_attendees")
+    .select("id", { count: "exact", head: true })
+    .eq("school_id", schoolId)
+    .in("status", ["registered", "attended"]);
+
+  return count ?? 0;
+}
+
+async function getSuccessfulCheckinCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await admin
+    .from("attendance_checkins")
+    .select("id", { count: "exact", head: true })
+    .eq("school_id", schoolId)
+    .eq("result", "success");
+
+  return count ?? 0;
+}
+
+async function getActiveRegistrationRows(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { data: rows } = await admin
+    .from("event_attendees")
+    .select("event_id, student_roster_id")
+    .eq("school_id", schoolId)
+    .in("status", ["registered", "attended"])
+    .returns<ReportCountRow[]>();
+
+  return rows ?? [];
+}
+
+async function getSuccessfulCheckinRows(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { data: rows } = await admin
+    .from("attendance_checkins")
+    .select("event_id, student_roster_id")
+    .eq("school_id", schoolId)
+    .eq("result", "success")
+    .returns<ReportCountRow[]>();
+
+  return rows ?? [];
 }
 
 async function getStudentRosters(
@@ -229,32 +373,47 @@ async function getStudentRosters(
     )
     .eq("school_id", schoolId)
     .order("last_name", { ascending: true })
+    .order("first_name", { ascending: true })
     .returns<StudentRoster[]>();
 
   return students ?? [];
 }
 
-async function getClubs(
+async function getStudentsByIds(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
+  studentIds: string[],
 ) {
-  const { data: clubs } = await admin
-    .from("clubs")
-    .select("id, name, status")
-    .eq("school_id", schoolId)
-    .returns<Club[]>();
+  if (!studentIds.length) {
+    return [];
+  }
 
-  return clubs ?? [];
+  const { data: students } = await admin
+    .from("student_rosters")
+    .select(
+      "id, first_name, last_name, grade_level, homeroom, student_number, status, created_at",
+    )
+    .eq("school_id", schoolId)
+    .in("id", studentIds)
+    .returns<StudentRoster[]>();
+
+  return students ?? [];
 }
 
-async function getEvents(
+async function getEventsByIds(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
+  eventIds: string[],
 ) {
+  if (!eventIds.length) {
+    return [];
+  }
+
   const { data: events } = await admin
     .from("events")
     .select("id, title, location, starts_at, ends_at, status")
     .eq("school_id", schoolId)
+    .in("id", eventIds)
     .returns<EventRecord[]>();
 
   return events ?? [];
@@ -281,25 +440,24 @@ async function getAttendanceCheckins(
 ) {
   const { data: checkins } = await admin
     .from("attendance_checkins")
-    .select("id, event_id, student_roster_id, method, result, checked_in_at, created_at")
+    .select(
+      "id, event_id, student_roster_id, method, result, checked_in_at, created_at",
+    )
     .eq("school_id", schoolId)
     .returns<AttendanceCheckin[]>();
 
   return checkins ?? [];
 }
 
-function getActiveRegistrations(attendees: EventAttendee[]) {
-  return attendees.filter((attendee) =>
-    ["registered", "attended"].includes(attendee.status),
-  );
+function uniqueIds(ids: string[]) {
+  return Array.from(new Set(ids));
 }
 
-function summarizeStudents<T extends { student_roster_id: string }>(
-  rows: T[],
+function summarizeStudents(
+  counts: CountBucket[],
   studentsById: Map<string, StudentRoster>,
-  key: keyof T,
 ) {
-  return summarizeBy(rows, key).map(({ count, id }) => {
+  return counts.map(({ count, id }) => {
     const student = studentsById.get(id);
 
     return {
@@ -311,12 +469,11 @@ function summarizeStudents<T extends { student_roster_id: string }>(
   });
 }
 
-function summarizeEvents<T extends { event_id: string }>(
-  rows: T[],
+function summarizeEvents(
+  counts: CountBucket[],
   eventsById: Map<string, EventRecord>,
-  key: keyof T,
 ) {
-  return summarizeBy(rows, key).map(({ count, id }) => {
+  return counts.map(({ count, id }) => {
     const event = eventsById.get(id);
 
     return {
@@ -328,13 +485,13 @@ function summarizeEvents<T extends { event_id: string }>(
   });
 }
 
-function summarizeBy<T>(rows: T[], key: keyof T) {
+function summarizeBy(rows: ReportCountRow[], key: keyof ReportCountRow) {
   const counts = new Map<string, number>();
 
   rows.forEach((row) => {
     const value = row[key];
 
-    if (typeof value === "string" && value) {
+    if (value) {
       counts.set(value, (counts.get(value) ?? 0) + 1);
     }
   });
@@ -356,7 +513,14 @@ function createStudentRosterCsv(students: StudentRoster[]) {
   ]);
 
   return createCsv(
-    ["student_name", "grade", "class_group", "student_number", "status", "created_at"],
+    [
+      "student_name",
+      "grade",
+      "class_group",
+      "student_number",
+      "status",
+      "created_at",
+    ],
     rows,
   );
 }
@@ -367,7 +531,7 @@ function createEventRegistrationsCsv(
   eventsById: Map<string, EventRecord>,
 ) {
   const rows = attendees.map((attendee) => {
-    const student = studentsById.get(attendee.student_roster_id);
+    const student = studentsById.get(attendee.student_roster_id ?? "");
     const event = eventsById.get(attendee.event_id);
 
     return [
@@ -405,7 +569,7 @@ function createAttendanceCheckinsCsv(
   eventsById: Map<string, EventRecord>,
 ) {
   const rows = checkins.map((checkin) => {
-    const student = studentsById.get(checkin.student_roster_id);
+    const student = studentsById.get(checkin.student_roster_id ?? "");
     const event = eventsById.get(checkin.event_id);
 
     return [

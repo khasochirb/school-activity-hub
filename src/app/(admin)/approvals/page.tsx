@@ -50,25 +50,30 @@ export default async function ApprovalsPage() {
     redirect("/dashboard");
   }
 
-  const [
-    { data: pendingEvents, error: eventsError },
-    { data: clubs },
-  ] = await Promise.all([
-    supabase
-      .from("events")
-      .select(
-        "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, submitted_at, created_at",
-      )
-      .eq("school_id", profile.school_id)
-      .eq("status", "pending_approval")
-      .order("submitted_at", { ascending: true, nullsFirst: false })
-      .returns<PendingEvent[]>(),
-    supabase
-      .from("clubs")
-      .select("id, name")
-      .eq("school_id", profile.school_id)
-      .returns<Club[]>(),
-  ]);
+  const { data: pendingEvents, error: eventsError } = await supabase
+    .from("events")
+    .select(
+      "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, submitted_at, created_at",
+    )
+    .eq("school_id", profile.school_id)
+    .eq("status", "pending_approval")
+    .order("submitted_at", { ascending: true, nullsFirst: false })
+    .returns<PendingEvent[]>();
+  const clubIds = Array.from(
+    new Set(
+      (pendingEvents ?? [])
+        .map((event) => event.club_id)
+        .filter((clubId): clubId is string => Boolean(clubId)),
+    ),
+  );
+  const { data: clubs } = clubIds.length
+    ? await supabase
+        .from("clubs")
+        .select("id, name")
+        .eq("school_id", profile.school_id)
+        .in("id", clubIds)
+        .returns<Club[]>()
+    : { data: [] };
 
   const clubNameById = new Map((clubs ?? []).map((club) => [club.id, club.name]));
 

@@ -81,6 +81,7 @@ export default async function SchoolConnectionsPage({
       .from("schools")
       .select("id, name, slug, province, status")
       .eq("status", "active")
+      .neq("id", profile.school_id)
       .order("name", { ascending: true })
       .returns<School[]>(),
     supabase
@@ -95,9 +96,7 @@ export default async function SchoolConnectionsPage({
       .returns<SchoolConnection[]>(),
   ]);
 
-  const otherSchools = (activeSchools ?? []).filter(
-    (school) => school.id !== profile.school_id,
-  );
+  const otherSchools = activeSchools ?? [];
   const schoolsById = new Map<string, School>();
 
   for (const school of activeSchools ?? []) {
