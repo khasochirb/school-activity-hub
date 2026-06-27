@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { CheckInForm } from "./check-in-form";
@@ -38,11 +40,16 @@ type AttendanceCheckin = {
   id: string;
 };
 
+type Translate = (key: string) => string;
+
 export default async function StudentCheckInPage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
   const { eventId } = await params;
   const supabase = await createClient();
   const {
@@ -62,7 +69,11 @@ export default async function StudentCheckInPage({
   if (!profile || profile.role !== "student" || profile.status !== "active") {
     return (
       <CheckInShell>
-        <UnavailableMessage message="Only active student accounts can use this check-in link." />
+        <UnavailableMessage
+          backLabel={t("common.backToDashboard")}
+          message={t("checkIn.errors.activeStudentsOnly")}
+          title={t("checkIn.title")}
+        />
       </CheckInShell>
     );
   }
@@ -97,11 +108,13 @@ export default async function StudentCheckInPage({
     return (
       <CheckInShell>
         <UnavailableMessage
+          backLabel={t("common.backToDashboard")}
           message={
             !student
-              ? "Your account is not linked to an active roster student."
-              : "This event is not available for check-in."
+              ? t("checkIn.errors.noRoster")
+              : t("checkIn.errors.eventUnavailable")
           }
+          title={t("checkIn.title")}
         />
       </CheckInShell>
     );
@@ -132,64 +145,82 @@ export default async function StudentCheckInPage({
     <CheckInShell>
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">
-          Event check-in
+          {t("checkIn.title")}
         </h1>
         <p className="mt-2 text-sm text-zinc-600">{event.title}</p>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-zinc-500">Time</dt>
+            <dt className="text-zinc-500">{t("checkIn.details.time")}</dt>
             <dd className="text-zinc-800">
               {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Location</dt>
+            <dt className="text-zinc-500">{t("checkIn.details.location")}</dt>
             <dd className="text-zinc-800">{event.location || "-"}</dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Safety</dt>
-            <dd className="text-zinc-800">{riskLabel(event.risk_level)}</dd>
+            <dt className="text-zinc-500">{t("checkIn.details.safety")}</dt>
+            <dd className="text-zinc-800">
+              {riskLabel(event.risk_level, t)}
+            </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Permission</dt>
+            <dt className="text-zinc-500">
+              {t("checkIn.details.permission")}
+            </dt>
             <dd className="text-zinc-800">
-              {event.permission_required ? "May be required" : "Not required"}
+              {event.permission_required
+                ? t("events.permission.mayBeRequired")
+                : t("events.permission.notRequired")}
             </dd>
           </div>
         </dl>
 
         {event.permission_required ? (
           <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-            This event may require school/parent permission.
+            {t("events.permission.studentNotice")}
           </p>
         ) : null}
 
         {event.permission_note ? (
           <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-            <p className="font-medium text-zinc-900">Permission note</p>
+            <p className="font-medium text-zinc-900">
+              {t("checkIn.permissionNote")}
+            </p>
             <p className="mt-1 leading-6">{event.permission_note}</p>
           </div>
         ) : null}
 
-        {canCheckIn ? <CheckInForm eventId={event.id} /> : null}
+        {canCheckIn ? (
+          <CheckInForm
+            eventId={event.id}
+            labels={{
+              checkIn: t("checkIn.actions.checkIn"),
+              checkingIn: t("checkIn.actions.checkingIn"),
+            }}
+          />
+        ) : null}
 
         {!attendee || attendee.status === "canceled" ? (
-          <StatusMessage message="Join this event before checking in." />
+          <StatusMessage message={t("checkIn.errors.mustJoinFirst")} />
         ) : null}
         {alreadyCheckedIn ? (
-          <StatusMessage message="You are already checked in." success />
+          <StatusMessage message={t("checkIn.success.alreadyCheckedIn")} success />
         ) : null}
         {attendee &&
         attendee.status !== "registered" &&
         attendee.status !== "attended" ? (
-          <StatusMessage message="This event registration cannot be checked in." />
+          <StatusMessage
+            message={t("checkIn.errors.invalidRegistrationStatus")}
+          />
         ) : null}
 
         <Link
           className="mt-6 inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           href="/events"
         >
-          Back to events
+          {t("common.backToEvents")}
         </Link>
       </section>
     </CheckInShell>
@@ -204,16 +235,24 @@ function CheckInShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function UnavailableMessage({ message }: { message: string }) {
+function UnavailableMessage({
+  backLabel,
+  message,
+  title,
+}: {
+  backLabel: string;
+  message: string;
+  title: string;
+}) {
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold text-zinc-950">Event check-in</h1>
+      <h1 className="text-2xl font-semibold text-zinc-950">{title}</h1>
       <StatusMessage message={message} />
       <Link
         className="mt-6 inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         href="/dashboard"
       >
-        Back to dashboard
+        {backLabel}
       </Link>
     </section>
   );
@@ -292,10 +331,12 @@ function formatTime(value: string) {
   }).format(new Date(value));
 }
 
-function riskLabel(riskLevel: EventRecord["risk_level"]) {
+function riskLabel(riskLevel: EventRecord["risk_level"], t: Translate) {
   if (riskLevel === "high") {
-    return "High risk";
+    return t("events.risk.high");
   }
 
-  return riskLevel === "medium" ? "Medium risk" : "Low risk";
+  return riskLevel === "medium"
+    ? t("events.risk.medium")
+    : t("events.risk.low");
 }

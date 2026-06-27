@@ -7,6 +7,12 @@ import {
   createQrSvgPath,
   getQrSvgViewBox,
 } from "@/lib/qr-code";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { updateAttendeePermissionStatus } from "./actions";
@@ -76,11 +82,18 @@ type SchoolSummary = {
   name: string;
 };
 
+type Translate = (key: string) => string;
+
 export default async function EventAttendancePage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const { eventId } = await params;
   const supabase = await createClient();
   const {
@@ -178,17 +191,17 @@ export default async function EventAttendancePage({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-950">
-              Event attendance
+              {t("attendance.title")}
             </h1>
             <p className="mt-2 text-sm text-zinc-600">{event.title}</p>
             <p className="mt-1 text-sm text-zinc-600">
               {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <SafetyBadge riskLevel={event.risk_level} />
+              <SafetyBadge riskLevel={event.risk_level} t={t} />
               {event.permission_required ? (
                 <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
-                  Permission required
+                  {t("events.permission.required")}
                 </span>
               ) : null}
             </div>
@@ -202,21 +215,22 @@ export default async function EventAttendancePage({
             className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
             href="/events"
           >
-            Back to events
+            {t("common.backToEvents")}
           </Link>
         </div>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Check-in link</h2>
+        <h2 className="text-lg font-semibold text-zinc-950">
+          {t("attendance.checkInLink.title")}
+        </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          Share this link or QR code with registered students when check-in is
-          open.
+          {t("attendance.checkInLink.description")}
         </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-[220px_1fr] lg:items-start">
           <div className="flex justify-center rounded-lg border border-zinc-200 bg-white p-4">
             <svg
-              aria-label="QR code for the event check-in link"
+              aria-label={t("attendance.qr.ariaLabel")}
               className="h-44 w-44 text-zinc-950"
               role="img"
               shapeRendering="crispEdges"
@@ -228,18 +242,24 @@ export default async function EventAttendancePage({
           </div>
           <div>
             <p className="text-sm font-medium text-zinc-800">
-              Full check-in URL
+              {t("attendance.checkInLink.fullUrl")}
             </p>
             <div className="mt-2 break-all rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800">
               {checkInUrl}
             </div>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <CopyCheckInLinkButton url={checkInUrl} />
+              <CopyCheckInLinkButton
+                labels={{
+                  copied: t("attendance.actions.copied"),
+                  copy: t("attendance.actions.copyLink"),
+                }}
+                url={checkInUrl}
+              />
               <Link
                 className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
                 href={checkInUrl}
               >
-                Open check-in link
+                {t("attendance.actions.openLink")}
               </Link>
             </div>
           </div>
@@ -249,11 +269,12 @@ export default async function EventAttendancePage({
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Attendance list
+            {t("attendance.list.title")}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            {attendees?.length ?? 0} registered student
-            {(attendees?.length ?? 0) === 1 ? "" : "s"}
+            {tf("attendance.list.registeredCount", {
+              count: attendees?.length ?? 0,
+            })}
           </p>
         </div>
         {attendees?.length ? (
@@ -262,13 +283,27 @@ export default async function EventAttendancePage({
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Student</th>
-                    <th className="px-4 py-3 font-medium">School</th>
-                    <th className="px-4 py-3 font-medium">Grade</th>
-                    <th className="px-4 py-3 font-medium">Permission</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Checked in</th>
-                    <th className="px-4 py-3 font-medium">Method</th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("attendance.table.student")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("attendance.table.school")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("attendance.table.grade")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("attendance.table.permission")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("attendance.table.status")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("attendance.table.checkedIn")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("attendance.table.method")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
@@ -289,7 +324,11 @@ export default async function EventAttendancePage({
                     return (
                       <tr key={attendee.id}>
                         <td className="px-4 py-3 font-medium text-zinc-950">
-                          {attendeeName(student, attendeeProfile)}
+                          {attendeeName(
+                            student,
+                            attendeeProfile,
+                            t("attendance.fallback.registeredStudent"),
+                          )}
                           {student?.student_number ? (
                             <span className="block text-xs font-normal text-zinc-500">
                               {student.student_number}
@@ -306,6 +345,7 @@ export default async function EventAttendancePage({
                           <PermissionCell
                             attendee={attendee}
                             event={event}
+                            t={t}
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -347,12 +387,17 @@ export default async function EventAttendancePage({
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="font-medium text-zinc-950">
-                          {attendeeName(student, attendeeProfile)}
+                          {attendeeName(
+                            student,
+                            attendeeProfile,
+                            t("attendance.fallback.registeredStudent"),
+                          )}
                         </h3>
                         <p className="mt-1 text-sm text-zinc-600">
-                          {attendeeSchool?.name ?? "School"}
+                          {attendeeSchool?.name ?? t("attendance.table.school")}
                           {" - "}
-                          Grade {student?.grade_level || "-"}
+                          {t("attendance.table.grade")}{" "}
+                          {student?.grade_level || "-"}
                           {student?.homeroom ? `, ${student.homeroom}` : ""}
                         </p>
                       </div>
@@ -360,16 +405,21 @@ export default async function EventAttendancePage({
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <dt className="text-zinc-500">Permission</dt>
+                        <dt className="text-zinc-500">
+                          {t("attendance.table.permission")}
+                        </dt>
                         <dd className="text-zinc-800">
                           <PermissionCell
                             attendee={attendee}
                             event={event}
+                            t={t}
                           />
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-zinc-500">Checked in</dt>
+                        <dt className="text-zinc-500">
+                          {t("attendance.table.checkedIn")}
+                        </dt>
                         <dd className="text-zinc-800">
                           {checkin
                             ? formatDateTime(checkin.checked_in_at)
@@ -379,7 +429,9 @@ export default async function EventAttendancePage({
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-zinc-500">Method</dt>
+                        <dt className="text-zinc-500">
+                          {t("attendance.table.method")}
+                        </dt>
                         <dd className="text-zinc-800">
                           {checkin?.method ?? "-"}
                         </dd>
@@ -393,11 +445,10 @@ export default async function EventAttendancePage({
         ) : (
           <div className="p-6">
             <p className="text-sm font-medium text-zinc-950">
-              No registered students yet
+              {t("attendance.empty.title")}
             </p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Students who join this event will appear here for permission
-              tracking and check-in.
+              {t("attendance.empty.description")}
             </p>
           </div>
         )}
@@ -527,23 +578,25 @@ function StatusBadge({ status }: { status: string }) {
 function PermissionCell({
   attendee,
   event,
+  t,
 }: {
   attendee: EventAttendee;
   event: EventRecord;
+  t: Translate;
 }) {
   const needsWarning =
     event.permission_required && attendee.permission_status !== "received";
 
   if (!event.permission_required) {
-    return <PermissionBadge status={attendee.permission_status} />;
+    return <PermissionBadge status={attendee.permission_status} t={t} />;
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <PermissionBadge status={attendee.permission_status} />
+      <PermissionBadge status={attendee.permission_status} t={t} />
       {needsWarning ? (
         <p className="max-w-64 text-xs leading-5 text-amber-800">
-          Permission has not been received for this registered student.
+          {t("attendance.permission.warning")}
         </p>
       ) : null}
       <form action={updateAttendeePermissionStatus} className="flex flex-wrap gap-2">
@@ -554,22 +607,32 @@ function PermissionCell({
           defaultValue={attendee.permission_status}
           name="permission_status"
         >
-          <option value="pending">Pending</option>
-          <option value="received">Received</option>
-          <option value="declined">Declined</option>
+          <option value="pending">{t("attendance.permission.status.pending")}</option>
+          <option value="received">
+            {t("attendance.permission.status.received")}
+          </option>
+          <option value="declined">
+            {t("attendance.permission.status.declined")}
+          </option>
         </select>
         <PendingSubmitButton
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-          pendingLabel="Saving..."
+          pendingLabel={t("common.saving")}
         >
-          Save permission
+          {t("attendance.actions.savePermission")}
         </PendingSubmitButton>
       </form>
     </div>
   );
 }
 
-function PermissionBadge({ status }: { status: EventPermissionStatus }) {
+function PermissionBadge({
+  status,
+  t,
+}: {
+  status: EventPermissionStatus;
+  t: Translate;
+}) {
   return (
     <span
       className={
@@ -582,38 +645,40 @@ function PermissionBadge({ status }: { status: EventPermissionStatus }) {
               : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
       }
     >
-      {permissionLabel(status)}
+      {permissionLabel(status, t)}
     </span>
   );
 }
 
-function permissionLabel(status: EventPermissionStatus) {
+function permissionLabel(status: EventPermissionStatus, t: Translate) {
   if (status === "received") {
-    return "Permission received";
+    return t("attendance.permission.badge.received");
   }
 
   if (status === "declined") {
-    return "Permission declined";
+    return t("attendance.permission.badge.declined");
   }
 
   if (status === "pending") {
-    return "Permission pending";
+    return t("attendance.permission.badge.pending");
   }
 
-  return "Permission not required";
+  return t("attendance.permission.badge.notRequired");
 }
 
 function SafetyBadge({
   riskLevel,
+  t,
 }: {
   riskLevel: EventRecord["risk_level"];
+  t: Translate;
 }) {
   const label =
     riskLevel === "high"
-      ? "High risk"
+      ? t("events.risk.high")
       : riskLevel === "medium"
-        ? "Medium risk"
-        : "Low risk";
+        ? t("events.risk.medium")
+        : t("events.risk.low");
 
   return (
     <span
@@ -633,12 +698,13 @@ function SafetyBadge({
 function attendeeName(
   student: StudentRoster | undefined,
   attendeeProfile: AttendeeProfile | undefined,
+  fallbackName: string,
 ) {
   if (student) {
     return `${student.first_name} ${student.last_name}`;
   }
 
-  return attendeeProfile?.full_name ?? "Registered student";
+  return attendeeProfile?.full_name ?? fallbackName;
 }
 
 function formatDateTime(value: string) {

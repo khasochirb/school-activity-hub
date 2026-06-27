@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 
-export function CopyCheckInLinkButton({ url }: { url: string }) {
+export function CopyCheckInLinkButton({
+  labels,
+  url,
+}: {
+  labels: {
+    copied: string;
+    copy: string;
+  };
+  url: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function copyLink() {
@@ -17,7 +26,7 @@ export function CopyCheckInLinkButton({ url }: { url: string }) {
       onClick={copyLink}
       type="button"
     >
-      {copied ? "Copied" : "Copy check-in link"}
+      {copied ? labels.copied : labels.copy}
     </button>
   );
 }

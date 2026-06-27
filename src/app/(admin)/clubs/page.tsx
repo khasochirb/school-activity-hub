@@ -3,8 +3,15 @@ import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
+  getActivityCategoryTranslationKey,
   parseActivityCategory,
 } from "@/lib/activity-categories";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -60,6 +67,11 @@ export default async function ClubsPage({
 }: {
   searchParams: Promise<ClubsSearchParams>;
 }) {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const params = await searchParams;
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const supabase = await createClient();
@@ -136,40 +148,59 @@ export default async function ClubsPage({
       .filter((membership) => membership.student_roster_id === currentStudent?.id)
       .map((membership) => membership.club_id),
   );
+  const categoryOptions = ACTIVITY_CATEGORIES.map((category) => ({
+    label: categoryLabel(category, t),
+    value: category,
+  }));
 
   return (
     <div className="page-stack">
       <PageHeader
         actions={
           isStaff ? (
-            <HeaderActionLink href="#create-club">Create club</HeaderActionLink>
+            <HeaderActionLink href="#create-club">
+              {t("clubs.actions.create")}
+            </HeaderActionLink>
           ) : undefined
         }
-        description="Create clubs students can join, and assign student leaders when ready."
-        eyebrow="Student groups"
-        title="Clubs"
+        description={t("clubs.description")}
+        eyebrow={t("clubs.eyebrow")}
+        title={t("clubs.title")}
       />
 
       {isStaff ? (
         <section className="section-card section-card-padded" id="create-club">
-          <h2 className="section-title">Create club</h2>
+          <h2 className="section-title">{t("clubs.actions.create")}</h2>
           <p className="section-description">
-            Add an active club for students to discover and join.
+            {t("clubs.create.description")}
           </p>
           <div className="mt-4">
-            <CreateClubForm />
+            <CreateClubForm
+              categories={categoryOptions}
+              labels={{
+                active: t("status.active"),
+                archived: t("status.archived"),
+                category: t("clubs.form.category"),
+                create: t("clubs.actions.create"),
+                creating: t("clubs.actions.creating"),
+                description: t("clubs.form.description"),
+                name: t("clubs.form.name"),
+                noCategory: t("clubs.form.noCategory"),
+                status: t("clubs.form.status"),
+              }}
+            />
           </div>
         </section>
       ) : null}
 
       <section className="section-card section-card-padded">
-        <h2 className="section-title">Find clubs</h2>
+        <h2 className="section-title">{t("clubs.filters.title")}</h2>
         <p className="section-description">
-          Filter the active club list by activity category.
+          {t("clubs.filters.description")}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <CategoryFilterLink active={!selectedCategory} href="/clubs">
-            All categories
+            {t("filters.allCategories")}
           </CategoryFilterLink>
           {ACTIVITY_CATEGORIES.map((category) => (
             <CategoryFilterLink
@@ -177,7 +208,7 @@ export default async function ClubsPage({
               href={`/clubs?category=${encodeURIComponent(category)}`}
               key={category}
             >
-              {category}
+              {categoryLabel(category, t)}
             </CategoryFilterLink>
           ))}
         </div>
@@ -185,15 +216,15 @@ export default async function ClubsPage({
 
       <section className="section-card">
         <div className="section-header">
-          <h2 className="section-title">Active clubs</h2>
+          <h2 className="section-title">{t("clubs.active.title")}</h2>
           {clubsError ? (
             <p className="mt-2 text-sm text-red-600">
-              Clubs could not be loaded: {clubsError.message}
+              {tf("clubs.errors.loadFailed", { error: clubsError.message })}
             </p>
           ) : null}
           {profile.role === "student" && !currentStudent ? (
             <p className="mt-2 text-sm text-zinc-600">
-              Your account is not linked to an active roster student yet.
+              {t("clubs.student.noRosterWarning")}
             </p>
           ) : null}
         </div>
@@ -215,9 +246,13 @@ export default async function ClubsPage({
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {club.category ? (
-                          <CategoryBadge>{club.category}</CategoryBadge>
+                          <CategoryBadge>
+                            {categoryLabel(club.category, t)}
+                          </CategoryBadge>
                         ) : null}
-                        <StatusBadge status={club.status} />
+                        <StatusBadge status={club.status}>
+                          {statusLabel(club.status, t)}
+                        </StatusBadge>
                       </div>
                     </div>
                     <ClubActions
@@ -225,6 +260,14 @@ export default async function ClubsPage({
                       currentStudent={currentStudent}
                       isJoined={isJoined}
                       isStaff={isStaff}
+                      labels={{
+                        archive: t("clubs.actions.archive"),
+                        archiving: t("clubs.actions.archiving"),
+                        join: t("clubs.actions.join"),
+                        joining: t("clubs.actions.joining"),
+                        leave: t("clubs.actions.leave"),
+                        leaving: t("clubs.actions.leaving"),
+                      }}
                       role={profile.role}
                     />
                   </div>
@@ -235,7 +278,7 @@ export default async function ClubsPage({
                   ) : null}
                   <div className="mt-4 border-t border-zinc-200 pt-4">
                     <h4 className="text-sm font-medium text-zinc-950">
-                      Members
+                      {t("clubs.members.title")}
                     </h4>
                     {clubMemberships.length ? (
                       <ul className="mt-2 flex flex-col gap-2">
@@ -246,7 +289,10 @@ export default async function ClubsPage({
                           >
                             <div>
                               <p className="text-sm font-medium text-zinc-900">
-                                {memberName(membership)}
+                                {memberName(
+                                  membership,
+                                  t("clubs.fallback.rosterStudent"),
+                                )}
                               </p>
                               <p className="text-xs text-zinc-500">
                                 {membership.role}
@@ -261,9 +307,9 @@ export default async function ClubsPage({
                                 />
                                 <PendingSubmitButton
                                   className="btn btn-secondary min-h-9 px-3"
-                                  pendingLabel="Saving..."
+                                  pendingLabel={t("common.saving")}
                                 >
-                                  Make club leader
+                                  {t("clubs.actions.makeLeader")}
                                 </PendingSubmitButton>
                               </form>
                             ) : null}
@@ -272,8 +318,7 @@ export default async function ClubsPage({
                       </ul>
                     ) : (
                       <p className="mt-2 text-sm text-zinc-600">
-                        No members yet. Students will appear here after they
-                        join this club.
+                        {t("clubs.members.empty")}
                       </p>
                     )}
                   </div>
@@ -287,16 +332,16 @@ export default async function ClubsPage({
               action={
                 isStaff ? (
                   <HeaderActionLink href="#create-club">
-                    Create club
+                    {t("clubs.actions.create")}
                   </HeaderActionLink>
                 ) : undefined
               }
               description={
                 isStaff
-                  ? "Create the first club so students have something to join."
-                  : "Active clubs will appear here once school staff create them."
+                  ? t("clubs.empty.staffDescription")
+                  : t("clubs.empty.studentDescription")
               }
-              title="No clubs yet"
+              title={t("clubs.empty.title")}
             />
           </div>
         )}
@@ -310,12 +355,21 @@ function ClubActions({
   currentStudent,
   isJoined,
   isStaff,
+  labels,
   role,
 }: {
   club: Club;
   currentStudent: StudentRoster | null;
   isJoined: boolean;
   isStaff: boolean;
+  labels: {
+    archive: string;
+    archiving: string;
+    join: string;
+    joining: string;
+    leave: string;
+    leaving: string;
+  };
   role: Profile["role"];
 }) {
   if (isStaff) {
@@ -324,9 +378,9 @@ function ClubActions({
         <input name="club_id" type="hidden" value={club.id} />
         <PendingSubmitButton
           className="btn btn-secondary min-h-9 px-3"
-          pendingLabel="Archiving..."
+          pendingLabel={labels.archiving}
         >
-          Archive club
+          {labels.archive}
         </PendingSubmitButton>
       </form>
     );
@@ -345,9 +399,9 @@ function ClubActions({
             ? "btn btn-secondary min-h-9 px-3"
             : "btn btn-primary min-h-9 px-3"
         }
-        pendingLabel={isJoined ? "Leaving..." : "Joining..."}
+        pendingLabel={isJoined ? labels.leaving : labels.joining}
       >
-        {isJoined ? "Leave club" : "Join club"}
+        {isJoined ? labels.leave : labels.join}
       </PendingSubmitButton>
     </form>
   );
@@ -388,14 +442,32 @@ function groupMembershipsByClub(memberships: ClubMembership[]) {
   return grouped;
 }
 
-function memberName(membership: ClubMembership) {
+function memberName(membership: ClubMembership, fallbackName: string) {
   const student = membership.student_rosters;
 
   if (!student) {
-    return "Roster student";
+    return fallbackName;
   }
 
   return `${student.first_name} ${student.last_name}`;
+}
+
+function categoryLabel(category: string, t: (key: string) => string) {
+  const key = getActivityCategoryTranslationKey(category);
+
+  return key ? t(key) : category;
+}
+
+function statusLabel(status: string, t: (key: string) => string) {
+  if (status === "active") {
+    return t("status.active");
+  }
+
+  if (status === "archived") {
+    return t("status.archived");
+  }
+
+  return status;
 }
 
 function getSearchValue(value: string | string[] | undefined) {

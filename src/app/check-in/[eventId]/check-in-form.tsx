@@ -9,7 +9,16 @@ const initialState: CheckInState = {
   success: false,
 };
 
-export function CheckInForm({ eventId }: { eventId: string }) {
+export function CheckInForm({
+  eventId,
+  labels,
+}: {
+  eventId: string;
+  labels: {
+    checkIn: string;
+    checkingIn: string;
+  };
+}) {
   const [state, formAction] = useActionState(checkInToEvent, initialState);
 
   return (
@@ -25,12 +34,19 @@ export function CheckInForm({ eventId }: { eventId: string }) {
           {state.message}
         </p>
       ) : null}
-      {state.success ? null : <SubmitButton />}
+      {state.success ? null : <SubmitButton labels={labels} />}
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  labels,
+}: {
+  labels: {
+    checkIn: string;
+    checkingIn: string;
+  };
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -39,7 +55,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Checking in..." : "Check in"}
+      {pending ? labels.checkingIn : labels.checkIn}
     </button>
   );
 }

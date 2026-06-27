@@ -84,6 +84,8 @@ export const en = {
   common: {
     active: "Active",
     approved: "Approved",
+    backToDashboard: "Back to dashboard",
+    backToEvents: "Back to events",
     cancel: "Cancel",
     canceled: "Canceled",
     create: "Create",
@@ -95,6 +97,9 @@ export const en = {
     save: "Save",
     saving: "Saving...",
   },
+  filters: {
+    allCategories: "All categories",
+  },
   status: {
     active: "Active",
     approved: "Approved",
@@ -102,9 +107,90 @@ export const en = {
     canceled: "Canceled",
     inactive: "Inactive",
     pending: "Pending",
+    pendingApproval: "pending_approval",
     redeemed: "Redeemed",
     rejected: "Rejected",
     revoked: "Revoked",
+  },
+  categories: {
+    academic: "Academic",
+    arts: "Arts",
+    career: "Career",
+    culture: "Culture",
+    leadership: "Leadership",
+    mentalHealth: "Mental Health",
+    other: "Other",
+    outdoor: "Outdoor",
+    social: "Social",
+    sports: "Sports",
+    volunteering: "Volunteering",
+  },
+  clubs: {
+    actions: {
+      archive: "Archive club",
+      archiving: "Archiving...",
+      create: "Create club",
+      creating: "Creating club...",
+      join: "Join club",
+      joining: "Joining...",
+      leave: "Leave club",
+      leaving: "Leaving...",
+      makeLeader: "Make club leader",
+    },
+    active: {
+      title: "Active clubs",
+    },
+    create: {
+      description: "Add an active club for students to discover and join.",
+    },
+    description:
+      "Create clubs students can join, and assign student leaders when ready.",
+    empty: {
+      staffDescription:
+        "Create the first club so students have something to join.",
+      studentDescription:
+        "Active clubs will appear here once school staff create them.",
+      title: "No clubs yet",
+    },
+    errors: {
+      createFailed: "Club could not be created: {error}",
+      duplicateName: "A club with that name already exists.",
+      invalidCategory: "Choose a valid category.",
+      invalidStatus: "Choose a valid club status.",
+      loadFailed: "Clubs could not be loaded: {error}",
+      nameRequired: "Club name is required.",
+      nameTooShort:
+        "Club name must include at least 3 letters or numbers.",
+      staffOnlyCreate: "Only school admins and teachers can create clubs.",
+    },
+    eyebrow: "Student groups",
+    fallback: {
+      rosterStudent: "Roster student",
+    },
+    filters: {
+      description: "Filter the active club list by activity category.",
+      title: "Find clubs",
+    },
+    form: {
+      category: "Category",
+      description: "Description",
+      name: "Name",
+      noCategory: "No category",
+      status: "Status",
+    },
+    members: {
+      empty:
+        "No members yet. Students will appear here after they join this club.",
+      title: "Members",
+    },
+    student: {
+      noRosterWarning:
+        "Your account is not linked to an active roster student yet.",
+    },
+    success: {
+      created: "Club created.",
+    },
+    title: "Clubs",
   },
   dashboard: {
     browseEvents: "Browse events",
@@ -527,6 +613,283 @@ export const en = {
       studentNumber: "Student number",
     },
     title: "Students",
+  },
+  events: {
+    actions: {
+      attendanceQr: "Attendance and QR",
+      cancel: "Cancel event",
+      cancelMyRegistration: "Cancel my registration",
+      cancelling: "Cancelling...",
+      create: "Create event",
+      createApproved: "Create approved event",
+      creating: "Creating event...",
+      eventFull: "Event full",
+      join: "Join event",
+      joining: "Joining...",
+      resetFilters: "Reset filters",
+      saveSafety: "Save safety details",
+      saveSharing: "Save sharing settings",
+      submitForApproval: "Submit for approval",
+      submitting: "Submitting...",
+    },
+    capacity: {
+      noLimit: "No limit",
+    },
+    card: {
+      eventType: "Event type",
+      hostedBy: "Hosted by",
+      location: "Location",
+      maxParticipants: "Max participants",
+      mySchool: "My school",
+      permission: "Permission",
+      registration: "Registration",
+      safety: "Safety",
+      schoolEvent: "School event",
+    },
+    create: {
+      leaderDescription:
+        "Club leader events are submitted to staff for approval before students can join.",
+      leaderNeedsClub:
+        "Club leaders can submit events after they are assigned as leader for a club.",
+      staffDescription:
+        "School staff events are approved immediately and appear for students when they are upcoming.",
+    },
+    description:
+      "Create approved activities, manage student registrations, and open attendance check-in when an event begins.",
+    empty: {
+      staffDescription:
+        "Create an approved event, wait for a club event to be approved, or adjust the filters.",
+      studentDescription:
+        "Approved upcoming events will appear here when staff or club leaders publish them.",
+      title: "No events match these filters",
+    },
+    errors: {
+      createFailed: "Event could not be created: {error}",
+      invalidCategory: "Choose a valid category.",
+      invalidClub: "Choose a valid club.",
+      invalidRiskLevel: "Choose a valid risk level.",
+      leaderClubRequired:
+        "Club leaders must choose one of their clubs.",
+      loadFailed: "Events could not be loaded: {error}",
+      locationRequired: "Location is required.",
+      maxParticipantsPositive:
+        "Max participants must be a positive number.",
+      staffOrLeaderOnly:
+        "Only school staff or club leaders can create events.",
+      timeRequired: "Start and end times are required.",
+      titleRequired: "Event title is required.",
+      unauthenticated: "You must be logged in.",
+      validTimeOrder: "End time must be after start time.",
+    },
+    eyebrow: "Activities calendar",
+    fallback: {
+      clubEvent: "Club event",
+      connectedSchool: "Connected school",
+    },
+    filters: {
+      category: "Category",
+      club: "Club events",
+      description:
+        "Switch between your school events, shared events, registrations, club events, and categories.",
+      myRegistered: "My registered events",
+      mySchool: "My school events",
+      shared: "Shared events",
+      title: "Find events",
+      upcoming: "Upcoming",
+      viewLabel: "Event view",
+    },
+    form: {
+      category: "Category",
+      club: "Club",
+      description: "Description",
+      endsAt: "Ends at",
+      location: "Location",
+      maxParticipants: "Max participants",
+      noCategory: "No category",
+      permissionNote: "Permission note",
+      permissionNotePlaceholder:
+        "Optional note for staff, students, or families",
+      permissionRequired: "Permission required",
+      riskLevel: "Risk level",
+      schoolWideEvent: "School-wide event",
+      startsAt: "Starts at",
+      title: "Title",
+    },
+    listTitles: {
+      club: "Club events",
+      registered: "My registered events",
+      sharedClub: "Shared club events",
+      sharedRegistered: "Shared registered events",
+      sharedUpcoming: "Shared upcoming events",
+      upcoming: "Upcoming events",
+    },
+    permission: {
+      mayBeRequired: "May be required",
+      notRequired: "Not required",
+      note: "Permission note",
+      required: "Permission required",
+      status: {
+        declined: "Permission declined",
+        notRequired: "Permission not required",
+        pending: "Permission pending",
+        received: "Permission received",
+      },
+      studentNotice: "This event may require school/parent permission.",
+    },
+    registration: {
+      checkedIn: "Checked in",
+      count: "{count} joined",
+      joined: "Joined",
+      maxSuffix: "/ {count} max",
+      notJoined: "Not joined",
+      unavailable: "Registration unavailable",
+    },
+    risk: {
+      high: "High risk",
+      low: "Low risk",
+      medium: "Medium risk",
+    },
+    sharing: {
+      allowConnectedRegistration: "Allow connected students to register",
+      internalOnly: "Internal only",
+      noConnections: "No approved school connections yet.",
+      shareWith: "Share with",
+      sharedEvent: "Shared event",
+      sharedMany: "Shared with {count} schools",
+      sharedManyRegistration: "Shared with {count} schools + registration",
+      sharedOne: "Shared with 1 school",
+      sharedOneRegistration: "Shared with 1 school + registration",
+    },
+    student: {
+      noRosterWarning:
+        "Your account is not linked to an active roster student yet.",
+    },
+    success: {
+      createdApproved: "Event created and approved.",
+      submittedForApproval: "Event submitted for approval.",
+    },
+    title: "Events",
+  },
+  approvals: {
+    actions: {
+      approve: "Approve event",
+      approving: "Approving...",
+      reject: "Reject event",
+      rejecting: "Rejecting...",
+    },
+    description:
+      "Review club leader event requests before they appear to students.",
+    empty: {
+      description:
+        "Club leader submissions will appear here when they need staff review.",
+      title: "No event approvals pending",
+    },
+    errors: {
+      loadFailed: "Pending events could not be loaded: {error}",
+    },
+    event: {
+      location: "Location",
+      maxParticipants: "Max participants",
+      permission: "Permission",
+      safety: "Safety",
+      submitted: "Submitted",
+    },
+    fallback: {
+      clubEvent: "Club event",
+    },
+    pending: {
+      title: "Pending event approvals",
+    },
+    reject: {
+      reasonLabel: "Rejection reason",
+    },
+    title: "Approvals",
+  },
+  attendance: {
+    actions: {
+      copied: "Copied",
+      copyLink: "Copy check-in link",
+      openLink: "Open check-in link",
+      savePermission: "Save permission",
+    },
+    checkInLink: {
+      description:
+        "Share this link or QR code with registered students when check-in is open.",
+      fullUrl: "Full check-in URL",
+      title: "Check-in link",
+    },
+    empty: {
+      description:
+        "Students who join this event will appear here for permission tracking and check-in.",
+      title: "No registered students yet",
+    },
+    errors: {
+      invalidPermissionStatus: "Choose a valid permission status.",
+    },
+    fallback: {
+      registeredStudent: "Registered student",
+    },
+    list: {
+      registeredCount: "{count} registered student(s)",
+      title: "Attendance list",
+    },
+    permission: {
+      badge: {
+        declined: "Permission declined",
+        notRequired: "Permission not required",
+        pending: "Permission pending",
+        received: "Permission received",
+      },
+      status: {
+        declined: "Declined",
+        pending: "Pending",
+        received: "Received",
+      },
+      warning:
+        "Permission has not been received for this registered student.",
+    },
+    qr: {
+      ariaLabel: "QR code for the event check-in link",
+    },
+    table: {
+      checkedIn: "Checked in",
+      grade: "Grade",
+      method: "Method",
+      permission: "Permission",
+      school: "School",
+      status: "Status",
+      student: "Student",
+    },
+    title: "Event attendance",
+  },
+  checkIn: {
+    actions: {
+      checkIn: "Check in",
+      checkingIn: "Checking in...",
+    },
+    details: {
+      location: "Location",
+      permission: "Permission",
+      safety: "Safety",
+      time: "Time",
+    },
+    errors: {
+      activeStudentsOnly:
+        "Only active student accounts can use this check-in link.",
+      eventUnavailable: "This event is not available for check-in.",
+      invalidRegistrationStatus:
+        "This event registration cannot be checked in.",
+      missingEvent: "This check-in link is missing an event.",
+      mustJoinFirst: "Join this event before checking in.",
+      noRoster: "Your account is not linked to an active roster student.",
+      recordFailed: "Check-in could not be recorded: {error}",
+    },
+    permissionNote: "Permission note",
+    success: {
+      alreadyCheckedIn: "You are already checked in.",
+      checkedIn: "Checked in successfully.",
+    },
+    title: "Event check-in",
   },
   workflow: {
     addStudents: "Add students",

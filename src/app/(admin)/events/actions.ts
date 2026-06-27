@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseActivityCategory } from "@/lib/activity-categories";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -39,14 +45,20 @@ export type CreateEventState = {
   success: boolean;
 };
 
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
+
 export async function createEvent(
   _state: CreateEventState,
   formData: FormData,
 ): Promise<CreateEventState> {
+  const i18n = await getServerI18n();
   const profile = await getCurrentProfile();
 
   if (!profile) {
-    return { message: "You must be logged in.", success: false };
+    return { message: i18n.t("events.errors.unauthenticated"), success: false };
   }
 
   const title = String(formData.get("title") ?? "").trim();
@@ -66,57 +78,57 @@ export async function createEvent(
   const isLeaderEvent = !isStaff;
 
   if (!title) {
-    return { message: "Event title is required.", success: false };
+    return { message: i18n.t("events.errors.titleRequired"), success: false };
   }
 
   if (!location) {
-    return { message: "Location is required.", success: false };
+    return { message: i18n.t("events.errors.locationRequired"), success: false };
   }
 
   if (categoryInput && !category) {
-    return { message: "Choose a valid category.", success: false };
+    return { message: i18n.t("events.errors.invalidCategory"), success: false };
   }
 
   const startsAt = parseDateTime(startsAtInput);
   const endsAt = parseDateTime(endsAtInput);
 
   if (!startsAt || !endsAt) {
-    return { message: "Start and end times are required.", success: false };
+    return { message: i18n.t("events.errors.timeRequired"), success: false };
   }
 
   if (endsAt <= startsAt) {
-    return { message: "End time must be after start time.", success: false };
+    return { message: i18n.t("events.errors.validTimeOrder"), success: false };
   }
 
   const capacity = parseCapacity(maxParticipantsInput);
 
   if (capacity === "invalid") {
     return {
-      message: "Max participants must be a positive number.",
+      message: i18n.t("events.errors.maxParticipantsPositive"),
       success: false,
     };
   }
 
   if (!riskLevel) {
-    return { message: "Choose a valid risk level.", success: false };
+    return { message: i18n.t("events.errors.invalidRiskLevel"), success: false };
   }
 
   if (isLeaderEvent && !clubId) {
     return {
-      message: "Club leaders must choose one of their clubs.",
+      message: i18n.t("events.errors.leaderClubRequired"),
       success: false,
     };
   }
 
   if (!isStaff && !(await isCurrentUserLeaderForClub(profile, clubId))) {
     return {
-      message: "Only school staff or club leaders can create events.",
+      message: i18n.t("events.errors.staffOrLeaderOnly"),
       success: false,
     };
   }
 
   if (clubId && !(await isClubInCurrentSchool(profile, clubId))) {
-    return { message: "Choose a valid club.", success: false };
+    return { message: i18n.t("events.errors.invalidClub"), success: false };
   }
 
   const now = new Date().toISOString();
@@ -148,7 +160,7 @@ export async function createEvent(
 
   if (error) {
     return {
-      message: `Event could not be created: ${error.message}`,
+      message: i18n.tf("events.errors.createFailed", { error: error.message }),
       success: false,
     };
   }
@@ -157,8 +169,8 @@ export async function createEvent(
 
   return {
     message: isStaff
-      ? "Event created and approved."
-      : "Event submitted for approval.",
+      ? i18n.t("events.success.createdApproved")
+      : i18n.t("events.success.submittedForApproval"),
     success: true,
   };
 }
@@ -437,6 +449,16 @@ async function getCurrentProfile(): Promise<Profile | null> {
   );
 
   return profile;
+}
+
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
 }
 
 async function getCurrentStudentRoster(

@@ -3,6 +3,12 @@
 import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,17 +52,26 @@ export type CheckInState = {
   success: boolean;
 };
 
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
+
 export async function checkInToEvent(
   _state: CheckInState,
   formData: FormData,
 ): Promise<CheckInState> {
+  const i18n = await getServerI18n();
   const eventId = String(formData.get("event_id") ?? "").trim();
 
   if (!eventId) {
-    return { message: "This check-in link is missing an event.", success: false };
+    return {
+      message: i18n.t("checkIn.errors.missingEvent"),
+      success: false,
+    };
   }
 
-  const contextResult = await getCheckInContext(eventId);
+  const contextResult = await getCheckInContext(eventId, i18n);
 
   if (!contextResult.ok) {
     return {
@@ -75,7 +90,10 @@ export async function checkInToEvent(
     .maybeSingle<{ id: string }>();
 
   if (existingCheckin) {
-    return { message: "You are already checked in.", success: true };
+    return {
+      message: i18n.t("checkIn.success.alreadyCheckedIn"),
+      success: true,
+    };
   }
 
   const checkedInAt = new Date().toISOString();
@@ -99,11 +117,16 @@ export async function checkInToEvent(
 
   if (insertError) {
     if (insertError.code === "23505") {
-      return { message: "You are already checked in.", success: true };
+      return {
+        message: i18n.t("checkIn.success.alreadyCheckedIn"),
+        success: true,
+      };
     }
 
     return {
-      message: `Check-in could not be recorded: ${insertError.message}`,
+      message: i18n.tf("checkIn.errors.recordFailed", {
+        error: insertError.message,
+      }),
       success: false,
     };
   }
@@ -122,10 +145,13 @@ export async function checkInToEvent(
   revalidatePath(`/check-in/${event.id}`);
   revalidatePath(`/events/${event.id}/attendance`);
 
-  return { message: "Checked in successfully.", success: true };
+  return { message: i18n.t("checkIn.success.checkedIn"), success: true };
 }
 
-async function getCheckInContext(eventId: string): Promise<CheckInContextResult> {
+async function getCheckInContext(
+  eventId: string,
+  i18n: ServerI18n,
+): Promise<CheckInContextResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -143,7 +169,7 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
 
   if (!profile || profile.role !== "student" || profile.status !== "active") {
     return {
-      message: "Only active student accounts can use this check-in link.",
+      message: i18n.t("checkIn.errors.activeStudentsOnly"),
       ok: false,
       success: false,
     };
@@ -160,7 +186,7 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
 
   if (!student) {
     return {
-      message: "Your account is not linked to an active roster student.",
+      message: i18n.t("checkIn.errors.noRoster"),
       ok: false,
       success: false,
     };
@@ -185,7 +211,7 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
 
   if (!event || !canAccessEvent) {
     return {
-      message: "This event is not available for check-in.",
+      message: i18n.t("checkIn.errors.eventUnavailable"),
       ok: false,
       success: false,
     };
@@ -200,19 +226,23 @@ async function getCheckInContext(eventId: string): Promise<CheckInContextResult>
 
   if (!attendee || attendee.status === "canceled") {
     return {
-      message: "Join this event before checking in.",
+      message: i18n.t("checkIn.errors.mustJoinFirst"),
       ok: false,
       success: false,
     };
   }
 
   if (attendee.status === "attended" || attendee.checked_in_at) {
-    return { message: "You are already checked in.", ok: false, success: true };
+    return {
+      message: i18n.t("checkIn.success.alreadyCheckedIn"),
+      ok: false,
+      success: true,
+    };
   }
 
   if (attendee.status !== "registered") {
     return {
-      message: "This event registration cannot be checked in.",
+      message: i18n.t("checkIn.errors.invalidRegistrationStatus"),
       ok: false,
       success: false,
     };
@@ -269,4 +299,14 @@ function createCheckInLinkHash(eventId: string) {
   return createHash("sha256")
     .update(`check-in:${eventId}`)
     .digest("hex");
+}
+
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
 }

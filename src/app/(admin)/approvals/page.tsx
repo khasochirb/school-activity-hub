@@ -1,5 +1,12 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import { approveEvent, rejectEvent } from "./actions";
 
@@ -30,7 +37,14 @@ type Club = {
   name: string;
 };
 
+type Translate = (key: string) => string;
+
 export default async function ApprovalsPage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -80,20 +94,24 @@ export default async function ApprovalsPage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Approvals</h1>
+        <h1 className="text-2xl font-semibold text-zinc-950">
+          {t("approvals.title")}
+        </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Review club leader event requests before they appear to students.
+          {t("approvals.description")}
         </p>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Pending event approvals
+            {t("approvals.pending.title")}
           </h2>
           {eventsError ? (
             <p className="mt-2 text-sm text-red-600">
-              Pending events could not be loaded: {eventsError.message}
+              {tf("approvals.errors.loadFailed", {
+                error: eventsError.message,
+              })}
             </p>
           ) : null}
         </div>
@@ -117,36 +135,51 @@ export default async function ApprovalsPage() {
                     <input name="event_id" type="hidden" value={event.id} />
                     <PendingSubmitButton
                       className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
-                      pendingLabel="Approving..."
+                      pendingLabel={t("approvals.actions.approving")}
                     >
-                      Approve event
+                      {t("approvals.actions.approve")}
                     </PendingSubmitButton>
                   </form>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge>pending_approval</Badge>
-                  {event.category ? <Badge>{event.category}</Badge> : null}
+                  <Badge>{t("status.pendingApproval")}</Badge>
+                  {event.category ? (
+                    <Badge>{categoryLabel(event.category, t)}</Badge>
+                  ) : null}
                   {event.club_id ? (
-                    <Badge>{clubNameById.get(event.club_id) ?? "Club event"}</Badge>
+                    <Badge>
+                      {clubNameById.get(event.club_id) ??
+                        t("approvals.fallback.clubEvent")}
+                    </Badge>
                   ) : null}
                   <Badge variant={riskBadgeVariant(event.risk_level)}>
-                    {riskLabel(event.risk_level)}
+                    {riskLabel(event.risk_level, t)}
                   </Badge>
                   {event.permission_required ? (
-                    <Badge variant="warning">Permission required</Badge>
+                    <Badge variant="warning">
+                      {t("events.permission.required")}
+                    </Badge>
                   ) : null}
                 </div>
                 <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                   <div>
-                    <dt className="text-zinc-500">Location</dt>
+                    <dt className="text-zinc-500">
+                      {t("approvals.event.location")}
+                    </dt>
                     <dd className="text-zinc-800">{event.location || "-"}</dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Max participants</dt>
-                    <dd className="text-zinc-800">{event.capacity ?? "No limit"}</dd>
+                    <dt className="text-zinc-500">
+                      {t("approvals.event.maxParticipants")}
+                    </dt>
+                    <dd className="text-zinc-800">
+                      {event.capacity ?? t("events.capacity.noLimit")}
+                    </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Submitted</dt>
+                    <dt className="text-zinc-500">
+                      {t("approvals.event.submitted")}
+                    </dt>
                     <dd className="text-zinc-800">
                       {event.submitted_at
                         ? formatDate(event.submitted_at)
@@ -154,19 +187,29 @@ export default async function ApprovalsPage() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Safety</dt>
-                    <dd className="text-zinc-800">{riskLabel(event.risk_level)}</dd>
+                    <dt className="text-zinc-500">
+                      {t("approvals.event.safety")}
+                    </dt>
+                    <dd className="text-zinc-800">
+                      {riskLabel(event.risk_level, t)}
+                    </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Permission</dt>
+                    <dt className="text-zinc-500">
+                      {t("approvals.event.permission")}
+                    </dt>
                     <dd className="text-zinc-800">
-                      {event.permission_required ? "May be required" : "Not required"}
+                      {event.permission_required
+                        ? t("events.permission.mayBeRequired")
+                        : t("events.permission.notRequired")}
                     </dd>
                   </div>
                 </dl>
                 {event.permission_note ? (
                   <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-                    <p className="font-medium text-zinc-900">Permission note</p>
+                    <p className="font-medium text-zinc-900">
+                      {t("events.permission.note")}
+                    </p>
                     <p className="mt-1 leading-6">{event.permission_note}</p>
                   </div>
                 ) : null}
@@ -178,7 +221,7 @@ export default async function ApprovalsPage() {
                 <form action={rejectEvent} className="mt-4 flex flex-col gap-3">
                   <input name="event_id" type="hidden" value={event.id} />
                   <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-                    Rejection reason
+                    {t("approvals.reject.reasonLabel")}
                     <textarea
                       className="min-h-20 rounded-md border border-zinc-300 px-3 py-2 text-base outline-none transition focus:border-zinc-900"
                       name="rejection_reason"
@@ -186,9 +229,9 @@ export default async function ApprovalsPage() {
                   </label>
                   <PendingSubmitButton
                     className="h-9 w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 sm:w-fit"
-                    pendingLabel="Rejecting..."
+                    pendingLabel={t("approvals.actions.rejecting")}
                   >
-                    Reject event
+                    {t("approvals.actions.reject")}
                   </PendingSubmitButton>
                 </form>
               </article>
@@ -197,11 +240,10 @@ export default async function ApprovalsPage() {
         ) : (
           <div className="p-6">
             <p className="text-sm font-medium text-zinc-950">
-              No event approvals pending
+              {t("approvals.empty.title")}
             </p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Club leader submissions will appear here when they need staff
-              review.
+              {t("approvals.empty.description")}
             </p>
           </div>
         )}
@@ -240,12 +282,20 @@ function riskBadgeVariant(riskLevel: PendingEvent["risk_level"]) {
       : "default";
 }
 
-function riskLabel(riskLevel: PendingEvent["risk_level"]) {
+function riskLabel(riskLevel: PendingEvent["risk_level"], t: Translate) {
   if (riskLevel === "high") {
-    return "High risk";
+    return t("events.risk.high");
   }
 
-  return riskLevel === "medium" ? "Medium risk" : "Low risk";
+  return riskLevel === "medium"
+    ? t("events.risk.medium")
+    : t("events.risk.low");
+}
+
+function categoryLabel(category: string, t: Translate) {
+  const key = getActivityCategoryTranslationKey(category);
+
+  return key ? t(key) : category;
 }
 
 function formatDateTime(value: string) {

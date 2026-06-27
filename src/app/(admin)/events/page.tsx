@@ -3,8 +3,15 @@ import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
+  getActivityCategoryTranslationKey,
   parseActivityCategory,
 } from "@/lib/activity-categories";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -95,11 +102,22 @@ type EventsSearchParams = {
   scope?: string | string[];
 };
 
+type Translate = (key: string) => string;
+type FormatTranslate = (
+  key: string,
+  values: Record<string, string | number>,
+) => string;
+
 export default async function EventsPage({
   searchParams,
 }: {
   searchParams: Promise<EventsSearchParams>;
 }) {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const params = await searchParams;
   const selectedFilter = parseEventFilter(getSearchValue(params.filter));
   const selectedScope = parseEventScope(getSearchValue(params.scope));
@@ -158,6 +176,10 @@ export default async function EventsPage({
     ? await getSharedEventIdsForSchool(admin, profile.school_id)
     : [];
   const categoryOptions = ACTIVITY_CATEGORIES;
+  const categorySelectOptions = ACTIVITY_CATEGORIES.map((category) => ({
+    label: categoryLabel(category, t),
+    value: category,
+  }));
   const createClubOptions = isStaff ? clubOptions : leaderClubOptions;
   const canCreate = isStaff || leaderClubOptions.length > 0;
   const { error: eventsError, events } = await getFilteredEvents(admin, {
@@ -217,27 +239,56 @@ export default async function EventsPage({
       <PageHeader
         actions={
           canCreate ? (
-            <HeaderActionLink href="#create-event">Create event</HeaderActionLink>
+            <HeaderActionLink href="#create-event">
+              {t("events.actions.create")}
+            </HeaderActionLink>
           ) : undefined
         }
-        description="Create approved activities, manage student registrations, and open attendance check-in when an event begins."
-        eyebrow="Activities calendar"
-        title="Events"
+        description={t("events.description")}
+        eyebrow={t("events.eyebrow")}
+        title={t("events.title")}
       />
 
       {canCreate ? (
         <section className="section-card section-card-padded" id="create-event">
-          <h2 className="section-title">Create event</h2>
+          <h2 className="section-title">{t("events.actions.create")}</h2>
           <p className="section-description">
             {isStaff
-              ? "School staff events are approved immediately and appear for students when they are upcoming."
-              : "Club leader events are submitted to staff for approval before students can join."}
+              ? t("events.create.staffDescription")
+              : t("events.create.leaderDescription")}
           </p>
           <div className="mt-4">
             <CreateEventForm
               canCreate={canCreate}
+              categories={categorySelectOptions}
               clubs={createClubOptions}
               isStaff={isStaff}
+              labels={{
+                category: t("events.form.category"),
+                club: t("events.form.club"),
+                createApproved: t("events.actions.createApproved"),
+                creating: t("events.actions.creating"),
+                description: t("events.form.description"),
+                endsAt: t("events.form.endsAt"),
+                leaderNeedsClub: t("events.create.leaderNeedsClub"),
+                location: t("events.form.location"),
+                maxParticipants: t("events.form.maxParticipants"),
+                noCategory: t("events.form.noCategory"),
+                permissionNote: t("events.form.permissionNote"),
+                permissionNotePlaceholder: t(
+                  "events.form.permissionNotePlaceholder",
+                ),
+                permissionRequired: t("events.form.permissionRequired"),
+                riskHigh: t("events.risk.high"),
+                riskLevel: t("events.form.riskLevel"),
+                riskLow: t("events.risk.low"),
+                riskMedium: t("events.risk.medium"),
+                schoolWideEvent: t("events.form.schoolWideEvent"),
+                startsAt: t("events.form.startsAt"),
+                submitForApproval: t("events.actions.submitForApproval"),
+                submitting: t("events.actions.submitting"),
+                title: t("events.form.title"),
+              }}
             />
           </div>
         </section>
@@ -249,21 +300,22 @@ export default async function EventsPage({
         selectedCategory={selectedCategory}
         selectedFilter={selectedFilter}
         selectedScope={selectedScope}
+        t={t}
       />
 
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">
-            {eventListTitle(selectedFilter, selectedCategory, selectedScope)}
+            {eventListTitle(selectedFilter, selectedCategory, selectedScope, t)}
           </h2>
           {eventsError ? (
             <p className="mt-2 text-sm text-red-600">
-              Events could not be loaded: {eventsError.message}
+              {tf("events.errors.loadFailed", { error: eventsError.message })}
             </p>
           ) : null}
           {profile.role === "student" && !currentStudent ? (
             <p className="mt-2 text-sm text-zinc-600">
-              Your account is not linked to an active roster student yet.
+              {t("events.student.noRosterWarning")}
             </p>
           ) : null}
         </div>
@@ -288,7 +340,8 @@ export default async function EventsPage({
                 <EventCard
                   clubName={
                     event.club_id
-                      ? clubNameById.get(event.club_id) ?? "Club event"
+                      ? clubNameById.get(event.club_id) ??
+                        t("events.fallback.clubEvent")
                       : null
                   }
                   currentStudent={currentStudent}
@@ -297,13 +350,16 @@ export default async function EventsPage({
                   isStaff={isStaff}
                   key={event.id}
                   ownerSchoolName={
-                    schoolNameById.get(event.school_id) ?? "Connected school"
+                    schoolNameById.get(event.school_id) ??
+                    t("events.fallback.connectedSchool")
                   }
                   registeredCount={registeredCount}
                   registrationStatus={registrationStatus?.status}
                   permissionStatus={permissionStatus}
                   connectedSchools={connectedSchools}
                   sharedSchoolIds={sharedSchoolIds}
+                  t={t}
+                  tf={tf}
                   userSchoolId={profile.school_id}
                 />
               );
@@ -315,20 +371,20 @@ export default async function EventsPage({
               action={
                 canCreate ? (
                   <HeaderActionLink href="#create-event">
-                    Create event
+                    {t("events.actions.create")}
                   </HeaderActionLink>
                 ) : (
                   <HeaderActionLink href="/events" variant="secondary">
-                    Reset filters
+                    {t("events.actions.resetFilters")}
                   </HeaderActionLink>
                 )
               }
               description={
                 canCreate
-                  ? "Create an approved event, wait for a club event to be approved, or adjust the filters."
-                  : "Approved upcoming events will appear here when staff or club leaders publish them."
+                  ? t("events.empty.staffDescription")
+                  : t("events.empty.studentDescription")
               }
-              title="No events match these filters"
+              title={t("events.empty.title")}
             />
           </div>
         )}
@@ -343,19 +399,20 @@ function EventFilters({
   selectedCategory,
   selectedFilter,
   selectedScope,
+  t,
 }: {
   categoryOptions: readonly string[];
   currentStudent: StudentRoster | null;
   selectedCategory: string | null;
   selectedFilter: EventFilter;
   selectedScope: EventScope;
+  t: Translate;
 }) {
   return (
     <section className="section-card section-card-padded">
-      <h2 className="section-title">Find events</h2>
+      <h2 className="section-title">{t("events.filters.title")}</h2>
       <p className="section-description">
-        Switch between your school events, shared events, registrations, club
-        events, and categories.
+        {t("events.filters.description")}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <FilterLink
@@ -366,7 +423,7 @@ function EventFilters({
             scope: "mine",
           })}
         >
-          My school events
+          {t("events.filters.mySchool")}
         </FilterLink>
         <FilterLink
           active={selectedScope === "shared"}
@@ -376,11 +433,13 @@ function EventFilters({
             scope: "shared",
           })}
         >
-          Shared events
+          {t("events.filters.shared")}
         </FilterLink>
       </div>
       <div className="mt-4 border-t border-zinc-200 pt-4">
-        <p className="text-sm font-medium text-zinc-700">Event view</p>
+        <p className="text-sm font-medium text-zinc-700">
+          {t("events.filters.viewLabel")}
+        </p>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <FilterLink
@@ -389,9 +448,9 @@ function EventFilters({
             category: selectedCategory,
             filter: "upcoming",
             scope: selectedScope,
-          })}
-        >
-          Upcoming
+        })}
+      >
+          {t("events.filters.upcoming")}
         </FilterLink>
         {currentStudent ? (
           <FilterLink
@@ -402,7 +461,7 @@ function EventFilters({
               scope: selectedScope,
             })}
           >
-            My registered events
+            {t("events.filters.myRegistered")}
           </FilterLink>
         ) : null}
         <FilterLink
@@ -413,13 +472,15 @@ function EventFilters({
             scope: selectedScope,
           })}
         >
-          Club events
+          {t("events.filters.club")}
         </FilterLink>
       </div>
 
       {categoryOptions.length ? (
         <div className="mt-4 border-t border-zinc-200 pt-4">
-          <p className="text-sm font-medium text-zinc-700">Category</p>
+          <p className="text-sm font-medium text-zinc-700">
+            {t("events.filters.category")}
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <FilterLink
               active={!selectedCategory}
@@ -428,7 +489,7 @@ function EventFilters({
                 scope: selectedScope,
               })}
             >
-              All categories
+              {t("filters.allCategories")}
             </FilterLink>
             {categoryOptions.map((category) => (
               <FilterLink
@@ -440,7 +501,7 @@ function EventFilters({
                 })}
                 key={category}
               >
-                {category}
+                {categoryLabel(category, t)}
               </FilterLink>
             ))}
           </div>
@@ -485,6 +546,8 @@ function EventCard({
   registrationStatus,
   permissionStatus,
   sharedSchoolIds,
+  t,
+  tf,
   userSchoolId,
 }: {
   clubName: string | null;
@@ -498,6 +561,8 @@ function EventCard({
   registeredCount: number;
   registrationStatus: string | undefined;
   sharedSchoolIds: string[];
+  t: Translate;
+  tf: FormatTranslate;
   userSchoolId: string;
 }) {
   const isJoined =
@@ -523,6 +588,7 @@ function EventCard({
           isStaff={isStaff}
           registrationStatus={registrationStatus}
           sharedSchoolIds={sharedSchoolIds}
+          t={t}
           userSchoolId={userSchoolId}
         />
       </div>
@@ -530,24 +596,30 @@ function EventCard({
       <div className="mt-3 flex flex-wrap gap-2">
         {currentStudent ? (
           <StatusBadge variant={isJoined ? "success" : "default"}>
-            {isJoined ? "Joined" : "Not joined"}
+            {isJoined
+              ? t("events.registration.joined")
+              : t("events.registration.notJoined")}
           </StatusBadge>
         ) : null}
         {clubName ? <StatusBadge>{clubName}</StatusBadge> : null}
-        {event.category ? <CategoryBadge>{event.category}</CategoryBadge> : null}
+        {event.category ? (
+          <CategoryBadge>{categoryLabel(event.category, t)}</CategoryBadge>
+        ) : null}
         <StatusBadge variant={riskBadgeVariant(event.risk_level)}>
-          {riskLabel(event.risk_level)}
+          {riskLabel(event.risk_level, t)}
         </StatusBadge>
         {event.permission_required ? (
-          <StatusBadge variant="warning">Permission required</StatusBadge>
+          <StatusBadge variant="warning">
+            {t("events.permission.required")}
+          </StatusBadge>
         ) : null}
         {currentStudent && registrationStatus && event.permission_required ? (
           <StatusBadge variant={permissionBadgeVariant(permissionStatus)}>
-            {permissionLabel(permissionStatus)}
+            {permissionLabel(permissionStatus, t)}
           </StatusBadge>
         ) : null}
         <StatusBadge variant={sharedSchoolIds.length ? "info" : "default"}>
-          {sharingLabel(event, sharedSchoolIds)}
+          {sharingLabel(event, sharedSchoolIds, t, tf)}
         </StatusBadge>
         {!isOwnSchoolEvent ? (
           <StatusBadge variant="info">{ownerSchoolName}</StatusBadge>
@@ -556,47 +628,61 @@ function EventCard({
 
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-zinc-500">Location</dt>
+          <dt className="text-zinc-500">{t("events.card.location")}</dt>
           <dd className="text-zinc-800">{event.location || "-"}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Registration</dt>
+          <dt className="text-zinc-500">{t("events.card.registration")}</dt>
           <dd className="text-zinc-800">
-            {registeredCount} joined
-            {event.capacity ? ` / ${event.capacity} max` : ""}
+            {tf("events.registration.count", { count: registeredCount })}
+            {event.capacity
+              ? ` ${tf("events.registration.maxSuffix", {
+                  count: event.capacity,
+                })}`
+              : ""}
           </dd>
         </div>
         {event.capacity ? (
           <div>
-            <dt className="text-zinc-500">Max participants</dt>
+            <dt className="text-zinc-500">
+              {t("events.card.maxParticipants")}
+            </dt>
             <dd className="text-zinc-800">{event.capacity}</dd>
           </div>
         ) : null}
         <div>
-          <dt className="text-zinc-500">Event type</dt>
-          <dd className="text-zinc-800">{clubName ? "Club event" : "School event"}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">Hosted by</dt>
+          <dt className="text-zinc-500">{t("events.card.eventType")}</dt>
           <dd className="text-zinc-800">
-            {isOwnSchoolEvent ? "My school" : ownerSchoolName}
+            {clubName
+              ? t("events.fallback.clubEvent")
+              : t("events.card.schoolEvent")}
           </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Safety</dt>
-          <dd className="text-zinc-800">{riskLabel(event.risk_level)}</dd>
+          <dt className="text-zinc-500">{t("events.card.hostedBy")}</dt>
+          <dd className="text-zinc-800">
+            {isOwnSchoolEvent ? t("events.card.mySchool") : ownerSchoolName}
+          </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Permission</dt>
+          <dt className="text-zinc-500">{t("events.card.safety")}</dt>
+          <dd className="text-zinc-800">{riskLabel(event.risk_level, t)}</dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">{t("events.card.permission")}</dt>
           <dd className="text-zinc-800">
-            {event.permission_required ? "May be required" : "Not required"}
+            {event.permission_required
+              ? t("events.permission.mayBeRequired")
+              : t("events.permission.notRequired")}
           </dd>
         </div>
       </dl>
 
       {event.permission_note ? (
         <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-          <p className="font-medium text-zinc-900">Permission note</p>
+          <p className="font-medium text-zinc-900">
+            {t("events.permission.note")}
+          </p>
           <p className="mt-1 leading-6">{event.permission_note}</p>
         </div>
       ) : null}
@@ -618,6 +704,7 @@ function EventActions({
   isStaff,
   registrationStatus,
   sharedSchoolIds,
+  t,
   userSchoolId,
 }: {
   connectedSchools: SchoolOption[];
@@ -627,6 +714,7 @@ function EventActions({
   isStaff: boolean;
   registrationStatus: string | undefined;
   sharedSchoolIds: string[];
+  t: Translate;
   userSchoolId: string;
 }) {
   const isOwnSchoolEvent = event.school_id === userSchoolId;
@@ -638,23 +726,24 @@ function EventActions({
           className="btn btn-primary min-h-9 px-3"
           href={`/events/${event.id}/attendance`}
         >
-          Attendance and QR
+          {t("events.actions.attendanceQr")}
         </Link>
         <form action={cancelEvent}>
           <input name="event_id" type="hidden" value={event.id} />
           <PendingSubmitButton
             className="btn btn-secondary min-h-9 px-3"
-            pendingLabel="Cancelling..."
+            pendingLabel={t("events.actions.cancelling")}
           >
-            Cancel event
+            {t("events.actions.cancel")}
           </PendingSubmitButton>
         </form>
         <SharingForm
           connectedSchools={connectedSchools}
           event={event}
           sharedSchoolIds={sharedSchoolIds}
+          t={t}
         />
-        <SafetyForm event={event} />
+        <SafetyForm event={event} t={t} />
       </div>
     );
   }
@@ -662,7 +751,7 @@ function EventActions({
   if (isStaff) {
     return (
       <span className="inline-flex h-9 items-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
-        Shared event
+        {t("events.sharing.sharedEvent")}
       </span>
     );
   }
@@ -677,9 +766,9 @@ function EventActions({
         <input name="event_id" type="hidden" value={event.id} />
         <PendingSubmitButton
           className="btn btn-secondary min-h-9 px-3"
-          pendingLabel="Cancelling..."
+          pendingLabel={t("events.actions.cancelling")}
         >
-          Cancel my registration
+          {t("events.actions.cancelMyRegistration")}
         </PendingSubmitButton>
       </form>
     );
@@ -688,7 +777,7 @@ function EventActions({
   if (registrationStatus === "attended") {
     return (
       <span className="inline-flex h-9 items-center rounded-md bg-emerald-50 px-3 text-sm font-medium text-emerald-700">
-        Checked in
+        {t("events.registration.checkedIn")}
       </span>
     );
   }
@@ -696,7 +785,7 @@ function EventActions({
   if (!canCurrentStudentRegister(event, userSchoolId)) {
     return (
       <span className="inline-flex h-9 items-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
-        Registration unavailable
+        {t("events.registration.unavailable")}
       </span>
     );
   }
@@ -705,7 +794,7 @@ function EventActions({
     <div className="flex flex-col gap-2">
       {event.permission_required ? (
         <p className="max-w-64 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-          This event may require school/parent permission.
+          {t("events.permission.studentNotice")}
         </p>
       ) : null}
       <form action={joinEvent}>
@@ -713,29 +802,29 @@ function EventActions({
         <PendingSubmitButton
           className="btn btn-primary min-h-9 px-3 disabled:cursor-not-allowed disabled:bg-zinc-400"
           disabled={isFull}
-          pendingLabel="Joining..."
+          pendingLabel={t("events.actions.joining")}
         >
-          {isFull ? "Event full" : "Join event"}
+          {isFull ? t("events.actions.eventFull") : t("events.actions.join")}
         </PendingSubmitButton>
       </form>
     </div>
   );
 }
 
-function SafetyForm({ event }: { event: Event }) {
+function SafetyForm({ event, t }: { event: Event; t: Translate }) {
   return (
     <form action={updateEventSafety} className="flex flex-col gap-2">
       <input name="event_id" type="hidden" value={event.id} />
       <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-        Risk level
+        {t("events.form.riskLevel")}
         <select
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition focus:border-zinc-900"
           defaultValue={event.risk_level}
           name="risk_level"
         >
-          <option value="low">Low risk</option>
-          <option value="medium">Medium risk</option>
-          <option value="high">High risk</option>
+          <option value="low">{t("events.risk.low")}</option>
+          <option value="medium">{t("events.risk.medium")}</option>
+          <option value="high">{t("events.risk.high")}</option>
         </select>
       </label>
       <label className="flex items-center gap-2 text-sm text-zinc-700">
@@ -746,10 +835,10 @@ function SafetyForm({ event }: { event: Event }) {
           type="checkbox"
           value="true"
         />
-        Permission required
+        {t("events.form.permissionRequired")}
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-        Permission note
+        {t("events.form.permissionNote")}
         <textarea
           className="min-h-16 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none transition focus:border-zinc-900"
           defaultValue={event.permission_note ?? ""}
@@ -758,9 +847,9 @@ function SafetyForm({ event }: { event: Event }) {
       </label>
       <PendingSubmitButton
         className="btn btn-secondary min-h-9 px-3"
-        pendingLabel="Saving..."
+        pendingLabel={t("common.saving")}
       >
-        Save safety details
+        {t("events.actions.saveSafety")}
       </PendingSubmitButton>
     </form>
   );
@@ -770,10 +859,12 @@ function SharingForm({
   connectedSchools,
   event,
   sharedSchoolIds,
+  t,
 }: {
   connectedSchools: SchoolOption[];
   event: Event;
   sharedSchoolIds: string[];
+  t: Translate;
 }) {
   const sharedSchoolIdSet = new Set(sharedSchoolIds);
 
@@ -783,7 +874,7 @@ function SharingForm({
       {connectedSchools.length ? (
         <fieldset className="rounded-md border border-zinc-200 p-3">
           <legend className="px-1 text-xs font-medium text-zinc-600">
-            Share with
+            {t("events.sharing.shareWith")}
           </legend>
           <div className="flex flex-col gap-2">
             {connectedSchools.map((school) => (
@@ -805,7 +896,7 @@ function SharingForm({
         </fieldset>
       ) : (
         <p className="text-sm text-zinc-500">
-          No approved school connections yet.
+          {t("events.sharing.noConnections")}
         </p>
       )}
       <label className="flex items-center gap-2 text-sm text-zinc-700">
@@ -816,14 +907,14 @@ function SharingForm({
           type="checkbox"
           value="true"
         />
-        Allow connected students to register
+        {t("events.sharing.allowConnectedRegistration")}
       </label>
       <PendingSubmitButton
         className="btn btn-secondary min-h-9 px-3 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
         disabled={!connectedSchools.length && !sharedSchoolIds.length}
-        pendingLabel="Saving..."
+        pendingLabel={t("common.saving")}
       >
-        Save sharing settings
+        {t("events.actions.saveSharing")}
       </PendingSubmitButton>
     </form>
   );
@@ -837,12 +928,14 @@ function riskBadgeVariant(riskLevel: Event["risk_level"]) {
   return riskLevel === "medium" ? "warning" : "success";
 }
 
-function riskLabel(riskLevel: Event["risk_level"]) {
+function riskLabel(riskLevel: Event["risk_level"], t: Translate) {
   if (riskLevel === "high") {
-    return "High risk";
+    return t("events.risk.high");
   }
 
-  return riskLevel === "medium" ? "Medium risk" : "Low risk";
+  return riskLevel === "medium"
+    ? t("events.risk.medium")
+    : t("events.risk.low");
 }
 
 function canCurrentStudentRegister(event: Event, userSchoolId: string) {
@@ -852,19 +945,29 @@ function canCurrentStudentRegister(event: Event, userSchoolId: string) {
   );
 }
 
-function sharingLabel(event: Event, sharedSchoolIds: string[]) {
+function sharingLabel(
+  event: Event,
+  sharedSchoolIds: string[],
+  t: Translate,
+  tf: FormatTranslate,
+) {
   if (!sharedSchoolIds.length) {
-    return "Internal only";
+    return t("events.sharing.internalOnly");
   }
 
-  const base =
-    sharedSchoolIds.length === 1
-      ? "Shared with 1 school"
-      : `Shared with ${sharedSchoolIds.length} schools`;
+  if (event.allow_connected_school_registration && sharedSchoolIds.length > 1) {
+    return tf("events.sharing.sharedManyRegistration", {
+      count: sharedSchoolIds.length,
+    });
+  }
 
-  return event.allow_connected_school_registration
-    ? `${base} + registration`
-    : base;
+  if (sharedSchoolIds.length === 1) {
+    return event.allow_connected_school_registration
+      ? t("events.sharing.sharedOneRegistration")
+      : t("events.sharing.sharedOne");
+  }
+
+  return tf("events.sharing.sharedMany", { count: sharedSchoolIds.length });
 }
 
 async function getFilteredEvents(
@@ -1207,20 +1310,23 @@ function permissionBadgeVariant(
   return permissionStatus === "pending" ? "warning" : "default";
 }
 
-function permissionLabel(permissionStatus: EventPermissionStatus | undefined) {
+function permissionLabel(
+  permissionStatus: EventPermissionStatus | undefined,
+  t: Translate,
+) {
   if (permissionStatus === "received") {
-    return "Permission received";
+    return t("events.permission.status.received");
   }
 
   if (permissionStatus === "declined") {
-    return "Permission declined";
+    return t("events.permission.status.declined");
   }
 
   if (permissionStatus === "pending") {
-    return "Permission pending";
+    return t("events.permission.status.pending");
   }
 
-  return "Permission not required";
+  return t("events.permission.status.notRequired");
 }
 
 function parseEventFilter(value: string | undefined): EventFilter {
@@ -1271,17 +1377,29 @@ function eventListTitle(
   filter: EventFilter,
   category: string | null,
   scope: EventScope,
+  t: Translate,
 ) {
-  const baseTitle =
+  const baseTitleKey =
     filter === "registered"
-      ? "My registered events"
+      ? "events.listTitles.registered"
       : filter === "club"
-        ? "Club events"
-        : "Upcoming events";
-  const scopedTitle =
-    scope === "shared" ? `Shared ${baseTitle.toLowerCase()}` : baseTitle;
+        ? "events.listTitles.club"
+        : "events.listTitles.upcoming";
+  const sharedTitleKey =
+    filter === "registered"
+      ? "events.listTitles.sharedRegistered"
+      : filter === "club"
+        ? "events.listTitles.sharedClub"
+        : "events.listTitles.sharedUpcoming";
+  const scopedTitle = t(scope === "shared" ? sharedTitleKey : baseTitleKey);
 
-  return category ? `${scopedTitle}: ${category}` : scopedTitle;
+  return category ? `${scopedTitle}: ${categoryLabel(category, t)}` : scopedTitle;
+}
+
+function categoryLabel(category: string, t: Translate) {
+  const key = getActivityCategoryTranslationKey(category);
+
+  return key ? t(key) : category;
 }
 
 function formatDateTime(value: string) {

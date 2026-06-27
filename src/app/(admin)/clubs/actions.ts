@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseActivityCategory } from "@/lib/activity-categories";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -22,15 +28,21 @@ export type CreateClubState = {
   success: boolean;
 };
 
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
+
 export async function createClub(
   _state: CreateClubState,
   formData: FormData,
 ): Promise<CreateClubState> {
+  const i18n = await getServerI18n();
   const profile = await getCurrentProfile();
 
   if (!profile || !isStaff(profile)) {
     return {
-      message: "Only school admins and teachers can create clubs.",
+      message: i18n.t("clubs.errors.staffOnlyCreate"),
       success: false,
     };
   }
@@ -42,22 +54,22 @@ export async function createClub(
   const status = String(formData.get("status") ?? "active");
 
   if (!name) {
-    return { message: "Club name is required.", success: false };
+    return { message: i18n.t("clubs.errors.nameRequired"), success: false };
   }
 
   if (!["active", "archived"].includes(status)) {
-    return { message: "Choose a valid club status.", success: false };
+    return { message: i18n.t("clubs.errors.invalidStatus"), success: false };
   }
 
   if (categoryInput && !category) {
-    return { message: "Choose a valid category.", success: false };
+    return { message: i18n.t("clubs.errors.invalidCategory"), success: false };
   }
 
   const slug = toSlug(name);
 
   if (slug.length < 3) {
     return {
-      message: "Club name must include at least 3 letters or numbers.",
+      message: i18n.t("clubs.errors.nameTooShort"),
       success: false,
     };
   }
@@ -79,15 +91,15 @@ export async function createClub(
     return {
       message:
         error.code === "23505"
-          ? "A club with that name already exists."
-          : `Club could not be created: ${error.message}`,
+          ? i18n.t("clubs.errors.duplicateName")
+          : i18n.tf("clubs.errors.createFailed", { error: error.message }),
       success: false,
     };
   }
 
   revalidatePath("/clubs");
 
-  return { message: "Club created.", success: true };
+  return { message: i18n.t("clubs.success.created"), success: true };
 }
 
 export async function archiveClub(formData: FormData) {
@@ -268,6 +280,16 @@ async function getCurrentProfile(): Promise<Profile | null> {
   );
 
   return profile;
+}
+
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
 }
 
 async function getCurrentStudentRoster(

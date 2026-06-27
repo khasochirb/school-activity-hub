@@ -2,7 +2,6 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { ACTIVITY_CATEGORIES } from "@/lib/activity-categories";
 import { createClub, type CreateClubState } from "./actions";
 
 const initialState: CreateClubState = {
@@ -10,13 +9,36 @@ const initialState: CreateClubState = {
   success: false,
 };
 
-export function CreateClubForm() {
+type CategoryOption = {
+  label: string;
+  value: string;
+};
+
+type CreateClubFormLabels = {
+  active: string;
+  archived: string;
+  category: string;
+  create: string;
+  creating: string;
+  description: string;
+  name: string;
+  noCategory: string;
+  status: string;
+};
+
+export function CreateClubForm({
+  categories,
+  labels,
+}: {
+  categories: CategoryOption[];
+  labels: CreateClubFormLabels;
+}) {
   const [state, formAction] = useActionState(createClub, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Name
+        {labels.name}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="name"
@@ -24,32 +46,32 @@ export function CreateClubForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Category
+        {labels.category}
         <select
           className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
           name="category"
         >
-          <option value="">No category</option>
-          {ACTIVITY_CATEGORIES.map((category) => (
-            <option key={category} value={category}>
-              {category}
+          <option value="">{labels.noCategory}</option>
+          {categories.map((category) => (
+            <option key={category.value} value={category.value}>
+              {category.label}
             </option>
           ))}
         </select>
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Status
+        {labels.status}
         <select
-          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
+          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
           name="status"
           defaultValue="active"
         >
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
+          <option value="active">{labels.active}</option>
+          <option value="archived">{labels.archived}</option>
         </select>
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Description
+        {labels.description}
         <textarea
           className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
           name="description"
@@ -68,13 +90,22 @@ export function CreateClubForm() {
         </p>
       ) : null}
       <div className="sm:col-span-2">
-        <SubmitButton />
+        <SubmitButton
+          createLabel={labels.create}
+          creatingLabel={labels.creating}
+        />
       </div>
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  createLabel,
+  creatingLabel,
+}: {
+  createLabel: string;
+  creatingLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -83,7 +114,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Creating club..." : "Create club"}
+      {pending ? creatingLabel : createLabel}
     </button>
   );
 }

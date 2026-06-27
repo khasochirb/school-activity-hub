@@ -2,12 +2,41 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { ACTIVITY_CATEGORIES } from "@/lib/activity-categories";
 import { createEvent, type CreateEventState } from "./actions";
 
 type ClubOption = {
   id: string;
   name: string;
+};
+
+type CategoryOption = {
+  label: string;
+  value: string;
+};
+
+type CreateEventFormLabels = {
+  category: string;
+  club: string;
+  createApproved: string;
+  creating: string;
+  description: string;
+  endsAt: string;
+  leaderNeedsClub: string;
+  location: string;
+  maxParticipants: string;
+  noCategory: string;
+  permissionNote: string;
+  permissionNotePlaceholder: string;
+  permissionRequired: string;
+  riskHigh: string;
+  riskLevel: string;
+  riskLow: string;
+  riskMedium: string;
+  schoolWideEvent: string;
+  startsAt: string;
+  submitForApproval: string;
+  submitting: string;
+  title: string;
 };
 
 const initialState: CreateEventState = {
@@ -17,20 +46,23 @@ const initialState: CreateEventState = {
 
 export function CreateEventForm({
   canCreate,
+  categories,
   clubs,
   isStaff,
+  labels,
 }: {
   canCreate: boolean;
+  categories: CategoryOption[];
   clubs: ClubOption[];
   isStaff: boolean;
+  labels: CreateEventFormLabels;
 }) {
   const [state, formAction] = useActionState(createEvent, initialState);
 
   if (!canCreate) {
     return (
       <p className="notice-box">
-        Club leaders can submit events after they are assigned as leader for a
-        club.
+        {labels.leaderNeedsClub}
       </p>
     );
   }
@@ -38,7 +70,7 @@ export function CreateEventForm({
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Title
+        {labels.title}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="title"
@@ -46,21 +78,21 @@ export function CreateEventForm({
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Category
+        {labels.category}
         <select
           className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
           name="category"
         >
-          <option value="">No category</option>
-          {ACTIVITY_CATEGORIES.map((category) => (
-            <option key={category} value={category}>
-              {category}
+          <option value="">{labels.noCategory}</option>
+          {categories.map((category) => (
+            <option key={category.value} value={category.value}>
+              {category.label}
             </option>
           ))}
         </select>
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Location
+        {labels.location}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="location"
@@ -68,7 +100,7 @@ export function CreateEventForm({
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Starts at
+        {labels.startsAt}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="starts_at"
@@ -77,7 +109,7 @@ export function CreateEventForm({
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Ends at
+        {labels.endsAt}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="ends_at"
@@ -86,7 +118,7 @@ export function CreateEventForm({
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Max participants
+        {labels.maxParticipants}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           min={1}
@@ -95,13 +127,13 @@ export function CreateEventForm({
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Club
+        {labels.club}
         <select
-          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
+          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
           name="club_id"
           required={!isStaff}
         >
-          {isStaff ? <option value="">School-wide event</option> : null}
+          {isStaff ? <option value="">{labels.schoolWideEvent}</option> : null}
           {clubs.map((club) => (
             <option key={club.id} value={club.id}>
               {club.name}
@@ -110,15 +142,15 @@ export function CreateEventForm({
         </select>
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Risk level
+        {labels.riskLevel}
         <select
-          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
+          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
           defaultValue="low"
           name="risk_level"
         >
-          <option value="low">Low risk</option>
-          <option value="medium">Medium risk</option>
-          <option value="high">High risk</option>
+          <option value="low">{labels.riskLow}</option>
+          <option value="medium">{labels.riskMedium}</option>
+          <option value="high">{labels.riskHigh}</option>
         </select>
       </label>
       <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -128,21 +160,21 @@ export function CreateEventForm({
           type="checkbox"
           value="true"
         />
-        Permission required
+        {labels.permissionRequired}
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Description
+        {labels.description}
         <textarea
           className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
           name="description"
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Permission note
+        {labels.permissionNote}
         <textarea
           className="min-h-20 rounded-md border px-3 py-2 text-base outline-none transition"
           name="permission_note"
-          placeholder="Optional note for staff, students, or families"
+          placeholder={labels.permissionNotePlaceholder}
         />
       </label>
       {state.message ? (
@@ -158,13 +190,19 @@ export function CreateEventForm({
         </p>
       ) : null}
       <div className="sm:col-span-2">
-        <SubmitButton isStaff={isStaff} />
+        <SubmitButton isStaff={isStaff} labels={labels} />
       </div>
     </form>
   );
 }
 
-function SubmitButton({ isStaff }: { isStaff: boolean }) {
+function SubmitButton({
+  isStaff,
+  labels,
+}: {
+  isStaff: boolean;
+  labels: CreateEventFormLabels;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -175,11 +213,11 @@ function SubmitButton({ isStaff }: { isStaff: boolean }) {
     >
       {pending
         ? isStaff
-          ? "Creating event..."
-          : "Submitting..."
+          ? labels.creating
+          : labels.submitting
         : isStaff
-          ? "Create approved event"
-          : "Submit for approval"}
+          ? labels.createApproved
+          : labels.submitForApproval}
     </button>
   );
 }

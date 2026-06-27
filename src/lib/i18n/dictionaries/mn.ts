@@ -87,6 +87,8 @@ export const mn = {
   common: {
     active: "Идэвхтэй",
     approved: "Батлагдсан",
+    backToDashboard: "Хянах самбар руу буцах",
+    backToEvents: "Арга хэмжээ рүү буцах",
     cancel: "Цуцлах",
     canceled: "Цуцлагдсан",
     create: "Үүсгэх",
@@ -105,8 +107,370 @@ export const mn = {
     canceled: "Цуцлагдсан",
     inactive: "Идэвхгүй",
     pending: "Хүлээгдэж буй",
+    pendingApproval: "pending_approval",
     rejected: "Татгалзсан",
     revoked: "Хүчингүй болгосон",
+  },
+  filters: {
+    allCategories: "Бүх ангилал",
+  },
+  categories: {
+    academic: "Хичээл/судалгаа",
+    arts: "Урлаг",
+    career: "Карьер",
+    culture: "Соёл",
+    leadership: "Манлайлал",
+    mentalHealth: "Сэтгэцийн эрүүл мэнд",
+    other: "Бусад",
+    outdoor: "Гадаа үйл ажиллагаа",
+    social: "Нийгмийн",
+    sports: "Спорт",
+    volunteering: "Сайн дурын ажил",
+  },
+  clubs: {
+    actions: {
+      archive: "Клуб архивлах",
+      archiving: "Архивлаж байна...",
+      create: "Клуб үүсгэх",
+      creating: "Клуб үүсгэж байна...",
+      join: "Клубт нэгдэх",
+      joining: "Нэгдэж байна...",
+      leave: "Клубээс гарах",
+      leaving: "Гарч байна...",
+      makeLeader: "Клубын удирдагч болгох",
+    },
+    active: {
+      title: "Идэвхтэй клубууд",
+    },
+    create: {
+      description: "Сурагчид олж нэгдэх боломжтой идэвхтэй клуб нэмнэ үү.",
+    },
+    description:
+      "Сурагчид нэгдэж болох клубууд үүсгэж, бэлэн үед сурагч удирдагч томилно уу.",
+    empty: {
+      staffDescription:
+        "Сурагчид нэгдэх зүйлтэй болохын тулд эхний клубийг үүсгэнэ үү.",
+      studentDescription:
+        "Сургуулийн ажилтнууд үүсгэсний дараа идэвхтэй клубууд энд харагдана.",
+      title: "Клуб одоогоор алга",
+    },
+    errors: {
+      duplicateName: "Ийм нэртэй клуб аль хэдийн байна.",
+      invalidCategory: "Зөв ангилал сонгоно уу.",
+      invalidStatus: "Зөв клубын төлөв сонгоно уу.",
+      loadFailed: "Клубуудыг ачаалж чадсангүй: {error}",
+      nameRequired: "Клубын нэр шаардлагатай.",
+      nameTooShort:
+        "Клубын нэр дор хаяж 3 үсэг эсвэл тоо агуулсан байх ёстой.",
+      staffOnlyCreate:
+        "Зөвхөн сургуулийн админ болон багш нар клуб үүсгэх боломжтой.",
+    },
+    eyebrow: "Сурагчдын бүлгүүд",
+    fallback: {
+      rosterStudent: "Жагсаалтын сурагч",
+    },
+    filters: {
+      description:
+        "Идэвхтэй клубын жагсаалтыг үйл ажиллагааны ангиллаар шүүнэ үү.",
+      title: "Клуб хайх",
+    },
+    form: {
+      category: "Ангилал",
+      description: "Тайлбар",
+      name: "Нэр",
+      noCategory: "Ангилалгүй",
+      status: "Төлөв",
+    },
+    members: {
+      empty:
+        "Гишүүд одоогоор алга. Сурагчид энэ клубт нэгдсэний дараа энд харагдана.",
+      title: "Гишүүд",
+    },
+    student: {
+      noRosterWarning:
+        "Таны бүртгэл идэвхтэй жагсаалтын сурагчтай холбогдоогүй байна.",
+    },
+    success: {
+      created: "Клуб үүслээ.",
+    },
+    title: "Клубууд",
+  },
+  events: {
+    actions: {
+      attendanceQr: "Ирц ба QR",
+      cancel: "Арга хэмжээг цуцлах",
+      cancelMyRegistration: "Миний бүртгэлийг цуцлах",
+      cancelling: "Цуцалж байна...",
+      create: "Арга хэмжээ үүсгэх",
+      createApproved: "Батлагдсан арга хэмжээ үүсгэх",
+      creating: "Арга хэмжээ үүсгэж байна...",
+      eventFull: "Арга хэмжээ дүүрсэн",
+      join: "Арга хэмжээнд нэгдэх",
+      joining: "Нэгдэж байна...",
+      resetFilters: "Шүүлтүүрийг дахин тохируулах",
+      saveSafety: "Аюулгүй байдлын мэдээлэл хадгалах",
+      saveSharing: "Хуваалцах тохиргоо хадгалах",
+      submitForApproval: "Батлуулахаар илгээх",
+      submitting: "Илгээж байна...",
+    },
+    capacity: {
+      noLimit: "Хязгааргүй",
+    },
+    card: {
+      eventType: "Арга хэмжээний төрөл",
+      hostedBy: "Зохион байгуулагч",
+      location: "Байршил",
+      maxParticipants: "Оролцогчдын дээд тоо",
+      mySchool: "Манай сургууль",
+      permission: "Зөвшөөрөл",
+      registration: "Бүртгэл",
+      safety: "Аюулгүй байдал",
+      schoolEvent: "Сургуулийн арга хэмжээ",
+    },
+    create: {
+      leaderDescription:
+        "Клубын удирдагчийн арга хэмжээг сурагчид нэгдэхээс өмнө ажилтнуудад батлуулахаар илгээнэ.",
+      leaderNeedsClub:
+        "Клубын удирдагчаар томилогдсоны дараа арга хэмжээ илгээх боломжтой.",
+      staffDescription:
+        "Сургуулийн ажилтнуудын үүсгэсэн арга хэмжээ шууд батлагдаж, удахгүй болох үед сурагчдад харагдана.",
+    },
+    description:
+      "Батлагдсан үйл ажиллагаа үүсгэж, сурагчдын бүртгэлийг удирдаж, арга хэмжээ эхлэхэд ирцийн check-in нээнэ үү.",
+    empty: {
+      staffDescription:
+        "Батлагдсан арга хэмжээ үүсгэх, клубын арга хэмжээ батлагдахыг хүлээх эсвэл шүүлтүүрийг өөрчилнө үү.",
+      studentDescription:
+        "Ажилтнууд эсвэл клубын удирдагчид нийтэлсний дараа батлагдсан удахгүй болох арга хэмжээнүүд энд харагдана.",
+      title: "Эдгээр шүүлтүүрт тохирох арга хэмжээ алга",
+    },
+    errors: {
+      createFailed: "Арга хэмжээг үүсгэж чадсангүй: {error}",
+      invalidCategory: "Зөв ангилал сонгоно уу.",
+      invalidClub: "Зөв клуб сонгоно уу.",
+      invalidRiskLevel: "Зөв эрсдэлийн түвшин сонгоно уу.",
+      leaderClubRequired:
+        "Клубын удирдагчид өөрийн клубүүдээс нэгийг сонгох ёстой.",
+      loadFailed: "Арга хэмжээнүүдийг ачаалж чадсангүй: {error}",
+      locationRequired: "Байршил шаардлагатай.",
+      maxParticipantsPositive:
+        "Оролцогчдын дээд тоо эерэг тоо байх ёстой.",
+      staffOrLeaderOnly:
+        "Зөвхөн сургуулийн ажилтан эсвэл клубын удирдагч арга хэмжээ үүсгэх боломжтой.",
+      timeRequired: "Эхлэх болон дуусах цаг шаардлагатай.",
+      titleRequired: "Арга хэмжээний гарчиг шаардлагатай.",
+      unauthenticated: "Та нэвтэрсэн байх ёстой.",
+      validTimeOrder: "Дуусах цаг эхлэх цагаас хойш байх ёстой.",
+    },
+    eyebrow: "Үйл ажиллагааны календарь",
+    fallback: {
+      clubEvent: "Клубын арга хэмжээ",
+      connectedSchool: "Холбогдсон сургууль",
+    },
+    filters: {
+      category: "Ангилал",
+      club: "Клубын арга хэмжээнүүд",
+      description:
+        "Танай сургуулийн арга хэмжээ, хуваалцсан арга хэмжээ, бүртгэлүүд, клубын арга хэмжээ болон ангиллуудын хооронд шилжинэ үү.",
+      myRegistered: "Миний бүртгүүлсэн арга хэмжээнүүд",
+      mySchool: "Манай сургуулийн арга хэмжээнүүд",
+      shared: "Хуваалцсан арга хэмжээнүүд",
+      title: "Арга хэмжээ хайх",
+      upcoming: "Удахгүй болох",
+      viewLabel: "Арга хэмжээний харагдац",
+    },
+    form: {
+      category: "Ангилал",
+      club: "Клуб",
+      description: "Тайлбар",
+      endsAt: "Дуусах цаг",
+      location: "Байршил",
+      maxParticipants: "Оролцогчдын дээд тоо",
+      noCategory: "Ангилалгүй",
+      permissionNote: "Зөвшөөрлийн тэмдэглэл",
+      permissionNotePlaceholder:
+        "Ажилтнууд, сурагчид эсвэл гэр бүлд зориулсан нэмэлт тэмдэглэл",
+      permissionRequired: "Зөвшөөрөл шаардлагатай",
+      riskLevel: "Эрсдэлийн түвшин",
+      schoolWideEvent: "Сургуулийн хэмжээний арга хэмжээ",
+      startsAt: "Эхлэх цаг",
+      title: "Гарчиг",
+    },
+    listTitles: {
+      club: "Клубын арга хэмжээнүүд",
+      registered: "Миний бүртгүүлсэн арга хэмжээнүүд",
+      sharedUpcoming: "Хуваалцсан удахгүй болох арга хэмжээнүүд",
+      upcoming: "Удахгүй болох арга хэмжээнүүд",
+    },
+    permission: {
+      mayBeRequired: "Шаардлагатай байж магадгүй",
+      notRequired: "Шаардлагагүй",
+      note: "Зөвшөөрлийн тэмдэглэл",
+      required: "Зөвшөөрөл шаардлагатай",
+      status: {
+        declined: "Зөвшөөрөл татгалзсан",
+        notRequired: "Зөвшөөрөл шаардлагагүй",
+        pending: "Зөвшөөрөл хүлээгдэж байна",
+        received: "Зөвшөөрөл авсан",
+      },
+      studentNotice:
+        "Энэ арга хэмжээнд сургууль/эцэг эхийн зөвшөөрөл шаардлагатай байж магадгүй.",
+    },
+    registration: {
+      checkedIn: "Check-in хийсэн",
+      count: "{count} нэгдсэн",
+      joined: "Нэгдсэн",
+      maxSuffix: "/ дээд тал нь {count}",
+      notJoined: "Нэгдээгүй",
+      unavailable: "Бүртгүүлэх боломжгүй",
+    },
+    risk: {
+      high: "Өндөр эрсдэл",
+      low: "Бага эрсдэл",
+      medium: "Дунд эрсдэл",
+    },
+    sharing: {
+      allowConnectedRegistration:
+        "Холбогдсон сургуулийн сурагчдыг бүртгүүлэхийг зөвшөөрөх",
+      internalOnly: "Зөвхөн дотоод",
+      noConnections: "Батлагдсан сургуулийн холболт одоогоор алга.",
+      shareWith: "Хуваалцах сургууль",
+      sharedEvent: "Хуваалцсан арга хэмжээ",
+      sharedMany: "{count} сургуультай хуваалцсан",
+      sharedManyRegistration:
+        "{count} сургуультай хуваалцсан + бүртгэл",
+      sharedOne: "1 сургуультай хуваалцсан",
+    },
+    student: {
+      noRosterWarning:
+        "Таны бүртгэл идэвхтэй жагсаалтын сурагчтай холбогдоогүй байна.",
+    },
+    success: {
+      createdApproved: "Арга хэмжээ үүсэж батлагдлаа.",
+      submittedForApproval: "Арга хэмжээг батлуулахаар илгээлээ.",
+    },
+    title: "Арга хэмжээнүүд",
+  },
+  approvals: {
+    actions: {
+      approve: "Арга хэмжээг батлах",
+      approving: "Баталж байна...",
+      reject: "Арга хэмжээг татгалзах",
+      rejecting: "Татгалзаж байна...",
+    },
+    description:
+      "Клубын удирдагчийн арга хэмжээний хүсэлтүүдийг сурагчдад харагдахаас өмнө шалгана уу.",
+    empty: {
+      description:
+        "Клубын удирдагчийн илгээсэн хүсэлтүүд ажилтны хяналт шаардлагатай үед энд харагдана.",
+      title: "Хүлээгдэж буй арга хэмжээний батлах хүсэлт алга",
+    },
+    errors: {
+      loadFailed: "Хүлээгдэж буй арга хэмжээнүүдийг ачаалж чадсангүй: {error}",
+    },
+    event: {
+      location: "Байршил",
+      maxParticipants: "Оролцогчдын дээд тоо",
+      permission: "Зөвшөөрөл",
+      safety: "Аюулгүй байдал",
+      submitted: "Илгээсэн",
+    },
+    fallback: {
+      clubEvent: "Клубын арга хэмжээ",
+    },
+    pending: {
+      title: "Хүлээгдэж буй арга хэмжээний батлах хүсэлтүүд",
+    },
+    reject: {
+      reasonLabel: "Татгалзсан шалтгаан",
+    },
+    title: "Батлах хүсэлтүүд",
+  },
+  attendance: {
+    actions: {
+      copied: "Хуулагдсан",
+      copyLink: "Check-in холбоос хуулах",
+      openLink: "Check-in холбоос нээх",
+      savePermission: "Зөвшөөрөл хадгалах",
+    },
+    checkInLink: {
+      description:
+        "Check-in нээлттэй үед энэ холбоос эсвэл QR кодыг бүртгүүлсэн сурагчидтай хуваалцана уу.",
+      fullUrl: "Бүрэн check-in URL",
+      title: "Check-in холбоос",
+    },
+    empty: {
+      description:
+        "Энэ арга хэмжээнд нэгдсэн сурагчид зөвшөөрөл хянах болон check-in хийхэд энд харагдана.",
+      title: "Бүртгүүлсэн сурагч одоогоор алга",
+    },
+    errors: {
+      invalidPermissionStatus: "Зөв зөвшөөрлийн төлөв сонгоно уу.",
+    },
+    fallback: {
+      registeredStudent: "Бүртгүүлсэн сурагч",
+    },
+    list: {
+      registeredCount: "{count} бүртгүүлсэн сурагч",
+      title: "Ирцийн жагсаалт",
+    },
+    permission: {
+      badge: {
+        declined: "Зөвшөөрөл татгалзсан",
+        notRequired: "Зөвшөөрөл шаардлагагүй",
+        pending: "Зөвшөөрөл хүлээгдэж байна",
+        received: "Зөвшөөрөл авсан",
+      },
+      status: {
+        declined: "Татгалзсан",
+        pending: "Хүлээгдэж буй",
+        received: "Авсан",
+      },
+      warning:
+        "Энэ бүртгүүлсэн сурагчийн зөвшөөрөл хараахан авагдаагүй байна.",
+    },
+    qr: {
+      ariaLabel: "Арга хэмжээний check-in холбоосын QR код",
+    },
+    table: {
+      checkedIn: "Check-in хийсэн",
+      grade: "Анги",
+      method: "Арга",
+      permission: "Зөвшөөрөл",
+      school: "Сургууль",
+      status: "Төлөв",
+      student: "Сурагч",
+    },
+    title: "Арга хэмжээний ирц",
+  },
+  checkIn: {
+    actions: {
+      checkIn: "Check-in хийх",
+      checkingIn: "Check-in хийж байна...",
+    },
+    details: {
+      location: "Байршил",
+      permission: "Зөвшөөрөл",
+      safety: "Аюулгүй байдал",
+      time: "Цаг",
+    },
+    errors: {
+      activeStudentsOnly:
+        "Зөвхөн идэвхтэй сурагчийн бүртгэл энэ check-in холбоосыг ашиглах боломжтой.",
+      eventUnavailable: "Энэ арга хэмжээнд check-in хийх боломжгүй.",
+      invalidRegistrationStatus:
+        "Энэ арга хэмжээний бүртгэлээр check-in хийх боломжгүй.",
+      missingEvent: "Энэ check-in холбоост арга хэмжээ алга.",
+      mustJoinFirst: "Check-in хийхээс өмнө энэ арга хэмжээнд нэгдэнэ үү.",
+      noRoster:
+        "Таны бүртгэл идэвхтэй жагсаалтын сурагчтай холбогдоогүй байна.",
+    },
+    permissionNote: "Зөвшөөрлийн тэмдэглэл",
+    success: {
+      alreadyCheckedIn: "Та аль хэдийн check-in хийсэн байна.",
+      checkedIn: "Check-in амжилттай боллоо.",
+    },
+    title: "Арга хэмжээний check-in",
   },
   dashboard: {
     browseEvents: "Арга хэмжээ үзэх",
