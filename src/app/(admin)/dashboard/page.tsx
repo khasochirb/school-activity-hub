@@ -162,10 +162,18 @@ function DashboardShell({
 }) {
   return (
     <div className="page-stack">
-      <section className="page-header">
-        <p className="page-eyebrow">School activity overview</p>
-        <h1 className="page-title">{title}</h1>
-        <p className="page-description">{description}</p>
+      <section className="rounded-md border border-slate-200 bg-white px-5 py-4 shadow-sm sm:px-6">
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+            School activity overview
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+            {title}
+          </h1>
+          <p className="max-w-3xl text-sm leading-6 text-slate-600">
+            {description}
+          </p>
+        </div>
       </section>
       {children}
     </div>
