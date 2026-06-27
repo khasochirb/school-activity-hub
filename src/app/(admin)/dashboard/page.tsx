@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { PageHeader } from "../_components/page-ui";
+import { EmptyState, PageHeader, StatusBadge } from "../_components/page-ui";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -95,6 +95,7 @@ function StaffDashboard({
       title="Dashboard"
     >
       <WelcomeOverview />
+      <NextSteps analytics={analytics} />
       <QuickActions />
       <MetricGrid>
         <MetricCard label="Active students" value={analytics.activeStudents} />
@@ -112,8 +113,6 @@ function StaffDashboard({
           value={analytics.totalAttendanceCheckins}
         />
       </MetricGrid>
-
-      <DemoWorkflow />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <UpcomingEventsSection events={analytics.upcomingEvents} />
@@ -134,6 +133,7 @@ function StudentDashboard({
       title="Dashboard"
     >
       <StudentWelcomeOverview />
+      <StudentNextSteps />
       {!analytics.currentStudent ? (
         <section className="notice-box notice-warning">
           <p>
@@ -203,6 +203,166 @@ function WelcomeOverview() {
   );
 }
 
+function NextSteps({
+  analytics,
+}: {
+  analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+}) {
+  const inviteCodesMissing =
+    analytics.activeStudents > 0 &&
+    analytics.activeInviteCodes < analytics.activeStudents;
+  const steps = [
+    {
+      action: "Add students",
+      description:
+        "Start by adding verified students to the roster. Students cannot join until they are rostered.",
+      href: "/students",
+      status:
+        analytics.activeStudents > 0
+          ? "complete"
+          : ("next" as const),
+    },
+    {
+      action: "Generate invite codes",
+      description:
+        "Create one-time invite codes so rostered students can activate their accounts.",
+      href: "/invite-codes",
+      status:
+        analytics.activeStudents === 0
+          ? "locked"
+          : inviteCodesMissing
+            ? "next"
+            : "complete",
+    },
+    {
+      action: "Students join",
+      description:
+        "Share invite codes with students and have them create their own accounts.",
+      href: "/invite-codes",
+      status:
+        analytics.activeInviteCodes > 0 || analytics.totalEventRegistrations > 0
+          ? "ready"
+          : "locked",
+    },
+    {
+      action: "Create clubs",
+      description:
+        "Add clubs students can discover, join, and eventually help lead.",
+      href: "/clubs",
+      status:
+        analytics.activeClubs > 0
+          ? "complete"
+          : analytics.activeStudents > 0
+            ? "next"
+            : "locked",
+    },
+    {
+      action: "Create events",
+      description:
+        "Publish upcoming activities for students to register for and attend.",
+      href: "/events",
+      status:
+        analytics.upcomingApprovedEvents > 0
+          ? "complete"
+          : analytics.activeStudents > 0
+            ? "next"
+            : "locked",
+    },
+    {
+      action: "Track attendance",
+      description:
+        "Use the attendance page and QR check-in when approved events are ready.",
+      href: "/events",
+      status:
+        analytics.totalAttendanceCheckins > 0
+          ? "complete"
+          : analytics.upcomingApprovedEvents > 0
+            ? "next"
+            : "locked",
+    },
+    {
+      action: "View reports",
+      description:
+        "Review registration and attendance summaries once activity starts.",
+      href: "/reports",
+      status:
+        analytics.totalEventRegistrations > 0 ||
+        analytics.totalAttendanceCheckins > 0
+          ? "ready"
+          : "locked",
+    },
+  ] satisfies Array<{
+    action: string;
+    description: string;
+    href: string;
+    status: "complete" | "locked" | "next" | "ready";
+  }>;
+
+  return (
+    <section className="section-card">
+      <div className="section-header">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="section-title">Next steps</h2>
+            <p className="section-description">
+              Follow this setup path to move from roster setup to attendance
+              tracking.
+            </p>
+          </div>
+          <p className="text-sm font-semibold text-slate-600">
+            {analytics.activeInviteCodes} active invite code
+            {analytics.activeInviteCodes === 1 ? "" : "s"}
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+        {steps.map((step, index) => (
+          <Link
+            className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+            href={step.href}
+            key={step.action}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+                  Step {index + 1}
+                </p>
+                <h3 className="mt-2 text-base font-bold text-slate-950 transition group-hover:text-teal-800">
+                  {step.action}
+                </h3>
+              </div>
+              <StepStatusBadge status={step.status} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {step.description}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StepStatusBadge({
+  status,
+}: {
+  status: "complete" | "locked" | "next" | "ready";
+}) {
+  if (status === "complete") {
+    return <StatusBadge variant="success">Done</StatusBadge>;
+  }
+
+  if (status === "next") {
+    return <StatusBadge variant="warning">Next</StatusBadge>;
+  }
+
+  if (status === "ready") {
+    return <StatusBadge variant="info">Ready</StatusBadge>;
+  }
+
+  return <StatusBadge>Later</StatusBadge>;
+}
+
 function StudentWelcomeOverview() {
   return (
     <section className="section-card section-card-padded">
@@ -219,12 +379,51 @@ function StudentWelcomeOverview() {
           Browse events
         </Link>
         <Link className="btn btn-secondary" href="/clubs">
-          Browse clubs
+          Join clubs
         </Link>
-        <Link className="btn btn-secondary" href="/announcements">
-          Read announcements
+        <Link className="btn btn-secondary" href="/events?filter=registered">
+          View registered events
         </Link>
       </div>
+    </section>
+  );
+}
+
+function StudentNextSteps() {
+  const actions = [
+    {
+      description: "See upcoming approved activities and register when ready.",
+      href: "/events",
+      label: "Browse events",
+    },
+    {
+      description: "Find active clubs and join the groups that fit you.",
+      href: "/clubs",
+      label: "Join clubs",
+    },
+    {
+      description: "Check the events you have already registered for.",
+      href: "/events?filter=registered",
+      label: "View upcoming registered events",
+    },
+  ];
+
+  return (
+    <section className="grid gap-3 md:grid-cols-3">
+      {actions.map((action) => (
+        <Link
+          className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          href={action.href}
+          key={action.href}
+        >
+          <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
+            {action.label}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {action.description}
+          </p>
+        </Link>
+      ))}
     </section>
   );
 }
@@ -319,10 +518,12 @@ function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
           ))}
         </ul>
       ) : (
-        <EmptyState
-          description="Approved future events will appear here once staff or club leaders create them."
-          title="No upcoming events yet"
-        />
+        <div className="p-4">
+          <EmptyState
+            description="Approved future events will appear here once staff or club leaders create them."
+            title="No upcoming events yet"
+          />
+        </div>
       )}
     </section>
   );
@@ -361,60 +562,14 @@ function RecentCheckinsSection({ checkins }: { checkins: RecentCheckin[] }) {
           ))}
         </ul>
       ) : (
-        <EmptyState
-          description="After students check in with an event QR link, recent check-ins will appear here."
-          title="No attendance check-ins yet"
-        />
+        <div className="p-4">
+          <EmptyState
+            description="After students check in with an event QR link, recent check-ins will appear here."
+            title="No attendance check-ins yet"
+          />
+        </div>
       )}
     </section>
-  );
-}
-
-function DemoWorkflow() {
-  const steps = [
-    "Add students",
-    "Generate invite codes",
-    "Students join",
-    "Create clubs/events",
-    "Track attendance",
-  ];
-
-  return (
-    <section className="section-card section-card-padded">
-      <h2 className="section-title">Demo workflow</h2>
-      <p className="section-description">
-        Use these steps for a clean school pilot without adding real production
-        student data.
-      </p>
-      <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {steps.map((step, index) => (
-          <li
-            className="detail-card"
-            key={step}
-          >
-            <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-              Step {index + 1}
-            </p>
-            <p className="mt-2 text-sm font-bold text-slate-950">{step}</p>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function EmptyState({
-  description,
-  title,
-}: {
-  description: string;
-  title: string;
-}) {
-  return (
-    <div className="m-4 empty-state">
-      <p className="text-sm font-bold text-slate-950">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
-    </div>
   );
 }
 
@@ -425,6 +580,7 @@ async function getStaffAnalytics(
   const now = new Date().toISOString();
   const [
     activeStudents,
+    activeInviteCodes,
     activeClubs,
     upcomingApprovedEvents,
     totalEventRegistrations,
@@ -433,6 +589,7 @@ async function getStaffAnalytics(
     recentCheckins,
   ] = await Promise.all([
     getActiveStudentCount(admin, schoolId),
+    getActiveInviteCodeCount(admin, schoolId, now),
     getActiveClubCount(admin, schoolId),
     getUpcomingApprovedEventCount(admin, schoolId, now),
     getTotalEventRegistrationCount(admin, schoolId),
@@ -442,6 +599,7 @@ async function getStaffAnalytics(
   ]);
 
   return {
+    activeInviteCodes,
     activeStudents,
     activeClubs,
     upcomingApprovedEvents,
@@ -543,6 +701,27 @@ async function getActiveClubCount(
       .select("id", { count: "exact", head: true })
       .eq("school_id", schoolId)
       .eq("status", "active"),
+  );
+
+  return count ?? 0;
+}
+
+async function getActiveInviteCodeCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+  now: string,
+) {
+  const { count } = await timeServer(
+    "dashboard.query.active-invite-code-count",
+    () =>
+      admin
+        .from("invite_codes")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .eq("use_count", 0)
+        .is("redeemed_at", null)
+        .gt("expires_at", now),
   );
 
   return count ?? 0;
