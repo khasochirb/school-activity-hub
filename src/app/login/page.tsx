@@ -40,23 +40,30 @@ export default async function LoginPage() {
             </span>
             <span>{t("app.name")}</span>
           </Link>
-          <LanguageSwitcher currentLocale={locale} label={t("language.label")} />
+          <LanguageSwitcher
+            currentLocale={locale}
+            label={t("language.label")}
+            labels={{
+              en: t("language.en"),
+              mn: t("language.mn"),
+            }}
+          />
         </div>
         <section className="section-card p-6 sm:p-8">
-          <p className="page-eyebrow">{t("login.eyebrow")}</p>
+          <p className="page-eyebrow">{t("auth.login.eyebrow")}</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-            {t("login.title")}
+            {t("auth.login.title")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            {t("login.description")}
+            {t("auth.login.description")}
           </p>
           <LoginForm
             labels={{
-              email: t("login.email"),
-              forgotPassword: t("login.forgotPassword"),
-              password: t("login.password"),
-              signingIn: t("login.signingIn"),
-              signIn: t("login.signIn"),
+              email: t("auth.login.email"),
+              forgotPassword: t("auth.login.forgotPassword"),
+              password: t("auth.login.password"),
+              signingIn: t("auth.login.signingIn"),
+              signIn: t("auth.login.signIn"),
             }}
           />
         </section>

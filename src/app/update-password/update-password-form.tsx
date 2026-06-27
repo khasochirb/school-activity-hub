@@ -5,7 +5,24 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function UpdatePasswordForm() {
+type UpdatePasswordFormLabels = {
+  checkingLink: string;
+  confirmPassword: string;
+  goToDashboard: string;
+  newPassword: string;
+  openResetLink: string;
+  passwordMinLength: string;
+  passwordMismatch: string;
+  submit: string;
+  success: string;
+  updating: string;
+};
+
+export function UpdatePasswordForm({
+  labels,
+}: {
+  labels: UpdatePasswordFormLabels;
+}) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [sessionMessage, setSessionMessage] = useState<string | null>(null);
@@ -38,9 +55,7 @@ export function UpdatePasswordForm() {
       if (sessionError) {
         setSessionMessage(sessionError.message);
       } else if (!data.session) {
-        setSessionMessage(
-          "Open the password reset link from your email before setting a new password.",
-        );
+        setSessionMessage(labels.openResetLink);
       }
 
       setIsCheckingSession(false);
@@ -50,7 +65,7 @@ export function UpdatePasswordForm() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [labels.openResetLink, supabase]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -63,13 +78,13 @@ export function UpdatePasswordForm() {
     const confirmPassword = String(formData.get("confirm_password") ?? "");
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(labels.passwordMinLength);
       setIsSubmitting(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(labels.passwordMismatch);
       setIsSubmitting(false);
       return;
     }
@@ -85,7 +100,7 @@ export function UpdatePasswordForm() {
       return;
     }
 
-    setMessage("Password updated. You can continue to your dashboard.");
+    setMessage(labels.success);
     event.currentTarget.reset();
     router.refresh();
   }
@@ -98,7 +113,7 @@ export function UpdatePasswordForm() {
         </p>
       ) : null}
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-        New password
+        {labels.newPassword}
         <input
           autoComplete="new-password"
           className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
@@ -109,7 +124,7 @@ export function UpdatePasswordForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-        Confirm new password
+        {labels.confirmPassword}
         <input
           autoComplete="new-password"
           className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
@@ -126,7 +141,7 @@ export function UpdatePasswordForm() {
             className="mt-3 inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
             href="/dashboard"
           >
-            Go to dashboard
+            {labels.goToDashboard}
           </Link>
         </div>
       ) : null}
@@ -141,10 +156,10 @@ export function UpdatePasswordForm() {
         type="submit"
       >
         {isSubmitting
-          ? "Updating..."
+          ? labels.updating
           : isCheckingSession
-            ? "Checking reset link..."
-            : "Update password"}
+            ? labels.checkingLink
+            : labels.submit}
       </button>
     </form>
   );

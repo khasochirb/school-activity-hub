@@ -22,23 +22,31 @@ export default async function JoinPage() {
             </span>
             <span>{t("app.name")}</span>
           </Link>
-          <LanguageSwitcher currentLocale={locale} label={t("language.label")} />
+          <LanguageSwitcher
+            currentLocale={locale}
+            label={t("language.label")}
+            labels={{
+              en: t("language.en"),
+              mn: t("language.mn"),
+            }}
+          />
         </div>
         <section className="section-card p-6 sm:p-8">
-          <p className="page-eyebrow">{t("join.eyebrow")}</p>
+          <p className="page-eyebrow">{t("auth.join.eyebrow")}</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-            {t("join.title")}
+            {t("auth.join.title")}
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            {t("join.description")}
+            {t("auth.join.description")}
           </p>
           <JoinForm
             labels={{
-              createAccount: t("join.createAccount"),
-              creatingAccount: t("join.creatingAccount"),
-              email: t("join.email"),
-              inviteCode: t("join.inviteCode"),
-              password: t("join.password"),
+              createAccount: t("auth.join.createAccount"),
+              creatingAccount: t("auth.join.creatingAccount"),
+              email: t("auth.join.email"),
+              inviteCode: t("auth.join.inviteCode"),
+              inviteCodePlaceholder: t("auth.join.inviteCodePlaceholder"),
+              password: t("auth.join.password"),
             }}
           />
         </section>

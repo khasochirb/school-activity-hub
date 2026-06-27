@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,6 +12,8 @@ export default async function HomePage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -51,6 +57,10 @@ export default async function HomePage() {
             <LanguageSwitcher
               currentLocale={locale}
               label={t("language.label")}
+              labels={{
+                en: t("language.en"),
+                mn: t("language.mn"),
+              }}
             />
             {user ? (
               <Link className="btn btn-primary" href="/dashboard">
@@ -77,7 +87,7 @@ export default async function HomePage() {
             {t("landing.headline")}
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            {t("landing.platformDescription")}
+            {t("landing.intro")}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             {user ? (
@@ -158,7 +168,7 @@ export default async function HomePage() {
             {demoWorkflow.map((step, index) => (
               <article className="detail-card" key={step}>
                 <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-                  Step {index + 1}
+                  {tf("dashboard.nextSteps.stepLabel", { number: index + 1 })}
                 </p>
                 <p className="mt-2 text-sm font-bold text-slate-950">{step}</p>
               </article>

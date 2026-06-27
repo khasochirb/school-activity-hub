@@ -99,12 +99,17 @@ export async function AppShell({
     }))
     .filter((section) => section.items.length) satisfies NavSection[];
   const formattedRole = profile ? formatRole(profile.role, t) : t("roles.noProfile");
+  const languageLabels = {
+    en: t("language.en"),
+    mn: t("language.mn"),
+  };
 
   return (
     <div className="app-surface min-h-screen lg:flex">
       <aside className="hidden w-72 shrink-0 border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
         <div className="border-b border-slate-200 px-5 py-6">
           <Brand
+            dashboardLabel={t("nav.dashboard")}
             name={t("app.name")}
             shortName={t("app.shortName")}
             subtitle={t("app.subtitle")}
@@ -115,6 +120,7 @@ export async function AppShell({
         </div>
         <AccountPanel
           email={email}
+          languageLabels={languageLabels}
           languageLabel={t("language.label")}
           locale={locale}
           logoutLabel={t("nav.logout")}
@@ -128,6 +134,7 @@ export async function AppShell({
           <div className="flex items-center justify-between gap-3">
             <Brand
               compact
+              dashboardLabel={t("nav.dashboard")}
               name={t("app.name")}
               shortName={t("app.shortName")}
               subtitle={t("app.subtitle")}
@@ -141,6 +148,7 @@ export async function AppShell({
                 <div className="mt-4 border-t border-slate-200 pt-4">
                   <MobileAccount
                     email={email}
+                    languageLabels={languageLabels}
                     languageLabel={t("language.label")}
                     locale={locale}
                     logoutLabel={t("nav.logout")}
@@ -163,11 +171,13 @@ export async function AppShell({
 
 function Brand({
   compact = false,
+  dashboardLabel,
   name,
   shortName,
   subtitle,
 }: {
   compact?: boolean;
+  dashboardLabel: string;
   name: string;
   shortName: string;
   subtitle: string;
@@ -175,7 +185,7 @@ function Brand({
   return (
     <div className="flex items-center gap-3">
       <Link
-        aria-label="School Activity Hub dashboard"
+        aria-label={`${name} ${dashboardLabel}`}
         className={
           compact
             ? "flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-teal-700 text-xs font-bold text-white shadow-sm transition hover:bg-teal-800"
@@ -208,6 +218,7 @@ function Brand({
 
 function AccountPanel({
   email,
+  languageLabels,
   languageLabel,
   locale,
   logoutLabel,
@@ -215,6 +226,7 @@ function AccountPanel({
   roleLabel,
 }: {
   email: string | null;
+  languageLabels: Record<Locale, string>;
   languageLabel: string;
   locale: Locale;
   logoutLabel: string;
@@ -224,7 +236,11 @@ function AccountPanel({
   return (
     <div className="border-t border-slate-200 p-4">
       <div className="mb-3">
-        <LanguageSwitcher currentLocale={locale} label={languageLabel} />
+        <LanguageSwitcher
+          currentLocale={locale}
+          label={languageLabel}
+          labels={languageLabels}
+        />
       </div>
       <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 shadow-inner">
         <p className="break-all">{email}</p>
@@ -244,6 +260,7 @@ function AccountPanel({
 
 function MobileAccount({
   email,
+  languageLabels,
   languageLabel,
   locale,
   logoutLabel,
@@ -251,6 +268,7 @@ function MobileAccount({
   roleLabel,
 }: {
   email: string | null;
+  languageLabels: Record<Locale, string>;
   languageLabel: string;
   locale: Locale;
   logoutLabel: string;
@@ -259,7 +277,11 @@ function MobileAccount({
 }) {
   return (
     <div className="space-y-3">
-      <LanguageSwitcher currentLocale={locale} label={languageLabel} />
+      <LanguageSwitcher
+        currentLocale={locale}
+        label={languageLabel}
+        labels={languageLabels}
+      />
       <div className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
         <p className="break-all">{email}</p>
         <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>

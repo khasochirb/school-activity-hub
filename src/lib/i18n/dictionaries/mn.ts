@@ -1,10 +1,88 @@
-import type { Dictionary } from "./en";
+import type { PartialDictionary } from "./en";
 
 export const mn = {
   app: {
-    name: "School Activity Hub",
+    name: "Сургуулийн үйл ажиллагааны төв",
     shortName: "SAH",
-    subtitle: "Club, Event, урилга, ирц",
+    subtitle: "Клуб, арга хэмжээ, урилга ба ирц",
+  },
+  auth: {
+    backToSignIn: "Нэвтрэх рүү буцах",
+    errors: {
+      invalidEmail: "Зөв имэйл хаяг оруулна уу.",
+      passwordMinLength: "Нууц үг дор хаяж 8 тэмдэгттэй байх ёстой.",
+    },
+    join: {
+      createAccount: "Сурагчийн бүртгэл үүсгэх",
+      creatingAccount: "Бүртгэл үүсгэж байна...",
+      description:
+        "Сурагчийн бүртгэлээ идэвхжүүлэхийн тулд сургуулиас өгсөн нэг удаагийн урилгын кодыг оруулна уу.",
+      email: "Имэйл",
+      errors: {
+        accountCreateFailed:
+          "Бүртгэл үүсгэж чадсангүй. Өөр имэйл хаяг ашиглаж үзнэ үү.",
+        inactiveRoster: "Энэ урилга идэвхтэй сурагчтай холбогдоогүй байна.",
+        inviteExpired: "Урилгын кодын хугацаа дууссан байна.",
+        inviteInactive:
+          "Урилгын код аль хэдийн ашиглагдсан эсвэл идэвхгүй болсон байна.",
+        inviteNoRoster:
+          "Урилгын код бүртгэлд байгаа сурагчтай холбогдоогүй байна.",
+        inviteNotFound: "Урилгын код олдсонгүй.",
+        inviteRequired: "Урилгын кодоо оруулна уу.",
+        inviteUsedDuringSignup:
+          "Таны бүртгэл дуусахаас өмнө энэ урилгын код ашиглагдсан байна.",
+        rosterClaimed:
+          "Таны бүртгэл дуусахаас өмнө энэ жагсаалтын сурагчийн бүртгэл хэн нэгэнд холбогдсон байна.",
+        studentAlreadyLinked: "Энэ сурагч аль хэдийн бүртгэлтэй байна.",
+      },
+      eyebrow: "Баталгаажсан сурагчийн бүртгэл",
+      inviteCode: "Урилгын код",
+      inviteCodePlaceholder: "ABCD-EFGH-IJ",
+      password: "Нууц үг",
+      success: "Бүртгэл үүслээ. Нэвтрэх хуудас руу очиж нэвтэрнэ үү.",
+      title: "Урилгын кодоор нэгдэх",
+    },
+    login: {
+      description:
+        "Баталгаажсан сургуулийн үйл ажиллагааг удирдах эсвэл нэгдэхийн тулд сургуулийн үйл ажиллагааны бүртгэлээ ашиглана уу.",
+      email: "Имэйл",
+      eyebrow: "Бүртгэлийн хандалт",
+      forgotPassword: "Нууц үгээ мартсан уу?",
+      password: "Нууц үг",
+      signingIn: "Нэвтэрч байна...",
+      signIn: "Нэвтрэх",
+      title: "Нэвтрэх",
+    },
+    reset: {
+      description:
+        "Бүртгэлийн имэйлээ оруулна уу. Бид нууц үг сэргээх холбоос илгээнэ.",
+      email: "Имэйл",
+      errors: {
+        emailRequired: "Имэйл шаардлагатай.",
+      },
+      sending: "Илгээж байна...",
+      submit: "Сэргээх имэйл илгээх",
+      success:
+        "Хэрэв энэ имэйлтэй бүртгэл байгаа бол нууц үг сэргээх холбоос илгээгдсэн.",
+      title: "Нууц үг сэргээх",
+    },
+    updatePassword: {
+      checkingLink: "Сэргээх холбоос шалгаж байна...",
+      confirmPassword: "Шинэ нууц үгээ баталгаажуулах",
+      description:
+        "Имэйлээсээ сэргээх холбоосыг нээсний дараа шинэ нууц үгээ сонгоно уу.",
+      errors: {
+        passwordMismatch: "Нууц үгнүүд таарахгүй байна.",
+      },
+      goToDashboard: "Хянах самбар руу очих",
+      newPassword: "Шинэ нууц үг",
+      openResetLink:
+        "Шинэ нууц үг тохируулахаасаа өмнө имэйлээсээ нууц үг сэргээх холбоосыг нээнэ үү.",
+      submit: "Нууц үг шинэчлэх",
+      success: "Нууц үг шинэчлэгдлээ. Та хянах самбар руу үргэлжлүүлж болно.",
+      title: "Нууц үг шинэчлэх",
+      updating: "Шинэчилж байна...",
+    },
   },
   common: {
     active: "Идэвхтэй",
@@ -14,120 +92,237 @@ export const mn = {
     create: "Үүсгэх",
     delete: "Устгах",
     inactive: "Идэвхгүй",
-    pending: "Хүлээгдэж байна",
+    pending: "Хүлээгдэж буй",
     rejected: "Татгалзсан",
-    revoked: "Хүчингүй",
+    revoked: "Хүчингүй болгосон",
     save: "Хадгалах",
     saving: "Хадгалж байна...",
   },
   dashboard: {
-    browseEvents: "Events үзэх",
+    browseEvents: "Арга хэмжээ үзэх",
+    checkins: {
+      description:
+        "Батлагдсан арга хэмжээнүүдийн хамгийн сүүлийн амжилттай ирцийн check-in бүртгэлүүд.",
+      emptyDescription:
+        "Сурагчид арга хэмжээний QR холбоосоор check-in хийсний дараа сүүлийн check-in бүртгэлүүд энд харагдана.",
+      emptyTitle: "Ирцийн check-in одоогоор алга",
+      title: "Сүүлийн check-in бүртгэлүүд",
+    },
     description:
-      "Сургуулийн сурагчид, Club, Event, бүртгэл, ирцийн товч мэдээлэл.",
-    eyebrow: "School activity overview",
-    joinClubs: "Club-д нэгдэх",
-    studentEyebrow: "Student activity hub",
-    studentOverviewDescription:
-      "Нэгдсэн Club, удахгүй болох Event бүртгэл, ирцийн мэдээллээ Dashboard дээрээс хянана.",
-    studentOverviewTitle: "Сургууль дээр юу болж байгааг харна уу.",
+      "Танай сургуулийн сурагчдын жагсаалт, клуб, арга хэмжээ, бүртгэл болон ирцийн үйл ажиллагааны товч харагдац.",
+    eyebrow: "Сургуулийн үйл ажиллагааны тойм",
+    fallback: {
+      event: "Арга хэмжээ",
+      rosterStudent: "Жагсаалтын сурагч",
+    },
+    joinClubs: "Клубт нэгдэх",
+    nextSteps: {
+      activeInviteCodes: "идэвхтэй урилгын код(ууд)",
+      description:
+        "Жагсаалт тохируулахаас ирц хянах хүртэл энэ тохиргооны дарааллыг дагана уу.",
+      status: {
+        done: "Дууссан",
+        later: "Дараа",
+        next: "Дараагийн",
+        ready: "Бэлэн",
+      },
+      stepLabel: "Алхам {number}",
+      steps: {
+        addStudents: {
+          description:
+            "Эхлээд баталгаажсан сурагчдыг жагсаалтад нэмнэ үү. Сурагчид жагсаалтад орох хүртэл нэгдэх боломжгүй.",
+          title: "Сурагч нэмэх",
+        },
+        createClubs: {
+          description:
+            "Сурагчид олж, нэгдэж, цаашдаа удирдахад оролцож болох клубуудыг нэмэх.",
+          title: "Клуб үүсгэх",
+        },
+        createEvents: {
+          description:
+            "Сурагчид бүртгүүлж, оролцох боломжтой удахгүй болох үйл ажиллагааг нийтлэх.",
+          title: "Арга хэмжээ үүсгэх",
+        },
+        generateInviteCodes: {
+          description:
+            "Жагсаалтад байгаа сурагчид бүртгэлээ идэвхжүүлэхийн тулд нэг удаагийн урилгын код үүсгэнэ үү.",
+          title: "Урилгын код үүсгэх",
+        },
+        studentsJoin: {
+          description:
+            "Урилгын кодуудыг сурагчидтай хуваалцаж, өөрсдийн бүртгэлээ үүсгүүлэх.",
+          title: "Сурагчид нэгдэх",
+        },
+        trackAttendance: {
+          description:
+            "Батлагдсан арга хэмжээнүүд бэлэн үед ирцийн хуудас болон QR check-in ашиглах.",
+          title: "Ирц хянах",
+        },
+        viewReports: {
+          description:
+            "Үйл ажиллагаа эхэлсний дараа бүртгэл ба ирцийн хураангуйг шалгах.",
+          title: "Тайлан харах",
+        },
+      },
+      title: "Дараагийн алхмууд",
+    },
+    noProfile: {
+      description:
+        "Таны бүртгэл нэвтэрсэн боловч сургуулийн профайлтай холбогдоогүй байна.",
+      guidance: "Сургуулийн админаас профайлыг тань бүрэн тохируулахыг хүснэ үү.",
+    },
+    quickActions: {
+      addStudents: {
+        description:
+          "Бүртгэлээс өмнө баталгаажсан сурагчдыг үүсгэх эсвэл импортлох.",
+        label: "Сурагч нэмэх",
+      },
+      createClub: {
+        description: "Сурагчид олж нэгдэж болох бүлгийг нээх.",
+        label: "Клуб үүсгэх",
+      },
+      createEvent: {
+        description:
+          "Батлагдсан арга хэмжээг нийтлэх эсвэл хянуулахаар илгээх.",
+        label: "Арга хэмжээ үүсгэх",
+      },
+      generateInviteCodes: {
+        description: "Жагсаалтад байгаа сурагчдад нэг удаагийн код олгох.",
+        label: "Урилгын код үүсгэх",
+      },
+      viewReports: {
+        description: "Экспорт, бүртгэл, ирцийн нийт дүнг шалгах.",
+        label: "Тайлан харах",
+      },
+    },
+    recommendedFlow: {
+      description:
+        "Сурагчид шууд өөрсдөө бүртгүүлэх боломжгүй. Эхлээд тэднийг жагсаалтад нэмээд, нэгдэхэд бэлэн болсон үед нэг удаагийн урилгын код үүсгэнэ үү.",
+      title: "Санал болгож буй дараалал",
+    },
+    staffWelcome: {
+      description:
+        "Баталгаажсан жагсаалтаас эхэлж, урилгын код олгоод, дараа нь сурагчдад клуб олох, арга хэмжээнд нэгдэх, ирцээ бүртгүүлэхэд тусална уу.",
+      eyebrow: "Өнөөдрийн ажлын талбар",
+      title: "Сургуулийн үйл ажиллагааны туршилтаа нэг газраас удирдаарай.",
+    },
+    stats: {
+      activeClubs: "Идэвхтэй клубууд",
+      activeStudents: "Идэвхтэй сурагчид",
+      attendanceCheckins: "Ирцийн check-in",
+      eventRegistrations: "Арга хэмжээний бүртгэлүүд",
+      upcomingEvents: "Удахгүй болох арга хэмжээнүүд",
+    },
+    student: {
+      noRosterWarning:
+        "Таны бүртгэл идэвхтэй жагсаалтын сурагчтай холбогдоогүй байна.",
+    },
+    studentActions: {
+      browseEvents: {
+        description:
+          "Удахгүй болох батлагдсан үйл ажиллагааг харж, бэлэн үедээ бүртгүүлэх.",
+      },
+      joinClubs: {
+        description:
+          "Идэвхтэй клубүүдийг олж, өөрт тохирох бүлгүүдэд нэгдэх.",
+      },
+      viewRegisteredEvents: {
+        description: "Өмнө бүртгүүлсэн арга хэмжээнүүдээ шалгах.",
+      },
+    },
     studentDescription:
-      "Таны Club, удахгүй болох Event бүртгэл, ирцийн мэдээлэл нэг дор.",
-    title: "Dashboard",
-    viewRegisteredEvents: "Бүртгүүлсэн Events харах",
-  },
-  join: {
-    createAccount: "Сурагчийн account үүсгэх",
-    creatingAccount: "Account үүсгэж байна...",
-    description:
-      "Сургуулиас өгсөн нэг удаагийн invite code-оо оруулж сурагчийн account-оо идэвхжүүлнэ үү.",
-    email: "Email",
-    eyebrow: "Баталгаажсан сурагчийн бүртгэл",
-    inviteCode: "Invite code",
-    password: "Password",
-    title: "Invite code-оор нэгдэх",
+      "Нэгдсэн клубууд, удахгүй болох арга хэмжээний бүртгэлүүд болон ирцийн үйл ажиллагаагаа хянахын тулд энэ хянах самбарыг ашиглана уу.",
+    studentEyebrow: "Сурагчийн үйл ажиллагааны төв",
+    studentOverviewDescription:
+      "Нэгдсэн клубууд, удахгүй болох арга хэмжээний бүртгэлүүд болон ирцийн үйл ажиллагаагаа хянахын тулд энэ хянах самбарыг ашиглана уу.",
+    studentOverviewTitle: "Сургууль дээр юу болж байгааг олох.",
+    studentStats: {
+      attendedEvents: "Оролцсон арга хэмжээнүүд",
+      joinedClubs: "Нэгдсэн клубууд",
+      registeredUpcomingEvents:
+        "Бүртгүүлсэн удахгүй болох арга хэмжээнүүд",
+    },
+    title: "Хянах самбар",
+    upcoming: {
+      description:
+        "Танай сургуулийн календарь дээрх дараагийн батлагдсан үйл ажиллагаанууд.",
+      emptyDescription:
+        "Ажилтнууд эсвэл клубын удирдагчид үүсгэсний дараа батлагдсан ирээдүйн арга хэмжээнүүд энд харагдана.",
+      emptyTitle: "Удахгүй болох арга хэмжээ одоогоор алга",
+      locationNotSet: "Байршил тохируулаагүй",
+      title: "Удахгүй болох батлагдсан арга хэмжээнүүд",
+    },
+    viewRegisteredEvents: "Бүртгүүлсэн арга хэмжээг харах",
   },
   landing: {
     activityLabelAttendance: "Ирц",
-    activityLabelClubs: "Club events",
-    activityLabelInvites: "Invite access",
-    activityRowAttendance: "Шууд check-in бүртгэл",
-    activityRowClubs: "Багшаар баталгаажсан",
-    activityRowInvites: "Нэг удаагийн сурагчийн code",
-    activityWeekOverview: "Activity долоо хоногийн тойм",
+    activityLabelClubs: "Клубын арга хэмжээнүүд",
+    activityLabelInvites: "Урилгын хандалт",
+    activityRowAttendance: "Шууд check-in бүртгэлүүд",
+    activityRowClubs: "Багш баталсан",
+    activityRowInvites: "Нэг удаагийн сурагчийн кодууд",
+    activityWeekOverview: "Үйл ажиллагааны долоо хоногийн тойм",
     checkIn: "Check-in",
-    clubsAndEvents: "Club болон Event",
-    demoWorkflow: "Demo workflow",
-    events: "Events",
-    goToDashboard: "Dashboard руу очих",
-    headline: "Баталгаажсан сурагчдын activity-д зориулсан тайван, pilot-д бэлэн hub.",
-    joinWithInviteCode: "Invite code-оор нэгдэх",
-    platformDescription:
-      "School Activity Hub нь хувийн сургуулиудад roster, invite code registration, Club, Event approval, safety note, QR attendance-ийг нэг дор удирдахад тусална.",
-    platformEyebrow: "Хувийн сургуулийн activity platform",
+    clubsAndEvents: "Клуб ба арга хэмжээ",
+    demoWorkflow: "Демо ажлын урсгал",
+    events: "Арга хэмжээ",
+    goToDashboard: "Хянах самбар руу очих",
+    headline:
+      "Баталгаажсан сурагчдын үйл ажиллагаанд зориулсан тайван, туршилтад бэлэн төв.",
+    intro:
+      "School Activity Hub нь хувийн сургуулиудад сурагчдын жагсаалт, урилгын кодоор бүртгүүлэх, клуб, арга хэмжээ батлах, аюулгүй байдлын тэмдэглэл болон QR ирцийг олон нийтэд нээхгүйгээр удирдахад тусална.",
+    joinWithInviteCode: "Урилгын кодоор нэгдэх",
+    platformEyebrow: "Хувийн сургуулийн үйл ажиллагааны платформ",
     qrReady: "QR бэлэн",
-    rostered: "Roster-д орсон",
-    schoolPilotSnapshot: "Сургуулийн pilot snapshot",
+    rostered: "Жагсаалтад орсон",
+    schoolPilotSnapshot: "Сургуулийн туршилтын товч тойм",
     signIn: "Нэвтрэх",
     students: "Сурагчид",
-    teacherOversightBody:
-      "School Admin болон багш нар approval, safety note, attendance, report-оо нэг дор удирдана.",
-    teacherOversight: "Багш/Admin хяналт",
-    verifiedAccess: "Баталгаажсан access",
-    verifiedStudentsOnlyBody:
-      "Сурагчид staff-managed roster болон нэг удаагийн invite code-оор account-оо идэвхжүүлнэ.",
+    teacherOversight: "Багшийн хяналт",
+    verifiedAccess: "Баталгаажсан хандалт",
     verifiedStudentsOnly: "Зөвхөн баталгаажсан сурагчид",
-    clubsAndEventsBody:
-      "Сурагчид идэвхтэй Club-уудыг үзэж, батлагдсан Event-д бүртгүүлж, удахгүй болох activity-гаа хянана.",
-    workflowDescription:
-      "Эхлээд demo records ашиглан activity flow-г туршаад, pilot бэлэн болох үед бодит сургуулийн датагаар солино.",
-    workflowTitle: "Сургуулийн pilot-ыг 5 алхмаар цэвэр эхлүүлнэ.",
+    workflowTitle: "Сургуулийн туршилтыг 5 алхмаар цэгцтэй хэрэгжүүл.",
   },
   language: {
+    en: "English",
     label: "Хэл",
+    mn: "Монгол",
   },
-  login: {
-    email: "Email",
-    forgotPassword: "Password мартсан уу?",
-    password: "Password",
-    signingIn: "Нэвтэрч байна...",
-    signIn: "Нэвтрэх",
-    title: "Login",
-    description:
-      "Баталгаажсан school activity-г удирдах эсвэл оролцохын тулд account-аараа нэвтэрнэ үү.",
-    eyebrow: "Account access",
+  metadata: {
+    description: "Хувийн сургуулийн клуб, арга хэмжээ, урилгын код, ирц.",
   },
   nav: {
-    account: "Account",
+    account: "Бүртгэл",
     announcements: "Зарлал",
-    approvals: "Батлах",
-    clubs: "Clubs",
-    dashboard: "Dashboard",
-    events: "Events",
-    inviteCodes: "Invite Codes",
+    approvals: "Батлах хүсэлтүүд",
+    clubs: "Клубууд",
+    dashboard: "Хянах самбар",
+    events: "Арга хэмжээ",
+    inviteCodes: "Урилгын кодууд",
     logout: "Гарах",
     loggingOut: "Гарч байна...",
     main: "Үндсэн",
-    manage: "Manage",
+    manage: "Удирдах",
     menu: "Цэс",
     operations: "Үйл ажиллагаа",
-    profile: "Profile",
-    reports: "Reports",
-    schoolConnections: "Сургуулийн холбоос",
-    settings: "Settings",
-    staff: "Staff",
+    profile: "Профайл",
+    reports: "Тайлангууд",
+    schoolConnections: "Сургуулийн холболтууд",
+    settings: "Тохиргоо",
+    staff: "Ажилтнууд",
     students: "Сурагчид",
   },
   roles: {
-    noProfile: "Profile хараахан алга",
-    schoolAdmin: "School Admin",
-    student: "Student",
-    teacher: "Teacher",
+    noProfile: "Профайл хараахан байхгүй",
+    schoolAdmin: "Сургуулийн админ",
+    student: "Сурагч",
+    teacher: "Багш",
   },
   workflow: {
     addStudents: "Сурагч нэмэх",
-    createClubsEvents: "Club/Event үүсгэх",
-    generateInviteCodes: "Invite code үүсгэх",
+    createClubsEvents: "Клуб/арга хэмжээ үүсгэх",
+    generateInviteCodes: "Урилгын код үүсгэх",
     studentsJoin: "Сурагчид нэгдэх",
     trackAttendance: "Ирц хянах",
   },
-} satisfies Partial<Dictionary>;
+} satisfies PartialDictionary;

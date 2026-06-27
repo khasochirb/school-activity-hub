@@ -14,13 +14,19 @@ const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 export function LanguageSwitcher({
   currentLocale,
   label,
+  labels,
 }: {
   currentLocale: Locale;
   label: string;
+  labels?: Partial<Record<Locale, string>>;
 }) {
   const router = useRouter();
   const [locale, setLocale] = useState(currentLocale);
   const [isPending, startTransition] = useTransition();
+  const localeLabels = {
+    ...LOCALE_LABELS,
+    ...labels,
+  };
 
   function selectLocale(nextLocale: Locale) {
     setLocale(nextLocale);
@@ -49,7 +55,7 @@ export function LanguageSwitcher({
             onClick={() => selectLocale(option)}
             type="button"
           >
-            {LOCALE_LABELS[option]}
+            {localeLabels[option]}
           </button>
         );
       })}

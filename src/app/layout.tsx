@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import "./globals.css";
 
@@ -13,10 +14,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "School Activity Hub",
-  description: "Private school clubs, events, invite codes, and attendance.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+
+  return {
+    title: t("app.name"),
+    description: t("metadata.description"),
+  };
+}
 
 export default async function RootLayout({
   children,

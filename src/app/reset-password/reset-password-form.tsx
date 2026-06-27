@@ -3,7 +3,19 @@
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export function ResetPasswordForm() {
+type ResetPasswordFormLabels = {
+  email: string;
+  emailRequired: string;
+  sending: string;
+  submit: string;
+  success: string;
+};
+
+export function ResetPasswordForm({
+  labels,
+}: {
+  labels: ResetPasswordFormLabels;
+}) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,7 +30,7 @@ export function ResetPasswordForm() {
     const email = String(formData.get("email") ?? "").trim();
 
     if (!email) {
-      setError("Email is required.");
+      setError(labels.emailRequired);
       setIsSubmitting(false);
       return;
     }
@@ -38,16 +50,14 @@ export function ResetPasswordForm() {
       return;
     }
 
-    setMessage(
-      "If an account exists for that email, a password reset link has been sent.",
-    );
+    setMessage(labels.success);
     event.currentTarget.reset();
   }
 
   return (
     <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-        Email
+        {labels.email}
         <input
           autoComplete="email"
           className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
@@ -71,7 +81,7 @@ export function ResetPasswordForm() {
         disabled={isSubmitting}
         type="submit"
       >
-        {isSubmitting ? "Sending..." : "Send reset email"}
+        {isSubmitting ? labels.sending : labels.submit}
       </button>
     </form>
   );

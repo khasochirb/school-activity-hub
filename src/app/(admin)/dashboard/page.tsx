@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EmptyState, PageHeader, StatusBadge } from "../_components/page-ui";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -42,6 +46,8 @@ export default async function DashboardPage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -64,13 +70,13 @@ export default async function DashboardPage() {
   if (!profile) {
     return (
       <DashboardShell
-        description="Your account is signed in, but it is not connected to a school profile yet."
+        description={t("dashboard.noProfile.description")}
         eyebrow={t("dashboard.eyebrow")}
         title={t("dashboard.title")}
       >
         <section className="section-card section-card-padded">
           <p className="text-sm text-slate-600">
-            Ask a school admin to finish setting up your profile.
+            {t("dashboard.noProfile.guidance")}
           </p>
         </section>
       </DashboardShell>
@@ -82,7 +88,7 @@ export default async function DashboardPage() {
   if (isSchoolStaff(profile)) {
     const analytics = await getStaffAnalytics(admin, profile.school_id);
 
-    return <StaffDashboard analytics={analytics} t={t} />;
+    return <StaffDashboard analytics={analytics} t={t} tf={tf} />;
   }
 
   const analytics = await getStudentAnalytics(admin, profile);
@@ -93,9 +99,11 @@ export default async function DashboardPage() {
 function StaffDashboard({
   analytics,
   t,
+  tf,
 }: {
   analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
   t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
 }) {
   return (
     <DashboardShell
@@ -103,29 +111,35 @@ function StaffDashboard({
       eyebrow={t("dashboard.eyebrow")}
       title={t("dashboard.title")}
     >
-      <WelcomeOverview />
-      <NextSteps analytics={analytics} />
-      <QuickActions />
+      <WelcomeOverview t={t} />
+      <NextSteps analytics={analytics} t={t} tf={tf} />
+      <QuickActions t={t} />
       <MetricGrid>
-        <MetricCard label="Active students" value={analytics.activeStudents} />
-        <MetricCard label="Active clubs" value={analytics.activeClubs} />
         <MetricCard
-          label="Upcoming events"
+          label={t("dashboard.stats.activeStudents")}
+          value={analytics.activeStudents}
+        />
+        <MetricCard
+          label={t("dashboard.stats.activeClubs")}
+          value={analytics.activeClubs}
+        />
+        <MetricCard
+          label={t("dashboard.stats.upcomingEvents")}
           value={analytics.upcomingApprovedEvents}
         />
         <MetricCard
-          label="Event registrations"
+          label={t("dashboard.stats.eventRegistrations")}
           value={analytics.totalEventRegistrations}
         />
         <MetricCard
-          label="Attendance check-ins"
+          label={t("dashboard.stats.attendanceCheckins")}
           value={analytics.totalAttendanceCheckins}
         />
       </MetricGrid>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <UpcomingEventsSection events={analytics.upcomingEvents} />
-        <RecentCheckinsSection checkins={analytics.recentCheckins} />
+        <UpcomingEventsSection events={analytics.upcomingEvents} t={t} />
+        <RecentCheckinsSection checkins={analytics.recentCheckins} t={t} />
       </div>
     </DashboardShell>
   );
@@ -145,25 +159,29 @@ function StudentDashboard({
       title={t("dashboard.title")}
     >
       <StudentWelcomeOverview t={t} />
-      <StudentNextSteps />
+      <StudentNextSteps t={t} />
       {!analytics.currentStudent ? (
         <section className="notice-box notice-warning">
-          <p>
-            Your account is not linked to an active roster student yet.
-          </p>
+          <p>{t("dashboard.student.noRosterWarning")}</p>
         </section>
       ) : null}
 
       <MetricGrid>
-        <MetricCard label="Joined clubs" value={analytics.joinedClubs} />
         <MetricCard
-          label="Registered upcoming events"
+          label={t("dashboard.studentStats.joinedClubs")}
+          value={analytics.joinedClubs}
+        />
+        <MetricCard
+          label={t("dashboard.studentStats.registeredUpcomingEvents")}
           value={analytics.registeredUpcomingEvents}
         />
-        <MetricCard label="Attended events" value={analytics.attendedEvents} />
+        <MetricCard
+          label={t("dashboard.studentStats.attendedEvents")}
+          value={analytics.attendedEvents}
+        />
       </MetricGrid>
 
-      <UpcomingEventsSection events={analytics.upcomingEvents} />
+      <UpcomingEventsSection events={analytics.upcomingEvents} t={t} />
     </DashboardShell>
   );
 }
@@ -191,25 +209,25 @@ function DashboardShell({
   );
 }
 
-function WelcomeOverview() {
+function WelcomeOverview({ t }: { t: (key: string) => string }) {
   return (
     <section className="section-card section-card-padded">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center">
         <div>
-          <p className="page-eyebrow">Today&apos;s workspace</p>
+          <p className="page-eyebrow">{t("dashboard.staffWelcome.eyebrow")}</p>
           <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
-            Guide your school activity pilot from one place.
+            {t("dashboard.staffWelcome.title")}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Start with a verified roster, issue invite codes, then help
-            students find clubs, join events, and check in for attendance.
+            {t("dashboard.staffWelcome.description")}
           </p>
         </div>
         <div className="rounded-md border border-teal-100 bg-teal-50 p-4">
-          <p className="text-sm font-bold text-teal-950">Recommended flow</p>
+          <p className="text-sm font-bold text-teal-950">
+            {t("dashboard.recommendedFlow.title")}
+          </p>
           <p className="mt-2 text-sm leading-6 text-teal-900">
-            Students cannot self-register freely. Add them to the roster first,
-            then generate one-time invite codes when they are ready to join.
+            {t("dashboard.recommendedFlow.description")}
           </p>
         </div>
       </div>
@@ -219,17 +237,20 @@ function WelcomeOverview() {
 
 function NextSteps({
   analytics,
+  t,
+  tf,
 }: {
   analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
 }) {
   const inviteCodesMissing =
     analytics.activeStudents > 0 &&
     analytics.activeInviteCodes < analytics.activeStudents;
   const steps = [
     {
-      action: "Add students",
-      description:
-        "Start by adding verified students to the roster. Students cannot join until they are rostered.",
+      action: t("dashboard.nextSteps.steps.addStudents.title"),
+      description: t("dashboard.nextSteps.steps.addStudents.description"),
       href: "/students",
       status:
         analytics.activeStudents > 0
@@ -237,9 +258,10 @@ function NextSteps({
           : ("next" as const),
     },
     {
-      action: "Generate invite codes",
-      description:
-        "Create one-time invite codes so rostered students can activate their accounts.",
+      action: t("dashboard.nextSteps.steps.generateInviteCodes.title"),
+      description: t(
+        "dashboard.nextSteps.steps.generateInviteCodes.description",
+      ),
       href: "/invite-codes",
       status:
         analytics.activeStudents === 0
@@ -249,9 +271,8 @@ function NextSteps({
             : "complete",
     },
     {
-      action: "Students join",
-      description:
-        "Share invite codes with students and have them create their own accounts.",
+      action: t("dashboard.nextSteps.steps.studentsJoin.title"),
+      description: t("dashboard.nextSteps.steps.studentsJoin.description"),
       href: "/invite-codes",
       status:
         analytics.activeInviteCodes > 0 || analytics.totalEventRegistrations > 0
@@ -259,9 +280,8 @@ function NextSteps({
           : "locked",
     },
     {
-      action: "Create clubs",
-      description:
-        "Add clubs students can discover, join, and eventually help lead.",
+      action: t("dashboard.nextSteps.steps.createClubs.title"),
+      description: t("dashboard.nextSteps.steps.createClubs.description"),
       href: "/clubs",
       status:
         analytics.activeClubs > 0
@@ -271,9 +291,8 @@ function NextSteps({
             : "locked",
     },
     {
-      action: "Create events",
-      description:
-        "Publish upcoming activities for students to register for and attend.",
+      action: t("dashboard.nextSteps.steps.createEvents.title"),
+      description: t("dashboard.nextSteps.steps.createEvents.description"),
       href: "/events",
       status:
         analytics.upcomingApprovedEvents > 0
@@ -283,9 +302,8 @@ function NextSteps({
             : "locked",
     },
     {
-      action: "Track attendance",
-      description:
-        "Use the attendance page and QR check-in when approved events are ready.",
+      action: t("dashboard.nextSteps.steps.trackAttendance.title"),
+      description: t("dashboard.nextSteps.steps.trackAttendance.description"),
       href: "/events",
       status:
         analytics.totalAttendanceCheckins > 0
@@ -295,9 +313,8 @@ function NextSteps({
             : "locked",
     },
     {
-      action: "View reports",
-      description:
-        "Review registration and attendance summaries once activity starts.",
+      action: t("dashboard.nextSteps.steps.viewReports.title"),
+      description: t("dashboard.nextSteps.steps.viewReports.description"),
       href: "/reports",
       status:
         analytics.totalEventRegistrations > 0 ||
@@ -317,15 +334,14 @@ function NextSteps({
       <div className="section-header">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="section-title">Next steps</h2>
+            <h2 className="section-title">{t("dashboard.nextSteps.title")}</h2>
             <p className="section-description">
-              Follow this setup path to move from roster setup to attendance
-              tracking.
+              {t("dashboard.nextSteps.description")}
             </p>
           </div>
           <p className="text-sm font-semibold text-slate-600">
-            {analytics.activeInviteCodes} active invite code
-            {analytics.activeInviteCodes === 1 ? "" : "s"}
+            {analytics.activeInviteCodes}{" "}
+            {t("dashboard.nextSteps.activeInviteCodes")}
           </p>
         </div>
       </div>
@@ -339,13 +355,15 @@ function NextSteps({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-                  Step {index + 1}
+                  {tf("dashboard.nextSteps.stepLabel", {
+                    number: index + 1,
+                  })}
                 </p>
                 <h3 className="mt-2 text-base font-bold text-slate-950 transition group-hover:text-teal-800">
                   {step.action}
                 </h3>
               </div>
-              <StepStatusBadge status={step.status} />
+              <StepStatusBadge status={step.status} t={t} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               {step.description}
@@ -359,22 +377,36 @@ function NextSteps({
 
 function StepStatusBadge({
   status,
+  t,
 }: {
   status: "complete" | "locked" | "next" | "ready";
+  t: (key: string) => string;
 }) {
   if (status === "complete") {
-    return <StatusBadge variant="success">Done</StatusBadge>;
+    return (
+      <StatusBadge variant="success">
+        {t("dashboard.nextSteps.status.done")}
+      </StatusBadge>
+    );
   }
 
   if (status === "next") {
-    return <StatusBadge variant="warning">Next</StatusBadge>;
+    return (
+      <StatusBadge variant="warning">
+        {t("dashboard.nextSteps.status.next")}
+      </StatusBadge>
+    );
   }
 
   if (status === "ready") {
-    return <StatusBadge variant="info">Ready</StatusBadge>;
+    return (
+      <StatusBadge variant="info">
+        {t("dashboard.nextSteps.status.ready")}
+      </StatusBadge>
+    );
   }
 
-  return <StatusBadge>Later</StatusBadge>;
+  return <StatusBadge>{t("dashboard.nextSteps.status.later")}</StatusBadge>;
 }
 
 function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
@@ -402,22 +434,24 @@ function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
   );
 }
 
-function StudentNextSteps() {
+function StudentNextSteps({ t }: { t: (key: string) => string }) {
   const actions = [
     {
-      description: "See upcoming approved activities and register when ready.",
+      description: t("dashboard.studentActions.browseEvents.description"),
       href: "/events",
-      label: "Browse events",
+      label: t("dashboard.browseEvents"),
     },
     {
-      description: "Find active clubs and join the groups that fit you.",
+      description: t("dashboard.studentActions.joinClubs.description"),
       href: "/clubs",
-      label: "Join clubs",
+      label: t("dashboard.joinClubs"),
     },
     {
-      description: "Check the events you have already registered for.",
+      description: t(
+        "dashboard.studentActions.viewRegisteredEvents.description",
+      ),
       href: "/events?filter=registered",
-      label: "View upcoming registered events",
+      label: t("dashboard.viewRegisteredEvents"),
     },
   ];
 
@@ -441,32 +475,32 @@ function StudentNextSteps() {
   );
 }
 
-function QuickActions() {
+function QuickActions({ t }: { t: (key: string) => string }) {
   const actions = [
     {
-      description: "Create or import verified students before registration.",
+      description: t("dashboard.quickActions.addStudents.description"),
       href: "/students#add-student",
-      label: "Add students",
+      label: t("dashboard.quickActions.addStudents.label"),
     },
     {
-      description: "Issue one-time codes for rostered students.",
+      description: t("dashboard.quickActions.generateInviteCodes.description"),
       href: "/invite-codes#generate-invite",
-      label: "Generate invite codes",
+      label: t("dashboard.quickActions.generateInviteCodes.label"),
     },
     {
-      description: "Open a group students can discover and join.",
+      description: t("dashboard.quickActions.createClub.description"),
       href: "/clubs#create-club",
-      label: "Create club",
+      label: t("dashboard.quickActions.createClub.label"),
     },
     {
-      description: "Publish an approved event or submit one for review.",
+      description: t("dashboard.quickActions.createEvent.description"),
       href: "/events#create-event",
-      label: "Create event",
+      label: t("dashboard.quickActions.createEvent.label"),
     },
     {
-      description: "Review exports, registrations, and attendance totals.",
+      description: t("dashboard.quickActions.viewReports.description"),
       href: "/reports",
-      label: "View reports",
+      label: t("dashboard.quickActions.viewReports.label"),
     },
   ];
 
@@ -507,13 +541,19 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
+function UpcomingEventsSection({
+  events,
+  t,
+}: {
+  events: UpcomingEvent[];
+  t: (key: string) => string;
+}) {
   return (
     <section className="section-card">
       <div className="section-header">
-        <h2 className="section-title">Upcoming approved events</h2>
+        <h2 className="section-title">{t("dashboard.upcoming.title")}</h2>
         <p className="section-description">
-          The next approved activities on your school calendar.
+          {t("dashboard.upcoming.description")}
         </p>
       </div>
       {events.length ? (
@@ -525,7 +565,7 @@ function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
                 {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
               </p>
               <p className="mt-1 text-sm text-slate-600">
-                {event.location || "Location not set"}
+                {event.location || t("dashboard.upcoming.locationNotSet")}
               </p>
             </li>
           ))}
@@ -533,8 +573,8 @@ function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
       ) : (
         <div className="p-4">
           <EmptyState
-            description="Approved future events will appear here once staff or club leaders create them."
-            title="No upcoming events yet"
+            description={t("dashboard.upcoming.emptyDescription")}
+            title={t("dashboard.upcoming.emptyTitle")}
           />
         </div>
       )}
@@ -542,13 +582,19 @@ function UpcomingEventsSection({ events }: { events: UpcomingEvent[] }) {
   );
 }
 
-function RecentCheckinsSection({ checkins }: { checkins: RecentCheckin[] }) {
+function RecentCheckinsSection({
+  checkins,
+  t,
+}: {
+  checkins: RecentCheckin[];
+  t: (key: string) => string;
+}) {
   return (
     <section className="section-card">
       <div className="section-header">
-        <h2 className="section-title">Recent check-ins</h2>
+        <h2 className="section-title">{t("dashboard.checkins.title")}</h2>
         <p className="section-description">
-          The latest successful attendance check-ins for approved events.
+          {t("dashboard.checkins.description")}
         </p>
       </div>
       {checkins.length ? (
@@ -558,10 +604,10 @@ function RecentCheckinsSection({ checkins }: { checkins: RecentCheckin[] }) {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="font-semibold text-slate-950">
-                    {studentName(checkin.student_rosters)}
+                    {studentName(checkin.student_rosters, t)}
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
-                    {checkin.events?.title ?? "Event"}
+                    {checkin.events?.title ?? t("dashboard.fallback.event")}
                   </p>
                 </div>
                 <span className="badge badge-success w-fit">
@@ -577,8 +623,8 @@ function RecentCheckinsSection({ checkins }: { checkins: RecentCheckin[] }) {
       ) : (
         <div className="p-4">
           <EmptyState
-            description="After students check in with an event QR link, recent check-ins will appear here."
-            title="No attendance check-ins yet"
+            description={t("dashboard.checkins.emptyDescription")}
+            title={t("dashboard.checkins.emptyTitle")}
           />
         </div>
       )}
@@ -898,9 +944,12 @@ function isSchoolStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
 }
 
-function studentName(student: RecentCheckin["student_rosters"]) {
+function studentName(
+  student: RecentCheckin["student_rosters"],
+  t: (key: string) => string,
+) {
   if (!student) {
-    return "Roster student";
+    return t("dashboard.fallback.rosterStudent");
   }
 
   return `${student.first_name} ${student.last_name}`;

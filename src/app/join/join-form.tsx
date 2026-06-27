@@ -14,6 +14,7 @@ export type JoinFormLabels = {
   creatingAccount: string;
   email: string;
   inviteCode: string;
+  inviteCodePlaceholder: string;
   password: string;
 };
 
@@ -27,7 +28,7 @@ export function JoinForm({ labels }: { labels: JoinFormLabels }) {
         <input
           className="h-11 rounded-md border px-3 font-mono text-base uppercase outline-none transition"
           name="invite_code"
-          placeholder="ABCD-EFGH-IJ"
+          placeholder={labels.inviteCodePlaceholder}
           required
         />
       </label>

@@ -2,6 +2,8 @@
 
 import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,18 +39,21 @@ export async function redeemInviteCode(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const normalizedCode = normalizeInviteCode(rawCode);
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
 
   if (!normalizedCode) {
-    return { message: "Enter your invite code.", success: false };
+    return { message: t("auth.join.errors.inviteRequired"), success: false };
   }
 
   if (!email || !email.includes("@")) {
-    return { message: "Enter a valid email address.", success: false };
+    return { message: t("auth.errors.invalidEmail"), success: false };
   }
 
   if (password.length < 8) {
     return {
-      message: "Password must be at least 8 characters.",
+      message: t("auth.errors.passwordMinLength"),
       success: false,
     };
   }
@@ -61,11 +66,11 @@ export async function redeemInviteCode(
     .eq("code_hash", hashInviteCode(normalizedCode))
     .maybeSingle<InviteRecord>();
 
-  const inviteError = validateInvite(invite, now);
+  const inviteError = validateInvite(invite, now, t);
 
   if (inviteError || !invite) {
     return {
-      message: inviteError ?? "Invite code was not found.",
+      message: inviteError ?? t("auth.join.errors.inviteNotFound"),
       success: false,
     };
   }
@@ -80,14 +85,14 @@ export async function redeemInviteCode(
 
   if (!student) {
     return {
-      message: "This invite is not linked to an active student.",
+      message: t("auth.join.errors.inactiveRoster"),
       success: false,
     };
   }
 
   if (student.profile_id) {
     return {
-      message: "This student already has an account.",
+      message: t("auth.join.errors.studentAlreadyLinked"),
       success: false,
     };
   }
@@ -106,7 +111,7 @@ export async function redeemInviteCode(
     return {
       message:
         createUserError?.message ??
-        "Account could not be created. Try a different email address.",
+        t("auth.join.errors.accountCreateFailed"),
       success: false,
     };
   }
@@ -148,7 +153,7 @@ export async function redeemInviteCode(
     return {
       message:
         linkError?.message ??
-        "This roster student was claimed before your signup finished.",
+        t("auth.join.errors.rosterClaimed"),
       success: false,
     };
   }
@@ -176,7 +181,7 @@ export async function redeemInviteCode(
     return {
       message:
         redeemError?.message ??
-        "This invite code was used before your signup finished.",
+        t("auth.join.errors.inviteUsedDuringSignup"),
       success: false,
     };
   }
@@ -189,7 +194,7 @@ export async function redeemInviteCode(
 
   if (signInError) {
     return {
-      message: "Account created. Please go to login and sign in.",
+      message: t("auth.join.success"),
       success: true,
     };
   }
@@ -197,21 +202,25 @@ export async function redeemInviteCode(
   redirect("/dashboard");
 }
 
-function validateInvite(invite: InviteRecord | null, now: string) {
+function validateInvite(
+  invite: InviteRecord | null,
+  now: string,
+  t: (key: string) => string,
+) {
   if (!invite) {
-    return "Invite code was not found.";
+    return t("auth.join.errors.inviteNotFound");
   }
 
   if (invite.status !== "active" || invite.use_count !== 0 || invite.redeemed_at) {
-    return "Invite code has already been used or is no longer active.";
+    return t("auth.join.errors.inviteInactive");
   }
 
   if (new Date(invite.expires_at).getTime() <= new Date(now).getTime()) {
-    return "Invite code has expired.";
+    return t("auth.join.errors.inviteExpired");
   }
 
   if (!invite.student_roster_id) {
-    return "Invite code is not linked to a rostered student.";
+    return t("auth.join.errors.inviteNoRoster");
   }
 
   return null;
