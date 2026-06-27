@@ -1,34 +1,38 @@
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 
-const platformPoints = [
-  {
-    title: "Verified students only",
-    body: "Students activate accounts from a staff-managed roster with one-time invite codes.",
-  },
-  {
-    title: "Clubs and events",
-    body: "Students discover active clubs, register for approved events, and keep track of what is coming up.",
-  },
-  {
-    title: "Teacher oversight",
-    body: "School admins and teachers manage approvals, safety notes, attendance, and reporting from one place.",
-  },
-];
-
-const demoWorkflow = [
-  "Add students",
-  "Generate invite codes",
-  "Students join",
-  "Create clubs/events",
-  "Track attendance",
-];
-
 export default async function HomePage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const platformPoints = [
+    {
+      title: t("landing.verifiedStudentsOnly"),
+      body: t("landing.verifiedStudentsOnlyBody"),
+    },
+    {
+      title: t("landing.clubsAndEvents"),
+      body: t("landing.clubsAndEventsBody"),
+    },
+    {
+      title: t("landing.teacherOversight"),
+      body: t("landing.teacherOversightBody"),
+    },
+  ];
+  const demoWorkflow = [
+    t("workflow.addStudents"),
+    t("workflow.generateInviteCodes"),
+    t("workflow.studentsJoin"),
+    t("workflow.createClubsEvents"),
+    t("workflow.trackAttendance"),
+  ];
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -41,20 +45,24 @@ export default async function HomePage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-md bg-teal-700 text-sm font-bold text-white">
               SAH
             </span>
-            <span className="font-bold tracking-tight">School Activity Hub</span>
+            <span className="font-bold tracking-tight">{t("app.name")}</span>
           </Link>
           <nav className="flex items-center gap-2">
+            <LanguageSwitcher
+              currentLocale={locale}
+              label={t("language.label")}
+            />
             {user ? (
               <Link className="btn btn-primary" href="/dashboard">
-                Go to dashboard
+                {t("landing.goToDashboard")}
               </Link>
             ) : (
               <>
                 <Link className="btn btn-secondary" href="/login">
-                  Sign in
+                  {t("landing.signIn")}
                 </Link>
                 <Link className="btn btn-primary hidden sm:inline-flex" href="/join">
-                  Join with invite code
+                  {t("landing.joinWithInviteCode")}
                 </Link>
               </>
             )}
@@ -64,27 +72,25 @@ export default async function HomePage() {
 
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:py-16">
         <div className="flex flex-col justify-center">
-          <p className="page-eyebrow">Private school activity platform</p>
+          <p className="page-eyebrow">{t("landing.platformEyebrow")}</p>
           <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
-            A calm, pilot-ready hub for verified student activities.
+            {t("landing.headline")}
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            School Activity Hub helps private schools manage rosters, invite
-            code registration, clubs, event approvals, safety notes, and QR
-            attendance without opening access to the public.
+            {t("landing.platformDescription")}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             {user ? (
               <Link className="btn btn-primary" href="/dashboard">
-                Go to dashboard
+                {t("landing.goToDashboard")}
               </Link>
             ) : (
               <>
                 <Link className="btn btn-primary" href="/login">
-                  Sign in
+                  {t("landing.signIn")}
                 </Link>
                 <Link className="btn btn-secondary" href="/join">
-                  Join with invite code
+                  {t("landing.joinWithInviteCode")}
                 </Link>
               </>
             )}
@@ -96,28 +102,36 @@ export default async function HomePage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-slate-500">
-                  School pilot snapshot
+                  {t("landing.schoolPilotSnapshot")}
                 </p>
                 <p className="mt-1 text-lg font-bold text-slate-950">
-                  Activity week overview
+                  {t("landing.activityWeekOverview")}
                 </p>
               </div>
-              <span className="badge badge-success">Verified access</span>
+              <span className="badge badge-success">
+                {t("landing.verifiedAccess")}
+              </span>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <MiniStat label="Students" value="Rostered" />
-              <MiniStat label="Events" value="Approved" />
-              <MiniStat label="Check-in" value="QR ready" />
+              <MiniStat label={t("landing.students")} value={t("landing.rostered")} />
+              <MiniStat label={t("landing.events")} value={t("common.approved")} />
+              <MiniStat label={t("landing.checkIn")} value={t("landing.qrReady")} />
             </div>
           </div>
 
           <div className="mt-4 grid gap-3">
             <ActivityRow
-              label="Invite access"
-              value="One-time student codes"
+              label={t("landing.activityLabelInvites")}
+              value={t("landing.activityRowInvites")}
             />
-            <ActivityRow label="Club events" value="Teacher approved" />
-            <ActivityRow label="Attendance" value="Live check-in records" />
+            <ActivityRow
+              label={t("landing.activityLabelClubs")}
+              value={t("landing.activityRowClubs")}
+            />
+            <ActivityRow
+              label={t("landing.activityLabelAttendance")}
+              value={t("landing.activityRowAttendance")}
+            />
           </div>
         </div>
       </section>
@@ -135,11 +149,10 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="page-header">
-          <p className="page-eyebrow">Demo workflow</p>
-          <h2 className="page-title">Run a clean school pilot in five steps.</h2>
+          <p className="page-eyebrow">{t("landing.demoWorkflow")}</p>
+          <h2 className="page-title">{t("landing.workflowTitle")}</h2>
           <p className="page-description">
-            Walk through the full activity flow using demo records first, then
-            replace them with real school data when the pilot is ready.
+            {t("landing.workflowDescription")}
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {demoWorkflow.map((step, index) => (

@@ -1,5 +1,9 @@
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import type { Locale } from "@/lib/i18n/locales";
 import { logout } from "../actions";
 import { AppNav, type NavItem, type NavSection } from "./app-nav";
 
@@ -9,63 +13,69 @@ type Profile = {
   role: Role;
 } | null;
 
-type RoleAwareNavItem = NavItem & {
+type RoleAwareNavItem = {
+  href: string;
+  labelKey: string;
   roles?: Role[];
 };
 
 const navSections: Array<{
   items: RoleAwareNavItem[];
-  label: string;
+  labelKey: string;
 }> = [
   {
-    label: "Main",
+    labelKey: "nav.main",
     items: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/events", label: "Events" },
-      { href: "/clubs", label: "Clubs" },
-      { href: "/announcements", label: "Announcements" },
+      { href: "/dashboard", labelKey: "nav.dashboard" },
+      { href: "/events", labelKey: "nav.events" },
+      { href: "/clubs", labelKey: "nav.clubs" },
+      { href: "/announcements", labelKey: "nav.announcements" },
     ],
   },
   {
-    label: "Manage",
+    labelKey: "nav.manage",
     items: [
       {
         href: "/students",
-        label: "Students",
+        labelKey: "nav.students",
         roles: ["school_admin", "teacher"],
       },
       {
         href: "/invite-codes",
-        label: "Invite Codes",
+        labelKey: "nav.inviteCodes",
         roles: ["school_admin", "teacher"],
       },
-      { href: "/staff", label: "Staff", roles: ["school_admin"] },
+      { href: "/staff", labelKey: "nav.staff", roles: ["school_admin"] },
       {
         href: "/school-connections",
-        label: "School Connections",
+        labelKey: "nav.schoolConnections",
         roles: ["school_admin"],
       },
     ],
   },
   {
-    label: "Operations",
+    labelKey: "nav.operations",
     items: [
       {
         href: "/approvals",
-        label: "Approvals",
+        labelKey: "nav.approvals",
         roles: ["school_admin", "teacher"],
       },
-      { href: "/reports", label: "Reports", roles: ["school_admin", "teacher"] },
-      { href: "/settings", label: "Settings", roles: ["school_admin"] },
+      {
+        href: "/reports",
+        labelKey: "nav.reports",
+        roles: ["school_admin", "teacher"],
+      },
+      { href: "/settings", labelKey: "nav.settings", roles: ["school_admin"] },
     ],
   },
   {
-    label: "Account",
-    items: [{ href: "/profile", label: "Profile" }],
+    labelKey: "nav.account",
+    items: [{ href: "/profile", labelKey: "nav.profile" }],
   },
 ];
 
-export function AppShell({
+export async function AppShell({
   children,
   email,
   profile,
@@ -74,38 +84,69 @@ export function AppShell({
   email: string | null;
   profile: Profile;
 }) {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
   const visibleNavSections = navSections
     .map((section) => ({
-      label: section.label,
-      items: section.items.filter((item) => isVisibleForRole(item, profile)),
+      label: t(section.labelKey),
+      items: section.items
+        .filter((item) => isVisibleForRole(item, profile))
+        .map<NavItem>((item) => ({
+          href: item.href,
+          label: t(item.labelKey),
+        })),
     }))
     .filter((section) => section.items.length) satisfies NavSection[];
-  const formattedRole = profile ? formatRole(profile.role) : "No profile yet";
+  const formattedRole = profile ? formatRole(profile.role, t) : t("roles.noProfile");
 
   return (
     <div className="app-surface min-h-screen lg:flex">
       <aside className="hidden w-72 shrink-0 border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
         <div className="border-b border-slate-200 px-5 py-6">
-          <Brand />
+          <Brand
+            name={t("app.name")}
+            shortName={t("app.shortName")}
+            subtitle={t("app.subtitle")}
+          />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-6">
           <AppNav sections={visibleNavSections} />
         </div>
-        <AccountPanel email={email} roleLabel={formattedRole} />
+        <AccountPanel
+          email={email}
+          languageLabel={t("language.label")}
+          locale={locale}
+          logoutLabel={t("nav.logout")}
+          logoutPendingLabel={t("nav.loggingOut")}
+          roleLabel={formattedRole}
+        />
       </aside>
 
       <div className="min-w-0 flex-1 lg:pl-72">
         <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
           <div className="flex items-center justify-between gap-3">
-            <Brand compact />
+            <Brand
+              compact
+              name={t("app.name")}
+              shortName={t("app.shortName")}
+              subtitle={t("app.subtitle")}
+            />
             <details className="group relative">
               <summary className="btn btn-secondary list-none px-3 [&::-webkit-details-marker]:hidden">
-                Menu
+                {t("nav.menu")}
               </summary>
               <div className="absolute right-0 z-30 mt-3 max-h-[calc(100vh-5.5rem)] w-[min(21rem,calc(100vw-2rem))] overflow-y-auto rounded-md border border-slate-200 bg-white p-3 shadow-xl">
                 <AppNav sections={visibleNavSections} />
                 <div className="mt-4 border-t border-slate-200 pt-4">
-                  <MobileAccount email={email} roleLabel={formattedRole} />
+                  <MobileAccount
+                    email={email}
+                    languageLabel={t("language.label")}
+                    locale={locale}
+                    logoutLabel={t("nav.logout")}
+                    logoutPendingLabel={t("nav.loggingOut")}
+                    roleLabel={formattedRole}
+                  />
                 </div>
               </div>
             </details>
@@ -120,7 +161,17 @@ export function AppShell({
   );
 }
 
-function Brand({ compact = false }: { compact?: boolean }) {
+function Brand({
+  compact = false,
+  name,
+  shortName,
+  subtitle,
+}: {
+  compact?: boolean;
+  name: string;
+  shortName: string;
+  subtitle: string;
+}) {
   return (
     <div className="flex items-center gap-3">
       <Link
@@ -132,14 +183,14 @@ function Brand({ compact = false }: { compact?: boolean }) {
         }
         href="/dashboard"
       >
-        SAH
+        {shortName}
       </Link>
       <div className="min-w-0">
         <Link
           className="block w-fit cursor-pointer truncate text-base font-bold tracking-tight text-slate-950 transition hover:text-teal-800"
           href="/dashboard"
         >
-          School Activity Hub
+          {name}
         </Link>
         <p
           className={
@@ -148,7 +199,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
               : "mt-1 text-sm leading-5 text-slate-500"
           }
         >
-          Clubs, events, invites, and attendance
+          {subtitle}
         </p>
       </div>
     </div>
@@ -157,13 +208,24 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 function AccountPanel({
   email,
+  languageLabel,
+  locale,
+  logoutLabel,
+  logoutPendingLabel,
   roleLabel,
 }: {
   email: string | null;
+  languageLabel: string;
+  locale: Locale;
+  logoutLabel: string;
+  logoutPendingLabel: string;
   roleLabel: string;
 }) {
   return (
     <div className="border-t border-slate-200 p-4">
+      <div className="mb-3">
+        <LanguageSwitcher currentLocale={locale} label={languageLabel} />
+      </div>
       <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 shadow-inner">
         <p className="break-all">{email}</p>
         <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>
@@ -171,9 +233,9 @@ function AccountPanel({
       <form action={logout} className="mt-3">
         <PendingSubmitButton
           className="btn btn-secondary w-full"
-          pendingLabel="Logging out..."
+          pendingLabel={logoutPendingLabel}
         >
-          Log out
+          {logoutLabel}
         </PendingSubmitButton>
       </form>
     </div>
@@ -182,13 +244,22 @@ function AccountPanel({
 
 function MobileAccount({
   email,
+  languageLabel,
+  locale,
+  logoutLabel,
+  logoutPendingLabel,
   roleLabel,
 }: {
   email: string | null;
+  languageLabel: string;
+  locale: Locale;
+  logoutLabel: string;
+  logoutPendingLabel: string;
   roleLabel: string;
 }) {
   return (
     <div className="space-y-3">
+      <LanguageSwitcher currentLocale={locale} label={languageLabel} />
       <div className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
         <p className="break-all">{email}</p>
         <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>
@@ -196,9 +267,9 @@ function MobileAccount({
       <form action={logout}>
         <PendingSubmitButton
           className="btn btn-secondary w-full"
-          pendingLabel="Logging out..."
+          pendingLabel={logoutPendingLabel}
         >
-          Log out
+          {logoutLabel}
         </PendingSubmitButton>
       </form>
     </div>
@@ -209,9 +280,10 @@ function isVisibleForRole(item: RoleAwareNavItem, profile: Profile) {
   return !item.roles || (profile?.role && item.roles.includes(profile.role));
 }
 
-function formatRole(role: Role) {
-  return role
-    .split("_")
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(" ");
+function formatRole(role: Role, t: (key: string) => string) {
+  if (role === "school_admin") {
+    return t("roles.schoolAdmin");
+  }
+
+  return role === "teacher" ? t("roles.teacher") : t("roles.student");
 }

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EmptyState, PageHeader, StatusBadge } from "../_components/page-ui";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -37,6 +39,9 @@ type RecentCheckin = {
 };
 
 export default async function DashboardPage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
   const supabase = await createClient();
   const {
     data: { user },
@@ -60,7 +65,8 @@ export default async function DashboardPage() {
     return (
       <DashboardShell
         description="Your account is signed in, but it is not connected to a school profile yet."
-        title="Dashboard"
+        eyebrow={t("dashboard.eyebrow")}
+        title={t("dashboard.title")}
       >
         <section className="section-card section-card-padded">
           <p className="text-sm text-slate-600">
@@ -76,23 +82,26 @@ export default async function DashboardPage() {
   if (isSchoolStaff(profile)) {
     const analytics = await getStaffAnalytics(admin, profile.school_id);
 
-    return <StaffDashboard analytics={analytics} />;
+    return <StaffDashboard analytics={analytics} t={t} />;
   }
 
   const analytics = await getStudentAnalytics(admin, profile);
 
-  return <StudentDashboard analytics={analytics} />;
+  return <StudentDashboard analytics={analytics} t={t} />;
 }
 
 function StaffDashboard({
   analytics,
+  t,
 }: {
   analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+  t: (key: string) => string;
 }) {
   return (
     <DashboardShell
-      description="A quick view of roster, club, event, registration, and attendance activity for your school."
-      title="Dashboard"
+      description={t("dashboard.description")}
+      eyebrow={t("dashboard.eyebrow")}
+      title={t("dashboard.title")}
     >
       <WelcomeOverview />
       <NextSteps analytics={analytics} />
@@ -124,15 +133,18 @@ function StaffDashboard({
 
 function StudentDashboard({
   analytics,
+  t,
 }: {
   analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
+  t: (key: string) => string;
 }) {
   return (
     <DashboardShell
-      description="Your clubs, upcoming registrations, and attendance history in one place."
-      title="Dashboard"
+      description={t("dashboard.studentDescription")}
+      eyebrow={t("dashboard.eyebrow")}
+      title={t("dashboard.title")}
     >
-      <StudentWelcomeOverview />
+      <StudentWelcomeOverview t={t} />
       <StudentNextSteps />
       {!analytics.currentStudent ? (
         <section className="notice-box notice-warning">
@@ -159,17 +171,19 @@ function StudentDashboard({
 function DashboardShell({
   children,
   description,
+  eyebrow,
   title,
 }: {
   children: React.ReactNode;
   description: string;
+  eyebrow: string;
   title: string;
 }) {
   return (
     <div className="page-stack">
       <PageHeader
         description={description}
-        eyebrow="School activity overview"
+        eyebrow={eyebrow}
         title={title}
       />
       {children}
@@ -363,26 +377,25 @@ function StepStatusBadge({
   return <StatusBadge>Later</StatusBadge>;
 }
 
-function StudentWelcomeOverview() {
+function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
   return (
     <section className="section-card section-card-padded">
-      <p className="page-eyebrow">Student activity hub</p>
+      <p className="page-eyebrow">{t("dashboard.studentEyebrow")}</p>
       <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
-        Find what&apos;s happening at school.
+        {t("dashboard.studentOverviewTitle")}
       </h2>
       <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-        Use this dashboard to keep track of clubs you joined, upcoming event
-        registrations, and attendance activity.
+        {t("dashboard.studentOverviewDescription")}
       </p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <Link className="btn btn-primary" href="/events">
-          Browse events
+          {t("dashboard.browseEvents")}
         </Link>
         <Link className="btn btn-secondary" href="/clubs">
-          Join clubs
+          {t("dashboard.joinClubs")}
         </Link>
         <Link className="btn btn-secondary" href="/events?filter=registered">
-          View registered events
+          {t("dashboard.viewRegisteredEvents")}
         </Link>
       </div>
     </section>

@@ -5,7 +5,15 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginForm() {
+export type LoginFormLabels = {
+  email: string;
+  forgotPassword: string;
+  password: string;
+  signingIn: string;
+  signIn: string;
+};
+
+export function LoginForm({ labels }: { labels: LoginFormLabels }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +47,7 @@ export function LoginForm() {
   return (
     <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Email
+        {labels.email}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="email"
@@ -49,7 +57,7 @@ export function LoginForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Password
+        {labels.password}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="password"
@@ -62,7 +70,7 @@ export function LoginForm() {
         className="w-fit cursor-pointer text-sm font-semibold text-teal-800 transition hover:text-teal-950"
         href="/reset-password"
       >
-        Forgot password?
+        {labels.forgotPassword}
       </Link>
       {error ? <p className="notice-box notice-danger">{error}</p> : null}
       <button
@@ -70,7 +78,7 @@ export function LoginForm() {
         disabled={isSubmitting}
         type="submit"
       >
-        {isSubmitting ? "Signing in..." : "Sign in"}
+        {isSubmitting ? labels.signingIn : labels.signIn}
       </button>
     </form>
   );

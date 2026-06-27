@@ -9,13 +9,21 @@ const initialState: JoinState = {
   success: false,
 };
 
-export function JoinForm() {
+export type JoinFormLabels = {
+  createAccount: string;
+  creatingAccount: string;
+  email: string;
+  inviteCode: string;
+  password: string;
+};
+
+export function JoinForm({ labels }: { labels: JoinFormLabels }) {
   const [state, formAction] = useActionState(redeemInviteCode, initialState);
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Invite code
+        {labels.inviteCode}
         <input
           className="h-11 rounded-md border px-3 font-mono text-base uppercase outline-none transition"
           name="invite_code"
@@ -24,7 +32,7 @@ export function JoinForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Email
+        {labels.email}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="email"
@@ -34,7 +42,7 @@ export function JoinForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Password
+        {labels.password}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="password"
@@ -56,12 +64,21 @@ export function JoinForm() {
           {state.message}
         </p>
       ) : null}
-      <SubmitButton />
+      <SubmitButton
+        createAccountLabel={labels.createAccount}
+        creatingAccountLabel={labels.creatingAccount}
+      />
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  createAccountLabel,
+  creatingAccountLabel,
+}: {
+  createAccountLabel: string;
+  creatingAccountLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -70,7 +87,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Creating account..." : "Create student account"}
+      {pending ? creatingAccountLabel : createAccountLabel}
     </button>
   );
 }
