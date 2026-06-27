@@ -2,6 +2,12 @@ import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
+import {
+  EmptyState,
+  HeaderActionLink,
+  PageHeader,
+  StatusBadge,
+} from "../_components/page-ui";
 import { revokeInviteCode } from "./actions";
 import { BulkGenerateInviteForm } from "./bulk-generate-invite-form";
 import { GenerateInviteForm } from "./generate-invite-form";
@@ -85,20 +91,28 @@ export default async function InviteCodesPage() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Invite codes</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Create one-time codes that let rostered students activate their own
-          accounts.
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        actions={
+          <>
+            <HeaderActionLink href="#generate-invite">
+              Generate invite code
+            </HeaderActionLink>
+            <HeaderActionLink href="#bulk-generate" variant="secondary">
+              Bulk generate
+            </HeaderActionLink>
+          </>
+        }
+        description="Create one-time codes that let rostered students activate their own accounts."
+        eyebrow="Verified registration"
+        title="Invite Codes"
+      />
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">
+      <section className="section-card section-card-padded" id="generate-invite">
+        <h2 className="section-title">
           Create one invite code
         </h2>
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className="section-description">
           Generate a single code for an active student.
         </p>
         {studentsError ? (
@@ -111,11 +125,11 @@ export default async function InviteCodesPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">
+      <section className="section-card section-card-padded" id="bulk-generate">
+        <h2 className="section-title">
           Bulk generate invite codes
         </h2>
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className="section-description">
           Generate one-time codes for multiple active students who have not
           linked a student account yet.
         </p>
@@ -129,9 +143,9 @@ export default async function InviteCodesPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-950">
+      <section className="section-card">
+        <div className="section-header">
+          <h2 className="section-title">
             Invite code history
           </h2>
           {invitesError ? (
@@ -214,31 +228,25 @@ export default async function InviteCodesPage() {
             </div>
           </>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">
-              No invite codes yet
-            </p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Generate a code when an active roster student is ready to create
-              their account.
-            </p>
+          <div className="p-4">
+            <EmptyState
+              action={
+                <>
+                  <HeaderActionLink href="#generate-invite">
+                    Generate invite code
+                  </HeaderActionLink>
+                  <HeaderActionLink href="#bulk-generate" variant="secondary">
+                    Bulk generate
+                  </HeaderActionLink>
+                </>
+              }
+              description="Generate a code when an active roster student is ready to create their account."
+              title="No invite codes yet"
+            />
           </div>
         )}
       </section>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const color =
-    status === "active"
-      ? "bg-emerald-50 text-emerald-700"
-      : "bg-zinc-100 text-zinc-700";
-
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>
-      {status}
-    </span>
   );
 }
 
@@ -254,7 +262,7 @@ function RevokeForm({ invite }: { invite: InviteCode }) {
     <form action={revokeInviteCode}>
       <input name="invite_code_id" type="hidden" value={invite.id} />
       <PendingSubmitButton
-        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="btn btn-secondary min-h-9 px-3"
         pendingLabel="Revoking..."
       >
         Revoke code

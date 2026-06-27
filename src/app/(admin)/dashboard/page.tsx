@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PageHeader } from "../_components/page-ui";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -92,6 +94,8 @@ function StaffDashboard({
       description="A quick view of roster, club, event, registration, and attendance activity for your school."
       title="Dashboard"
     >
+      <WelcomeOverview />
+      <QuickActions />
       <MetricGrid>
         <MetricCard label="Active students" value={analytics.activeStudents} />
         <MetricCard label="Active clubs" value={analytics.activeClubs} />
@@ -129,6 +133,7 @@ function StudentDashboard({
       description="Your clubs, upcoming registrations, and attendance history in one place."
       title="Dashboard"
     >
+      <StudentWelcomeOverview />
       {!analytics.currentStudent ? (
         <section className="notice-box notice-warning">
           <p>
@@ -162,21 +167,114 @@ function DashboardShell({
 }) {
   return (
     <div className="page-stack">
-      <section className="rounded-md border border-slate-200 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-            School activity overview
-          </p>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-            {title}
-          </h1>
-          <p className="max-w-3xl text-sm leading-6 text-slate-600">
-            {description}
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        description={description}
+        eyebrow="School activity overview"
+        title={title}
+      />
       {children}
     </div>
+  );
+}
+
+function WelcomeOverview() {
+  return (
+    <section className="section-card section-card-padded">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center">
+        <div>
+          <p className="page-eyebrow">Today&apos;s workspace</p>
+          <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
+            Guide your school activity pilot from one place.
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Start with a verified roster, issue invite codes, then help
+            students find clubs, join events, and check in for attendance.
+          </p>
+        </div>
+        <div className="rounded-md border border-teal-100 bg-teal-50 p-4">
+          <p className="text-sm font-bold text-teal-950">Recommended flow</p>
+          <p className="mt-2 text-sm leading-6 text-teal-900">
+            Students cannot self-register freely. Add them to the roster first,
+            then generate one-time invite codes when they are ready to join.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StudentWelcomeOverview() {
+  return (
+    <section className="section-card section-card-padded">
+      <p className="page-eyebrow">Student activity hub</p>
+      <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
+        Find what&apos;s happening at school.
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+        Use this dashboard to keep track of clubs you joined, upcoming event
+        registrations, and attendance activity.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Link className="btn btn-primary" href="/events">
+          Browse events
+        </Link>
+        <Link className="btn btn-secondary" href="/clubs">
+          Browse clubs
+        </Link>
+        <Link className="btn btn-secondary" href="/announcements">
+          Read announcements
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function QuickActions() {
+  const actions = [
+    {
+      description: "Create or import verified students before registration.",
+      href: "/students#add-student",
+      label: "Add students",
+    },
+    {
+      description: "Issue one-time codes for rostered students.",
+      href: "/invite-codes#generate-invite",
+      label: "Generate invite codes",
+    },
+    {
+      description: "Open a group students can discover and join.",
+      href: "/clubs#create-club",
+      label: "Create club",
+    },
+    {
+      description: "Publish an approved event or submit one for review.",
+      href: "/events#create-event",
+      label: "Create event",
+    },
+    {
+      description: "Review exports, registrations, and attendance totals.",
+      href: "/reports",
+      label: "View reports",
+    },
+  ];
+
+  return (
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      {actions.map((action) => (
+        <Link
+          className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          href={action.href}
+          key={action.href}
+        >
+          <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
+            {action.label}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {action.description}
+          </p>
+        </Link>
+      ))}
+    </section>
   );
 }
 

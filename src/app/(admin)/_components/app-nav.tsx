@@ -19,7 +19,7 @@ export function AppNav({ sections }: { sections: NavSection[] }) {
   return (
     <nav
       aria-label="Primary navigation"
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-6"
     >
       {sections.map((section) => {
         if (!section.items.length) {
@@ -27,11 +27,11 @@ export function AppNav({ sections }: { sections: NavSection[] }) {
         }
 
         return (
-          <section className="space-y-2" key={section.label}>
-            <h2 className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+          <section className="space-y-2.5" key={section.label}>
+            <h2 className="px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-slate-400">
               {section.label}
             </h2>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               {section.items.map((item) => {
                 const active = isActivePath(pathname, item.href);
 
@@ -41,7 +41,7 @@ export function AppNav({ sections }: { sections: NavSection[] }) {
                     className={
                       active
                         ? "flex min-h-10 cursor-pointer items-center rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-bold text-teal-950 shadow-sm transition hover:bg-teal-100"
-                        : "flex min-h-10 cursor-pointer items-center rounded-md border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-200 hover:bg-white hover:text-slate-950"
+                        : "flex min-h-10 cursor-pointer items-center rounded-md border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
                     }
                     href={item.href}
                     key={item.href}

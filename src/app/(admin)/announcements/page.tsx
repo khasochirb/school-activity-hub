@@ -2,6 +2,12 @@ import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
+import {
+  EmptyState,
+  HeaderActionLink,
+  PageHeader,
+  StatusBadge,
+} from "../_components/page-ui";
 import { archiveAnnouncement } from "./actions";
 import { CreateAnnouncementForm } from "./create-announcement-form";
 
@@ -60,22 +66,29 @@ export default async function AnnouncementsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">
-          Announcements
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Post school notices that students and staff can see after login.
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        actions={
+          isStaff ? (
+            <HeaderActionLink href="#create-announcement">
+              Create announcement
+            </HeaderActionLink>
+          ) : undefined
+        }
+        description="Post school notices that students and staff can see after login."
+        eyebrow="School notices"
+        title="Announcements"
+      />
 
       {isStaff ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-950">
+        <section
+          className="section-card section-card-padded"
+          id="create-announcement"
+        >
+          <h2 className="section-title">
             Post announcement
           </h2>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="section-description">
             Keep notices short and school-wide for this pilot.
           </p>
           <div className="mt-4">
@@ -84,9 +97,9 @@ export default async function AnnouncementsPage() {
         </section>
       ) : null}
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-950">
+      <section className="section-card">
+        <div className="section-header">
+          <h2 className="section-title">
             {isStaff ? "School notices" : "Active notices"}
           </h2>
           {error ? (
@@ -99,7 +112,7 @@ export default async function AnnouncementsPage() {
           <div className="grid gap-4 p-4">
             {announcements.map((announcement) => (
               <article
-                className="rounded-lg border border-zinc-200 p-4"
+                className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
                 key={announcement.id}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -125,14 +138,22 @@ export default async function AnnouncementsPage() {
             ))}
           </div>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">
-              No announcements yet
-            </p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Staff can post a school notice when there is something students
-              should see.
-            </p>
+          <div className="p-4">
+            <EmptyState
+              action={
+                isStaff ? (
+                  <HeaderActionLink href="#create-announcement">
+                    Create announcement
+                  </HeaderActionLink>
+                ) : undefined
+              }
+              description={
+                isStaff
+                  ? "Post a school notice when there is something students should see."
+                  : "Active school notices will appear here when staff post them."
+              }
+              title="No announcements yet"
+            />
           </div>
         )}
       </section>
@@ -149,25 +170,12 @@ function ArchiveForm({ announcement }: { announcement: Announcement }) {
     <form action={archiveAnnouncement}>
       <input name="announcement_id" type="hidden" value={announcement.id} />
       <PendingSubmitButton
-        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="btn btn-secondary min-h-9 px-3"
         pendingLabel="Archiving..."
       >
         Archive notice
       </PendingSubmitButton>
     </form>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const color =
-    status === "active"
-      ? "bg-emerald-50 text-emerald-700"
-      : "bg-zinc-100 text-zinc-700";
-
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>
-      {status}
-    </span>
   );
 }
 

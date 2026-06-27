@@ -27,7 +27,7 @@ const navSections: Array<{
     ],
   },
   {
-    label: "School Management",
+    label: "Manage",
     items: [
       {
         href: "/students",
@@ -85,10 +85,10 @@ export function AppShell({
   return (
     <div className="app-surface min-h-screen lg:flex">
       <aside className="hidden w-72 shrink-0 border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
-        <div className="border-b border-slate-200 px-5 py-5">
+        <div className="border-b border-slate-200 px-5 py-6">
           <Brand />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-6">
           <AppNav sections={visibleNavSections} />
         </div>
         <AccountPanel email={email} roleLabel={formattedRole} />
@@ -102,7 +102,7 @@ export function AppShell({
               <summary className="btn btn-secondary list-none px-3 [&::-webkit-details-marker]:hidden">
                 Menu
               </summary>
-              <div className="absolute right-0 z-30 mt-3 w-[min(21rem,calc(100vw-2rem))] rounded-md border border-slate-200 bg-white p-3 shadow-xl">
+              <div className="absolute right-0 z-30 mt-3 max-h-[calc(100vh-5.5rem)] w-[min(21rem,calc(100vw-2rem))] overflow-y-auto rounded-md border border-slate-200 bg-white p-3 shadow-xl">
                 <AppNav sections={visibleNavSections} />
                 <div className="mt-4 border-t border-slate-200 pt-4">
                   <MobileAccount email={email} roleLabel={formattedRole} />
@@ -112,7 +112,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+        <main className="mx-auto w-full max-w-[100rem] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8 xl:px-10">
           {children}
         </main>
       </div>
@@ -164,7 +164,7 @@ function AccountPanel({
 }) {
   return (
     <div className="border-t border-slate-200 p-4">
-      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 shadow-inner">
         <p className="break-all">{email}</p>
         <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>
       </div>

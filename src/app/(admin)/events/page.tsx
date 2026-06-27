@@ -9,6 +9,13 @@ import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
+  CategoryBadge,
+  EmptyState,
+  HeaderActionLink,
+  PageHeader,
+  StatusBadge,
+} from "../_components/page-ui";
+import {
   cancelEvent,
   cancelEventRegistration,
   joinEvent,
@@ -206,19 +213,22 @@ export default async function EventsPage({
   const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Events</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Create approved activities, manage student registrations, and open
-          attendance check-in when an event begins.
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        actions={
+          canCreate ? (
+            <HeaderActionLink href="#create-event">Create event</HeaderActionLink>
+          ) : undefined
+        }
+        description="Create approved activities, manage student registrations, and open attendance check-in when an event begins."
+        eyebrow="Activities calendar"
+        title="Events"
+      />
 
       {canCreate ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-950">Create event</h2>
-          <p className="mt-2 text-sm text-zinc-600">
+        <section className="section-card section-card-padded" id="create-event">
+          <h2 className="section-title">Create event</h2>
+          <p className="section-description">
             {isStaff
               ? "School staff events are approved immediately and appear for students when they are upcoming."
               : "Club leader events are submitted to staff for approval before students can join."}
@@ -241,9 +251,9 @@ export default async function EventsPage({
         selectedScope={selectedScope}
       />
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-950">
+      <section className="section-card">
+        <div className="section-header">
+          <h2 className="section-title">
             {eventListTitle(selectedFilter, selectedCategory, selectedScope)}
           </h2>
           {eventsError ? (
@@ -258,7 +268,7 @@ export default async function EventsPage({
           ) : null}
         </div>
         {events.length ? (
-          <div className="grid gap-4 p-4 md:grid-cols-2">
+          <div className="grid gap-4 p-4 xl:grid-cols-2">
             {events.map((event) => {
               const registeredCount = attendeeCounts.get(event.id) ?? 0;
               const isFull =
@@ -300,14 +310,26 @@ export default async function EventsPage({
             })}
           </div>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">
-              No events match these filters
-            </p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Create an approved event, wait for a club event to be approved,
-              or adjust the filters.
-            </p>
+          <div className="p-4">
+            <EmptyState
+              action={
+                canCreate ? (
+                  <HeaderActionLink href="#create-event">
+                    Create event
+                  </HeaderActionLink>
+                ) : (
+                  <HeaderActionLink href="/events" variant="secondary">
+                    Reset filters
+                  </HeaderActionLink>
+                )
+              }
+              description={
+                canCreate
+                  ? "Create an approved event, wait for a club event to be approved, or adjust the filters."
+                  : "Approved upcoming events will appear here when staff or club leaders publish them."
+              }
+              title="No events match these filters"
+            />
           </div>
         )}
       </section>
@@ -329,9 +351,9 @@ function EventFilters({
   selectedScope: EventScope;
 }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-zinc-950">Find events</h2>
-      <p className="mt-2 text-sm text-zinc-600">
+    <section className="section-card section-card-padded">
+      <h2 className="section-title">Find events</h2>
+      <p className="section-description">
         Switch between your school events, shared events, registrations, club
         events, and categories.
       </p>
@@ -441,8 +463,8 @@ function FilterLink({
     <Link
       className={
         active
-          ? "inline-flex h-9 cursor-pointer items-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white"
-          : "inline-flex h-9 cursor-pointer items-center rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          ? "btn btn-primary min-h-9 px-3"
+          : "btn btn-secondary min-h-9 px-3"
       }
       href={href}
     >
@@ -483,7 +505,7 @@ function EventCard({
   const isOwnSchoolEvent = event.school_id === userSchoolId;
 
   return (
-    <article className="rounded-lg border border-zinc-200 p-4">
+    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-zinc-950">
@@ -507,27 +529,29 @@ function EventCard({
 
       <div className="mt-3 flex flex-wrap gap-2">
         {currentStudent ? (
-          <Badge variant={isJoined ? "success" : "default"}>
+          <StatusBadge variant={isJoined ? "success" : "default"}>
             {isJoined ? "Joined" : "Not joined"}
-          </Badge>
+          </StatusBadge>
         ) : null}
-        {clubName ? <Badge>{clubName}</Badge> : null}
-        {event.category ? <Badge>{event.category}</Badge> : null}
-        <Badge variant={riskBadgeVariant(event.risk_level)}>
+        {clubName ? <StatusBadge>{clubName}</StatusBadge> : null}
+        {event.category ? <CategoryBadge>{event.category}</CategoryBadge> : null}
+        <StatusBadge variant={riskBadgeVariant(event.risk_level)}>
           {riskLabel(event.risk_level)}
-        </Badge>
+        </StatusBadge>
         {event.permission_required ? (
-          <Badge variant="warning">Permission required</Badge>
+          <StatusBadge variant="warning">Permission required</StatusBadge>
         ) : null}
         {currentStudent && registrationStatus && event.permission_required ? (
-          <Badge variant={permissionBadgeVariant(permissionStatus)}>
+          <StatusBadge variant={permissionBadgeVariant(permissionStatus)}>
             {permissionLabel(permissionStatus)}
-          </Badge>
+          </StatusBadge>
         ) : null}
-        <Badge variant={sharedSchoolIds.length ? "info" : "default"}>
+        <StatusBadge variant={sharedSchoolIds.length ? "info" : "default"}>
           {sharingLabel(event, sharedSchoolIds)}
-        </Badge>
-        {!isOwnSchoolEvent ? <Badge variant="info">{ownerSchoolName}</Badge> : null}
+        </StatusBadge>
+        {!isOwnSchoolEvent ? (
+          <StatusBadge variant="info">{ownerSchoolName}</StatusBadge>
+        ) : null}
       </div>
 
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
@@ -611,7 +635,7 @@ function EventActions({
     return (
       <div className="flex flex-col gap-2">
         <Link
-          className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+          className="btn btn-primary min-h-9 px-3"
           href={`/events/${event.id}/attendance`}
         >
           Attendance and QR
@@ -619,7 +643,7 @@ function EventActions({
         <form action={cancelEvent}>
           <input name="event_id" type="hidden" value={event.id} />
           <PendingSubmitButton
-            className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+            className="btn btn-secondary min-h-9 px-3"
             pendingLabel="Cancelling..."
           >
             Cancel event
@@ -652,7 +676,7 @@ function EventActions({
       <form action={cancelEventRegistration}>
         <input name="event_id" type="hidden" value={event.id} />
         <PendingSubmitButton
-          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          className="btn btn-secondary min-h-9 px-3"
           pendingLabel="Cancelling..."
         >
           Cancel my registration
@@ -687,7 +711,7 @@ function EventActions({
       <form action={joinEvent}>
         <input name="event_id" type="hidden" value={event.id} />
         <PendingSubmitButton
-          className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          className="btn btn-primary min-h-9 px-3 disabled:cursor-not-allowed disabled:bg-zinc-400"
           disabled={isFull}
           pendingLabel="Joining..."
         >
@@ -733,7 +757,7 @@ function SafetyForm({ event }: { event: Event }) {
         />
       </label>
       <PendingSubmitButton
-        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="btn btn-secondary min-h-9 px-3"
         pendingLabel="Saving..."
       >
         Save safety details
@@ -795,39 +819,13 @@ function SharingForm({
         Allow connected students to register
       </label>
       <PendingSubmitButton
-        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
+        className="btn btn-secondary min-h-9 px-3 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
         disabled={!connectedSchools.length && !sharedSchoolIds.length}
         pendingLabel="Saving..."
       >
         Save sharing settings
       </PendingSubmitButton>
     </form>
-  );
-}
-
-function Badge({
-  children,
-  variant = "default",
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "danger" | "info" | "success" | "warning";
-}) {
-  return (
-    <span
-      className={
-        variant === "success"
-          ? "rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
-          : variant === "info"
-            ? "rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
-            : variant === "warning"
-              ? "rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800"
-              : variant === "danger"
-                ? "rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700"
-                : "rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
-      }
-    >
-      {children}
-    </span>
   );
 }
 

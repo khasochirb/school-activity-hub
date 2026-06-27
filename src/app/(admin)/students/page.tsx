@@ -2,6 +2,12 @@ import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
+import {
+  EmptyState,
+  HeaderActionLink,
+  PageHeader,
+  StatusBadge,
+} from "../_components/page-ui";
 import { markStudentInactive } from "./actions";
 import { CreateStudentForm } from "./create-student-form";
 import { ImportStudentsForm } from "./import-students-form";
@@ -60,18 +66,24 @@ export default async function StudentsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Students</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Build the school roster first. Students can only join after staff add
-          them here and generate an invite code.
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        actions={
+          <>
+            <HeaderActionLink href="#add-student">Add student</HeaderActionLink>
+            <HeaderActionLink href="#import-csv" variant="secondary">
+              Import CSV
+            </HeaderActionLink>
+          </>
+        }
+        description="Build the school roster first. Students can only join after staff add them here and generate an invite code."
+        eyebrow="Roster management"
+        title="Students"
+      />
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Add one student</h2>
-        <p className="mt-2 text-sm text-zinc-600">
+      <section className="section-card section-card-padded" id="add-student">
+        <h2 className="section-title">Add one student</h2>
+        <p className="section-description">
           Use this for quick additions or small pilot rosters.
         </p>
         <div className="mt-4">
@@ -79,11 +91,9 @@ export default async function StudentsPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">
-          Import students
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600">
+      <section className="section-card section-card-padded" id="import-csv">
+        <h2 className="section-title">Import students</h2>
+        <p className="section-description">
           Upload a CSV with one row per student when you are preparing a larger
           roster.
         </p>
@@ -92,9 +102,9 @@ export default async function StudentsPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-950">Roster</h2>
+      <section className="section-card">
+        <div className="section-header">
+          <h2 className="section-title">Roster</h2>
           {error ? (
             <p className="mt-2 text-sm text-red-600">
               Students could not be loaded: {error.message}
@@ -182,32 +192,23 @@ export default async function StudentsPage() {
             </div>
           </>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">No students yet</p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Add one student manually or import a CSV before generating invite
-              codes.
-            </p>
+          <div className="p-4">
+            <EmptyState
+              action={
+                <>
+                  <HeaderActionLink href="#add-student">Add student</HeaderActionLink>
+                  <HeaderActionLink href="#import-csv" variant="secondary">
+                    Import CSV
+                  </HeaderActionLink>
+                </>
+              }
+              description="Add one student manually or import a CSV before generating invite codes."
+              title="No students yet"
+            />
           </div>
         )}
       </section>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const isActive = status === "active";
-
-  return (
-    <span
-      className={
-        isActive
-          ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
-          : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
-      }
-    >
-      {status}
-    </span>
   );
 }
 
@@ -220,7 +221,7 @@ function InactiveForm({ student }: { student: Student }) {
     <form action={markStudentInactive}>
       <input name="student_id" type="hidden" value={student.id} />
       <PendingSubmitButton
-        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="btn btn-secondary min-h-9 px-3"
         pendingLabel="Saving..."
       >
         Mark as inactive

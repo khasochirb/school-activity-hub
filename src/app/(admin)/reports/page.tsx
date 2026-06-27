@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
 import {
+  EmptyState,
+  HeaderActionLink,
+  PageHeader,
+  StatusBadge,
+} from "../_components/page-ui";
+import {
   getCurrentStaffProfile,
   getReportsData,
   type ReportTableRow,
@@ -22,24 +28,32 @@ export default async function ReportsPage() {
   ].some((value) => value > 0);
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Reports</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Review school-wide activity summaries and export roster,
-          registration, and attendance CSV files.
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        actions={
+          <HeaderActionLink href="#csv-exports">Export CSV</HeaderActionLink>
+        }
+        description="Review school-wide activity summaries and export roster, registration, and attendance CSV files."
+        eyebrow="Operations reporting"
+        title="Reports"
+      />
 
       {!hasReportData ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium text-zinc-950">
-            No reports data yet
-          </p>
-          <p className="mt-1 text-sm leading-6 text-zinc-600">
-            Reports will fill in after students, clubs, events, registrations,
-            and check-ins are created for this school.
-          </p>
+        <section className="section-card section-card-padded">
+          <EmptyState
+            action={
+              <>
+                <HeaderActionLink href="/students" variant="secondary">
+                  Add students
+                </HeaderActionLink>
+                <HeaderActionLink href="/events#create-event" variant="secondary">
+                  Create event
+                </HeaderActionLink>
+              </>
+            }
+            description="Reports will fill in after students, clubs, events, registrations, and check-ins are created for this school."
+            title="No reports data yet"
+          />
         </section>
       ) : null}
 
@@ -70,9 +84,9 @@ export default async function ReportsPage() {
         />
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">CSV exports</h2>
-        <p className="mt-2 text-sm text-zinc-600">
+      <section className="section-card section-card-padded" id="csv-exports">
+        <h2 className="section-title">CSV exports</h2>
+        <p className="section-description">
           Download school-scoped CSV files for a pilot review or admin handoff.
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -120,9 +134,9 @@ export default async function ReportsPage() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-zinc-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-zinc-950">{value}</p>
+    <article className="stat-card">
+      <p className="stat-label">{label}</p>
+      <p className="stat-value">{value}</p>
     </article>
   );
 }
@@ -136,7 +150,7 @@ function ExportLink({
 }) {
   return (
     <a
-      className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+      className="btn btn-primary"
       href={href}
     >
       {children}
@@ -156,9 +170,9 @@ function SummaryTable({
   title: string;
 }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-      <div className="border-b border-zinc-200 p-6">
-        <h2 className="text-lg font-semibold text-zinc-950">{title}</h2>
+    <section className="section-card">
+      <div className="section-header">
+        <h2 className="section-title">{title}</h2>
       </div>
       {rows.length ? (
         <>
@@ -198,16 +212,18 @@ function SummaryTable({
                       {row.detail || "-"}
                     </p>
                   </div>
-                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700">
+                  <StatusBadge>
                     {formatNumber(row.count)}
-                  </span>
+                  </StatusBadge>
                 </div>
               </article>
             ))}
           </div>
         </>
       ) : (
-        <p className="p-6 text-sm text-zinc-600">{emptyMessage}</p>
+        <div className="p-4">
+          <EmptyState description={emptyMessage} title="No table data yet" />
+        </div>
       )}
     </section>
   );

@@ -13,6 +13,13 @@ import {
   joinClub,
   leaveClub,
 } from "./actions";
+import {
+  CategoryBadge,
+  EmptyState,
+  HeaderActionLink,
+  PageHeader,
+  StatusBadge,
+} from "../_components/page-ui";
 import { CreateClubForm } from "./create-club-form";
 
 type Profile = {
@@ -131,18 +138,22 @@ export default async function ClubsPage({
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Clubs</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Create clubs students can join, and assign student leaders when ready.
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        actions={
+          isStaff ? (
+            <HeaderActionLink href="#create-club">Create club</HeaderActionLink>
+          ) : undefined
+        }
+        description="Create clubs students can join, and assign student leaders when ready."
+        eyebrow="Student groups"
+        title="Clubs"
+      />
 
       {isStaff ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-950">Create club</h2>
-          <p className="mt-2 text-sm text-zinc-600">
+        <section className="section-card section-card-padded" id="create-club">
+          <h2 className="section-title">Create club</h2>
+          <p className="section-description">
             Add an active club for students to discover and join.
           </p>
           <div className="mt-4">
@@ -151,9 +162,9 @@ export default async function ClubsPage({
         </section>
       ) : null}
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Find clubs</h2>
-        <p className="mt-2 text-sm text-zinc-600">
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">Find clubs</h2>
+        <p className="section-description">
           Filter the active club list by activity category.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -172,9 +183,9 @@ export default async function ClubsPage({
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-950">Active clubs</h2>
+      <section className="section-card">
+        <div className="section-header">
+          <h2 className="section-title">Active clubs</h2>
           {clubsError ? (
             <p className="mt-2 text-sm text-red-600">
               Clubs could not be loaded: {clubsError.message}
@@ -194,7 +205,7 @@ export default async function ClubsPage({
 
               return (
                 <article
-                  className="rounded-lg border border-zinc-200 p-4"
+                  className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
                   key={club.id}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -204,13 +215,9 @@ export default async function ClubsPage({
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {club.category ? (
-                          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700">
-                            {club.category}
-                          </span>
+                          <CategoryBadge>{club.category}</CategoryBadge>
                         ) : null}
-                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                          {club.status}
-                        </span>
+                        <StatusBadge status={club.status} />
                       </div>
                     </div>
                     <ClubActions
@@ -253,7 +260,7 @@ export default async function ClubsPage({
                                   value={membership.id}
                                 />
                                 <PendingSubmitButton
-                                  className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+                                  className="btn btn-secondary min-h-9 px-3"
                                   pendingLabel="Saving..."
                                 >
                                   Make club leader
@@ -275,11 +282,22 @@ export default async function ClubsPage({
             })}
           </div>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">No clubs yet</p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Create the first club so students have something to join.
-            </p>
+          <div className="p-4">
+            <EmptyState
+              action={
+                isStaff ? (
+                  <HeaderActionLink href="#create-club">
+                    Create club
+                  </HeaderActionLink>
+                ) : undefined
+              }
+              description={
+                isStaff
+                  ? "Create the first club so students have something to join."
+                  : "Active clubs will appear here once school staff create them."
+              }
+              title="No clubs yet"
+            />
           </div>
         )}
       </section>
@@ -305,7 +323,7 @@ function ClubActions({
       <form action={archiveClub}>
         <input name="club_id" type="hidden" value={club.id} />
         <PendingSubmitButton
-          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          className="btn btn-secondary min-h-9 px-3"
           pendingLabel="Archiving..."
         >
           Archive club
@@ -324,8 +342,8 @@ function ClubActions({
       <PendingSubmitButton
         className={
           isJoined
-            ? "h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-            : "h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+            ? "btn btn-secondary min-h-9 px-3"
+            : "btn btn-primary min-h-9 px-3"
         }
         pendingLabel={isJoined ? "Leaving..." : "Joining..."}
       >
@@ -348,8 +366,8 @@ function CategoryFilterLink({
     <Link
       className={
         active
-          ? "inline-flex h-9 cursor-pointer items-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white"
-          : "inline-flex h-9 cursor-pointer items-center rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          ? "btn btn-primary min-h-9 px-3"
+          : "btn btn-secondary min-h-9 px-3"
       }
       href={href}
     >
