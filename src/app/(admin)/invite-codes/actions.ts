@@ -3,8 +3,19 @@
 import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
+
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
 
 type StaffProfile = {
   id: string;
@@ -48,12 +59,13 @@ export async function generateInviteCode(
   _state: GenerateInviteState,
   formData: FormData,
 ): Promise<GenerateInviteState> {
+  const { t, tf } = await getServerI18n();
   const profile = await getCurrentStaffProfile();
 
   if (!profile) {
     return {
       code: null,
-      message: "Only school admins and teachers can create invite codes.",
+      message: t("invites.errors.staffOnly"),
       success: false,
     };
   }
@@ -63,7 +75,7 @@ export async function generateInviteCode(
   if (!studentId) {
     return {
       code: null,
-      message: "Choose an active student.",
+      message: t("invites.errors.studentRequired"),
       success: false,
     };
   }
@@ -84,7 +96,7 @@ export async function generateInviteCode(
   if (!student) {
     return {
       code: null,
-      message: "That student is not active or is not in your school.",
+      message: t("invites.errors.studentInactiveOrWrongSchool"),
       success: false,
     };
   }
@@ -106,7 +118,7 @@ export async function generateInviteCode(
   if (existingInvite) {
     return {
       code: null,
-      message: "This student already has an active invite code.",
+      message: t("invites.errors.studentAlreadyHasActiveCode"),
       success: false,
     };
   }
@@ -132,7 +144,7 @@ export async function generateInviteCode(
   if (error) {
     return {
       code: null,
-      message: `Invite code could not be created: ${error.message}`,
+      message: tf("invites.errors.createFailed", { error: error.message }),
       success: false,
     };
   }
@@ -141,7 +153,7 @@ export async function generateInviteCode(
 
   return {
     code: plainCode,
-    message: "Invite code created. Copy it now; it will not be shown again.",
+    message: t("invites.success.created"),
     success: true,
   };
 }
@@ -150,11 +162,12 @@ export async function bulkGenerateInviteCodes(
   _state: BulkGenerateInviteState,
   formData: FormData,
 ): Promise<BulkGenerateInviteState> {
+  const { t, tf } = await getServerI18n();
   const profile = await getCurrentStaffProfile();
 
   if (!profile) {
     return createBulkState({
-      message: "Only school admins and teachers can create invite codes.",
+      message: t("invites.errors.staffOnly"),
       success: false,
     });
   }
@@ -172,7 +185,7 @@ export async function bulkGenerateInviteCodes(
   if (mode === "selected") {
     if (!selectedIds.length) {
       return createBulkState({
-        message: "Choose at least one student.",
+        message: t("invites.bulk.errors.chooseStudent"),
         success: false,
       });
     }
@@ -186,7 +199,7 @@ export async function bulkGenerateInviteCodes(
   if (mode === "filtered") {
     if (!grade && !classGroup) {
       return createBulkState({
-        message: "Choose a grade, class group, or both.",
+        message: t("invites.bulk.errors.chooseFilter"),
         success: false,
       });
     }
@@ -201,7 +214,7 @@ export async function bulkGenerateInviteCodes(
 
   if (!targetStudents.length) {
     return createBulkState({
-      message: "No eligible active students matched that selection.",
+      message: t("invites.bulk.errors.noMatches"),
       success: false,
     });
   }
@@ -217,8 +230,7 @@ export async function bulkGenerateInviteCodes(
 
   if (!studentsNeedingInvites.length) {
     return createBulkState({
-      message:
-        "No invite codes were generated because every selected student already has an active invite code.",
+      message: t("invites.bulk.errors.allAlreadyHaveCodes"),
       success: false,
     });
   }
@@ -249,7 +261,7 @@ export async function bulkGenerateInviteCodes(
 
   if (error) {
     return createBulkState({
-      message: `Invite codes could not be generated: ${error.message}`,
+      message: tf("invites.errors.generateFailed", { error: error.message }),
       success: false,
     });
   }
@@ -267,12 +279,16 @@ export async function bulkGenerateInviteCodes(
   const skippedCount = targetStudents.length - studentsNeedingInvites.length;
   const skippedMessage =
     skippedCount > 0
-      ? ` ${skippedCount} selected student${skippedCount === 1 ? "" : "s"} already had an active invite code and were skipped.`
+      ? ` ${tf("invites.bulk.success.skippedExisting", {
+          count: skippedCount,
+        })}`
       : "";
 
   return createBulkState({
     codes,
-    message: `Generated ${codes.length} invite code${codes.length === 1 ? "" : "s"}. Copy or download them now; they will not be shown again.${skippedMessage}`,
+    message: `${tf("invites.bulk.success.generated", {
+      count: codes.length,
+    })}${skippedMessage}`,
     success: true,
   });
 }
@@ -332,6 +348,16 @@ async function getCurrentStaffProfile(): Promise<StaffProfile | null> {
   }
 
   return profile;
+}
+
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
 }
 
 async function getEligibleBulkStudents(schoolId: string) {

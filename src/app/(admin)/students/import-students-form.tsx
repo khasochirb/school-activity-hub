@@ -9,11 +9,19 @@ const initialState: ImportStudentsState = {
   success: false,
 };
 
-const sampleCsv = `full_name,grade,class_group,student_number
-Avery Stone,7,7A,S-1001
-Mina Patel,8,8B,S-1002`;
+type ImportStudentsFormLabels = {
+  fileLabel: string;
+  importing: string;
+  sampleCsv: string;
+  sampleTitle: string;
+  submit: string;
+};
 
-export function ImportStudentsForm() {
+export function ImportStudentsForm({
+  labels,
+}: {
+  labels: ImportStudentsFormLabels;
+}) {
   const [state, formAction] = useActionState(
     importStudentsFromCsv,
     initialState,
@@ -22,15 +30,17 @@ export function ImportStudentsForm() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-sm font-semibold text-slate-800">Sample CSV format</p>
+        <p className="text-sm font-semibold text-slate-800">
+          {labels.sampleTitle}
+        </p>
         <pre className="mt-2 overflow-x-auto rounded-md bg-slate-50 p-3 text-sm text-slate-800">
-          {sampleCsv}
+          {labels.sampleCsv}
         </pre>
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
         <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-          CSV file
+          {labels.fileLabel}
           <input
             accept=".csv,text/csv"
             className="min-h-11 cursor-pointer rounded-md border bg-white px-3 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-teal-700 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
@@ -51,13 +61,22 @@ export function ImportStudentsForm() {
             {state.message}
           </p>
         ) : null}
-        <SubmitButton />
+        <SubmitButton
+          importingLabel={labels.importing}
+          submitLabel={labels.submit}
+        />
       </form>
     </div>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  importingLabel,
+  submitLabel,
+}: {
+  importingLabel: string;
+  submitLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -66,7 +85,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Importing..." : "Import CSV"}
+      {pending ? importingLabel : submitLabel}
     </button>
   );
 }

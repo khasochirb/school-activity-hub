@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -38,6 +44,11 @@ type InviteCode = {
 };
 
 export default async function InviteCodesPage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -96,61 +107,104 @@ export default async function InviteCodesPage() {
         actions={
           <>
             <HeaderActionLink href="#generate-invite">
-              Generate invite code
+              {t("invites.actions.generate")}
             </HeaderActionLink>
             <HeaderActionLink href="#bulk-generate" variant="secondary">
-              Bulk generate
+              {t("invites.actions.bulkGenerateShort")}
             </HeaderActionLink>
           </>
         }
-        description="Create one-time codes that let rostered students activate their own accounts."
-        eyebrow="Verified registration"
-        title="Invite Codes"
+        description={t("invites.description")}
+        eyebrow={t("invites.eyebrow")}
+        title={t("invites.title")}
       />
 
       <section className="section-card section-card-padded" id="generate-invite">
         <h2 className="section-title">
-          Create one invite code
+          {t("invites.single.title")}
         </h2>
         <p className="section-description">
-          Generate a single code for an active student.
+          {t("invites.single.description")}
         </p>
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
-            Students could not be loaded: {studentsError.message}
+            {tf("invites.errors.studentsLoadFailed", {
+              error: studentsError.message,
+            })}
           </p>
         ) : null}
         <div className="mt-4">
-          <GenerateInviteForm students={activeStudents ?? []} />
+          <GenerateInviteForm
+            labels={{
+              chooseStudent: t("invites.single.chooseStudent"),
+              generate: t("invites.actions.generate"),
+              generating: t("invites.actions.generating"),
+              gradeOption: t("invites.single.gradeOption"),
+              noStudents: t("invites.single.noStudents"),
+              plainCodeLabel: t("invites.single.plainCodeLabel"),
+              studentLabel: t("invites.single.studentLabel"),
+            }}
+            students={activeStudents ?? []}
+          />
         </div>
       </section>
 
       <section className="section-card section-card-padded" id="bulk-generate">
         <h2 className="section-title">
-          Bulk generate invite codes
+          {t("invites.bulk.title")}
         </h2>
         <p className="section-description">
-          Generate one-time codes for multiple active students who have not
-          linked a student account yet.
+          {t("invites.bulk.description")}
         </p>
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
-            Students could not be loaded: {studentsError.message}
+            {tf("invites.errors.studentsLoadFailed", {
+              error: studentsError.message,
+            })}
           </p>
         ) : null}
         <div className="mt-4">
-          <BulkGenerateInviteForm students={activeStudents ?? []} />
+          <BulkGenerateInviteForm
+            labels={{
+              allUnlinkedDescription: t(
+                "invites.bulk.allUnlinked.description",
+              ),
+              allUnlinkedLabel: t("invites.bulk.allUnlinked.label"),
+              anyClassGroup: t("invites.bulk.filters.anyClassGroup"),
+              anyGrade: t("invites.bulk.filters.anyGrade"),
+              bulkSubmit: t("invites.bulk.submit"),
+              classGroup: t("invites.bulk.filters.classGroup"),
+              copyTextList: t("invites.bulk.copyTextList"),
+              downloadCsv: t("invites.bulk.downloadCsv"),
+              filteredDescription: t("invites.bulk.filtered.description"),
+              filteredLabel: t("invites.bulk.filtered.label"),
+              generatedTitle: t("invites.bulk.generatedTitle"),
+              generating: t("invites.actions.generating"),
+              grade: t("invites.bulk.filters.grade"),
+              noEligibleStudents: t("invites.bulk.noEligibleStudents"),
+              scope: t("invites.bulk.scope"),
+              selectedDescription: t("invites.bulk.selected.description"),
+              selectedLabel: t("invites.bulk.selected.label"),
+              selectStudents: t("invites.bulk.selectStudents"),
+              selectStudentsDescription: t(
+                "invites.bulk.selectStudentsDescription",
+              ),
+            }}
+            students={activeStudents ?? []}
+          />
         </div>
       </section>
 
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">
-            Invite code history
+            {t("invites.history.title")}
           </h2>
           {invitesError ? (
             <p className="mt-2 text-sm text-red-600">
-              Invite codes could not be loaded: {invitesError.message}
+              {tf("invites.errors.codesLoadFailed", {
+                error: invitesError.message,
+              })}
             </p>
           ) : null}
         </div>
@@ -160,22 +214,39 @@ export default async function InviteCodesPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Student</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Created</th>
-                    <th className="px-4 py-3 font-medium">Expires</th>
-                    <th className="px-4 py-3 font-medium">Redeemed</th>
-                    <th className="px-4 py-3 font-medium">Actions</th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("invites.table.student")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("invites.table.status")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("invites.table.created")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("invites.table.expires")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("invites.table.redeemed")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("invites.table.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
                   {inviteCodes.map((invite) => (
                     <tr key={invite.id}>
                       <td className="px-4 py-3 font-medium text-zinc-950">
-                        {studentName(studentMap.get(invite.student_roster_id ?? ""))}
+                        {studentName(
+                          studentMap.get(invite.student_roster_id ?? ""),
+                          t,
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={invite.status} />
+                        <StatusBadge status={invite.status}>
+                          {statusLabel(invite.status, t)}
+                        </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
                         {formatDate(invite.created_at)}
@@ -187,7 +258,16 @@ export default async function InviteCodesPage() {
                         {invite.redeemed_at ? formatDate(invite.redeemed_at) : "-"}
                       </td>
                       <td className="px-4 py-3">
-                        <RevokeForm invite={invite} />
+                        <RevokeForm
+                          invite={invite}
+                          labels={{
+                            alreadyUsedOrInactive: t(
+                              "invites.actions.alreadyUsedOrInactive",
+                            ),
+                            revoke: t("invites.actions.revoke"),
+                            revoking: t("invites.actions.revoking"),
+                          }}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -200,28 +280,46 @@ export default async function InviteCodesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="font-medium text-zinc-950">
-                        {studentName(studentMap.get(invite.student_roster_id ?? ""))}
+                        {studentName(
+                          studentMap.get(invite.student_roster_id ?? ""),
+                          t,
+                        )}
                       </h3>
                       <p className="mt-1 text-sm text-zinc-600">
-                        Created {formatDate(invite.created_at)}
+                        {t("invites.table.created")} {formatDate(invite.created_at)}
                       </p>
                     </div>
-                    <StatusBadge status={invite.status} />
+                    <StatusBadge status={invite.status}>
+                      {statusLabel(invite.status, t)}
+                    </StatusBadge>
                   </div>
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <dt className="text-zinc-500">Expires</dt>
+                      <dt className="text-zinc-500">
+                        {t("invites.table.expires")}
+                      </dt>
                       <dd className="text-zinc-800">{formatDate(invite.expires_at)}</dd>
                     </div>
                     <div>
-                      <dt className="text-zinc-500">Redeemed</dt>
+                      <dt className="text-zinc-500">
+                        {t("invites.table.redeemed")}
+                      </dt>
                       <dd className="text-zinc-800">
                         {invite.redeemed_at ? formatDate(invite.redeemed_at) : "-"}
                       </dd>
                     </div>
                   </dl>
                   <div className="mt-4">
-                    <RevokeForm invite={invite} />
+                    <RevokeForm
+                      invite={invite}
+                      labels={{
+                        alreadyUsedOrInactive: t(
+                          "invites.actions.alreadyUsedOrInactive",
+                        ),
+                        revoke: t("invites.actions.revoke"),
+                        revoking: t("invites.actions.revoking"),
+                      }}
+                    />
                   </div>
                 </article>
               ))}
@@ -233,15 +331,15 @@ export default async function InviteCodesPage() {
               action={
                 <>
                   <HeaderActionLink href="#generate-invite">
-                    Generate invite code
+                    {t("invites.actions.generate")}
                   </HeaderActionLink>
                   <HeaderActionLink href="#bulk-generate" variant="secondary">
-                    Bulk generate
+                    {t("invites.actions.bulkGenerateShort")}
                   </HeaderActionLink>
                 </>
               }
-              description="Generate a code when an active roster student is ready to create their account."
-              title="No invite codes yet"
+              description={t("invites.empty.description")}
+              title={t("invites.empty.title")}
             />
           </div>
         )}
@@ -250,12 +348,26 @@ export default async function InviteCodesPage() {
   );
 }
 
-function RevokeForm({ invite }: { invite: InviteCode }) {
+function RevokeForm({
+  invite,
+  labels,
+}: {
+  invite: InviteCode;
+  labels: {
+    alreadyUsedOrInactive: string;
+    revoke: string;
+    revoking: string;
+  };
+}) {
   const canRevoke =
     invite.status === "active" && invite.use_count === 0 && !invite.redeemed_at;
 
   if (!canRevoke) {
-    return <span className="text-sm text-zinc-500">Already used or inactive</span>;
+    return (
+      <span className="text-sm text-zinc-500">
+        {labels.alreadyUsedOrInactive}
+      </span>
+    );
   }
 
   return (
@@ -263,16 +375,34 @@ function RevokeForm({ invite }: { invite: InviteCode }) {
       <input name="invite_code_id" type="hidden" value={invite.id} />
       <PendingSubmitButton
         className="btn btn-secondary min-h-9 px-3"
-        pendingLabel="Revoking..."
+        pendingLabel={labels.revoking}
       >
-        Revoke code
+        {labels.revoke}
       </PendingSubmitButton>
     </form>
   );
 }
 
-function studentName(student: ActiveStudent | undefined) {
-  return student ? `${student.first_name} ${student.last_name}` : "Roster student";
+function studentName(student: ActiveStudent | undefined, t: (key: string) => string) {
+  return student
+    ? `${student.first_name} ${student.last_name}`
+    : t("invites.fallback.rosterStudent");
+}
+
+function statusLabel(status: string, t: (key: string) => string) {
+  if (status === "active") {
+    return t("status.active");
+  }
+
+  if (status === "revoked") {
+    return t("status.revoked");
+  }
+
+  if (status === "redeemed") {
+    return t("status.redeemed");
+  }
+
+  return status;
 }
 
 function formatDate(value: string) {

@@ -17,9 +17,21 @@ const initialState: GenerateInviteState = {
   success: false,
 };
 
+type GenerateInviteFormLabels = {
+  chooseStudent: string;
+  generate: string;
+  generating: string;
+  gradeOption: string;
+  noStudents: string;
+  plainCodeLabel: string;
+  studentLabel: string;
+};
+
 export function GenerateInviteForm({
+  labels,
   students,
 }: {
+  labels: GenerateInviteFormLabels;
   students: ActiveStudent[];
 }) {
   const [state, formAction] = useActionState(generateInviteCode, initialState);
@@ -28,25 +40,29 @@ export function GenerateInviteForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Active student
+        {labels.studentLabel}
         <select
           className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
           disabled={!hasStudents}
           name="student_roster_id"
           required
         >
-          <option value="">Choose a student</option>
+          <option value="">{labels.chooseStudent}</option>
           {students.map((student) => (
             <option key={student.id} value={student.id}>
               {student.first_name} {student.last_name}
-              {student.grade_level ? `, grade ${student.grade_level}` : ""}
+              {student.grade_level
+                ? `, ${formatLabel(labels.gradeOption, {
+                    grade: student.grade_level,
+                  })}`
+                : ""}
             </option>
           ))}
         </select>
       </label>
       {!hasStudents ? (
         <p className="notice-box">
-          Add an active student before creating invite codes.
+          {labels.noStudents}
         </p>
       ) : null}
       {state.message ? (
@@ -63,18 +79,32 @@ export function GenerateInviteForm({
       ) : null}
       {state.code ? (
         <div className="notice-box notice-success">
-          <p className="text-sm font-bold text-emerald-900">Plain invite code</p>
+          <p className="text-sm font-bold text-emerald-900">
+            {labels.plainCodeLabel}
+          </p>
           <p className="mt-2 break-all font-mono text-lg font-semibold text-emerald-950">
             {state.code}
           </p>
         </div>
       ) : null}
-      <SubmitButton disabled={!hasStudents} />
+      <SubmitButton
+        disabled={!hasStudents}
+        generateLabel={labels.generate}
+        generatingLabel={labels.generating}
+      />
     </form>
   );
 }
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+function SubmitButton({
+  disabled,
+  generateLabel,
+  generatingLabel,
+}: {
+  disabled: boolean;
+  generateLabel: string;
+  generatingLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -83,7 +113,18 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
       disabled={disabled || pending}
       type="submit"
     >
-      {pending ? "Generating..." : "Generate invite code"}
+      {pending ? generatingLabel : generateLabel}
     </button>
   );
+}
+
+function formatLabel(
+  template: string,
+  values: Record<string, string | number>,
+) {
+  return template.replace(/\{(\w+)\}/g, (match, name) => {
+    const value = values[name];
+
+    return value === undefined ? match : String(value);
+  });
 }

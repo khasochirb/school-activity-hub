@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -29,6 +35,11 @@ type Student = {
 };
 
 export default async function StudentsPage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -70,44 +81,62 @@ export default async function StudentsPage() {
       <PageHeader
         actions={
           <>
-            <HeaderActionLink href="#add-student">Add student</HeaderActionLink>
+            <HeaderActionLink href="#add-student">
+              {t("students.actions.add")}
+            </HeaderActionLink>
             <HeaderActionLink href="#import-csv" variant="secondary">
-              Import CSV
+              {t("students.actions.importCsv")}
             </HeaderActionLink>
           </>
         }
-        description="Build the school roster first. Students can only join after staff add them here and generate an invite code."
-        eyebrow="Roster management"
-        title="Students"
+        description={t("students.description")}
+        eyebrow={t("students.eyebrow")}
+        title={t("students.title")}
       />
 
       <section className="section-card section-card-padded" id="add-student">
-        <h2 className="section-title">Add one student</h2>
+        <h2 className="section-title">{t("students.addSection.title")}</h2>
         <p className="section-description">
-          Use this for quick additions or small pilot rosters.
+          {t("students.addSection.description")}
         </p>
         <div className="mt-4">
-          <CreateStudentForm />
+          <CreateStudentForm
+            labels={{
+              adding: t("students.form.adding"),
+              classGroup: t("students.form.classGroup"),
+              fullName: t("students.form.fullName"),
+              grade: t("students.form.grade"),
+              studentNumber: t("students.form.studentNumber"),
+              submit: t("students.form.submit"),
+            }}
+          />
         </div>
       </section>
 
       <section className="section-card section-card-padded" id="import-csv">
-        <h2 className="section-title">Import students</h2>
+        <h2 className="section-title">{t("students.importSection.title")}</h2>
         <p className="section-description">
-          Upload a CSV with one row per student when you are preparing a larger
-          roster.
+          {t("students.importSection.description")}
         </p>
         <div className="mt-4">
-          <ImportStudentsForm />
+          <ImportStudentsForm
+            labels={{
+              fileLabel: t("students.import.fileLabel"),
+              importing: t("students.import.importing"),
+              sampleCsv: t("students.import.sampleCsv"),
+              sampleTitle: t("students.import.sampleTitle"),
+              submit: t("students.import.submit"),
+            }}
+          />
         </div>
       </section>
 
       <section className="section-card">
         <div className="section-header">
-          <h2 className="section-title">Roster</h2>
+          <h2 className="section-title">{t("students.roster.title")}</h2>
           {error ? (
             <p className="mt-2 text-sm text-red-600">
-              Students could not be loaded: {error.message}
+              {tf("students.errors.loadFailed", { error: error.message })}
             </p>
           ) : null}
         </div>
@@ -117,13 +146,27 @@ export default async function StudentsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Full name</th>
-                    <th className="px-4 py-3 font-medium">Grade</th>
-                    <th className="px-4 py-3 font-medium">Class group</th>
-                    <th className="px-4 py-3 font-medium">Student number</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Created</th>
-                    <th className="px-4 py-3 font-medium">Actions</th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("students.table.fullName")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("students.table.grade")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("students.table.classGroup")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("students.table.studentNumber")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("students.table.status")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("students.table.created")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("students.table.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
@@ -142,13 +185,24 @@ export default async function StudentsPage() {
                         {student.student_number || "-"}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={student.status} />
+                        <StatusBadge status={student.status}>
+                          {statusLabel(student.status, t)}
+                        </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
                         {formatDate(student.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <InactiveForm student={student} />
+                        <InactiveForm
+                          labels={{
+                            alreadyInactive: t(
+                              "students.actions.alreadyInactive",
+                            ),
+                            markInactive: t("students.actions.markInactive"),
+                            saving: t("common.saving"),
+                          }}
+                          student={student}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -164,28 +218,41 @@ export default async function StudentsPage() {
                         {student.first_name} {student.last_name}
                       </h3>
                       <p className="mt-1 text-sm text-zinc-600">
-                        Grade {student.grade_level}
+                        {t("students.table.grade")} {student.grade_level}
                         {student.homeroom ? `, ${student.homeroom}` : ""}
                       </p>
                     </div>
-                    <StatusBadge status={student.status} />
+                    <StatusBadge status={student.status}>
+                      {statusLabel(student.status, t)}
+                    </StatusBadge>
                   </div>
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <dt className="text-zinc-500">Student number</dt>
+                      <dt className="text-zinc-500">
+                        {t("students.table.studentNumber")}
+                      </dt>
                       <dd className="text-zinc-800">
                         {student.student_number || "-"}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-zinc-500">Created</dt>
+                      <dt className="text-zinc-500">
+                        {t("students.table.created")}
+                      </dt>
                       <dd className="text-zinc-800">
                         {formatDate(student.created_at)}
                       </dd>
                     </div>
                   </dl>
                   <div className="mt-4">
-                    <InactiveForm student={student} />
+                    <InactiveForm
+                      labels={{
+                        alreadyInactive: t("students.actions.alreadyInactive"),
+                        markInactive: t("students.actions.markInactive"),
+                        saving: t("common.saving"),
+                      }}
+                      student={student}
+                    />
                   </div>
                 </article>
               ))}
@@ -196,14 +263,16 @@ export default async function StudentsPage() {
             <EmptyState
               action={
                 <>
-                  <HeaderActionLink href="#add-student">Add student</HeaderActionLink>
+                  <HeaderActionLink href="#add-student">
+                    {t("students.actions.add")}
+                  </HeaderActionLink>
                   <HeaderActionLink href="#import-csv" variant="secondary">
-                    Import CSV
+                    {t("students.actions.importCsv")}
                   </HeaderActionLink>
                 </>
               }
-              description="Add one student manually or import a CSV before generating invite codes."
-              title="No students yet"
+              description={t("students.empty.description")}
+              title={t("students.empty.title")}
             />
           </div>
         )}
@@ -212,9 +281,19 @@ export default async function StudentsPage() {
   );
 }
 
-function InactiveForm({ student }: { student: Student }) {
+function InactiveForm({
+  labels,
+  student,
+}: {
+  labels: {
+    alreadyInactive: string;
+    markInactive: string;
+    saving: string;
+  };
+  student: Student;
+}) {
   if (student.status !== "active") {
-    return <span className="text-sm text-zinc-500">Already inactive</span>;
+    return <span className="text-sm text-zinc-500">{labels.alreadyInactive}</span>;
   }
 
   return (
@@ -222,12 +301,24 @@ function InactiveForm({ student }: { student: Student }) {
       <input name="student_id" type="hidden" value={student.id} />
       <PendingSubmitButton
         className="btn btn-secondary min-h-9 px-3"
-        pendingLabel="Saving..."
+        pendingLabel={labels.saving}
       >
-        Mark as inactive
+        {labels.markInactive}
       </PendingSubmitButton>
     </form>
   );
+}
+
+function statusLabel(status: string, t: (key: string) => string) {
+  if (status === "active") {
+    return t("status.active");
+  }
+
+  if (status === "inactive") {
+    return t("status.inactive");
+  }
+
+  return status;
 }
 
 function formatDate(value: string) {

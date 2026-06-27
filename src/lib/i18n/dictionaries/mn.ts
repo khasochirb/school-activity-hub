@@ -98,6 +98,16 @@ export const mn = {
     save: "Хадгалах",
     saving: "Хадгалж байна...",
   },
+  status: {
+    active: "Идэвхтэй",
+    approved: "Батлагдсан",
+    archived: "Архивлагдсан",
+    canceled: "Цуцлагдсан",
+    inactive: "Идэвхгүй",
+    pending: "Хүлээгдэж буй",
+    rejected: "Татгалзсан",
+    revoked: "Хүчингүй болгосон",
+  },
   dashboard: {
     browseEvents: "Арга хэмжээ үзэх",
     checkins: {
@@ -312,11 +322,198 @@ export const mn = {
     staff: "Ажилтнууд",
     students: "Сурагчид",
   },
+  invites: {
+    actions: {
+      alreadyUsedOrInactive: "Аль хэдийн ашиглагдсан эсвэл идэвхгүй",
+      bulkGenerateShort: "Бөөнөөр үүсгэх",
+      generate: "Урилгын код үүсгэх",
+      generating: "Үүсгэж байна...",
+      revoke: "Код хүчингүй болгох",
+      revoking: "Хүчингүй болгож байна...",
+    },
+    bulk: {
+      allUnlinked: {
+        description:
+          "Хараахан бүртгүүлээгүй бүх идэвхтэй жагсаалтын сурагчид.",
+        label: "Холбоогүй бүх идэвхтэй сурагчид",
+      },
+      copyTextList: "Текст жагсаалт хуулах",
+      description:
+        "Сурагчийн бүртгэл хараахан холбоогүй хэд хэдэн идэвхтэй сурагчид нэг удаагийн кодууд үүсгэнэ үү.",
+      downloadCsv: "CSV татах",
+      errors: {
+        allAlreadyHaveCodes:
+          "Сонгосон бүх сурагч аль хэдийн идэвхтэй урилгын кодтой тул урилгын код үүссэнгүй.",
+        chooseFilter: "Анги, бүлэг эсвэл хоёуланг нь сонгоно уу.",
+        chooseStudent: "Дор хаяж нэг сурагч сонгоно уу.",
+        noMatches: "Энэ сонголтод тохирох идэвхтэй сурагч олдсонгүй.",
+      },
+      filters: {
+        anyClassGroup: "Аль ч бүлэг",
+        anyGrade: "Аль ч анги",
+        classGroup: "Ангийн бүлэг",
+        grade: "Анги",
+      },
+      filtered: {
+        description: "Анги, бүлэг эсвэл хоёулангаар нь хязгаарлах.",
+        label: "Анги эсвэл бүлгээр",
+      },
+      generatedTitle: "Үүссэн урилгын кодууд",
+      noEligibleStudents:
+        "Бөөн урилгын кодод тохирох холбоогүй идэвхтэй сурагч алга.",
+      scope: "Үүсгэх хүрээ",
+      selectStudents: "Сурагчид сонгох",
+      selectStudentsDescription:
+        "Зөвхөн холбогдсон профайлгүй идэвхтэй сурагчдыг жагсаасан.",
+      selected: {
+        description: "Холбоогүй идэвхтэй сурагчдыг нэг бүрчлэн сонгох.",
+        label: "Сонгосон сурагчид",
+      },
+      submit: "Урилгын кодуудыг бөөнөөр үүсгэх",
+      success: {
+        generated:
+          "{count} урилгын код үүслээ. Одоо хуулж эсвэл татаж аваарай; дахин харуулахгүй.",
+        skippedExisting:
+          "Сонгосон {count} сурагч аль хэдийн идэвхтэй урилгын кодтой байсан тул алгасагдлаа.",
+      },
+      title: "Урилгын кодуудыг бөөнөөр үүсгэх",
+    },
+    description:
+      "Жагсаалтад байгаа сурагчид өөрийн бүртгэлээ идэвхжүүлэх боломжтой нэг удаагийн кодууд үүсгэнэ үү.",
+    empty: {
+      description:
+        "Идэвхтэй жагсаалтын сурагч бүртгэлээ үүсгэхэд бэлэн үед код үүсгэнэ үү.",
+      title: "Урилгын код одоогоор алга",
+    },
+    errors: {
+      codesLoadFailed: "Урилгын кодуудыг ачаалж чадсангүй: {error}",
+      staffOnly: "Зөвхөн сургуулийн админ болон багш нар урилгын код үүсгэх боломжтой.",
+      studentAlreadyHasActiveCode:
+        "Энэ сурагчид аль хэдийн идэвхтэй урилгын код байна.",
+      studentInactiveOrWrongSchool:
+        "Тэр сурагч идэвхтэй биш эсвэл танай сургуульд хамаарахгүй байна.",
+      studentsLoadFailed: "Сурагчдыг ачаалж чадсангүй: {error}",
+      studentRequired: "Идэвхтэй сурагч сонгоно уу.",
+    },
+    eyebrow: "Баталгаажсан бүртгэл",
+    fallback: {
+      rosterStudent: "Жагсаалтын сурагч",
+    },
+    history: {
+      title: "Урилгын кодын түүх",
+    },
+    single: {
+      chooseStudent: "Сурагч сонгох",
+      description: "Идэвхтэй сурагчид зориулж нэг код үүсгэнэ үү.",
+      gradeOption: "анги {grade}",
+      noStudents: "Урилгын код үүсгэхээс өмнө идэвхтэй сурагч нэмнэ үү.",
+      plainCodeLabel: "Энгийн урилгын код",
+      studentLabel: "Идэвхтэй сурагч",
+      title: "Нэг урилгын код үүсгэх",
+    },
+    success: {
+      created: "Урилгын код үүслээ. Одоо хуулж аваарай; дахин харуулахгүй.",
+    },
+    table: {
+      actions: "Үйлдэл",
+      created: "Үүсгэсэн",
+      expires: "Дуусах",
+      redeemed: "Ашигласан",
+      status: "Төлөв",
+      student: "Сурагч",
+    },
+    title: "Урилгын кодууд",
+  },
   roles: {
     noProfile: "Профайл хараахан байхгүй",
     schoolAdmin: "Сургуулийн админ",
     student: "Сурагч",
     teacher: "Багш",
+  },
+  students: {
+    actions: {
+      add: "Сурагч нэмэх",
+      alreadyInactive: "Аль хэдийн идэвхгүй",
+      importCsv: "CSV импортлох",
+      markInactive: "Идэвхгүй болгох",
+    },
+    addSection: {
+      description: "Хурдан нэмэлт эсвэл жижиг туршилтын жагсаалтад үүнийг ашиглана уу.",
+      title: "Нэг сурагч нэмэх",
+    },
+    description:
+      "Эхлээд сургуулийн сурагчдын жагсаалтыг бүрдүүлнэ үү. Ажилтнууд тэдгээрийг энд нэмээд урилгын код үүсгэсний дараа л сурагчид нэгдэх боломжтой.",
+    empty: {
+      description:
+        "Урилгын код үүсгэхээс өмнө нэг сурагчийг гараар нэмэх эсвэл CSV импортлоно уу.",
+      title: "Сурагч одоогоор алга",
+    },
+    errors: {
+      duplicateStudentNumber:
+        "Ийм сурагчийн дугаартай сурагч аль хэдийн байна.",
+      firstAndLastName: "Нэр болон овгийг хоёуланг нь оруулна уу.",
+      fullNameRequired: "Сурагчийн бүтэн нэр шаардлагатай.",
+      gradeRequired: "Анги шаардлагатай.",
+      loadFailed: "Сурагчдыг ачаалж чадсангүй: {error}",
+      staffOnlyAdd: "Зөвхөн сургуулийн админ болон багш нар сурагч нэмэх боломжтой.",
+    },
+    eyebrow: "Жагсаалтын удирдлага",
+    form: {
+      adding: "Нэмж байна...",
+      classGroup: "Ангийн бүлэг / homeroom",
+      fullName: "Бүтэн нэр",
+      grade: "Анги",
+      studentNumber: "Сурагчийн дугаар",
+      submit: "Сурагч нэмэх",
+    },
+    import: {
+      errors: {
+        csvEmpty: "CSV хоосон эсвэл толгой мөр байхгүй байна.",
+        csvQuote: "гэнэтийн хашилт агуулсан байна.",
+        csvUnclosedQuote: "хаагдаагүй хашилттай утга байна.",
+        chooseFile: "Импортлох CSV файл сонгоно уу.",
+        duplicatesExist:
+          "Нэг буюу хэд хэдэн сурагчийн дугаар аль хэдийн байгаа тул импорт зогслоо.",
+        missingFullNameHeader:
+          "Header row is missing required column: full_name.",
+        missingGradeHeader: "Header row is missing required column: grade.",
+        staffOnly:
+          "Зөвхөн сургуулийн админ болон багш нар сурагч импортлох боломжтой.",
+      },
+      fileLabel: "CSV файл",
+      importing: "Импортолж байна...",
+      result: {
+        imported: "{count} сурагч импортлогдлоо.",
+        noStudents: "Сурагч импортлогдоогүй.",
+        skipped: "{count} мөр алгасагдсан:",
+        more: "...мөн {count} мөр нэмж.",
+      },
+      sampleCsv:
+        "full_name,grade,class_group,student_number\nAvery Stone,7,7A,S-1001\nMina Patel,8,8B,S-1002",
+      sampleTitle: "CSV загвар формат",
+      submit: "CSV импортлох",
+    },
+    importSection: {
+      description:
+        "Том жагсаалт бэлдэх үед нэг мөрөнд нэг сурагчтай CSV файл оруулна уу.",
+      title: "Сурагчид импортлох",
+    },
+    roster: {
+      title: "Жагсаалт",
+    },
+    success: {
+      added: "Сурагч нэмэгдлээ.",
+    },
+    table: {
+      actions: "Үйлдэл",
+      classGroup: "Ангийн бүлэг",
+      created: "Үүсгэсэн",
+      fullName: "Бүтэн нэр",
+      grade: "Анги",
+      status: "Төлөв",
+      studentNumber: "Сурагчийн дугаар",
+    },
+    title: "Сурагчид",
   },
   workflow: {
     addStudents: "Сурагч нэмэх",

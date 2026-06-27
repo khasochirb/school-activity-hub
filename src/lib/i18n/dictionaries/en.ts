@@ -95,6 +95,17 @@ export const en = {
     save: "Save",
     saving: "Saving...",
   },
+  status: {
+    active: "Active",
+    approved: "Approved",
+    archived: "Archived",
+    canceled: "Canceled",
+    inactive: "Inactive",
+    pending: "Pending",
+    redeemed: "Redeemed",
+    rejected: "Rejected",
+    revoked: "Revoked",
+  },
   dashboard: {
     browseEvents: "Browse events",
     checkins: {
@@ -311,11 +322,211 @@ export const en = {
     staff: "Staff",
     students: "Students",
   },
+  invites: {
+    actions: {
+      alreadyUsedOrInactive: "Already used or inactive",
+      bulkGenerateShort: "Bulk generate",
+      generate: "Generate invite code",
+      generating: "Generating...",
+      revoke: "Revoke code",
+      revoking: "Revoking...",
+    },
+    bulk: {
+      allUnlinked: {
+        description: "Every active roster student who has not registered yet.",
+        label: "All unlinked active students",
+      },
+      copyTextList: "Copy text list",
+      description:
+        "Generate one-time codes for multiple active students who have not linked a student account yet.",
+      downloadCsv: "Download CSV",
+      errors: {
+        allAlreadyHaveCodes:
+          "No invite codes were generated because every selected student already has an active invite code.",
+        chooseFilter: "Choose a grade, class group, or both.",
+        chooseStudent: "Choose at least one student.",
+        noMatches: "No eligible active students matched that selection.",
+      },
+      filters: {
+        anyClassGroup: "Any class group",
+        anyGrade: "Any grade",
+        classGroup: "Class group",
+        grade: "Grade",
+      },
+      filtered: {
+        description: "Limit by grade, class group, or both.",
+        label: "By grade or class group",
+      },
+      generatedTitle: "Generated invite codes",
+      noEligibleStudents:
+        "No active unlinked students are available for bulk invite codes.",
+      scope: "Generation scope",
+      selectStudents: "Select students",
+      selectStudentsDescription:
+        "Only active students without linked profiles are listed.",
+      selected: {
+        description: "Choose individual unlinked active students.",
+        label: "Selected students",
+      },
+      submit: "Bulk generate invite codes",
+      success: {
+        generated:
+          "Generated {count} invite code(s). Copy or download them now; they will not be shown again.",
+        skippedExisting:
+          "{count} selected student(s) already had an active invite code and were skipped.",
+      },
+      title: "Bulk generate invite codes",
+    },
+    description:
+      "Create one-time codes that let rostered students activate their own accounts.",
+    empty: {
+      description:
+        "Generate a code when an active roster student is ready to create their account.",
+      title: "No invite codes yet",
+    },
+    errors: {
+      codesLoadFailed: "Invite codes could not be loaded: {error}",
+      createFailed: "Invite code could not be created: {error}",
+      generateFailed: "Invite codes could not be generated: {error}",
+      staffOnly: "Only school admins and teachers can create invite codes.",
+      studentAlreadyHasActiveCode:
+        "This student already has an active invite code.",
+      studentInactiveOrWrongSchool:
+        "That student is not active or is not in your school.",
+      studentsLoadFailed: "Students could not be loaded: {error}",
+      studentRequired: "Choose an active student.",
+    },
+    eyebrow: "Verified registration",
+    fallback: {
+      rosterStudent: "Roster student",
+    },
+    history: {
+      title: "Invite code history",
+    },
+    single: {
+      chooseStudent: "Choose a student",
+      description: "Generate a single code for an active student.",
+      gradeOption: "grade {grade}",
+      noStudents: "Add an active student before creating invite codes.",
+      plainCodeLabel: "Plain invite code",
+      studentLabel: "Active student",
+      title: "Create one invite code",
+    },
+    success: {
+      created: "Invite code created. Copy it now; it will not be shown again.",
+    },
+    table: {
+      actions: "Actions",
+      created: "Created",
+      expires: "Expires",
+      redeemed: "Redeemed",
+      status: "Status",
+      student: "Student",
+    },
+    title: "Invite Codes",
+  },
   roles: {
     noProfile: "No profile yet",
     schoolAdmin: "School Admin",
     student: "Student",
     teacher: "Teacher",
+  },
+  students: {
+    actions: {
+      add: "Add student",
+      alreadyInactive: "Already inactive",
+      importCsv: "Import CSV",
+      markInactive: "Mark as inactive",
+    },
+    addSection: {
+      description: "Use this for quick additions or small pilot rosters.",
+      title: "Add one student",
+    },
+    description:
+      "Build the school roster first. Students can only join after staff add them here and generate an invite code.",
+    empty: {
+      description:
+        "Add one student manually or import a CSV before generating invite codes.",
+      title: "No students yet",
+    },
+    errors: {
+      addFailed: "Student could not be added: {error}",
+      duplicateStudentNumber:
+        "A student with that student number already exists.",
+      firstAndLastName: "Enter both a first and last name.",
+      fullNameRequired: "Student full name is required.",
+      gradeRequired: "Grade is required.",
+      loadFailed: "Students could not be loaded: {error}",
+      staffOnlyAdd: "Only school admins and teachers can add students.",
+    },
+    eyebrow: "Roster management",
+    form: {
+      adding: "Adding...",
+      classGroup: "Class group / homeroom",
+      fullName: "Full name",
+      grade: "Grade",
+      studentNumber: "Student number",
+      submit: "Add student",
+    },
+    import: {
+      errors: {
+        csvEmpty: "CSV is empty or missing a header row.",
+        csvQuote: "contains an unexpected quote.",
+        csvUnclosedQuote: "has an unclosed quoted value.",
+        chooseFile: "Choose a CSV file to import.",
+        duplicateInCsv:
+          "Row {row}: duplicate student_number in this CSV ({studentNumber}).",
+        duplicateInSchool:
+          "Row {row}: duplicate student_number already exists in this school ({studentNumber}).",
+        duplicatesExist:
+          "Import stopped because one or more student numbers already exist.",
+        fullNameFirstLast:
+          "Row {row}: full_name must include first and last name.",
+        importFailed: "Students could not be imported: {error}",
+        missingFullName: "Row {row}: missing full_name.",
+        missingFullNameHeader:
+          "Header row is missing required column: full_name.",
+        missingGrade: "Row {row}: missing grade.",
+        missingGradeHeader: "Header row is missing required column: grade.",
+        rowEmpty: "Row {row}: row is empty.",
+        rowPrefix: "Row {row}: {error}",
+        staffOnly:
+          "Only school admins and teachers can import students.",
+      },
+      fileLabel: "CSV file",
+      importing: "Importing...",
+      result: {
+        imported: "Imported {count} student(s).",
+        noStudents: "No students were imported.",
+        skipped: "Skipped {count} row(s):",
+        more: "...and {count} more.",
+      },
+      sampleCsv:
+        "full_name,grade,class_group,student_number\nAvery Stone,7,7A,S-1001\nMina Patel,8,8B,S-1002",
+      sampleTitle: "Sample CSV format",
+      submit: "Import CSV",
+    },
+    importSection: {
+      description:
+        "Upload a CSV with one row per student when you are preparing a larger roster.",
+      title: "Import students",
+    },
+    roster: {
+      title: "Roster",
+    },
+    success: {
+      added: "Student added.",
+    },
+    table: {
+      actions: "Actions",
+      classGroup: "Class group",
+      created: "Created",
+      fullName: "Full name",
+      grade: "Grade",
+      status: "Status",
+      studentNumber: "Student number",
+    },
+    title: "Students",
   },
   workflow: {
     addStudents: "Add students",

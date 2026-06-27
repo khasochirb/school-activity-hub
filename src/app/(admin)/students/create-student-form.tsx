@@ -9,13 +9,26 @@ const initialState: CreateStudentState = {
   success: false,
 };
 
-export function CreateStudentForm() {
+type CreateStudentFormLabels = {
+  adding: string;
+  classGroup: string;
+  fullName: string;
+  grade: string;
+  studentNumber: string;
+  submit: string;
+};
+
+export function CreateStudentForm({
+  labels,
+}: {
+  labels: CreateStudentFormLabels;
+}) {
   const [state, formAction] = useActionState(createStudent, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Full name
+        {labels.fullName}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="full_name"
@@ -23,7 +36,7 @@ export function CreateStudentForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Grade
+        {labels.grade}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="grade"
@@ -31,14 +44,14 @@ export function CreateStudentForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Class group / homeroom
+        {labels.classGroup}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="class_group"
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Student number
+        {labels.studentNumber}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="student_number"
@@ -57,13 +70,22 @@ export function CreateStudentForm() {
         </p>
       ) : null}
       <div className="sm:col-span-2">
-        <SubmitButton />
+        <SubmitButton
+          addingLabel={labels.adding}
+          submitLabel={labels.submit}
+        />
       </div>
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  addingLabel,
+  submitLabel,
+}: {
+  addingLabel: string;
+  submitLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -72,7 +94,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Adding..." : "Add student"}
+      {pending ? addingLabel : submitLabel}
     </button>
   );
 }

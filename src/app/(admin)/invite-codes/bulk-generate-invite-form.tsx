@@ -25,9 +25,33 @@ const initialState: BulkGenerateInviteState = {
   text: "",
 };
 
+type BulkGenerateInviteFormLabels = {
+  allUnlinkedDescription: string;
+  allUnlinkedLabel: string;
+  anyClassGroup: string;
+  anyGrade: string;
+  bulkSubmit: string;
+  classGroup: string;
+  copyTextList: string;
+  downloadCsv: string;
+  filteredDescription: string;
+  filteredLabel: string;
+  generatedTitle: string;
+  generating: string;
+  grade: string;
+  noEligibleStudents: string;
+  scope: string;
+  selectedDescription: string;
+  selectedLabel: string;
+  selectStudents: string;
+  selectStudentsDescription: string;
+};
+
 export function BulkGenerateInviteForm({
+  labels,
   students,
 }: {
+  labels: BulkGenerateInviteFormLabels;
   students: ActiveStudent[];
 }) {
   const [state, formAction] = useActionState(
@@ -51,28 +75,28 @@ export function BulkGenerateInviteForm({
       <form action={formAction} className="flex flex-col gap-4">
         <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-semibold text-slate-800">
-            Generation scope
+            {labels.scope}
           </legend>
           <RadioOption
             checked={mode === "all_unlinked"}
-            description="Every active roster student who has not registered yet."
-            label="All unlinked active students"
+            description={labels.allUnlinkedDescription}
+            label={labels.allUnlinkedLabel}
             name="bulk_mode"
             onChange={() => setMode("all_unlinked")}
             value="all_unlinked"
           />
           <RadioOption
             checked={mode === "filtered"}
-            description="Limit by grade, class group, or both."
-            label="By grade or class group"
+            description={labels.filteredDescription}
+            label={labels.filteredLabel}
             name="bulk_mode"
             onChange={() => setMode("filtered")}
             value="filtered"
           />
           <RadioOption
             checked={mode === "selected"}
-            description="Choose individual unlinked active students."
-            label="Selected students"
+            description={labels.selectedDescription}
+            label={labels.selectedLabel}
             name="bulk_mode"
             onChange={() => setMode("selected")}
             value="selected"
@@ -81,13 +105,13 @@ export function BulkGenerateInviteForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-            Grade
+            {labels.grade}
             <select
               className="h-11 rounded-md border bg-white px-3 text-base outline-none transition disabled:bg-slate-100"
               disabled={mode !== "filtered" || !gradeOptions.length}
               name="grade"
             >
-              <option value="">Any grade</option>
+              <option value="">{labels.anyGrade}</option>
               {gradeOptions.map((grade) => (
                 <option key={grade} value={grade}>
                   {grade}
@@ -96,13 +120,13 @@ export function BulkGenerateInviteForm({
             </select>
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-            Class group
+            {labels.classGroup}
             <select
               className="h-11 rounded-md border bg-white px-3 text-base outline-none transition disabled:bg-slate-100"
               disabled={mode !== "filtered" || !classGroupOptions.length}
               name="class_group"
             >
-              <option value="">Any class group</option>
+              <option value="">{labels.anyClassGroup}</option>
               {classGroupOptions.map((classGroup) => (
                 <option key={classGroup} value={classGroup}>
                   {classGroup}
@@ -115,10 +139,10 @@ export function BulkGenerateInviteForm({
         <div className="rounded-md border border-slate-200">
           <div className="border-b border-slate-200 p-4">
             <p className="text-sm font-semibold text-slate-800">
-              Select students
+              {labels.selectStudents}
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              Only active students without linked profiles are listed.
+              {labels.selectStudentsDescription}
             </p>
           </div>
           {hasEligibleStudents ? (
@@ -140,7 +164,7 @@ export function BulkGenerateInviteForm({
                       {studentName(student)}
                     </span>
                     <span className="mt-1 block text-slate-600">
-                      Grade {student.grade_level || "-"}
+                      {labels.grade} {student.grade_level || "-"}
                       {student.homeroom ? `, ${student.homeroom}` : ""}
                       {student.student_number
                         ? `, ${student.student_number}`
@@ -152,7 +176,7 @@ export function BulkGenerateInviteForm({
             </div>
           ) : (
             <p className="p-4 text-sm text-slate-600">
-              No active unlinked students are available for bulk invite codes.
+              {labels.noEligibleStudents}
             </p>
           )}
         </div>
@@ -170,11 +194,23 @@ export function BulkGenerateInviteForm({
           </p>
         ) : null}
 
-        <SubmitButton disabled={!hasEligibleStudents} />
+        <SubmitButton
+          disabled={!hasEligibleStudents}
+          generatingLabel={labels.generating}
+          submitLabel={labels.bulkSubmit}
+        />
       </form>
 
       {state.codes.length ? (
-        <GeneratedCodesPanel csv={state.csv} text={state.text} />
+        <GeneratedCodesPanel
+          csv={state.csv}
+          labels={{
+            copyTextList: labels.copyTextList,
+            downloadCsv: labels.downloadCsv,
+            generatedTitle: labels.generatedTitle,
+          }}
+          text={state.text}
+        />
       ) : null}
     </div>
   );
@@ -213,7 +249,15 @@ function RadioOption({
   );
 }
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+function SubmitButton({
+  disabled,
+  generatingLabel,
+  submitLabel,
+}: {
+  disabled: boolean;
+  generatingLabel: string;
+  submitLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -222,16 +266,28 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
       disabled={disabled || pending}
       type="submit"
     >
-      {pending ? "Generating..." : "Bulk generate invite codes"}
+      {pending ? generatingLabel : submitLabel}
     </button>
   );
 }
 
-function GeneratedCodesPanel({ csv, text }: { csv: string; text: string }) {
+function GeneratedCodesPanel({
+  csv,
+  labels,
+  text,
+}: {
+  csv: string;
+  labels: {
+    copyTextList: string;
+    downloadCsv: string;
+    generatedTitle: string;
+  };
+  text: string;
+}) {
   return (
     <div className="notice-box notice-success">
       <p className="text-sm font-bold text-emerald-900">
-        Generated invite codes
+        {labels.generatedTitle}
       </p>
       <textarea
         className="mt-3 min-h-40 w-full rounded-md border border-emerald-200 bg-white p-3 font-mono text-sm text-emerald-950"
@@ -244,14 +300,14 @@ function GeneratedCodesPanel({ csv, text }: { csv: string; text: string }) {
           onClick={() => void navigator.clipboard.writeText(text)}
           type="button"
         >
-          Copy text list
+          {labels.copyTextList}
         </button>
         <button
           className="btn btn-secondary border-emerald-300 text-emerald-900 hover:bg-emerald-100"
           onClick={() => downloadCsv(csv)}
           type="button"
         >
-          Download CSV
+          {labels.downloadCsv}
         </button>
       </div>
     </div>

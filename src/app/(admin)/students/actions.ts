@@ -2,8 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
+
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
 
 type StaffProfile = {
   id: string;
@@ -39,11 +50,12 @@ export async function createStudent(
   _state: CreateStudentState,
   formData: FormData,
 ): Promise<CreateStudentState> {
+  const { t, tf } = await getServerI18n();
   const profile = await getCurrentStaffProfile();
 
   if (!profile) {
     return {
-      message: "Only school admins and teachers can add students.",
+      message: t("students.errors.staffOnlyAdd"),
       success: false,
     };
   }
@@ -55,18 +67,18 @@ export async function createStudent(
   const nameParts = fullName.split(/\s+/).filter(Boolean);
 
   if (!fullName) {
-    return { message: "Student full name is required.", success: false };
+    return { message: t("students.errors.fullNameRequired"), success: false };
   }
 
   if (nameParts.length < 2) {
     return {
-      message: "Enter both a first and last name.",
+      message: t("students.errors.firstAndLastName"),
       success: false,
     };
   }
 
   if (!grade) {
-    return { message: "Grade is required.", success: false };
+    return { message: t("students.errors.gradeRequired"), success: false };
   }
 
   const [firstName, ...lastNameParts] = nameParts;
@@ -88,26 +100,27 @@ export async function createStudent(
     return {
       message:
         error.code === "23505"
-          ? "A student with that student number already exists."
-          : `Student could not be added: ${error.message}`,
+          ? t("students.errors.duplicateStudentNumber")
+          : tf("students.errors.addFailed", { error: error.message }),
       success: false,
     };
   }
 
   revalidatePath("/students");
 
-  return { message: "Student added.", success: true };
+  return { message: t("students.success.added"), success: true };
 }
 
 export async function importStudentsFromCsv(
   _state: ImportStudentsState,
   formData: FormData,
 ): Promise<ImportStudentsState> {
+  const { t, tf } = await getServerI18n();
   const profile = await getCurrentStaffProfile();
 
   if (!profile) {
     return {
-      message: "Only school admins and teachers can import students.",
+      message: t("students.import.errors.staffOnly"),
       success: false,
     };
   }
@@ -115,13 +128,13 @@ export async function importStudentsFromCsv(
   const file = formData.get("csv_file");
 
   if (!(file instanceof File) || file.size === 0) {
-    return { message: "Choose a CSV file to import.", success: false };
+    return { message: t("students.import.errors.chooseFile"), success: false };
   }
 
-  const parsedCsv = parseCsv(await file.text());
+  const parsedCsv = parseCsv(await file.text(), { t, tf });
 
   if (!parsedCsv.headers.length) {
-    return { message: "CSV is empty or missing a header row.", success: false };
+    return { message: t("students.import.errors.csvEmpty"), success: false };
   }
 
   const headerMap = getHeaderMap(parsedCsv.headers);
@@ -132,27 +145,31 @@ export async function importStudentsFromCsv(
   const importErrors = [...parsedCsv.errors];
 
   if (fullNameIndex === undefined) {
-    importErrors.push("Header row is missing required column: full_name.");
+    importErrors.push(t("students.import.errors.missingFullNameHeader"));
   }
 
   if (gradeIndex === undefined) {
-    importErrors.push("Header row is missing required column: grade.");
+    importErrors.push(t("students.import.errors.missingGradeHeader"));
   }
 
   if (fullNameIndex === undefined || gradeIndex === undefined) {
     return {
-      message: formatImportMessage(0, importErrors),
+      message: formatImportMessage(0, importErrors, tf),
       success: false,
     };
   }
 
   const parsedRows = parsedCsv.rows.map((row) =>
-    parseImportRow(row, {
-      classGroupIndex,
-      fullNameIndex,
-      gradeIndex,
-      studentNumberIndex,
-    }),
+    parseImportRow(
+      row,
+      {
+        classGroupIndex,
+        fullNameIndex,
+        gradeIndex,
+        studentNumberIndex,
+      },
+      tf,
+    ),
   );
   const studentNumbers = parsedRows
     .filter((row) => row.row)
@@ -172,13 +189,19 @@ export async function importStudentsFromCsv(
     if (row?.studentNumber) {
       if (duplicateCsvNumbers.has(row.studentNumber)) {
         rowErrors.push(
-          `Row ${row.rowNumber}: duplicate student_number in this CSV (${row.studentNumber}).`,
+          tf("students.import.errors.duplicateInCsv", {
+            row: row.rowNumber,
+            studentNumber: row.studentNumber,
+          }),
         );
       }
 
       if (existingStudentNumbers.has(row.studentNumber)) {
         rowErrors.push(
-          `Row ${row.rowNumber}: duplicate student_number already exists in this school (${row.studentNumber}).`,
+          tf("students.import.errors.duplicateInSchool", {
+            row: row.rowNumber,
+            studentNumber: row.studentNumber,
+          }),
         );
       }
     }
@@ -195,7 +218,7 @@ export async function importStudentsFromCsv(
 
   if (!validRows.length) {
     return {
-      message: formatImportMessage(0, importErrors),
+      message: formatImportMessage(0, importErrors, tf),
       success: false,
     };
   }
@@ -222,8 +245,8 @@ export async function importStudentsFromCsv(
     return {
       message:
         error.code === "23505"
-          ? "Import stopped because one or more student numbers already exist."
-          : `Students could not be imported: ${error.message}`,
+          ? t("students.import.errors.duplicatesExist")
+          : tf("students.import.errors.importFailed", { error: error.message }),
       success: false,
     };
   }
@@ -231,7 +254,7 @@ export async function importStudentsFromCsv(
   revalidatePath("/students");
 
   return {
-    message: formatImportMessage(validRows.length, importErrors),
+    message: formatImportMessage(validRows.length, importErrors, tf),
     success: true,
   };
 }
@@ -317,7 +340,17 @@ async function getExistingStudentNumbers(
   );
 }
 
-function parseCsv(text: string) {
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
+}
+
+function parseCsv(text: string, i18n: ServerI18n) {
   const normalizedText = text
     .replace(/^\uFEFF/, "")
     .replace(/\r\n/g, "\n")
@@ -333,10 +366,15 @@ function parseCsv(text: string) {
 
   lines.forEach((line, index) => {
     const rowNumber = index + 1;
-    const parsedLine = parseCsvLine(line);
+    const parsedLine = parseCsvLine(line, i18n.t);
 
     if (parsedLine.error) {
-      errors.push(`Row ${rowNumber}: ${parsedLine.error}`);
+      errors.push(
+        i18n.tf("students.import.errors.rowPrefix", {
+          error: parsedLine.error,
+          row: rowNumber,
+        }),
+      );
       return;
     }
 
@@ -350,7 +388,7 @@ function parseCsv(text: string) {
   };
 }
 
-function parseCsvLine(line: string) {
+function parseCsvLine(line: string, t: (key: string) => string) {
   const values: string[] = [];
   let field = "";
   let inQuotes = false;
@@ -368,7 +406,7 @@ function parseCsvLine(line: string) {
         inQuotes = true;
       } else {
         return {
-          error: "contains an unexpected quote.",
+          error: t("students.import.errors.csvQuote"),
           values,
         };
       }
@@ -382,7 +420,7 @@ function parseCsvLine(line: string) {
 
   if (inQuotes) {
     return {
-      error: "has an unclosed quoted value.",
+      error: t("students.import.errors.csvUnclosedQuote"),
       values,
     };
   }
@@ -414,12 +452,15 @@ function parseImportRow(
     gradeIndex: number;
     studentNumberIndex: number | undefined;
   },
+  tf: (key: string, values: Record<string, string | number>) => string,
 ) {
   const rowValues = record.values.map((value) => value.trim());
 
   if (!rowValues.some(Boolean)) {
     return {
-      errors: [`Row ${record.rowNumber}: row is empty.`],
+      errors: [
+        tf("students.import.errors.rowEmpty", { row: record.rowNumber }),
+      ],
       row: null,
     };
   }
@@ -432,16 +473,26 @@ function parseImportRow(
   const nameParts = fullName.split(/\s+/).filter(Boolean);
 
   if (!fullName) {
-    errors.push(`Row ${record.rowNumber}: missing full_name.`);
+    errors.push(
+      tf("students.import.errors.missingFullName", {
+        row: record.rowNumber,
+      }),
+    );
   }
 
   if (!grade) {
-    errors.push(`Row ${record.rowNumber}: missing grade.`);
+    errors.push(
+      tf("students.import.errors.missingGrade", {
+        row: record.rowNumber,
+      }),
+    );
   }
 
   if (fullName && nameParts.length < 2) {
     errors.push(
-      `Row ${record.rowNumber}: full_name must include first and last name.`,
+      tf("students.import.errors.fullNameFirstLast", {
+        row: record.rowNumber,
+      }),
     );
   }
 
@@ -491,27 +542,35 @@ function normalizeHeader(header: string) {
   return header.trim().toLowerCase().replace(/\s+/g, "_");
 }
 
-function formatImportMessage(importedCount: number, errors: string[]) {
+function formatImportMessage(
+  importedCount: number,
+  errors: string[],
+  tf: (key: string, values: Record<string, string | number>) => string,
+) {
   const lines: string[] = [];
 
   if (importedCount > 0) {
     lines.push(
-      `Imported ${importedCount} student${importedCount === 1 ? "" : "s"}.`,
+      tf("students.import.result.imported", { count: importedCount }),
     );
   } else {
-    lines.push("No students were imported.");
+    lines.push(tf("students.import.result.noStudents", { count: 0 }));
   }
 
   if (errors.length) {
     const visibleErrors = errors.slice(0, 10);
 
     lines.push(
-      `Skipped ${errors.length} row${errors.length === 1 ? "" : "s"}:`,
+      tf("students.import.result.skipped", { count: errors.length }),
       ...visibleErrors,
     );
 
     if (errors.length > visibleErrors.length) {
-      lines.push(`...and ${errors.length - visibleErrors.length} more.`);
+      lines.push(
+        tf("students.import.result.more", {
+          count: errors.length - visibleErrors.length,
+        }),
+      );
     }
   }
 
