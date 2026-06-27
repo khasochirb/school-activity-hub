@@ -5,6 +5,7 @@ import {
   ACTIVITY_CATEGORIES,
   parseActivityCategory,
 } from "@/lib/activity-categories";
+import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -99,17 +100,21 @@ export default async function EventsPage({
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("events.query.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
+  const { data: profile } = await timeServer("events.query.profile", () =>
+    supabase
+      .from("profiles")
+      .select("id, school_id, role")
+      .eq("id", user.id)
+      .maybeSingle<Profile>(),
+  );
 
   if (!profile) {
     redirect("/dashboard");
@@ -923,9 +928,10 @@ async function getFilteredEvents(
     query = query.eq("category", selectedCategory);
   }
 
-  const { data: events, error } = await query
-    .order("starts_at", { ascending: true })
-    .returns<Event[]>();
+  const { data: events, error } = await timeServer(
+    "events.query.filtered-events",
+    () => query.order("starts_at", { ascending: true }).returns<Event[]>(),
+  );
 
   return { error, events: events ?? [] };
 }
@@ -938,13 +944,15 @@ async function getCurrentStudent(
     return null;
   }
 
-  const { data: student } = await admin
-    .from("student_rosters")
-    .select("id")
-    .eq("profile_id", profile.id)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .maybeSingle<StudentRoster>();
+  const { data: student } = await timeServer("events.query.current-student", () =>
+    admin
+      .from("student_rosters")
+      .select("id")
+      .eq("profile_id", profile.id)
+      .eq("school_id", profile.school_id)
+      .eq("status", "active")
+      .maybeSingle<StudentRoster>(),
+  );
 
   return student;
 }
@@ -953,13 +961,17 @@ async function getSchoolClubOptions(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { data: clubs } = await admin
-    .from("clubs")
-    .select("id, name")
-    .eq("school_id", schoolId)
-    .eq("status", "active")
-    .order("name", { ascending: true })
-    .returns<ClubOption[]>();
+  const { data: clubs } = await timeServer(
+    "events.query.school-club-options",
+    () =>
+      admin
+        .from("clubs")
+        .select("id, name")
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .order("name", { ascending: true })
+        .returns<ClubOption[]>(),
+  );
 
   return clubs ?? [];
 }
@@ -968,22 +980,26 @@ async function getConnectedSchoolIds(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { data: connections } = await admin
-    .from("school_connections")
-    .select("requester_school_id, receiver_school_id")
-    .eq("status", "approved")
-    .or(
-      [
-        `requester_school_id.eq.${schoolId}`,
-        `receiver_school_id.eq.${schoolId}`,
-      ].join(","),
-    )
-    .returns<
-      Array<{
-        requester_school_id: string;
-        receiver_school_id: string;
-      }>
-    >();
+  const { data: connections } = await timeServer(
+    "events.query.connected-school-ids",
+    () =>
+      admin
+        .from("school_connections")
+        .select("requester_school_id, receiver_school_id")
+        .eq("status", "approved")
+        .or(
+          [
+            `requester_school_id.eq.${schoolId}`,
+            `receiver_school_id.eq.${schoolId}`,
+          ].join(","),
+        )
+        .returns<
+          Array<{
+            requester_school_id: string;
+            receiver_school_id: string;
+          }>
+        >(),
+  );
 
   return (connections ?? []).map((connection) =>
     connection.requester_school_id === schoolId
@@ -996,11 +1012,15 @@ async function getSharedEventIdsForSchool(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { data: shares } = await admin
-    .from("event_school_shares")
-    .select("event_id")
-    .eq("school_id", schoolId)
-    .returns<Array<{ event_id: string }>>();
+  const { data: shares } = await timeServer(
+    "events.query.shared-event-ids",
+    () =>
+      admin
+        .from("event_school_shares")
+        .select("event_id")
+        .eq("school_id", schoolId)
+        .returns<Array<{ event_id: string }>>(),
+  );
 
   return (shares ?? []).map((share) => share.event_id);
 }
@@ -1010,12 +1030,14 @@ async function getClubsById(
   schoolId: string,
   clubIds: string[],
 ) {
-  const { data: clubs } = await admin
-    .from("clubs")
-    .select("id, name")
-    .eq("school_id", schoolId)
-    .in("id", clubIds)
-    .returns<ClubOption[]>();
+  const { data: clubs } = await timeServer("events.query.clubs-by-id", () =>
+    admin
+      .from("clubs")
+      .select("id, name")
+      .eq("school_id", schoolId)
+      .in("id", clubIds)
+      .returns<ClubOption[]>(),
+  );
 
   return clubs ?? [];
 }
@@ -1024,11 +1046,13 @@ async function getSchoolsById(
   admin: ReturnType<typeof createAdminClient>,
   schoolIds: string[],
 ) {
-  const { data: schools } = await admin
-    .from("schools")
-    .select("id, name")
-    .in("id", schoolIds)
-    .returns<SchoolOption[]>();
+  const { data: schools } = await timeServer("events.query.schools-by-id", () =>
+    admin
+      .from("schools")
+      .select("id, name")
+      .in("id", schoolIds)
+      .returns<SchoolOption[]>(),
+  );
 
   return schools ?? [];
 }
@@ -1037,11 +1061,13 @@ async function getEventShares(
   admin: ReturnType<typeof createAdminClient>,
   eventIds: string[],
 ) {
-  const { data: shares } = await admin
-    .from("event_school_shares")
-    .select("event_id, school_id")
-    .in("event_id", eventIds)
-    .returns<EventShare[]>();
+  const { data: shares } = await timeServer("events.query.event-shares", () =>
+    admin
+      .from("event_school_shares")
+      .select("event_id, school_id")
+      .in("event_id", eventIds)
+      .returns<EventShare[]>(),
+  );
 
   return shares ?? [];
 }
@@ -1055,14 +1081,18 @@ async function getLeaderClubOptions(
     return [];
   }
 
-  const { data: memberships } = await admin
-    .from("club_memberships")
-    .select("clubs(id, name)")
-    .eq("school_id", profile.school_id)
-    .eq("student_roster_id", currentStudent.id)
-    .eq("role", "leader")
-    .eq("status", "active")
-    .returns<Array<{ clubs: ClubOption | null }>>();
+  const { data: memberships } = await timeServer(
+    "events.query.leader-club-options",
+    () =>
+      admin
+        .from("club_memberships")
+        .select("clubs(id, name)")
+        .eq("school_id", profile.school_id)
+        .eq("student_roster_id", currentStudent.id)
+        .eq("role", "leader")
+        .eq("status", "active")
+        .returns<Array<{ clubs: ClubOption | null }>>(),
+  );
 
   return (memberships ?? [])
     .map((membership) => membership.clubs)
@@ -1079,16 +1109,20 @@ async function getCurrentStudentRegisteredEventIds(
     return [];
   }
 
-  const { data: attendees } = await admin
-    .from("event_attendees")
-    .select("event_id, events!inner(id)")
-    .or(
-      `attendee_profile_id.eq.${profile.id},student_roster_id.eq.${currentStudent.id}`,
-    )
-    .in("status", ["registered", "attended"])
-    .eq("events.status", "approved")
-    .gte("events.starts_at", now)
-    .returns<Array<{ event_id: string }>>();
+  const { data: attendees } = await timeServer(
+    "events.query.current-student-registered-event-ids",
+    () =>
+      admin
+        .from("event_attendees")
+        .select("event_id, events!inner(id)")
+        .or(
+          `attendee_profile_id.eq.${profile.id},student_roster_id.eq.${currentStudent.id}`,
+        )
+        .in("status", ["registered", "attended"])
+        .eq("events.status", "approved")
+        .gte("events.starts_at", now)
+        .returns<Array<{ event_id: string }>>(),
+  );
 
   return (attendees ?? []).map((attendee) => attendee.event_id);
 }
@@ -1097,12 +1131,18 @@ async function getEventAttendees(
   admin: ReturnType<typeof createAdminClient>,
   eventIds: string[],
 ) {
-  const { data: attendees } = await admin
-    .from("event_attendees")
-    .select("event_id, student_roster_id, attendee_profile_id, permission_status, status")
-    .in("event_id", eventIds)
-    .in("status", ["registered", "attended"])
-    .returns<EventAttendee[]>();
+  const { data: attendees } = await timeServer(
+    "events.query.event-attendees",
+    () =>
+      admin
+        .from("event_attendees")
+        .select(
+          "event_id, student_roster_id, attendee_profile_id, permission_status, status",
+        )
+        .in("event_id", eventIds)
+        .in("status", ["registered", "attended"])
+        .returns<EventAttendee[]>(),
+  );
 
   return attendees ?? [];
 }

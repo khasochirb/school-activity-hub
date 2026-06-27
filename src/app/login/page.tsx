@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "./login-form";
@@ -8,10 +9,16 @@ export default async function LoginPage() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("login.query.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (user) {
-    redirect((await hasAnySchool()) ? "/dashboard" : "/setup");
+    redirect(
+      (await timeServer("login.query.has-any-school", () => hasAnySchool()))
+        ? "/dashboard"
+        : "/setup",
+    );
   }
 
   return (

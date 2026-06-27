@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import { revokeInviteCode } from "./actions";
 import { BulkGenerateInviteForm } from "./bulk-generate-invite-form";
@@ -34,17 +35,21 @@ export default async function InviteCodesPage() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("invite-codes.query.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<StaffProfile>();
+  const { data: profile } = await timeServer("invite-codes.query.profile", () =>
+    supabase
+      .from("profiles")
+      .select("school_id, role")
+      .eq("id", user.id)
+      .maybeSingle<StaffProfile>(),
+  );
 
   if (!profile || !["school_admin", "teacher"].includes(profile.role)) {
     redirect("/dashboard");
@@ -52,19 +57,27 @@ export default async function InviteCodesPage() {
 
   const [{ data: activeStudents, error: studentsError }, { data: inviteCodes, error: invitesError }] =
     await Promise.all([
-      supabase
-        .from("student_rosters")
-        .select("id, first_name, last_name, grade_level, homeroom, profile_id, student_number")
-        .eq("school_id", profile.school_id)
-        .eq("status", "active")
-        .order("last_name", { ascending: true })
-        .returns<ActiveStudent[]>(),
-      supabase
-        .from("invite_codes")
-        .select("id, student_roster_id, status, use_count, created_at, expires_at, redeemed_at")
-        .eq("school_id", profile.school_id)
-        .order("created_at", { ascending: false })
-        .returns<InviteCode[]>(),
+      timeServer("invite-codes.query.active-students", () =>
+        supabase
+          .from("student_rosters")
+          .select(
+            "id, first_name, last_name, grade_level, homeroom, profile_id, student_number",
+          )
+          .eq("school_id", profile.school_id)
+          .eq("status", "active")
+          .order("last_name", { ascending: true })
+          .returns<ActiveStudent[]>(),
+      ),
+      timeServer("invite-codes.query.invite-history", () =>
+        supabase
+          .from("invite_codes")
+          .select(
+            "id, student_roster_id, status, use_count, created_at, expires_at, redeemed_at",
+          )
+          .eq("school_id", profile.school_id)
+          .order("created_at", { ascending: false })
+          .returns<InviteCode[]>(),
+      ),
     ]);
 
   const studentMap = new Map(

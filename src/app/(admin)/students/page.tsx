@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import { markStudentInactive } from "./actions";
 import { CreateStudentForm } from "./create-student-form";
@@ -25,30 +26,38 @@ export default async function StudentsPage() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("students.query.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<StaffProfile>();
+  const { data: profile } = await timeServer("students.query.profile", () =>
+    supabase
+      .from("profiles")
+      .select("school_id, role")
+      .eq("id", user.id)
+      .maybeSingle<StaffProfile>(),
+  );
 
   if (!profile || !["school_admin", "teacher"].includes(profile.role)) {
     redirect("/dashboard");
   }
 
-  const { data: students, error } = await supabase
-    .from("student_rosters")
-    .select(
-      "id, first_name, last_name, grade_level, homeroom, student_number, status, created_at",
-    )
-    .eq("school_id", profile.school_id)
-    .order("created_at", { ascending: false })
-    .returns<Student[]>();
+  const { data: students, error } = await timeServer(
+    "students.query.roster-list",
+    () =>
+      supabase
+        .from("student_rosters")
+        .select(
+          "id, first_name, last_name, grade_level, homeroom, student_number, status, created_at",
+        )
+        .eq("school_id", profile.school_id)
+        .order("created_at", { ascending: false })
+        .returns<Student[]>(),
+  );
 
   return (
     <div className="flex flex-col gap-6">

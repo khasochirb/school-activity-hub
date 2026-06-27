@@ -5,6 +5,7 @@ import {
   ACTIVITY_CATEGORIES,
   parseActivityCategory,
 } from "@/lib/activity-categories";
+import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
   archiveClub,
@@ -57,17 +58,21 @@ export default async function ClubsPage({
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("clubs.query.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
+  const { data: profile } = await timeServer("clubs.query.profile", () =>
+    supabase
+      .from("profiles")
+      .select("id, school_id, role")
+      .eq("id", user.id)
+      .maybeSingle<Profile>(),
+  );
 
   if (!profile) {
     redirect("/dashboard");
@@ -85,32 +90,37 @@ export default async function ClubsPage({
     clubsQuery = clubsQuery.eq("category", selectedCategory);
   }
 
-  const { data: clubs, error: clubsError } = await clubsQuery
-    .order("name", { ascending: true })
-    .returns<Club[]>();
+  const { data: clubs, error: clubsError } = await timeServer(
+    "clubs.query.active-clubs",
+    () => clubsQuery.order("name", { ascending: true }).returns<Club[]>(),
+  );
 
   const { data: currentStudent } =
     profile.role === "student"
-      ? await supabase
-          .from("student_rosters")
-          .select("id")
-          .eq("school_id", profile.school_id)
-          .eq("profile_id", profile.id)
-          .eq("status", "active")
-          .maybeSingle<StudentRoster>()
+      ? await timeServer("clubs.query.current-student", () =>
+          supabase
+            .from("student_rosters")
+            .select("id")
+            .eq("school_id", profile.school_id)
+            .eq("profile_id", profile.id)
+            .eq("status", "active")
+            .maybeSingle<StudentRoster>(),
+        )
       : { data: null };
 
   const clubIds = (clubs ?? []).map((club) => club.id);
   const { data: memberships } = clubIds.length
-    ? await supabase
-        .from("club_memberships")
-        .select(
-          "id, club_id, student_roster_id, role, student_rosters(first_name, last_name)",
-        )
-        .eq("school_id", profile.school_id)
-        .eq("status", "active")
-        .in("club_id", clubIds)
-        .returns<ClubMembership[]>()
+    ? await timeServer("clubs.query.active-memberships", () =>
+        supabase
+          .from("club_memberships")
+          .select(
+            "id, club_id, student_roster_id, role, student_rosters(first_name, last_name)",
+          )
+          .eq("school_id", profile.school_id)
+          .eq("status", "active")
+          .in("club_id", clubIds)
+          .returns<ClubMembership[]>(),
+      )
     : { data: [] };
 
   const membershipsByClub = groupMembershipsByClub(memberships ?? []);

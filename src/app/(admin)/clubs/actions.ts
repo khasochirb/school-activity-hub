@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseActivityCategory } from "@/lib/activity-categories";
+import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -62,15 +63,17 @@ export async function createClub(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("clubs").insert({
-    school_id: profile.school_id,
-    created_by_profile_id: profile.id,
-    name,
-    slug,
-    description: description || null,
-    category: category || null,
-    status,
-  });
+  const { error } = await timeServer("clubs.action.create.insert", () =>
+    supabase.from("clubs").insert({
+      school_id: profile.school_id,
+      created_by_profile_id: profile.id,
+      name,
+      slug,
+      description: description || null,
+      category: category || null,
+      status,
+    }),
+  );
 
   if (error) {
     return {
@@ -101,12 +104,14 @@ export async function archiveClub(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase
-    .from("clubs")
-    .update({ status: "archived" })
-    .eq("id", clubId)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active");
+  await timeServer("clubs.action.archive.update", () =>
+    supabase
+      .from("clubs")
+      .update({ status: "archived" })
+      .eq("id", clubId)
+      .eq("school_id", profile.school_id)
+      .eq("status", "active"),
+  );
 
   revalidatePath("/clubs");
 }
@@ -131,41 +136,51 @@ export async function joinClub(formData: FormData) {
     return;
   }
 
-  const { data: club } = await admin
-    .from("clubs")
-    .select("id")
-    .eq("id", clubId)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .maybeSingle<{ id: string }>();
+  const { data: club } = await timeServer("clubs.action.join.club-lookup", () =>
+    admin
+      .from("clubs")
+      .select("id")
+      .eq("id", clubId)
+      .eq("school_id", profile.school_id)
+      .eq("status", "active")
+      .maybeSingle<{ id: string }>(),
+  );
 
   if (!club) {
     return;
   }
 
-  const { data: existingMembership } = await admin
-    .from("club_memberships")
-    .select("id")
-    .eq("club_id", club.id)
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
-    .maybeSingle<{ id: string }>();
+  const { data: existingMembership } = await timeServer(
+    "clubs.action.join.existing-membership",
+    () =>
+      admin
+        .from("club_memberships")
+        .select("id")
+        .eq("club_id", club.id)
+        .eq("student_roster_id", student.id)
+        .eq("school_id", profile.school_id)
+        .maybeSingle<{ id: string }>(),
+  );
 
   if (existingMembership) {
-    await admin
-      .from("club_memberships")
-      .update({ role: "member", status: "active" })
-      .eq("id", existingMembership.id)
-      .eq("school_id", profile.school_id);
+    await timeServer("clubs.action.join.reactivate-membership", () =>
+      admin
+        .from("club_memberships")
+        .update({ role: "member", status: "active" })
+        .eq("id", existingMembership.id)
+        .eq("school_id", profile.school_id),
+    );
   } else {
-    await admin.from("club_memberships").insert({
-      school_id: profile.school_id,
-      club_id: club.id,
-      student_roster_id: student.id,
-      role: "member",
-      status: "active",
-      created_by_profile_id: profile.id,
-    });
+    await timeServer("clubs.action.join.insert-membership", () =>
+      admin.from("club_memberships").insert({
+        school_id: profile.school_id,
+        club_id: club.id,
+        student_roster_id: student.id,
+        role: "member",
+        status: "active",
+        created_by_profile_id: profile.id,
+      }),
+    );
   }
 
   revalidatePath("/clubs");
@@ -191,13 +206,15 @@ export async function leaveClub(formData: FormData) {
     return;
   }
 
-  await admin
-    .from("club_memberships")
-    .update({ status: "inactive" })
-    .eq("club_id", clubId)
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active");
+  await timeServer("clubs.action.leave.update-membership", () =>
+    admin
+      .from("club_memberships")
+      .update({ status: "inactive" })
+      .eq("club_id", clubId)
+      .eq("student_roster_id", student.id)
+      .eq("school_id", profile.school_id)
+      .eq("status", "active"),
+  );
 
   revalidatePath("/clubs");
 }
@@ -216,12 +233,14 @@ export async function assignClubLeader(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase
-    .from("club_memberships")
-    .update({ role: "leader" })
-    .eq("id", membershipId)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active");
+  await timeServer("clubs.action.assign-leader.update", () =>
+    supabase
+      .from("club_memberships")
+      .update({ role: "leader" })
+      .eq("id", membershipId)
+      .eq("school_id", profile.school_id)
+      .eq("status", "active"),
+  );
 
   revalidatePath("/clubs");
 }
@@ -230,17 +249,23 @@ async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("clubs.action.current-profile.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
+  const { data: profile } = await timeServer(
+    "clubs.action.current-profile.profile",
+    () =>
+      supabase
+        .from("profiles")
+        .select("id, school_id, role")
+        .eq("id", user.id)
+        .maybeSingle<Profile>(),
+  );
 
   return profile;
 }
@@ -249,13 +274,17 @@ async function getCurrentStudentRoster(
   admin: ReturnType<typeof createAdminClient>,
   profile: Profile,
 ): Promise<StudentRoster | null> {
-  const { data: student } = await admin
-    .from("student_rosters")
-    .select("id")
-    .eq("profile_id", profile.id)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .maybeSingle<StudentRoster>();
+  const { data: student } = await timeServer(
+    "clubs.action.current-student",
+    () =>
+      admin
+        .from("student_rosters")
+        .select("id")
+        .eq("profile_id", profile.id)
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .maybeSingle<StudentRoster>(),
+  );
 
   return student;
 }

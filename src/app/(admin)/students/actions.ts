@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 
 type StaffProfile = {
@@ -70,16 +71,18 @@ export async function createStudent(
 
   const [firstName, ...lastNameParts] = nameParts;
   const supabase = await createClient();
-  const { error } = await supabase.from("student_rosters").insert({
-    school_id: profile.school_id,
-    first_name: firstName,
-    last_name: lastNameParts.join(" "),
-    grade_level: grade,
-    homeroom: classGroup || null,
-    student_number: studentNumber || null,
-    status: "active",
-    created_by_profile_id: profile.id,
-  });
+  const { error } = await timeServer("students.action.create-student.insert", () =>
+    supabase.from("student_rosters").insert({
+      school_id: profile.school_id,
+      first_name: firstName,
+      last_name: lastNameParts.join(" "),
+      grade_level: grade,
+      homeroom: classGroup || null,
+      student_number: studentNumber || null,
+      status: "active",
+      created_by_profile_id: profile.id,
+    }),
+  );
 
   if (error) {
     return {
@@ -198,17 +201,21 @@ export async function importStudentsFromCsv(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("student_rosters").insert(
-    validRows.map((row) => ({
-      school_id: profile.school_id,
-      first_name: row.firstName,
-      last_name: row.lastName,
-      grade_level: row.grade,
-      homeroom: row.classGroup || null,
-      student_number: row.studentNumber || null,
-      status: "active",
-      created_by_profile_id: profile.id,
-    })),
+  const { error } = await timeServer(
+    "students.action.import-students.insert",
+    () =>
+      supabase.from("student_rosters").insert(
+        validRows.map((row) => ({
+          school_id: profile.school_id,
+          first_name: row.firstName,
+          last_name: row.lastName,
+          grade_level: row.grade,
+          homeroom: row.classGroup || null,
+          student_number: row.studentNumber || null,
+          status: "active",
+          created_by_profile_id: profile.id,
+        })),
+      ),
   );
 
   if (error) {
@@ -243,11 +250,13 @@ export async function markStudentInactive(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase
-    .from("student_rosters")
-    .update({ status: "inactive" })
-    .eq("id", studentId)
-    .eq("school_id", profile.school_id);
+  await timeServer("students.action.mark-inactive.update", () =>
+    supabase
+      .from("student_rosters")
+      .update({ status: "inactive" })
+      .eq("id", studentId)
+      .eq("school_id", profile.school_id),
+  );
 
   revalidatePath("/students");
 }
@@ -256,17 +265,23 @@ async function getCurrentStaffProfile(): Promise<StaffProfile | null> {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("students.action.current-staff.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<StaffProfile>();
+  const { data: profile } = await timeServer(
+    "students.action.current-staff.profile",
+    () =>
+      supabase
+        .from("profiles")
+        .select("id, school_id, role")
+        .eq("id", user.id)
+        .maybeSingle<StaffProfile>(),
+  );
 
   if (!profile || !["school_admin", "teacher"].includes(profile.role)) {
     return null;
@@ -284,12 +299,16 @@ async function getExistingStudentNumbers(
   }
 
   const supabase = await createClient();
-  const { data: existingStudents } = await supabase
-    .from("student_rosters")
-    .select("student_number")
-    .eq("school_id", schoolId)
-    .in("student_number", studentNumbers)
-    .returns<Array<{ student_number: string | null }>>();
+  const { data: existingStudents } = await timeServer(
+    "students.action.import-students.existing-student-numbers",
+    () =>
+      supabase
+        .from("student_rosters")
+        .select("student_number")
+        .eq("school_id", schoolId)
+        .in("student_number", studentNumbers)
+        .returns<Array<{ student_number: string | null }>>(),
+  );
 
   return new Set(
     (existingStudents ?? [])

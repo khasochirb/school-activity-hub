@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,17 +38,21 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("dashboard.query.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
+  const { data: profile } = await timeServer("dashboard.query.profile", () =>
+    supabase
+      .from("profiles")
+      .select("id, school_id, role")
+      .eq("id", user.id)
+      .maybeSingle<Profile>(),
+  );
 
   if (!profile) {
     return (
@@ -390,13 +395,17 @@ async function getCurrentStudent(
   admin: ReturnType<typeof createAdminClient>,
   profile: Profile,
 ) {
-  const { data: student } = await admin
-    .from("student_rosters")
-    .select("id")
-    .eq("profile_id", profile.id)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .maybeSingle<StudentRoster>();
+  const { data: student } = await timeServer(
+    "dashboard.query.current-student",
+    () =>
+      admin
+        .from("student_rosters")
+        .select("id")
+        .eq("profile_id", profile.id)
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .maybeSingle<StudentRoster>(),
+  );
 
   return student;
 }
@@ -405,11 +414,15 @@ async function getActiveStudentCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { count } = await admin
-    .from("student_rosters")
-    .select("id", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .eq("status", "active");
+  const { count } = await timeServer(
+    "dashboard.query.active-student-count",
+    () =>
+      admin
+        .from("student_rosters")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("status", "active"),
+  );
 
   return count ?? 0;
 }
@@ -418,11 +431,13 @@ async function getActiveClubCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { count } = await admin
-    .from("clubs")
-    .select("id", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .eq("status", "active");
+  const { count } = await timeServer("dashboard.query.active-club-count", () =>
+    admin
+      .from("clubs")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", schoolId)
+      .eq("status", "active"),
+  );
 
   return count ?? 0;
 }
@@ -432,12 +447,16 @@ async function getUpcomingApprovedEventCount(
   schoolId: string,
   now: string,
 ) {
-  const { count } = await admin
-    .from("events")
-    .select("id", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .eq("status", "approved")
-    .gte("starts_at", now);
+  const { count } = await timeServer(
+    "dashboard.query.upcoming-approved-event-count",
+    () =>
+      admin
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("status", "approved")
+        .gte("starts_at", now),
+  );
 
   return count ?? 0;
 }
@@ -446,11 +465,15 @@ async function getTotalEventRegistrationCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { count } = await admin
-    .from("event_attendees")
-    .select("id", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .in("status", ["registered", "attended"]);
+  const { count } = await timeServer(
+    "dashboard.query.event-registration-count",
+    () =>
+      admin
+        .from("event_attendees")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .in("status", ["registered", "attended"]),
+  );
 
   return count ?? 0;
 }
@@ -459,11 +482,15 @@ async function getTotalAttendanceCheckinCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { count } = await admin
-    .from("attendance_checkins")
-    .select("id", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .eq("result", "success");
+  const { count } = await timeServer(
+    "dashboard.query.attendance-checkin-count",
+    () =>
+      admin
+        .from("attendance_checkins")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("result", "success"),
+  );
 
   return count ?? 0;
 }
@@ -473,13 +500,15 @@ async function getJoinedClubCount(
   schoolId: string,
   studentRosterId: string,
 ) {
-  const { count } = await admin
-    .from("club_memberships")
-    .select("id, clubs!inner(id)", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .eq("student_roster_id", studentRosterId)
-    .eq("status", "active")
-    .eq("clubs.status", "active");
+  const { count } = await timeServer("dashboard.query.joined-club-count", () =>
+    admin
+      .from("club_memberships")
+      .select("id, clubs!inner(id)", { count: "exact", head: true })
+      .eq("school_id", schoolId)
+      .eq("student_roster_id", studentRosterId)
+      .eq("status", "active")
+      .eq("clubs.status", "active"),
+  );
 
   return count ?? 0;
 }
@@ -490,14 +519,18 @@ async function getRegisteredUpcomingEventCount(
   studentRosterId: string,
   now: string,
 ) {
-  const { count } = await admin
-    .from("event_attendees")
-    .select("id, events!inner(id)", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .eq("student_roster_id", studentRosterId)
-    .eq("status", "registered")
-    .eq("events.status", "approved")
-    .gte("events.starts_at", now);
+  const { count } = await timeServer(
+    "dashboard.query.registered-upcoming-event-count",
+    () =>
+      admin
+        .from("event_attendees")
+        .select("id, events!inner(id)", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("student_roster_id", studentRosterId)
+        .eq("status", "registered")
+        .eq("events.status", "approved")
+        .gte("events.starts_at", now),
+  );
 
   return count ?? 0;
 }
@@ -507,12 +540,14 @@ async function getAttendedEventCount(
   schoolId: string,
   studentRosterId: string,
 ) {
-  const { count } = await admin
-    .from("event_attendees")
-    .select("id", { count: "exact", head: true })
-    .eq("school_id", schoolId)
-    .eq("student_roster_id", studentRosterId)
-    .eq("status", "attended");
+  const { count } = await timeServer("dashboard.query.attended-event-count", () =>
+    admin
+      .from("event_attendees")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", schoolId)
+      .eq("student_roster_id", studentRosterId)
+      .eq("status", "attended"),
+  );
 
   return count ?? 0;
 }
@@ -522,15 +557,19 @@ async function getUpcomingEvents(
   schoolId: string,
   now: string,
 ) {
-  const { data: events } = await admin
-    .from("events")
-    .select("id, title, location, starts_at, ends_at")
-    .eq("school_id", schoolId)
-    .eq("status", "approved")
-    .gte("starts_at", now)
-    .order("starts_at", { ascending: true })
-    .limit(5)
-    .returns<UpcomingEvent[]>();
+  const { data: events } = await timeServer(
+    "dashboard.query.upcoming-events-preview",
+    () =>
+      admin
+        .from("events")
+        .select("id, title, location, starts_at, ends_at")
+        .eq("school_id", schoolId)
+        .eq("status", "approved")
+        .gte("starts_at", now)
+        .order("starts_at", { ascending: true })
+        .limit(5)
+        .returns<UpcomingEvent[]>(),
+  );
 
   return events ?? [];
 }
@@ -539,16 +578,20 @@ async function getRecentCheckins(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const { data: checkins } = await admin
-    .from("attendance_checkins")
-    .select(
-      "id, checked_in_at, method, events(title), student_rosters(first_name, last_name)",
-    )
-    .eq("school_id", schoolId)
-    .eq("result", "success")
-    .order("checked_in_at", { ascending: false })
-    .limit(5)
-    .returns<RecentCheckin[]>();
+  const { data: checkins } = await timeServer(
+    "dashboard.query.recent-checkins-preview",
+    () =>
+      admin
+        .from("attendance_checkins")
+        .select(
+          "id, checked_in_at, method, events(title), student_rosters(first_name, last_name)",
+        )
+        .eq("school_id", schoolId)
+        .eq("result", "success")
+        .order("checked_in_at", { ascending: false })
+        .limit(5)
+        .returns<RecentCheckin[]>(),
+  );
 
   return checkins ?? [];
 }

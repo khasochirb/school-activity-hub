@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import { archiveAnnouncement } from "./actions";
 import { CreateAnnouncementForm } from "./create-announcement-form";
@@ -22,17 +23,21 @@ export default async function AnnouncementsPage() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("announcements.query.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
+  const { data: profile } = await timeServer("announcements.query.profile", () =>
+    supabase
+      .from("profiles")
+      .select("id, school_id, role")
+      .eq("id", user.id)
+      .maybeSingle<Profile>(),
+  );
 
   if (!profile) {
     redirect("/dashboard");
@@ -49,8 +54,10 @@ export default async function AnnouncementsPage() {
     announcementsQuery = announcementsQuery.eq("status", "active");
   }
 
-  const { data: announcements, error } =
-    await announcementsQuery.returns<Announcement[]>();
+  const { data: announcements, error } = await timeServer(
+    "announcements.query.list",
+    () => announcementsQuery.returns<Announcement[]>(),
+  );
 
   return (
     <div className="flex flex-col gap-6">

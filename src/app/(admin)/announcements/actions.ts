@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 
 type Profile = {
@@ -45,13 +46,15 @@ export async function createAnnouncement(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("announcements").insert({
-    school_id: profile.school_id,
-    created_by_profile_id: profile.id,
-    title,
-    body,
-    status,
-  });
+  const { error } = await timeServer("announcements.action.create.insert", () =>
+    supabase.from("announcements").insert({
+      school_id: profile.school_id,
+      created_by_profile_id: profile.id,
+      title,
+      body,
+      status,
+    }),
+  );
 
   if (error) {
     return {
@@ -79,12 +82,14 @@ export async function archiveAnnouncement(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase
-    .from("announcements")
-    .update({ status: "archived" })
-    .eq("id", announcementId)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active");
+  await timeServer("announcements.action.archive.update", () =>
+    supabase
+      .from("announcements")
+      .update({ status: "archived" })
+      .eq("id", announcementId)
+      .eq("school_id", profile.school_id)
+      .eq("status", "active"),
+  );
 
   revalidatePath("/announcements");
 }
@@ -93,17 +98,24 @@ async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer(
+    "announcements.action.current-profile.auth-get-user",
+    () => supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
+  const { data: profile } = await timeServer(
+    "announcements.action.current-profile.profile",
+    () =>
+      supabase
+        .from("profiles")
+        .select("id, school_id, role")
+        .eq("id", user.id)
+        .maybeSingle<Profile>(),
+  );
 
   return profile;
 }

@@ -3,6 +3,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 
 type StaffProfile = {
@@ -68,13 +69,17 @@ export async function generateInviteCode(
   }
 
   const supabase = await createClient();
-  const { data: student } = await supabase
-    .from("student_rosters")
-    .select("id")
-    .eq("id", studentId)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .maybeSingle<{ id: string }>();
+  const { data: student } = await timeServer(
+    "invite-codes.action.generate.student-lookup",
+    () =>
+      supabase
+        .from("student_rosters")
+        .select("id")
+        .eq("id", studentId)
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .maybeSingle<{ id: string }>(),
+  );
 
   if (!student) {
     return {
@@ -84,15 +89,19 @@ export async function generateInviteCode(
     };
   }
 
-  const { data: existingInvite } = await supabase
-    .from("invite_codes")
-    .select("id")
-    .eq("student_roster_id", student.id)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .eq("use_count", 0)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle<{ id: string }>();
+  const { data: existingInvite } = await timeServer(
+    "invite-codes.action.generate.existing-active-invite",
+    () =>
+      supabase
+        .from("invite_codes")
+        .select("id")
+        .eq("student_roster_id", student.id)
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .eq("use_count", 0)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle<{ id: string }>(),
+  );
 
   if (existingInvite) {
     return {
@@ -104,17 +113,21 @@ export async function generateInviteCode(
 
   const plainCode = createPlainInviteCode();
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-  const { error } = await supabase.from("invite_codes").insert({
-    school_id: profile.school_id,
-    student_roster_id: student.id,
-    created_by_profile_id: profile.id,
-    code_hash: hashInviteCode(plainCode),
-    code_hint: `${plainCode.slice(0, 4)}...`,
-    status: "active",
-    max_uses: 1,
-    use_count: 0,
-    expires_at: expiresAt.toISOString(),
-  });
+  const { error } = await timeServer(
+    "invite-codes.action.generate.insert",
+    () =>
+      supabase.from("invite_codes").insert({
+        school_id: profile.school_id,
+        student_roster_id: student.id,
+        created_by_profile_id: profile.id,
+        code_hash: hashInviteCode(plainCode),
+        code_hint: `${plainCode.slice(0, 4)}...`,
+        status: "active",
+        max_uses: 1,
+        use_count: 0,
+        expires_at: expiresAt.toISOString(),
+      }),
+  );
 
   if (error) {
     return {
@@ -216,18 +229,22 @@ export async function bulkGenerateInviteCodes(
     student,
   }));
   const supabase = await createClient();
-  const { error } = await supabase.from("invite_codes").insert(
-    generatedCodes.map(({ code, student }) => ({
-      school_id: profile.school_id,
-      student_roster_id: student.id,
-      created_by_profile_id: profile.id,
-      code_hash: hashInviteCode(code),
-      code_hint: `${code.slice(0, 4)}...`,
-      status: "active",
-      max_uses: 1,
-      use_count: 0,
-      expires_at: expiresAt.toISOString(),
-    })),
+  const { error } = await timeServer(
+    "invite-codes.action.bulk-generate.insert",
+    () =>
+      supabase.from("invite_codes").insert(
+        generatedCodes.map(({ code, student }) => ({
+          school_id: profile.school_id,
+          student_roster_id: student.id,
+          created_by_profile_id: profile.id,
+          code_hash: hashInviteCode(code),
+          code_hint: `${code.slice(0, 4)}...`,
+          status: "active",
+          max_uses: 1,
+          use_count: 0,
+          expires_at: expiresAt.toISOString(),
+        })),
+      ),
   );
 
   if (error) {
@@ -274,14 +291,16 @@ export async function revokeInviteCode(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase
-    .from("invite_codes")
-    .update({ status: "revoked" })
-    .eq("id", inviteId)
-    .eq("school_id", profile.school_id)
-    .eq("status", "active")
-    .eq("use_count", 0)
-    .is("redeemed_at", null);
+  await timeServer("invite-codes.action.revoke.update", () =>
+    supabase
+      .from("invite_codes")
+      .update({ status: "revoked" })
+      .eq("id", inviteId)
+      .eq("school_id", profile.school_id)
+      .eq("status", "active")
+      .eq("use_count", 0)
+      .is("redeemed_at", null),
+  );
 
   revalidatePath("/invite-codes");
 }
@@ -290,17 +309,23 @@ async function getCurrentStaffProfile(): Promise<StaffProfile | null> {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timeServer("invite-codes.action.current-staff.auth-get-user", () =>
+    supabase.auth.getUser(),
+  );
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<StaffProfile>();
+  const { data: profile } = await timeServer(
+    "invite-codes.action.current-staff.profile",
+    () =>
+      supabase
+        .from("profiles")
+        .select("id, school_id, role")
+        .eq("id", user.id)
+        .maybeSingle<StaffProfile>(),
+  );
 
   if (!profile || !["school_admin", "teacher"].includes(profile.role)) {
     return null;
@@ -311,16 +336,20 @@ async function getCurrentStaffProfile(): Promise<StaffProfile | null> {
 
 async function getEligibleBulkStudents(schoolId: string) {
   const supabase = await createClient();
-  const { data: students } = await supabase
-    .from("student_rosters")
-    .select(
-      "id, first_name, last_name, grade_level, homeroom, student_number",
-    )
-    .eq("school_id", schoolId)
-    .eq("status", "active")
-    .is("profile_id", null)
-    .order("last_name", { ascending: true })
-    .returns<BulkInviteStudent[]>();
+  const { data: students } = await timeServer(
+    "invite-codes.action.bulk-generate.eligible-students",
+    () =>
+      supabase
+        .from("student_rosters")
+        .select(
+          "id, first_name, last_name, grade_level, homeroom, student_number",
+        )
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .is("profile_id", null)
+        .order("last_name", { ascending: true })
+        .returns<BulkInviteStudent[]>(),
+  );
 
   return students ?? [];
 }
@@ -334,16 +363,20 @@ async function getStudentsWithActiveInvites(
   }
 
   const supabase = await createClient();
-  const { data: inviteCodes } = await supabase
-    .from("invite_codes")
-    .select("student_roster_id")
-    .eq("school_id", schoolId)
-    .eq("status", "active")
-    .eq("use_count", 0)
-    .is("redeemed_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .in("student_roster_id", studentIds)
-    .returns<Array<{ student_roster_id: string | null }>>();
+  const { data: inviteCodes } = await timeServer(
+    "invite-codes.action.bulk-generate.existing-active-invites",
+    () =>
+      supabase
+        .from("invite_codes")
+        .select("student_roster_id")
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .eq("use_count", 0)
+        .is("redeemed_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .in("student_roster_id", studentIds)
+        .returns<Array<{ student_roster_id: string | null }>>(),
+  );
 
   return new Set(
     (inviteCodes ?? [])
