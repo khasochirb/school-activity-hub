@@ -99,11 +99,13 @@ export const mn = {
     delete: "Устгах",
     inactive: "Идэвхгүй",
     notAvailableShort: "N/A",
+    open: "Нээх",
     pending: "Хүлээгдэж буй",
     rejected: "Татгалзсан",
     revoked: "Хүчингүй болгосон",
     save: "Хадгалах",
     saving: "Хадгалж байна...",
+    viewAll: "Бүгдийг харах",
   },
   status: {
     active: "Идэвхтэй",
@@ -817,6 +819,12 @@ export const mn = {
     },
   },
   dashboard: {
+    attention: {
+      description: "Ажилтны анхаарал шаардаж болох зүйлсийг шалгана уу.",
+      emptyDescription: "Одоогоор бүх зүйл хэвийн байна.",
+      emptyTitle: "Яаралтай зүйл алга",
+      title: "Анхаарах зүйлс",
+    },
     browseEvents: "Арга хэмжээ үзэх",
     checkins: {
       description:
@@ -890,6 +898,7 @@ export const mn = {
       guidance: "Сургуулийн админаас профайлыг тань бүрэн тохируулахыг хүснэ үү.",
     },
     quickActions: {
+      title: "Түргэн үйлдлүүд",
       addStudents: {
         description:
           "Бүртгэлээс өмнө баталгаажсан сурагчдыг үүсгэх эсвэл импортлох.",
@@ -961,6 +970,7 @@ export const mn = {
         "Бүртгүүлсэн удахгүй болох арга хэмжээнүүд",
     },
     title: "Хянах самбар",
+    welcomeBack: "Тавтай морил",
     upcoming: {
       description:
         "Танай сургуулийн календарь дээрх дараагийн батлагдсан үйл ажиллагаанууд.",

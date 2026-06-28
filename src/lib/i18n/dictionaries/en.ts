@@ -96,11 +96,13 @@ export const en = {
     delete: "Delete",
     inactive: "Inactive",
     notAvailableShort: "N/A",
+    open: "Open",
     pending: "Pending",
     rejected: "Rejected",
     revoked: "Revoked",
     save: "Save",
     saving: "Saving...",
+    viewAll: "View all",
   },
   filters: {
     allCategories: "All categories",
@@ -203,6 +205,12 @@ export const en = {
     title: "Clubs",
   },
   dashboard: {
+    attention: {
+      description: "Review items that may need a staff follow-up.",
+      emptyDescription: "Everything looks good right now.",
+      emptyTitle: "No urgent items",
+      title: "Needs attention",
+    },
     browseEvents: "Browse events",
     checkins: {
       description:
@@ -276,6 +284,7 @@ export const en = {
       guidance: "Ask a school admin to finish setting up your profile.",
     },
     quickActions: {
+      title: "Quick actions",
       addStudents: {
         description: "Create or import verified students before registration.",
         label: "Add students",
@@ -343,6 +352,7 @@ export const en = {
       registeredUpcomingEvents: "Registered upcoming events",
     },
     title: "Dashboard",
+    welcomeBack: "Welcome back",
     upcoming: {
       description: "The next approved activities on your school calendar.",
       emptyDescription:

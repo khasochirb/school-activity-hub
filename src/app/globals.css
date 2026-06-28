@@ -49,7 +49,7 @@ html[data-theme="dark"] {
   --card-soft: #172033;
   --border: #263244;
   --border-strong: #334155;
-  --muted: #9aa8ba;
+  --muted: #b7c3d4;
   --primary: #2dd4bf;
   --primary-strong: #5eead4;
   --primary-soft: #134e4a;
@@ -88,7 +88,7 @@ html[data-theme="dark"] {
     --card-soft: #172033;
     --border: #263244;
     --border-strong: #334155;
-    --muted: #9aa8ba;
+    --muted: #b7c3d4;
     --primary: #2dd4bf;
     --primary-strong: #5eead4;
     --primary-soft: #134e4a;
@@ -355,6 +355,15 @@ main > .flex.flex-col.gap-6 > section:first-child p {
   background: var(--stat-gradient);
   padding: 1.25rem;
   box-shadow: var(--card-shadow);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+a:hover .stat-card {
+  border-color: rgba(20, 184, 166, 0.55);
+  box-shadow: var(--header-shadow);
 }
 
 .stat-label {
@@ -573,6 +582,10 @@ main > .flex.flex-col.gap-6 > section:first-child p {
 
 :is(.dark, html[data-theme="dark"]) :is(.border-teal-200) {
   border-color: rgba(94, 234, 212, 0.35);
+}
+
+:is(.dark, html[data-theme="dark"]) :is(.ring-teal-100) {
+  --tw-ring-color: rgba(45, 212, 191, 0.18);
 }
 
 :is(.dark, html[data-theme="dark"]) :is(.text-teal-950, .text-teal-900, .text-teal-800, .text-teal-700) {

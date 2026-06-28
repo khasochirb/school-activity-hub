@@ -124,7 +124,7 @@ export async function AppShell({
             subtitle={t("app.subtitle")}
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
           <AppNav sections={visibleNavSections} />
         </div>
         <AccountPanel
@@ -259,8 +259,8 @@ function AccountPanel({
   themeLabels: Record<ThemePreference, string>;
 }) {
   return (
-    <div className="border-t border-slate-200 p-4">
-      <div className="mb-3 grid gap-3">
+    <div className="border-t border-slate-200 bg-slate-50/70 p-4">
+      <div className="mb-4 grid gap-3 rounded-md border border-slate-200 bg-white p-3 shadow-sm">
         <LanguageSwitcher
           currentLocale={locale}
           label={languageLabel}
@@ -273,7 +273,7 @@ function AccountPanel({
           switchLabel={switchThemeLabel}
         />
       </div>
-      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 shadow-inner">
+      <div className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 shadow-sm">
         <p className="break-all">{email}</p>
         <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>
       </div>
@@ -316,17 +316,19 @@ function MobileAccount({
 }) {
   return (
     <div className="space-y-3">
-      <LanguageSwitcher
-        currentLocale={locale}
-        label={languageLabel}
-        labels={languageLabels}
-      />
-      <ThemeToggle
-        currentTheme={theme}
-        label={themeLabel}
-        labels={themeLabels}
-        switchLabel={switchThemeLabel}
-      />
+      <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+        <LanguageSwitcher
+          currentLocale={locale}
+          label={languageLabel}
+          labels={languageLabels}
+        />
+        <ThemeToggle
+          currentTheme={theme}
+          label={themeLabel}
+          labels={themeLabels}
+          switchLabel={switchThemeLabel}
+        />
+      </div>
       <div className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
         <p className="break-all">{email}</p>
         <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>

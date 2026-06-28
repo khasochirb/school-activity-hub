@@ -31,7 +31,7 @@ export function AppNav({
   return (
     <nav
       aria-label={navigationLabel}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-7"
     >
       {sections.map((section) => {
         if (!section.items.length) {
@@ -39,11 +39,11 @@ export function AppNav({
         }
 
         return (
-          <section className="space-y-2.5" key={section.label}>
-            <h2 className="px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-slate-400">
+          <section className="space-y-3" key={section.label}>
+            <h2 className="px-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-slate-400">
               {section.label}
             </h2>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               {section.items.map((item) => {
                 const active = isActivePath(pathname, item.href);
 
@@ -52,8 +52,8 @@ export function AppNav({
                     aria-current={active ? "page" : undefined}
                     className={
                       active
-                        ? "flex min-h-10 cursor-pointer items-center rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-bold text-teal-950 shadow-sm transition hover:bg-teal-100"
-                        : "flex min-h-10 cursor-pointer items-center rounded-md border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
+                        ? "flex min-h-11 cursor-pointer items-center rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-bold text-teal-950 shadow-sm ring-1 ring-teal-100 transition hover:bg-teal-100"
+                        : "flex min-h-11 cursor-pointer items-center rounded-md border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
                     }
                     href={item.href}
                     key={item.href}

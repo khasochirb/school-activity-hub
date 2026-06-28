@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { EmptyState, PageHeader, StatusBadge } from "../_components/page-ui";
+import {
+  EmptyState,
+  HeaderActionLink,
+  PageHeader,
+  StatusBadge,
+} from "../_components/page-ui";
 import {
   formatTranslation,
   getDictionary,
@@ -115,30 +120,37 @@ function StaffDashboard({
   return (
     <DashboardShell
       description={t("dashboard.description")}
-      eyebrow={t("dashboard.eyebrow")}
+      eyebrow={t("dashboard.welcomeBack")}
       title={t("dashboard.title")}
+      actions={<DashboardHeaderActions t={t} />}
     >
       <WelcomeOverview t={t} />
+      <NeedsAttention analytics={analytics} t={t} />
       <NextSteps analytics={analytics} t={t} tf={tf} />
       <QuickActions t={t} />
       <MetricGrid>
         <MetricCard
+          href="/students"
           label={t("dashboard.stats.activeStudents")}
           value={analytics.activeStudents}
         />
         <MetricCard
+          href="/clubs"
           label={t("dashboard.stats.activeClubs")}
           value={analytics.activeClubs}
         />
         <MetricCard
+          href="/events"
           label={t("dashboard.stats.upcomingEvents")}
           value={analytics.upcomingApprovedEvents}
         />
         <MetricCard
+          href="/reports"
           label={t("dashboard.stats.eventRegistrations")}
           value={analytics.totalEventRegistrations}
         />
         <MetricCard
+          href="/reports"
           label={t("dashboard.stats.attendanceCheckins")}
           value={analytics.totalAttendanceCheckins}
         />
@@ -172,7 +184,7 @@ function StudentDashboard({
   return (
     <DashboardShell
       description={t("dashboard.studentDescription")}
-      eyebrow={t("dashboard.eyebrow")}
+      eyebrow={t("dashboard.welcomeBack")}
       title={t("dashboard.title")}
     >
       <StudentWelcomeOverview t={t} />
@@ -208,11 +220,13 @@ function StudentDashboard({
 }
 
 function DashboardShell({
+  actions,
   children,
   description,
   eyebrow,
   title,
 }: {
+  actions?: React.ReactNode;
   children: React.ReactNode;
   description: string;
   eyebrow: string;
@@ -221,12 +235,29 @@ function DashboardShell({
   return (
     <div className="page-stack">
       <PageHeader
+        actions={actions}
         description={description}
         eyebrow={eyebrow}
         title={title}
       />
       {children}
     </div>
+  );
+}
+
+function DashboardHeaderActions({ t }: { t: (key: string) => string }) {
+  return (
+    <>
+      <HeaderActionLink href="/students#add-student" variant="secondary">
+        {t("dashboard.quickActions.addStudents.label")}
+      </HeaderActionLink>
+      <HeaderActionLink href="/invite-codes#generate-invite" variant="secondary">
+        {t("dashboard.quickActions.generateInviteCodes.label")}
+      </HeaderActionLink>
+      <HeaderActionLink href="/events#create-event">
+        {t("dashboard.quickActions.createEvent.label")}
+      </HeaderActionLink>
+    </>
   );
 }
 
@@ -430,6 +461,110 @@ function StepStatusBadge({
   return <StatusBadge>{t("dashboard.nextSteps.status.later")}</StatusBadge>;
 }
 
+function NeedsAttention({
+  analytics,
+  t,
+}: {
+  analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+  t: (key: string) => string;
+}) {
+  const attentionItems = [
+    analytics.pendingApprovals > 0
+      ? {
+          action: t("common.open"),
+          count: analytics.pendingApprovals,
+          description: t("approvals.description"),
+          href: "/approvals",
+          title: t("nav.approvals"),
+          variant: "warning" as const,
+        }
+      : null,
+    analytics.studentsWithoutInviteCodes > 0
+      ? {
+          action: t("common.open"),
+          count: analytics.studentsWithoutInviteCodes,
+          description: t("dashboard.quickActions.generateInviteCodes.description"),
+          href: "/invite-codes",
+          title: t("dashboard.nextSteps.steps.generateInviteCodes.title"),
+          variant: "info" as const,
+        }
+      : null,
+    analytics.upcomingEvents.length > 0
+      ? {
+          action: t("common.viewAll"),
+          count: analytics.upcomingEvents.length,
+          description: t("dashboard.upcoming.description"),
+          href: "/events",
+          title: t("dashboard.upcoming.title"),
+          variant: "success" as const,
+        }
+      : null,
+    analytics.recentCheckins.length > 0
+      ? {
+          action: t("common.viewAll"),
+          count: analytics.recentCheckins.length,
+          description: t("dashboard.checkins.description"),
+          href: "/reports",
+          title: t("dashboard.checkins.title"),
+          variant: "default" as const,
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+  return (
+    <section className="section-card">
+      <div className="section-header">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="section-title">{t("dashboard.attention.title")}</h2>
+            <p className="section-description">
+              {t("dashboard.attention.description")}
+            </p>
+          </div>
+          <Link className="btn btn-secondary w-full sm:w-auto" href="/reports">
+            {t("common.viewAll")}
+          </Link>
+        </div>
+      </div>
+      {attentionItems.length ? (
+        <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+          {attentionItems.map((item) => (
+            <Link
+              className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+              href={item.href}
+              key={item.title}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
+                    {item.title}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {item.description}
+                  </p>
+                </div>
+                <StatusBadge variant={item.variant}>
+                  {formatNumber(item.count)}
+                </StatusBadge>
+              </div>
+              <p className="mt-4 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
+                {item.action}
+              </p>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="p-4">
+          <EmptyState
+            description={t("dashboard.attention.emptyDescription")}
+            title={t("dashboard.attention.emptyTitle")}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
 function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
   return (
     <section className="section-card section-card-padded">
@@ -526,21 +661,29 @@ function QuickActions({ t }: { t: (key: string) => string }) {
   ];
 
   return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      {actions.map((action) => (
-        <Link
-          className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          href={action.href}
-          key={action.href}
-        >
-          <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
-            {action.label}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {action.description}
-          </p>
-        </Link>
-      ))}
+    <section className="section-card">
+      <div className="section-header">
+        <h2 className="section-title">{t("dashboard.quickActions.title")}</h2>
+      </div>
+      <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
+        {actions.map((action) => (
+          <Link
+            className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+            href={action.href}
+            key={action.href}
+          >
+            <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
+              {action.label}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {action.description}
+            </p>
+            <p className="mt-4 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
+              {t("common.open")}
+            </p>
+          </Link>
+        ))}
+      </div>
     </section>
   );
 }
@@ -553,12 +696,34 @@ function MetricGrid({ children }: { children: React.ReactNode }) {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
+function MetricCard({
+  href,
+  label,
+  value,
+}: {
+  href?: string;
+  label: string;
+  value: number;
+}) {
+  const content = (
     <article className="stat-card">
       <p className="stat-label">{label}</p>
       <p className="stat-value">{formatNumber(value)}</p>
     </article>
+  );
+
+  if (!href) {
+    return content;
+  }
+
+  return (
+    <Link
+      aria-label={`${label}: ${formatNumber(value)}`}
+      className="group block rounded-lg transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+      href={href}
+    >
+      {content}
+    </Link>
   );
 }
 
@@ -672,6 +837,7 @@ async function getStaffAnalytics(
     totalAttendanceCheckins,
     upcomingEvents,
     recentCheckins,
+    pendingApprovals,
   ] = await Promise.all([
     getActiveStudentCount(admin, schoolId),
     getActiveInviteCodeCount(admin, schoolId, now),
@@ -681,12 +847,19 @@ async function getStaffAnalytics(
     getTotalAttendanceCheckinCount(admin, schoolId),
     getUpcomingEvents(admin, schoolId, now),
     getRecentCheckins(admin, schoolId),
+    getPendingApprovalEventCount(admin, schoolId),
   ]);
+  const studentsWithoutInviteCodes = Math.max(
+    activeStudents - activeInviteCodes,
+    0,
+  );
 
   return {
     activeInviteCodes,
     activeStudents,
     activeClubs,
+    pendingApprovals,
+    studentsWithoutInviteCodes,
     upcomingApprovedEvents,
     totalEventRegistrations,
     totalAttendanceCheckins,
@@ -826,6 +999,23 @@ async function getUpcomingApprovedEventCount(
         .eq("school_id", schoolId)
         .eq("status", "approved")
         .gte("starts_at", now),
+  );
+
+  return count ?? 0;
+}
+
+async function getPendingApprovalEventCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await timeServer(
+    "dashboard.query.pending-approval-event-count",
+    () =>
+      admin
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("status", "pending_approval"),
   );
 
   return count ?? 0;
