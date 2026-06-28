@@ -6,6 +6,10 @@ import {
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
+import {
+  DetailsDisclosure,
+  PageHeader,
+} from "../_components/page-ui";
 import { SchoolSettingsForm } from "./settings-form";
 
 type AdminProfile = {
@@ -54,38 +58,44 @@ export default async function SettingsPage() {
     .maybeSingle<School>();
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">
-          {t("settings.title")}
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          {t("settings.description")}
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        description={t("settings.description")}
+        title={t("settings.title")}
+      />
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">
-          {t("settings.schoolInfo.title")}
-        </h2>
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">{t("settings.schoolInfo.title")}</h2>
         {schoolError ? (
           <p className="mt-2 text-sm text-red-600">
             {tf("settings.errors.loadFailed", { error: schoolError.message })}
           </p>
         ) : null}
         {school ? (
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <DetailItem label={t("settings.fields.schoolName")} value={school.name} />
-            <DetailItem label={t("settings.fields.slug")} value={school.slug} />
-            <DetailItem
-              label={t("settings.fields.province")}
-              value={school.province ?? "-"}
-            />
-            <DetailItem
-              label={t("settings.fields.status")}
-              value={statusLabel(school.status, t)}
-            />
-          </dl>
+          <>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <DetailItem
+                label={t("settings.fields.schoolName")}
+                value={school.name}
+              />
+              <DetailItem
+                label={t("settings.fields.province")}
+                value={school.province ?? "-"}
+              />
+            </dl>
+            <DetailsDisclosure label={t("common.viewDetails")}>
+              <dl className="grid gap-4 sm:grid-cols-2">
+                <DetailItem
+                  label={t("settings.fields.slug")}
+                  value={school.slug}
+                />
+                <DetailItem
+                  label={t("settings.fields.status")}
+                  value={statusLabel(school.status, t)}
+                />
+              </dl>
+            </DetailsDisclosure>
+          </>
         ) : (
           <p className="mt-2 text-sm text-zinc-600">
             {t("settings.empty.noSchool")}
@@ -94,13 +104,9 @@ export default async function SettingsPage() {
       </section>
 
       {school ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-950">
-            {t("settings.update.title")}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-600">
-            {t("settings.update.description")}
-          </p>
+        <section className="section-card section-card-padded">
+          <h2 className="section-title">{t("settings.update.title")}</h2>
+          <p className="section-description">{t("settings.update.description")}</p>
           <div className="mt-4">
             <SchoolSettingsForm
               labels={{
@@ -122,11 +128,9 @@ export default async function SettingsPage() {
 
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-      <dt className="text-sm font-medium text-zinc-500">{label}</dt>
-      <dd className="mt-1 break-words text-sm font-medium text-zinc-900">
-        {value}
-      </dd>
+    <div className="detail-card">
+      <dt className="detail-label">{label}</dt>
+      <dd className="detail-value">{value}</dd>
     </div>
   );
 }

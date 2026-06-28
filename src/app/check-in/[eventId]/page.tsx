@@ -6,6 +6,7 @@ import {
 } from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { DetailsDisclosure } from "@/app/(admin)/_components/page-ui";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { CheckInForm } from "./check-in-form";
@@ -170,22 +171,6 @@ export default async function StudentCheckInPage({
             <dt className="text-zinc-500">{t("checkIn.details.location")}</dt>
             <dd className="text-zinc-800">{event.location || "-"}</dd>
           </div>
-          <div>
-            <dt className="text-zinc-500">{t("checkIn.details.safety")}</dt>
-            <dd className="text-zinc-800">
-              {riskLabel(event.risk_level, t)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500">
-              {t("checkIn.details.permission")}
-            </dt>
-            <dd className="text-zinc-800">
-              {event.permission_required
-                ? t("events.permission.mayBeRequired")
-                : t("events.permission.notRequired")}
-            </dd>
-          </div>
         </dl>
 
         {event.permission_required ? (
@@ -194,14 +179,35 @@ export default async function StudentCheckInPage({
           </p>
         ) : null}
 
-        {event.permission_note ? (
-          <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-            <p className="font-medium text-zinc-900">
-              {t("checkIn.permissionNote")}
-            </p>
-            <p className="mt-1 leading-6">{event.permission_note}</p>
-          </div>
-        ) : null}
+        <DetailsDisclosure label={t("common.viewDetails")}>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-zinc-500">{t("checkIn.details.safety")}</dt>
+              <dd className="text-zinc-800">
+                {riskLabel(event.risk_level, t)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">
+                {t("checkIn.details.permission")}
+              </dt>
+              <dd className="text-zinc-800">
+                {event.permission_required
+                  ? t("events.permission.mayBeRequired")
+                  : t("events.permission.notRequired")}
+              </dd>
+            </div>
+          </dl>
+
+          {event.permission_note ? (
+            <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+              <p className="font-medium text-zinc-900">
+                {t("checkIn.permissionNote")}
+              </p>
+              <p className="mt-1 leading-6">{event.permission_note}</p>
+            </div>
+          ) : null}
+        </DetailsDisclosure>
 
         {canCheckIn ? (
           <CheckInForm

@@ -12,6 +12,7 @@ import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
   EmptyState,
+  DetailsDisclosure,
   FilterPanel,
   HeaderActionLink,
   NoResultsState,
@@ -343,26 +344,28 @@ export default async function InviteCodesPage({
                       {statusLabel(inviteDisplayStatus(invite, now), t)}
                     </StatusBadge>
                   </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <dt className="text-zinc-500">
-                        {t("invites.table.expires")}
-                      </dt>
-                      <dd className="text-zinc-800">
-                        {formatDate(invite.expires_at, locale)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-zinc-500">
-                        {t("invites.table.redeemed")}
-                      </dt>
-                      <dd className="text-zinc-800">
-                        {invite.redeemed_at
-                          ? formatDate(invite.redeemed_at, locale)
-                          : "-"}
-                      </dd>
-                    </div>
-                  </dl>
+                  <DetailsDisclosure label={t("common.viewDetails")}>
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-zinc-500">
+                          {t("invites.table.expires")}
+                        </dt>
+                        <dd className="text-zinc-800">
+                          {formatDate(invite.expires_at, locale)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-zinc-500">
+                          {t("invites.table.redeemed")}
+                        </dt>
+                        <dd className="text-zinc-800">
+                          {invite.redeemed_at
+                            ? formatDate(invite.redeemed_at, locale)
+                            : "-"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </DetailsDisclosure>
                   <div className="mt-4">
                     <RevokeForm
                       invite={invite}

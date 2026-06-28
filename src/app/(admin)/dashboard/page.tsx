@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  DetailsDisclosure,
   EmptyState,
   HeaderActionLink,
   PageHeader,
@@ -384,22 +385,17 @@ function NextSteps({
   }>;
 
   return (
-    <section className="section-card">
-      <div className="section-header">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="section-title">{t("dashboard.nextSteps.title")}</h2>
-            <p className="section-description">
-              {t("dashboard.nextSteps.description")}
-            </p>
-          </div>
-          <p className="text-sm font-semibold text-slate-600">
-            {analytics.activeInviteCodes}{" "}
-            {t("dashboard.nextSteps.activeInviteCodes")}
-          </p>
-        </div>
+    <DetailsDisclosure label={t("dashboard.nextSteps.title")}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <p className="section-description">
+          {t("dashboard.nextSteps.description")}
+        </p>
+        <p className="text-sm font-semibold text-slate-600">
+          {analytics.activeInviteCodes}{" "}
+          {t("dashboard.nextSteps.activeInviteCodes")}
+        </p>
       </div>
-      <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {steps.map((step, index) => (
           <Link
             className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
@@ -425,7 +421,7 @@ function NextSteps({
           </Link>
         ))}
       </div>
-    </section>
+    </DetailsDisclosure>
   );
 }
 

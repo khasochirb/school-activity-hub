@@ -75,6 +75,21 @@ export function HeaderActionLink({
   );
 }
 
+export function DetailsDisclosure({
+  children,
+  label,
+}: {
+  children: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <details className="details-panel">
+      <summary className="details-summary">{label}</summary>
+      <div className="details-content">{children}</div>
+    </details>
+  );
+}
+
 export function FilterPanel({
   action,
   children,

@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
+import {
+  DetailsDisclosure,
+  PageHeader,
+} from "../_components/page-ui";
 import { ProfileForm } from "./profile-form";
 
 type Profile = {
@@ -72,20 +76,14 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">
-          {t("profile.title")}
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          {t("profile.description")}
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        description={t("profile.description")}
+        title={t("profile.title")}
+      />
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">
-          {t("profile.accountDetails")}
-        </h2>
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">{t("profile.accountDetails")}</h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <DetailItem
             label={t("profile.fields.email")}
@@ -95,29 +93,29 @@ export default async function ProfilePage() {
             label={t("profile.fields.fullName")}
             value={profile?.full_name ?? t("profile.fallback.noProfileFound")}
           />
-          <DetailItem
-            label={t("profile.fields.role")}
-            value={profile ? roleLabel(profile.role, t) : "-"}
-          />
-          <DetailItem
-            label={t("profile.fields.school")}
-            value={school?.name ?? "-"}
-          />
-          <DetailItem
-            label={t("profile.fields.status")}
-            value={profile ? statusLabel(profile.status, t) : "-"}
-          />
         </dl>
+        <DetailsDisclosure label={t("common.viewDetails")}>
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <DetailItem
+              label={t("profile.fields.role")}
+              value={profile ? roleLabel(profile.role, t) : "-"}
+            />
+            <DetailItem
+              label={t("profile.fields.school")}
+              value={school?.name ?? "-"}
+            />
+            <DetailItem
+              label={t("profile.fields.status")}
+              value={profile ? statusLabel(profile.status, t) : "-"}
+            />
+          </dl>
+        </DetailsDisclosure>
       </section>
 
       {profile ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-950">
-            {t("profile.settings.title")}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-600">
-            {t("profile.settings.description")}
-          </p>
+        <section className="section-card section-card-padded">
+          <h2 className="section-title">{t("profile.settings.title")}</h2>
+          <p className="section-description">{t("profile.settings.description")}</p>
           <div className="mt-4">
             <ProfileForm
               fullName={profile.full_name}
@@ -130,21 +128,15 @@ export default async function ProfilePage() {
           </div>
         </section>
       ) : (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-950">
-            {t("profile.settings.title")}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-600">
-            {t("profile.settings.noProfileRow")}
-          </p>
+        <section className="section-card section-card-padded">
+          <h2 className="section-title">{t("profile.settings.title")}</h2>
+          <p className="section-description">{t("profile.settings.noProfileRow")}</p>
         </section>
       )}
 
       {profile?.role === "student" ? (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-950">
-            {t("profile.roster.title")}
-          </h2>
+        <section className="section-card section-card-padded">
+          <h2 className="section-title">{t("profile.roster.title")}</h2>
           {studentRoster ? (
             <dl className="mt-4 grid gap-4 sm:grid-cols-2">
               <DetailItem
@@ -181,11 +173,9 @@ export default async function ProfilePage() {
 
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-      <dt className="text-sm font-medium text-zinc-500">{label}</dt>
-      <dd className="mt-1 break-words text-sm font-medium text-zinc-900">
-        {value}
-      </dd>
+    <div className="detail-card">
+      <dt className="detail-label">{label}</dt>
+      <dd className="detail-value">{value}</dd>
     </div>
   );
 }

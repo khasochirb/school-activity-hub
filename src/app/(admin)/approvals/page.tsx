@@ -15,6 +15,7 @@ import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
 import {
+  DetailsDisclosure,
   EmptyState,
   FilterPanel,
   NoResultsState,
@@ -199,63 +200,65 @@ export default async function ApprovalsPage({
                     </Badge>
                   ) : null}
                 </div>
-                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-                  <div>
-                    <dt className="text-zinc-500">
-                      {t("approvals.event.location")}
-                    </dt>
-                    <dd className="text-zinc-800">{event.location || "-"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500">
-                      {t("approvals.event.maxParticipants")}
-                    </dt>
-                    <dd className="text-zinc-800">
-                      {event.capacity ?? t("events.capacity.noLimit")}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500">
-                      {t("approvals.event.submitted")}
-                    </dt>
-                    <dd className="text-zinc-800">
-                      {event.submitted_at
-                        ? formatDate(event.submitted_at, locale)
-                        : formatDate(event.created_at, locale)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500">
-                      {t("approvals.event.safety")}
-                    </dt>
-                    <dd className="text-zinc-800">
-                      {riskLabel(event.risk_level, t)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500">
-                      {t("approvals.event.permission")}
-                    </dt>
-                    <dd className="text-zinc-800">
-                      {event.permission_required
-                        ? t("events.permission.mayBeRequired")
-                        : t("events.permission.notRequired")}
-                    </dd>
-                  </div>
-                </dl>
-                {event.permission_note ? (
-                  <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-                    <p className="font-medium text-zinc-900">
-                      {t("events.permission.note")}
+                <DetailsDisclosure label={t("common.viewDetails")}>
+                  <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("approvals.event.location")}
+                      </dt>
+                      <dd className="text-zinc-800">{event.location || "-"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("approvals.event.maxParticipants")}
+                      </dt>
+                      <dd className="text-zinc-800">
+                        {event.capacity ?? t("events.capacity.noLimit")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("approvals.event.submitted")}
+                      </dt>
+                      <dd className="text-zinc-800">
+                        {event.submitted_at
+                          ? formatDate(event.submitted_at, locale)
+                          : formatDate(event.created_at, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("approvals.event.safety")}
+                      </dt>
+                      <dd className="text-zinc-800">
+                        {riskLabel(event.risk_level, t)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("approvals.event.permission")}
+                      </dt>
+                      <dd className="text-zinc-800">
+                        {event.permission_required
+                          ? t("events.permission.mayBeRequired")
+                          : t("events.permission.notRequired")}
+                      </dd>
+                    </div>
+                  </dl>
+                  {event.permission_note ? (
+                    <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+                      <p className="font-medium text-zinc-900">
+                        {t("events.permission.note")}
+                      </p>
+                      <p className="mt-1 leading-6">{event.permission_note}</p>
+                    </div>
+                  ) : null}
+                  {event.description ? (
+                    <p className="mt-4 text-sm leading-6 text-zinc-600">
+                      {event.description}
                     </p>
-                    <p className="mt-1 leading-6">{event.permission_note}</p>
-                  </div>
-                ) : null}
-                {event.description ? (
-                  <p className="mt-4 text-sm leading-6 text-zinc-600">
-                    {event.description}
-                  </p>
-                ) : null}
+                  ) : null}
+                </DetailsDisclosure>
                 <form action={rejectEvent} className="mt-4 flex flex-col gap-3">
                   <input name="event_id" type="hidden" value={event.id} />
                   <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">

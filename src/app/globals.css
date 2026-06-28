@@ -388,6 +388,46 @@ a:hover .stat-card {
   padding: 1rem;
 }
 
+.details-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card-soft);
+}
+
+.details-summary {
+  min-height: 2.75rem;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.8rem 1rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-summary::after {
+  content: "+";
+  float: right;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.details-panel[open] .details-summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.details-panel[open] .details-summary::after {
+  content: "-";
+}
+
+.details-content {
+  padding: 1rem;
+}
+
 .empty-state {
   border: 1px dashed var(--border-strong);
   border-radius: 0.5rem;

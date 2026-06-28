@@ -12,6 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   EmptyState,
+  DetailsDisclosure,
   FilterPanel,
   NoResultsState,
   PageHeader,
@@ -264,20 +265,22 @@ export default async function StaffPage({
                       status={staff.status}
                     />
                   </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <dt className="text-zinc-500">{t("staff.table.role")}</dt>
-                      <dd className="text-zinc-800">{roleLabel(staff.role, t)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-zinc-500">
-                        {t("staff.table.created")}
-                      </dt>
-                      <dd className="text-zinc-800">
-                        {formatDate(staff.created_at, locale)}
-                      </dd>
-                    </div>
-                  </dl>
+                  <DetailsDisclosure label={t("common.viewDetails")}>
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-zinc-500">{t("staff.table.role")}</dt>
+                        <dd className="text-zinc-800">{roleLabel(staff.role, t)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-zinc-500">
+                          {t("staff.table.created")}
+                        </dt>
+                        <dd className="text-zinc-800">
+                          {formatDate(staff.created_at, locale)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </DetailsDisclosure>
                   <div className="mt-4">
                     <TeacherStatusForm
                       currentAdminId={profile.id}

@@ -12,6 +12,7 @@ import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
   EmptyState,
+  DetailsDisclosure,
   FilterPanel,
   HeaderActionLink,
   NoResultsState,
@@ -282,24 +283,26 @@ export default async function StudentsPage({
                       {statusLabel(student.status, t)}
                     </StatusBadge>
                   </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <dt className="text-zinc-500">
-                        {t("students.table.studentNumber")}
-                      </dt>
-                      <dd className="text-zinc-800">
-                        {student.student_number || "-"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-zinc-500">
-                        {t("students.table.created")}
-                      </dt>
-                      <dd className="text-zinc-800">
-                        {formatDate(student.created_at, locale)}
-                      </dd>
-                    </div>
-                  </dl>
+                  <DetailsDisclosure label={t("common.viewDetails")}>
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-zinc-500">
+                          {t("students.table.studentNumber")}
+                        </dt>
+                        <dd className="text-zinc-800">
+                          {student.student_number || "-"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-zinc-500">
+                          {t("students.table.created")}
+                        </dt>
+                        <dd className="text-zinc-800">
+                          {formatDate(student.created_at, locale)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </DetailsDisclosure>
                   <div className="mt-4">
                     <InactiveForm
                       labels={{

@@ -22,6 +22,7 @@ import {
 } from "./actions";
 import {
   CategoryBadge,
+  DetailsDisclosure,
   EmptyState,
   FilterPanel,
   HeaderActionLink,
@@ -323,7 +324,7 @@ export default async function ClubsPage({
                     </p>
                   ) : null}
                   {isStaff ? (
-                    <div className="mt-4 border-t border-zinc-200 pt-4">
+                    <DetailsDisclosure label={t("common.viewDetails")}>
                       <h4 className="text-sm font-medium text-zinc-950">
                         {t("clubs.members.title")}
                       </h4>
@@ -368,7 +369,7 @@ export default async function ClubsPage({
                           {t("clubs.members.empty")}
                         </p>
                       )}
-                    </div>
+                    </DetailsDisclosure>
                   ) : null}
                 </article>
               );

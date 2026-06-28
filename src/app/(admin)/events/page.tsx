@@ -23,6 +23,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   CategoryBadge,
+  DetailsDisclosure,
   EmptyState,
   FilterPanel,
   HeaderActionLink,
@@ -615,6 +616,9 @@ function EventCard({
             {formatDateTime(event.starts_at, locale)} -{" "}
             {formatTime(event.ends_at, locale)}
           </p>
+          <p className="mt-1 text-sm font-medium text-zinc-700">
+            {event.location || "-"}
+          </p>
         </div>
         <EventActions
           connectedSchools={connectedSchools}
@@ -662,78 +666,70 @@ function EventCard({
         ) : null}
       </div>
 
-      <dl
-        className={
-          isStudentView
-            ? "mt-4 grid gap-3 rounded-lg bg-slate-50 p-3 text-sm sm:grid-cols-2"
-            : "mt-4 grid gap-3 text-sm sm:grid-cols-2"
-        }
-      >
-        <div>
-          <dt className="text-zinc-500">{t("events.card.location")}</dt>
-          <dd className="text-zinc-800">{event.location || "-"}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">{t("events.card.registration")}</dt>
-          <dd className="text-zinc-800">
-            {tf("events.registration.count", { count: registeredCount })}
-            {event.capacity
-              ? ` ${tf("events.registration.maxSuffix", {
-                  count: event.capacity,
-                })}`
-              : ""}
-          </dd>
-        </div>
-        {event.capacity ? (
+      <DetailsDisclosure label={t("common.viewDetails")}>
+        <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-zinc-500">
-              {t("events.card.maxParticipants")}
-            </dt>
-            <dd className="text-zinc-800">{event.capacity}</dd>
+            <dt className="text-zinc-500">{t("events.card.registration")}</dt>
+            <dd className="text-zinc-800">
+              {tf("events.registration.count", { count: registeredCount })}
+              {event.capacity
+                ? ` ${tf("events.registration.maxSuffix", {
+                    count: event.capacity,
+                  })}`
+                : ""}
+            </dd>
+          </div>
+          {event.capacity ? (
+            <div>
+              <dt className="text-zinc-500">
+                {t("events.card.maxParticipants")}
+              </dt>
+              <dd className="text-zinc-800">{event.capacity}</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt className="text-zinc-500">{t("events.card.eventType")}</dt>
+            <dd className="text-zinc-800">
+              {clubName
+                ? t("events.fallback.clubEvent")
+                : t("events.card.schoolEvent")}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("events.card.hostedBy")}</dt>
+            <dd className="text-zinc-800">
+              {isOwnSchoolEvent ? t("events.card.mySchool") : ownerSchoolName}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("events.card.safety")}</dt>
+            <dd className="text-zinc-800">{riskLabel(event.risk_level, t)}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("events.card.permission")}</dt>
+            <dd className="text-zinc-800">
+              {event.permission_required
+                ? t("events.permission.mayBeRequired")
+                : t("events.permission.notRequired")}
+            </dd>
+          </div>
+        </dl>
+
+        {event.permission_note ? (
+          <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+            <p className="font-medium text-zinc-900">
+              {t("events.permission.note")}
+            </p>
+            <p className="mt-1 leading-6">{event.permission_note}</p>
           </div>
         ) : null}
-        <div>
-          <dt className="text-zinc-500">{t("events.card.eventType")}</dt>
-          <dd className="text-zinc-800">
-            {clubName
-              ? t("events.fallback.clubEvent")
-              : t("events.card.schoolEvent")}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">{t("events.card.hostedBy")}</dt>
-          <dd className="text-zinc-800">
-            {isOwnSchoolEvent ? t("events.card.mySchool") : ownerSchoolName}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">{t("events.card.safety")}</dt>
-          <dd className="text-zinc-800">{riskLabel(event.risk_level, t)}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">{t("events.card.permission")}</dt>
-          <dd className="text-zinc-800">
-            {event.permission_required
-              ? t("events.permission.mayBeRequired")
-              : t("events.permission.notRequired")}
-          </dd>
-        </div>
-      </dl>
 
-      {event.permission_note ? (
-        <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-          <p className="font-medium text-zinc-900">
-            {t("events.permission.note")}
+        {event.description ? (
+          <p className="mt-4 text-sm leading-6 text-zinc-600">
+            {event.description}
           </p>
-          <p className="mt-1 leading-6">{event.permission_note}</p>
-        </div>
-      ) : null}
-
-      {event.description ? (
-        <p className="mt-4 text-sm leading-6 text-zinc-600">
-          {event.description}
-        </p>
-      ) : null}
+        ) : null}
+      </DetailsDisclosure>
     </article>
   );
 }

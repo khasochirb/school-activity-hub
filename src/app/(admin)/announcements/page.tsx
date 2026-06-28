@@ -12,6 +12,7 @@ import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
   EmptyState,
+  DetailsDisclosure,
   FilterPanel,
   HeaderActionLink,
   NoResultsState,
@@ -219,9 +220,11 @@ export default async function AnnouncementsPage({
                     ) : null}
                   </div>
                 </div>
-                <p className="mt-4 whitespace-pre-line text-sm leading-6 text-zinc-700">
-                  {announcement.body}
-                </p>
+                <DetailsDisclosure label={t("common.viewDetails")}>
+                  <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
+                    {announcement.body}
+                  </p>
+                </DetailsDisclosure>
               </article>
             ))}
           </div>
