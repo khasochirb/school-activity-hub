@@ -73,7 +73,7 @@ export default async function SettingsPage() {
         ) : null}
         {school ? (
           <>
-            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
               <DetailItem
                 label={t("settings.fields.schoolName")}
                 value={school.name}
@@ -84,7 +84,7 @@ export default async function SettingsPage() {
               />
             </dl>
             <DetailsDisclosure label={t("common.viewDetails")}>
-              <dl className="grid gap-4 sm:grid-cols-2">
+              <dl className="grid gap-3 sm:grid-cols-2">
                 <DetailItem
                   label={t("settings.fields.slug")}
                   value={school.slug}
@@ -107,7 +107,7 @@ export default async function SettingsPage() {
         <section className="section-card section-card-padded">
           <h2 className="section-title">{t("settings.update.title")}</h2>
           <p className="section-description">{t("settings.update.description")}</p>
-          <div className="mt-4">
+          <div className="mt-3">
             <SchoolSettingsForm
               labels={{
                 province: t("settings.fields.province"),

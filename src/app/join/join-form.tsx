@@ -23,7 +23,7 @@ export function JoinForm({ labels }: { labels: JoinFormLabels }) {
   const [state, formAction] = useActionState(redeemInviteCode, initialState);
 
   return (
-    <form action={formAction} className="mt-6 flex flex-col gap-4">
+    <form action={formAction} className="mt-5 flex flex-col gap-3">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.inviteCode}
         <input

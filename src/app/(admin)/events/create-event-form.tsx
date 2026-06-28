@@ -22,10 +22,12 @@ type CategoryOption = {
 };
 
 type CreateEventFormLabels = {
+  basicDetails: string;
   category: string;
   club: string;
   createApproved: string;
   creating: string;
+  dateTime: string;
   dateRequired: string;
   description: string;
   duration30: string;
@@ -49,6 +51,7 @@ type CreateEventFormLabels = {
   riskMedium: string;
   quickDuration: string;
   schoolWideEvent: string;
+  safetyPermissions: string;
   startTime: string;
   startTimeRequired: string;
   submitForApproval: string;
@@ -150,47 +153,83 @@ export function CreateEventForm({
   return (
     <form
       action={formAction}
-      className="compact-form-xl grid gap-4 sm:grid-cols-2"
+      className="compact-form-xl flex flex-col gap-4"
       onSubmit={handleSubmit}
     >
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        {labels.title}
-        <input
-          className="h-11 rounded-md border px-3 text-base outline-none transition"
-          name="title"
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        {labels.category}
-        <select
-          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
-          name="category"
-        >
-          <option value="">{labels.noCategory}</option>
-          {categories.map((category) => (
-            <option key={category.value} value={category.value}>
-              {category.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        {labels.location}
-        <input
-          className="h-11 rounded-md border px-3 text-base outline-none transition"
-          name="location"
-          required
-        />
-      </label>
+      <fieldset className="form-group">
+        <legend className="form-group-title">{labels.basicDetails}</legend>
+        <div className="mt-3 grid gap-3 md:grid-cols-[minmax(16rem,2fr)_minmax(11rem,1fr)_minmax(13rem,1.4fr)]">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+            {labels.title}
+            <input
+              className="h-11 rounded-md border px-3 text-base outline-none transition"
+              name="title"
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+            {labels.category}
+            <select
+              className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
+              name="category"
+            >
+              <option value="">{labels.noCategory}</option>
+              {categories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+            {labels.location}
+            <input
+              className="h-11 rounded-md border px-3 text-base outline-none transition"
+              name="location"
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:max-w-48">
+            {labels.maxParticipants}
+            <input
+              className="h-11 rounded-md border px-3 text-base outline-none transition"
+              min={1}
+              name="max_participants"
+              type="number"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-2">
+            {labels.club}
+            <select
+              className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
+              name="club_id"
+              required={!isStaff}
+            >
+              {isStaff ? <option value="">{labels.schoolWideEvent}</option> : null}
+              {clubs.map((club) => (
+                <option key={club.id} value={club.id}>
+                  {club.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-3">
+            {labels.description}
+            <textarea
+              className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
+              name="description"
+            />
+          </label>
+        </div>
+      </fieldset>
       <fieldset
-        className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:col-span-2"
+        className="form-group"
         aria-describedby="event-time-helper event-time-preview"
       >
-        <legend className="sr-only">{labels.eventTimePreview}</legend>
+        <legend className="form-group-title">{labels.dateTime}</legend>
         <input name="starts_at" readOnly type="hidden" value={startsAtValue} />
         <input name="ends_at" readOnly type="hidden" value={endsAtValue} />
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="mt-3 grid gap-3 md:grid-cols-[minmax(13rem,1fr)_minmax(10rem,0.7fr)_minmax(10rem,0.7fr)]">
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
             {labels.eventDate}
             <input
@@ -234,7 +273,7 @@ export function CreateEventForm({
             />
           </label>
         </div>
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-3 flex flex-col gap-2">
           <p className="text-sm font-semibold text-slate-800">
             {labels.quickDuration}
           </p>
@@ -257,7 +296,7 @@ export function CreateEventForm({
           </div>
         </div>
         <div
-          className="mt-4 rounded-md border border-slate-200 bg-white p-3"
+          className="mt-3 rounded-md border border-slate-200 bg-white p-3"
           id="event-time-preview"
         >
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -271,68 +310,42 @@ export function CreateEventForm({
           </p>
         </div>
       </fieldset>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        {labels.maxParticipants}
-        <input
-          className="h-11 rounded-md border px-3 text-base outline-none transition"
-          min={1}
-          name="max_participants"
-          type="number"
-        />
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        {labels.club}
-        <select
-          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
-          name="club_id"
-          required={!isStaff}
-        >
-          {isStaff ? <option value="">{labels.schoolWideEvent}</option> : null}
-          {clubs.map((club) => (
-            <option key={club.id} value={club.id}>
-              {club.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        {labels.riskLevel}
-        <select
-          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
-          defaultValue="low"
-          name="risk_level"
-        >
-          <option value="low">{labels.riskLow}</option>
-          <option value="medium">{labels.riskMedium}</option>
-          <option value="high">{labels.riskHigh}</option>
-        </select>
-      </label>
-      <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-        <input
-          className="h-4 w-4 cursor-pointer"
-          name="permission_required"
-          type="checkbox"
-          value="true"
-        />
-        {labels.permissionRequired}
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        {labels.description}
-        <textarea
-          className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
-          name="description"
-        />
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        {labels.permissionNote}
-        <textarea
-          className="min-h-20 rounded-md border px-3 py-2 text-base outline-none transition"
-          name="permission_note"
-          placeholder={labels.permissionNotePlaceholder}
-        />
-      </label>
+      <fieldset className="form-group">
+        <legend className="form-group-title">{labels.safetyPermissions}</legend>
+        <div className="mt-3 grid gap-3 md:grid-cols-[minmax(12rem,0.8fr)_minmax(14rem,1fr)]">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+            {labels.riskLevel}
+            <select
+              className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
+              defaultValue="low"
+              name="risk_level"
+            >
+              <option value="low">{labels.riskLow}</option>
+              <option value="medium">{labels.riskMedium}</option>
+              <option value="high">{labels.riskHigh}</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-2 self-end text-sm font-semibold text-slate-800">
+            <input
+              className="h-4 w-4 cursor-pointer"
+              name="permission_required"
+              type="checkbox"
+              value="true"
+            />
+            {labels.permissionRequired}
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-2">
+            {labels.permissionNote}
+            <textarea
+              className="min-h-20 rounded-md border px-3 py-2 text-base outline-none transition"
+              name="permission_note"
+              placeholder={labels.permissionNotePlaceholder}
+            />
+          </label>
+        </div>
+      </fieldset>
       {clientError ? (
-        <p className="notice-box notice-danger sm:col-span-2" role="alert">
+        <p className="notice-box notice-danger" role="alert">
           {clientError}
         </p>
       ) : null}
@@ -340,15 +353,15 @@ export function CreateEventForm({
         <p
           className={
             state.success
-              ? "notice-box notice-success sm:col-span-2"
-              : "notice-box notice-danger sm:col-span-2"
+              ? "notice-box notice-success"
+              : "notice-box notice-danger"
           }
           role="status"
         >
           {state.message}
         </p>
       ) : null}
-      <div className="sm:col-span-2">
+      <div>
         <SubmitButton isStaff={isStaff} labels={labels} />
       </div>
     </form>

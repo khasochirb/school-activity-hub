@@ -250,7 +250,7 @@ export default async function SchoolConnectionsPage({
         <h2 className="section-title">{t("schoolConnections.yourSchool.title")}</h2>
         {currentSchool ? (
           <>
-            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
               <DetailItem
                 label={t("schoolConnections.fields.schoolName")}
                 value={currentSchool.name}
@@ -261,7 +261,7 @@ export default async function SchoolConnectionsPage({
               />
             </dl>
             <DetailsDisclosure label={t("common.viewDetails")}>
-              <dl className="grid gap-4 sm:grid-cols-2">
+              <dl className="grid gap-3 sm:grid-cols-2">
                 <DetailItem
                   label={t("schoolConnections.fields.slug")}
                   value={currentSchool.slug}
@@ -280,8 +280,8 @@ export default async function SchoolConnectionsPage({
         )}
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
+      <section className="section-card">
+        <div className="section-header">
           <h2 className="text-lg font-semibold text-zinc-950">
             {t("schoolConnections.incoming.title")}
           </h2>
@@ -294,16 +294,16 @@ export default async function SchoolConnectionsPage({
           ) : null}
         </div>
         {incomingRequests.length && filteredIncomingRequests.length ? (
-          <div className="grid gap-4 p-4">
+          <div className="grid gap-3 p-3">
             {filteredIncomingRequests.map((connection) => {
               const requester = schoolsById.get(connection.requester_school_id);
 
               return (
                 <article
-                  className="rounded-lg border border-zinc-200 p-4"
+                  className="rounded-lg border border-zinc-200 p-3"
                   key={connection.id}
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <SchoolSummary
                       fallback={t("schoolConnections.fallback.unknownSchool")}
                       school={requester}
@@ -348,7 +348,7 @@ export default async function SchoolConnectionsPage({
             />
           </div>
         ) : (
-          <div className="p-6">
+          <div className="p-4">
             <p className="text-sm font-medium text-zinc-950">
               {t("schoolConnections.incoming.emptyTitle")}
             </p>
@@ -359,8 +359,8 @@ export default async function SchoolConnectionsPage({
         )}
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
+      <section className="section-card">
+        <div className="section-header">
           <h2 className="text-lg font-semibold text-zinc-950">
             {t("schoolConnections.otherSchools.title")}
           </h2>
@@ -373,16 +373,16 @@ export default async function SchoolConnectionsPage({
           ) : null}
         </div>
         {otherSchools.length && filteredOtherSchools.length ? (
-          <div className="grid gap-4 p-4 md:grid-cols-2">
+          <div className="grid gap-3 p-3 md:grid-cols-2">
             {filteredOtherSchools.map((school) => {
               const connection = connectionByOtherSchoolId.get(school.id);
 
               return (
                 <article
-                  className="rounded-lg border border-zinc-200 p-4"
+                  className="rounded-lg border border-zinc-200 p-3"
                   key={school.id}
                 >
-                  <div className="flex h-full flex-col gap-4">
+                  <div className="flex h-full flex-col gap-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <SchoolSummary
                         fallback={t("schoolConnections.fallback.unknownSchool")}
@@ -441,14 +441,14 @@ export default async function SchoolConnectionsPage({
         )}
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
+      <section className="section-card">
+        <div className="section-header">
           <h2 className="text-lg font-semibold text-zinc-950">
             {t("schoolConnections.history.title")}
           </h2>
         </div>
         {connectionHistory.length && filteredConnections.length ? (
-          <div className="grid gap-4 p-4">
+          <div className="grid gap-3 p-3">
             {filteredConnections.map((connection) => {
               const otherSchool = schoolsById.get(
                 otherSchoolId(connection, profile.school_id),
@@ -456,7 +456,7 @@ export default async function SchoolConnectionsPage({
 
               return (
                 <article
-                  className="rounded-lg border border-zinc-200 p-4"
+                  className="rounded-lg border border-zinc-200 p-3"
                   key={connection.id}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -516,7 +516,7 @@ function RequestConnectionForm({
     <form action={requestSchoolConnection}>
       <input name="receiver_school_id" type="hidden" value={schoolId} />
       <PendingSubmitButton
-        className="h-10 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 sm:w-auto"
+        className="btn btn-primary h-10 w-full sm:w-auto"
         pendingLabel={labels.requesting}
       >
         {labels.request}
@@ -548,8 +548,8 @@ function ConnectionResponseForm({
       <PendingSubmitButton
         className={
           isApprove
-            ? "h-10 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-            : "h-10 cursor-pointer rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+            ? "btn btn-primary h-10"
+            : "btn btn-secondary h-10"
         }
         pendingLabel={isApprove ? labels.approving : labels.rejecting}
       >

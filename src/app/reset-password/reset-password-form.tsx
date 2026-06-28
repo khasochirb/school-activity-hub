@@ -55,7 +55,7 @@ export function ResetPasswordForm({
   }
 
   return (
-    <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
+    <form className="mt-5 flex flex-col gap-3" onSubmit={handleSubmit}>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
         {labels.email}
         <input
@@ -77,7 +77,7 @@ export function ResetPasswordForm({
         </p>
       ) : null}
       <button
-        className="h-11 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isSubmitting}
         type="submit"
       >

@@ -178,7 +178,7 @@ export async function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[100rem] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8 xl:px-10">
+        <main className="mx-auto w-full max-w-[92rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7 xl:px-8">
           {children}
         </main>
       </div>

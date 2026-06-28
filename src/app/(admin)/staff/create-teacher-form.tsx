@@ -25,8 +25,8 @@ export function CreateTeacherForm({
   const [state, formAction] = useActionState(createTeacher, initialState);
 
   return (
-    <form action={formAction} className="compact-form grid gap-4 sm:grid-cols-2">
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
+    <form action={formAction} className="compact-form-lg grid gap-3 md:grid-cols-3">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.fullName}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
@@ -59,15 +59,15 @@ export function CreateTeacherForm({
         <p
           className={
             state.success
-              ? "notice-box notice-success sm:col-span-2"
-              : "notice-box notice-danger sm:col-span-2"
+              ? "notice-box notice-success md:col-span-3"
+              : "notice-box notice-danger md:col-span-3"
           }
           role="status"
         >
           {state.message}
         </p>
       ) : null}
-      <div className="sm:col-span-2">
+      <div className="md:col-span-3">
         <SubmitButton labels={labels} />
       </div>
     </form>

@@ -22,7 +22,7 @@ export function SetupForm({ labels }: { labels: SetupFormLabels }) {
   const [state, formAction] = useActionState(createFirstSchool, initialState);
 
   return (
-    <form action={formAction} className="mt-6 flex flex-col gap-4">
+    <form action={formAction} className="mt-5 flex flex-col gap-3">
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
         {labels.schoolName}
         <input
@@ -72,7 +72,7 @@ function SubmitButton({
 
   return (
     <button
-      className="h-11 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+      className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60"
       disabled={pending}
       type="submit"
     >

@@ -13,7 +13,7 @@ export default async function UpdatePasswordPage() {
   const t = (key: string) => translate(dictionary, key);
 
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-8 text-zinc-950 sm:px-6">
+    <main className="app-surface px-4 py-8 text-zinc-950 sm:px-6">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
         <div className="mb-6 flex items-center justify-between gap-3">
           <Link
@@ -44,7 +44,7 @@ export default async function UpdatePasswordPage() {
             />
           </div>
         </div>
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="section-card p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">
             {t("auth.updatePassword.title")}
           </h1>

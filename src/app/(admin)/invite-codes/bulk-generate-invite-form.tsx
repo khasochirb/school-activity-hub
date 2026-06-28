@@ -71,8 +71,8 @@ export function BulkGenerateInviteForm({
   const hasEligibleStudents = eligibleStudents.length > 0;
 
   return (
-    <div className="compact-form-xl flex flex-col gap-4">
-      <form action={formAction} className="flex flex-col gap-4">
+    <div className="compact-form-xl flex flex-col gap-3">
+      <form action={formAction} className="flex flex-col gap-3">
         <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-semibold text-slate-800">
             {labels.scope}
@@ -103,7 +103,7 @@ export function BulkGenerateInviteForm({
           />
         </fieldset>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-[minmax(10rem,14rem)_minmax(10rem,14rem)]">
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
             {labels.grade}
             <select

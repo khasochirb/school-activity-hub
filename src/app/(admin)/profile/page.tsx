@@ -84,7 +84,7 @@ export default async function ProfilePage() {
 
       <section className="section-card section-card-padded">
         <h2 className="section-title">{t("profile.accountDetails")}</h2>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
           <DetailItem
             label={t("profile.fields.email")}
             value={user.email ?? t("profile.fallback.notAvailable")}
@@ -95,7 +95,7 @@ export default async function ProfilePage() {
           />
         </dl>
         <DetailsDisclosure label={t("common.viewDetails")}>
-          <dl className="grid gap-4 sm:grid-cols-2">
+          <dl className="grid gap-3 sm:grid-cols-2">
             <DetailItem
               label={t("profile.fields.role")}
               value={profile ? roleLabel(profile.role, t) : "-"}
@@ -116,7 +116,7 @@ export default async function ProfilePage() {
         <section className="section-card section-card-padded">
           <h2 className="section-title">{t("profile.settings.title")}</h2>
           <p className="section-description">{t("profile.settings.description")}</p>
-          <div className="mt-4">
+          <div className="mt-3">
             <ProfileForm
               fullName={profile.full_name}
               labels={{
@@ -138,7 +138,7 @@ export default async function ProfilePage() {
         <section className="section-card section-card-padded">
           <h2 className="section-title">{t("profile.roster.title")}</h2>
           {studentRoster ? (
-            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
               <DetailItem
                 label={t("profile.roster.name")}
                 value={studentRosterName(studentRoster)}

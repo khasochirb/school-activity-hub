@@ -317,7 +317,7 @@ main > .flex.flex-col.gap-6 > section:first-child p {
 .page-stack {
   display: flex;
   flex-direction: column;
-  gap: 1.35rem;
+  gap: 1rem;
 }
 
 .page-header {
@@ -327,7 +327,7 @@ main > .flex.flex-col.gap-6 > section:first-child p {
   border-radius: 0.5rem;
   background:
     var(--page-header-gradient);
-  padding: 1.5rem;
+  padding: 1.25rem;
   box-shadow: var(--header-shadow);
 }
 
@@ -358,7 +358,7 @@ main > .flex.flex-col.gap-6 > section:first-child p {
 
 .page-description {
   margin-top: 0.65rem;
-  max-width: 48rem;
+  max-width: 42rem;
   color: var(--muted);
   font-size: 0.95rem;
   line-height: 1.7;
@@ -372,12 +372,12 @@ main > .flex.flex-col.gap-6 > section:first-child p {
 }
 
 .section-card-padded {
-  padding: 1.5rem;
+  padding: 1.2rem;
 }
 
 .section-header {
   border-bottom: 1px solid var(--border);
-  padding: 1.35rem 1.5rem;
+  padding: 1.1rem 1.2rem;
 }
 
 .section-title {
@@ -398,7 +398,7 @@ main > .flex.flex-col.gap-6 > section:first-child p {
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: var(--stat-gradient);
-  padding: 1.25rem;
+  padding: 1rem;
   box-shadow: var(--card-shadow);
   transition:
     border-color 140ms ease,
@@ -420,7 +420,7 @@ a:hover .stat-card {
 .stat-value {
   margin-top: 0.6rem;
   color: var(--foreground);
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1;
@@ -430,7 +430,7 @@ a:hover .stat-card {
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: var(--card-soft);
-  padding: 1rem;
+  padding: 0.9rem;
 }
 
 .details-panel {
@@ -470,21 +470,21 @@ a:hover .stat-card {
 }
 
 .details-content {
-  padding: 1rem;
+  padding: 0.9rem;
 }
 
 .empty-state {
   border: 1px dashed var(--border-strong);
   border-radius: 0.5rem;
   background: var(--empty-gradient);
-  padding: 1.5rem;
+  padding: 1.15rem;
 }
 
 .notice-box {
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: var(--notice-bg);
-  padding: 1rem;
+  padding: 0.9rem;
   color: var(--muted);
   font-size: 0.875rem;
   line-height: 1.65;
@@ -663,7 +663,7 @@ a:hover .stat-card {
 }
 
 .compact-filter-card {
-  max-width: 64rem;
+  max-width: 58rem;
 }
 
 .compact-filter-grid {
@@ -678,19 +678,53 @@ a:hover .stat-card {
 }
 
 .compact-form-sm {
-  max-width: 36rem;
+  max-width: 34rem;
 }
 
 .compact-form {
-  max-width: 42rem;
+  max-width: 40rem;
 }
 
 .compact-form-lg {
-  max-width: 52rem;
+  max-width: 48rem;
 }
 
 .compact-form-xl {
-  max-width: 60rem;
+  max-width: 62rem;
+}
+
+.compact-action-card {
+  max-width: 48rem;
+}
+
+.form-group {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card-soft);
+  padding: 1rem;
+}
+
+.form-group-title {
+  padding-inline: 0.25rem;
+  color: var(--foreground);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+:where(.section-card-padded:has(.compact-form-sm)) {
+  max-width: 40rem;
+}
+
+:where(.section-card-padded:has(.compact-form)) {
+  max-width: 46rem;
+}
+
+:where(.section-card-padded:has(.compact-form-lg)) {
+  max-width: 54rem;
+}
+
+:where(.section-card-padded:has(.compact-form-xl)) {
+  max-width: 68rem;
 }
 
 @media (min-width: 768px) {
@@ -700,11 +734,11 @@ a:hover .stat-card {
   }
 
   .compact-field {
-    max-width: 22rem;
+    max-width: 20rem;
   }
 
   .compact-select {
-    max-width: 14rem;
+    max-width: 13rem;
   }
 }
 

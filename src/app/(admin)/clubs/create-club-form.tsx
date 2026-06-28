@@ -36,8 +36,11 @@ export function CreateClubForm({
   const [state, formAction] = useActionState(createClub, initialState);
 
   return (
-    <form action={formAction} className="compact-form-lg grid gap-4 sm:grid-cols-2">
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
+    <form
+      action={formAction}
+      className="compact-form-xl grid gap-3 md:grid-cols-[minmax(16rem,2fr)_minmax(11rem,1fr)_minmax(11rem,1fr)]"
+    >
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.name}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
@@ -70,7 +73,7 @@ export function CreateClubForm({
           <option value="archived">{labels.archived}</option>
         </select>
       </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-3">
         {labels.description}
         <textarea
           className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
@@ -81,15 +84,15 @@ export function CreateClubForm({
         <p
           className={
             state.success
-              ? "notice-box notice-success sm:col-span-2"
-              : "notice-box notice-danger sm:col-span-2"
+              ? "notice-box notice-success md:col-span-3"
+              : "notice-box notice-danger md:col-span-3"
           }
           role="status"
         >
           {state.message}
         </p>
       ) : null}
-      <div className="sm:col-span-2">
+      <div className="md:col-span-3">
         <SubmitButton
           createLabel={labels.create}
           creatingLabel={labels.creating}

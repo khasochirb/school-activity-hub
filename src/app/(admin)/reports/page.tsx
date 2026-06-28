@@ -103,7 +103,10 @@ export default async function ReportsPage() {
         />
       </section>
 
-      <section className="section-card section-card-padded" id="csv-exports">
+      <section
+        className="compact-action-card section-card section-card-padded"
+        id="csv-exports"
+      >
         <h2 className="section-title">{t("reports.exports.title")}</h2>
         <p className="section-description">
           {t("reports.exports.description")}
@@ -121,7 +124,7 @@ export default async function ReportsPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-2">
         <SummaryTable
           countLabel={t("reports.countLabels.registrations")}
           emptyMessage={t(

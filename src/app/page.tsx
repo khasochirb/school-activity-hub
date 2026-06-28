@@ -44,14 +44,14 @@ export default async function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
+    <main className="app-surface text-slate-950">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link
             className="flex cursor-pointer items-center gap-3 transition hover:text-teal-800"
             href="/"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-teal-700 text-sm font-bold text-white">
+            <span className="brand-mark flex h-10 w-10 items-center justify-center rounded-md text-sm font-bold">
               {t("app.shortName")}
             </span>
             <span className="font-bold tracking-tight">{t("app.name")}</span>
@@ -94,7 +94,7 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:py-16">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:py-12">
         <div className="flex flex-col justify-center">
           <p className="page-eyebrow">{t("landing.platformEyebrow")}</p>
           <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
@@ -161,7 +161,7 @@ export default async function HomePage() {
       </section>
 
       <section className="border-y border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-3 px-4 py-7 sm:px-6 md:grid-cols-3 lg:px-8">
           {platformPoints.map((point) => (
             <article className="section-card section-card-padded" key={point.title}>
               <h2 className="section-title">{point.title}</h2>
@@ -171,7 +171,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="page-header">
           <p className="page-eyebrow">{t("landing.demoWorkflow")}</p>
           <h2 className="page-title">{t("landing.workflowTitle")}</h2>

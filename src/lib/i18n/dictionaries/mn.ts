@@ -328,6 +328,11 @@ export const mn = {
       upcoming: "Удахгүй болох",
       viewLabel: "Арга хэмжээний харагдац",
     },
+    formGroups: {
+      basicDetails: "Үндсэн мэдээлэл",
+      dateTime: "Огноо ба цаг",
+      safetyPermissions: "Аюулгүй байдал ба зөвшөөрөл",
+    },
     form: {
       category: "Ангилал",
       club: "Клуб",

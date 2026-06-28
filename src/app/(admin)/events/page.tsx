@@ -296,10 +296,12 @@ export default async function EventsPage({
               isStaff={isStaff}
               locale={locale}
               labels={{
+                basicDetails: t("events.formGroups.basicDetails"),
                 category: t("events.form.category"),
                 club: t("events.form.club"),
                 createApproved: t("events.actions.createApproved"),
                 creating: t("events.actions.creating"),
+                dateTime: t("events.formGroups.dateTime"),
                 dateRequired: t("events.validation.dateRequired"),
                 description: t("events.form.description"),
                 duration30: t("events.form.duration30"),
@@ -325,6 +327,9 @@ export default async function EventsPage({
                 riskMedium: t("events.risk.medium"),
                 quickDuration: t("events.form.quickDuration"),
                 schoolWideEvent: t("events.form.schoolWideEvent"),
+                safetyPermissions: t(
+                  "events.formGroups.safetyPermissions",
+                ),
                 startTime: t("events.form.startTime"),
                 startTimeRequired: t("events.validation.startTimeRequired"),
                 submitForApproval: t("events.actions.submitForApproval"),

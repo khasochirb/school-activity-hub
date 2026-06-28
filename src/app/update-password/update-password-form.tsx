@@ -106,7 +106,7 @@ export function UpdatePasswordForm({
   }
 
   return (
-    <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
+    <form className="mt-5 flex flex-col gap-3" onSubmit={handleSubmit}>
       {sessionMessage ? (
         <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800" role="status">
           {sessionMessage}
@@ -138,7 +138,7 @@ export function UpdatePasswordForm({
         <div className="rounded-md bg-emerald-50 p-3" role="status">
           <p className="text-sm text-emerald-700">{message}</p>
           <Link
-            className="mt-3 inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+            className="btn btn-primary mt-3 inline-flex h-10"
             href="/dashboard"
           >
             {labels.goToDashboard}
@@ -151,7 +151,7 @@ export function UpdatePasswordForm({
         </p>
       ) : null}
       <button
-        className="h-11 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        className="btn btn-primary h-11 w-full disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isCheckingSession || isSubmitting}
         type="submit"
       >

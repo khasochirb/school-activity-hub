@@ -26,8 +26,11 @@ export function CreateStudentForm({
   const [state, formAction] = useActionState(createStudent, initialState);
 
   return (
-    <form action={formAction} className="compact-form grid gap-4 sm:grid-cols-2">
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
+    <form
+      action={formAction}
+      className="compact-form-lg grid gap-3 sm:grid-cols-[minmax(16rem,1.4fr)_minmax(11rem,0.8fr)]"
+    >
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.fullName}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
@@ -50,7 +53,7 @@ export function CreateStudentForm({
           name="class_group"
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.studentNumber}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"

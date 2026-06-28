@@ -28,7 +28,7 @@ export function ImportStudentsForm({
   );
 
   return (
-    <div className="compact-form flex flex-col gap-4">
+    <div className="compact-form flex flex-col gap-3">
       <div>
         <p className="text-sm font-semibold text-slate-800">
           {labels.sampleTitle}
@@ -38,7 +38,7 @@ export function ImportStudentsForm({
         </pre>
       </div>
 
-      <form action={formAction} className="flex flex-col gap-4">
+      <form action={formAction} className="flex flex-col gap-3">
         <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
           {labels.fileLabel}
           <input

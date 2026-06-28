@@ -45,7 +45,7 @@ export function LoginForm({ labels }: { labels: LoginFormLabels }) {
   }
 
   return (
-    <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
+    <form className="mt-5 flex flex-col gap-3" onSubmit={handleSubmit}>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.email}
         <input

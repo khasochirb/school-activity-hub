@@ -785,6 +785,11 @@ export const en = {
       upcoming: "Upcoming",
       viewLabel: "Event view",
     },
+    formGroups: {
+      basicDetails: "Basic details",
+      dateTime: "Date and time",
+      safetyPermissions: "Safety and permissions",
+    },
     form: {
       category: "Category",
       club: "Club",

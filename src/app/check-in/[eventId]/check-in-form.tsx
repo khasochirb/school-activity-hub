@@ -24,7 +24,7 @@ export function CheckInForm({
   const [state, formAction] = useActionState(checkInToEvent, initialState);
 
   return (
-    <form action={formAction} className="mt-6 flex flex-col gap-4">
+    <form action={formAction} className="mt-5 flex flex-col gap-3">
       <input name="event_id" type="hidden" value={eventId} />
       {state.message ? (
         <div

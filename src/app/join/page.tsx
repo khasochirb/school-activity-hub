@@ -20,7 +20,7 @@ export default async function JoinPage() {
             className="flex w-fit cursor-pointer items-center gap-3 text-sm font-bold text-slate-700 transition hover:text-teal-800"
             href="/"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-xs font-bold text-white">
+            <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-md text-xs font-bold">
               {t("app.shortName")}
             </span>
             <span>{t("app.name")}</span>
@@ -47,7 +47,7 @@ export default async function JoinPage() {
             />
           </div>
         </div>
-        <section className="section-card p-5 sm:p-8">
+        <section className="section-card p-5 sm:p-6">
           <p className="page-eyebrow">{t("auth.join.eyebrow")}</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-2xl">
             {t("auth.join.title")}

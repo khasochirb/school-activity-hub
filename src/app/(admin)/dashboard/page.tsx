@@ -157,7 +157,7 @@ function StaffDashboard({
         />
       </MetricGrid>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <UpcomingEventsSection
           events={analytics.upcomingEvents}
           locale={locale}
@@ -267,7 +267,7 @@ function DashboardHeaderActions({ t }: { t: (key: string) => string }) {
 function WelcomeOverview({ t }: { t: (key: string) => string }) {
   return (
     <section className="section-card section-card-padded">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center">
         <div>
           <p className="page-eyebrow">{t("dashboard.staffWelcome.eyebrow")}</p>
           <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
@@ -277,7 +277,7 @@ function WelcomeOverview({ t }: { t: (key: string) => string }) {
             {t("dashboard.staffWelcome.description")}
           </p>
         </div>
-        <div className="rounded-md border border-teal-100 bg-teal-50 p-4">
+        <div className="rounded-md border border-teal-100 bg-teal-50 p-3">
           <p className="text-sm font-bold text-teal-950">
             {t("dashboard.recommendedFlow.title")}
           </p>
@@ -395,10 +395,10 @@ function NextSteps({
           {t("dashboard.nextSteps.activeInviteCodes")}
         </p>
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {steps.map((step, index) => (
           <Link
-            className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+            className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
             href={step.href}
             key={step.action}
           >
@@ -415,7 +415,7 @@ function NextSteps({
               </div>
               <StepStatusBadge status={step.status} t={t} />
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               {step.description}
             </p>
           </Link>
@@ -525,10 +525,10 @@ function NeedsAttention({
         </div>
       </div>
       {attentionItems.length ? (
-        <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-4">
           {attentionItems.map((item) => (
             <Link
-              className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+              className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
               href={item.href}
               key={item.title}
             >
@@ -624,10 +624,10 @@ function QuickActions({ t }: { t: (key: string) => string }) {
       <div className="section-header">
         <h2 className="section-title">{t("dashboard.quickActions.title")}</h2>
       </div>
-      <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-5">
         {actions.map((action) => (
           <Link
-            className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+            className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
             href={action.href}
             key={action.href}
           >
@@ -649,7 +649,7 @@ function QuickActions({ t }: { t: (key: string) => string }) {
 
 function MetricGrid({ children }: { children: React.ReactNode }) {
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {children}
     </section>
   );

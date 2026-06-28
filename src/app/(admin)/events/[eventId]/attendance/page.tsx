@@ -190,8 +190,8 @@ export default async function EventAttendancePage({
   const qrCodeViewBox = getQrSvgViewBox(qrCodeMatrix);
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+    <div className="page-stack">
+      <section className="section-card section-card-padded">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-950">
@@ -217,7 +217,7 @@ export default async function EventAttendancePage({
             ) : null}
           </div>
           <Link
-            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+            className="btn btn-secondary h-10"
             href="/events"
           >
             {t("common.backToEvents")}
@@ -225,18 +225,18 @@ export default async function EventAttendancePage({
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="section-card section-card-padded">
         <h2 className="text-lg font-semibold text-zinc-950">
           {t("attendance.checkInLink.title")}
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
           {t("attendance.checkInLink.description")}
         </p>
-        <div className="mt-4 grid gap-4 lg:grid-cols-[220px_1fr] lg:items-start">
-          <div className="flex justify-center rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="mt-4 grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:items-start">
+          <div className="flex justify-center rounded-lg border border-zinc-200 bg-white p-3">
             <svg
               aria-label={t("attendance.qr.ariaLabel")}
-              className="h-44 w-44 text-zinc-950"
+              className="h-40 w-40 text-zinc-950"
               role="img"
               shapeRendering="crispEdges"
               viewBox={qrCodeViewBox}
@@ -261,7 +261,7 @@ export default async function EventAttendancePage({
                 url={checkInUrl}
               />
               <Link
-                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+                className="btn btn-primary h-10"
                 href={checkInUrl}
               >
                 {t("attendance.actions.openLink")}
@@ -271,8 +271,8 @@ export default async function EventAttendancePage({
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
+      <section className="section-card">
+        <div className="section-header">
           <h2 className="text-lg font-semibold text-zinc-950">
             {t("attendance.list.title")}
           </h2>
@@ -410,7 +410,7 @@ export default async function EventAttendancePage({
                       </div>
                       <StatusBadge status={attendee.status} t={t} />
                     </div>
-                    <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <dt className="text-zinc-500">
                           {t("attendance.table.permission")}
@@ -452,7 +452,7 @@ export default async function EventAttendancePage({
             </div>
           </>
         ) : (
-          <div className="p-6">
+          <div className="p-4">
             <p className="text-sm font-medium text-zinc-950">
               {t("attendance.empty.title")}
             </p>
