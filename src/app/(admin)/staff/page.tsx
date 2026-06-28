@@ -11,9 +11,11 @@ import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
+  CollapsibleFormSection,
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
+  HeaderActionLink,
   NoResultsState,
   PageHeader,
   SearchField,
@@ -113,6 +115,11 @@ export default async function StaffPage({
   return (
     <div className="page-stack">
       <PageHeader
+        actions={
+          <HeaderActionLink href="#create-teacher">
+            {t("staff.actions.createTeacher")}
+          </HeaderActionLink>
+        }
         description={t("staff.description")}
         title={t("staff.title")}
       />
@@ -122,21 +129,23 @@ export default async function StaffPage({
         </section>
       ) : null}
 
-      <section className="section-card section-card-padded">
-        <h2 className="section-title">{t("staff.create.title")}</h2>
-        <p className="section-description">{t("staff.create.description")}</p>
-        <div className="mt-4">
-          <CreateTeacherForm
-            labels={{
-              create: t("staff.actions.createTeacher"),
-              creating: t("staff.actions.creating"),
-              email: t("staff.form.email"),
-              fullName: t("staff.form.fullName"),
-              temporaryPassword: t("staff.form.temporaryPassword"),
-            }}
-          />
-        </div>
-      </section>
+      <CollapsibleFormSection
+        description={t("staff.create.description")}
+        hideLabel={t("common.hideForm")}
+        id="create-teacher"
+        showLabel={t("common.showForm")}
+        title={t("staff.create.title")}
+      >
+        <CreateTeacherForm
+          labels={{
+            create: t("staff.actions.createTeacher"),
+            creating: t("staff.actions.creating"),
+            email: t("staff.form.email"),
+            fullName: t("staff.form.fullName"),
+            temporaryPassword: t("staff.form.temporaryPassword"),
+          }}
+        />
+      </CollapsibleFormSection>
 
       <FilterPanel
         action="/staff"

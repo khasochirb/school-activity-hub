@@ -22,6 +22,7 @@ import {
 } from "./actions";
 import {
   CategoryBadge,
+  CollapsibleFormSection,
   DetailsDisclosure,
   EmptyState,
   FilterPanel,
@@ -186,28 +187,28 @@ export default async function ClubsPage({
       />
 
       {isStaff ? (
-        <section className="section-card section-card-padded" id="create-club">
-          <h2 className="section-title">{t("clubs.actions.create")}</h2>
-          <p className="section-description">
-            {t("clubs.create.description")}
-          </p>
-          <div className="mt-4">
-            <CreateClubForm
-              categories={categoryOptions}
-              labels={{
-                active: t("status.active"),
-                archived: t("status.archived"),
-                category: t("clubs.form.category"),
-                create: t("clubs.actions.create"),
-                creating: t("clubs.actions.creating"),
-                description: t("clubs.form.description"),
-                name: t("clubs.form.name"),
-                noCategory: t("clubs.form.noCategory"),
-                status: t("clubs.form.status"),
-              }}
-            />
-          </div>
-        </section>
+        <CollapsibleFormSection
+          description={t("clubs.create.description")}
+          hideLabel={t("common.hideForm")}
+          id="create-club"
+          showLabel={t("common.showForm")}
+          title={t("clubs.actions.create")}
+        >
+          <CreateClubForm
+            categories={categoryOptions}
+            labels={{
+              active: t("status.active"),
+              archived: t("status.archived"),
+              category: t("clubs.form.category"),
+              create: t("clubs.actions.create"),
+              creating: t("clubs.actions.creating"),
+              description: t("clubs.form.description"),
+              name: t("clubs.form.name"),
+              noCategory: t("clubs.form.noCategory"),
+              status: t("clubs.form.status"),
+            }}
+          />
+        </CollapsibleFormSection>
       ) : null}
 
       <FilterPanel

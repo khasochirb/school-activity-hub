@@ -23,6 +23,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   CategoryBadge,
+  CollapsibleFormSection,
   DetailsDisclosure,
   EmptyState,
   FilterPanel,
@@ -281,67 +282,67 @@ export default async function EventsPage({
       />
 
       {canCreate ? (
-        <section className="section-card section-card-padded" id="create-event">
-          <h2 className="section-title">{t("events.actions.create")}</h2>
-          <p className="section-description">
-            {isStaff
+        <CollapsibleFormSection
+          description={
+            isStaff
               ? t("events.create.staffDescription")
-              : t("events.create.leaderDescription")}
-          </p>
-          <div className="mt-4">
-            <CreateEventForm
-              canCreate={canCreate}
-              categories={categorySelectOptions}
-              clubs={createClubOptions}
-              isStaff={isStaff}
-              locale={locale}
-              labels={{
-                basicDetails: t("events.formGroups.basicDetails"),
-                category: t("events.form.category"),
-                club: t("events.form.club"),
-                createApproved: t("events.actions.createApproved"),
-                creating: t("events.actions.creating"),
-                dateTime: t("events.formGroups.dateTime"),
-                dateRequired: t("events.validation.dateRequired"),
-                description: t("events.form.description"),
-                duration30: t("events.form.duration30"),
-                duration60: t("events.form.duration60"),
-                duration90: t("events.form.duration90"),
-                duration120: t("events.form.duration120"),
-                endTime: t("events.form.endTime"),
-                endTimeRequired: t("events.validation.endTimeRequired"),
-                eventDate: t("events.form.eventDate"),
-                eventTimePreview: t("events.form.eventTimePreview"),
-                leaderNeedsClub: t("events.create.leaderNeedsClub"),
-                location: t("events.form.location"),
-                maxParticipants: t("events.form.maxParticipants"),
-                noCategory: t("events.form.noCategory"),
-                permissionNote: t("events.form.permissionNote"),
-                permissionNotePlaceholder: t(
-                  "events.form.permissionNotePlaceholder",
-                ),
-                permissionRequired: t("events.form.permissionRequired"),
-                riskHigh: t("events.risk.high"),
-                riskLevel: t("events.form.riskLevel"),
-                riskLow: t("events.risk.low"),
-                riskMedium: t("events.risk.medium"),
-                quickDuration: t("events.form.quickDuration"),
-                schoolWideEvent: t("events.form.schoolWideEvent"),
-                safetyPermissions: t(
-                  "events.formGroups.safetyPermissions",
-                ),
-                startTime: t("events.form.startTime"),
-                startTimeRequired: t("events.validation.startTimeRequired"),
-                submitForApproval: t("events.actions.submitForApproval"),
-                submitting: t("events.actions.submitting"),
-                timeOrder: t("events.validation.timeOrder"),
-                timePreviewEmpty: t("events.form.timePreviewEmpty"),
-                timezoneHelper: t("events.form.timezoneHelper"),
-                title: t("events.form.title"),
-              }}
-            />
-          </div>
-        </section>
+              : t("events.create.leaderDescription")
+          }
+          hideLabel={t("common.hideForm")}
+          id="create-event"
+          showLabel={t("common.showForm")}
+          title={t("events.actions.create")}
+        >
+          <CreateEventForm
+            canCreate={canCreate}
+            categories={categorySelectOptions}
+            clubs={createClubOptions}
+            isStaff={isStaff}
+            locale={locale}
+            labels={{
+              basicDetails: t("events.formGroups.basicDetails"),
+              category: t("events.form.category"),
+              club: t("events.form.club"),
+              createApproved: t("events.actions.createApproved"),
+              creating: t("events.actions.creating"),
+              dateTime: t("events.formGroups.dateTime"),
+              dateRequired: t("events.validation.dateRequired"),
+              description: t("events.form.description"),
+              duration30: t("events.form.duration30"),
+              duration60: t("events.form.duration60"),
+              duration90: t("events.form.duration90"),
+              duration120: t("events.form.duration120"),
+              endTime: t("events.form.endTime"),
+              endTimeRequired: t("events.validation.endTimeRequired"),
+              eventDate: t("events.form.eventDate"),
+              eventTimePreview: t("events.form.eventTimePreview"),
+              leaderNeedsClub: t("events.create.leaderNeedsClub"),
+              location: t("events.form.location"),
+              maxParticipants: t("events.form.maxParticipants"),
+              noCategory: t("events.form.noCategory"),
+              permissionNote: t("events.form.permissionNote"),
+              permissionNotePlaceholder: t(
+                "events.form.permissionNotePlaceholder",
+              ),
+              permissionRequired: t("events.form.permissionRequired"),
+              riskHigh: t("events.risk.high"),
+              riskLevel: t("events.form.riskLevel"),
+              riskLow: t("events.risk.low"),
+              riskMedium: t("events.risk.medium"),
+              quickDuration: t("events.form.quickDuration"),
+              schoolWideEvent: t("events.form.schoolWideEvent"),
+              safetyPermissions: t("events.formGroups.safetyPermissions"),
+              startTime: t("events.form.startTime"),
+              startTimeRequired: t("events.validation.startTimeRequired"),
+              submitForApproval: t("events.actions.submitForApproval"),
+              submitting: t("events.actions.submitting"),
+              timeOrder: t("events.validation.timeOrder"),
+              timePreviewEmpty: t("events.form.timePreviewEmpty"),
+              timezoneHelper: t("events.form.timezoneHelper"),
+              title: t("events.form.title"),
+            }}
+          />
+        </CollapsibleFormSection>
       ) : null}
 
       <EventFilters

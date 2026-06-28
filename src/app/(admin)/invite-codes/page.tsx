@@ -11,6 +11,7 @@ import { getSearchParam } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
+  CollapsibleFormSection,
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
@@ -144,13 +145,13 @@ export default async function InviteCodesPage({
         title={t("invites.title")}
       />
 
-      <section className="section-card section-card-padded" id="generate-invite">
-        <h2 className="section-title">
-          {t("invites.single.title")}
-        </h2>
-        <p className="section-description">
-          {t("invites.single.description")}
-        </p>
+      <CollapsibleFormSection
+        description={t("invites.single.description")}
+        hideLabel={t("common.hideForm")}
+        id="generate-invite"
+        showLabel={t("common.showForm")}
+        title={t("invites.single.title")}
+      >
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
             {tf("invites.errors.studentsLoadFailed", {
@@ -158,29 +159,27 @@ export default async function InviteCodesPage({
             })}
           </p>
         ) : null}
-        <div className="mt-4">
-          <GenerateInviteForm
-            labels={{
-              chooseStudent: t("invites.single.chooseStudent"),
-              generate: t("invites.actions.generate"),
-              generating: t("invites.actions.generating"),
-              gradeOption: t("invites.single.gradeOption"),
-              noStudents: t("invites.single.noStudents"),
-              plainCodeLabel: t("invites.single.plainCodeLabel"),
-              studentLabel: t("invites.single.studentLabel"),
-            }}
-            students={activeStudents ?? []}
-          />
-        </div>
-      </section>
+        <GenerateInviteForm
+          labels={{
+            chooseStudent: t("invites.single.chooseStudent"),
+            generate: t("invites.actions.generate"),
+            generating: t("invites.actions.generating"),
+            gradeOption: t("invites.single.gradeOption"),
+            noStudents: t("invites.single.noStudents"),
+            plainCodeLabel: t("invites.single.plainCodeLabel"),
+            studentLabel: t("invites.single.studentLabel"),
+          }}
+          students={activeStudents ?? []}
+        />
+      </CollapsibleFormSection>
 
-      <section className="section-card section-card-padded" id="bulk-generate">
-        <h2 className="section-title">
-          {t("invites.bulk.title")}
-        </h2>
-        <p className="section-description">
-          {t("invites.bulk.description")}
-        </p>
+      <CollapsibleFormSection
+        description={t("invites.bulk.description")}
+        hideLabel={t("common.hideForm")}
+        id="bulk-generate"
+        showLabel={t("common.showForm")}
+        title={t("invites.bulk.title")}
+      >
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
             {tf("invites.errors.studentsLoadFailed", {
@@ -188,37 +187,35 @@ export default async function InviteCodesPage({
             })}
           </p>
         ) : null}
-        <div className="mt-4">
-          <BulkGenerateInviteForm
-            labels={{
-              allUnlinkedDescription: t(
-                "invites.bulk.allUnlinked.description",
-              ),
-              allUnlinkedLabel: t("invites.bulk.allUnlinked.label"),
-              anyClassGroup: t("invites.bulk.filters.anyClassGroup"),
-              anyGrade: t("invites.bulk.filters.anyGrade"),
-              bulkSubmit: t("invites.bulk.submit"),
-              classGroup: t("invites.bulk.filters.classGroup"),
-              copyTextList: t("invites.bulk.copyTextList"),
-              downloadCsv: t("invites.bulk.downloadCsv"),
-              filteredDescription: t("invites.bulk.filtered.description"),
-              filteredLabel: t("invites.bulk.filtered.label"),
-              generatedTitle: t("invites.bulk.generatedTitle"),
-              generating: t("invites.actions.generating"),
-              grade: t("invites.bulk.filters.grade"),
-              noEligibleStudents: t("invites.bulk.noEligibleStudents"),
-              scope: t("invites.bulk.scope"),
-              selectedDescription: t("invites.bulk.selected.description"),
-              selectedLabel: t("invites.bulk.selected.label"),
-              selectStudents: t("invites.bulk.selectStudents"),
-              selectStudentsDescription: t(
-                "invites.bulk.selectStudentsDescription",
-              ),
-            }}
-            students={activeStudents ?? []}
-          />
-        </div>
-      </section>
+        <BulkGenerateInviteForm
+          labels={{
+            allUnlinkedDescription: t(
+              "invites.bulk.allUnlinked.description",
+            ),
+            allUnlinkedLabel: t("invites.bulk.allUnlinked.label"),
+            anyClassGroup: t("invites.bulk.filters.anyClassGroup"),
+            anyGrade: t("invites.bulk.filters.anyGrade"),
+            bulkSubmit: t("invites.bulk.submit"),
+            classGroup: t("invites.bulk.filters.classGroup"),
+            copyTextList: t("invites.bulk.copyTextList"),
+            downloadCsv: t("invites.bulk.downloadCsv"),
+            filteredDescription: t("invites.bulk.filtered.description"),
+            filteredLabel: t("invites.bulk.filtered.label"),
+            generatedTitle: t("invites.bulk.generatedTitle"),
+            generating: t("invites.actions.generating"),
+            grade: t("invites.bulk.filters.grade"),
+            noEligibleStudents: t("invites.bulk.noEligibleStudents"),
+            scope: t("invites.bulk.scope"),
+            selectedDescription: t("invites.bulk.selected.description"),
+            selectedLabel: t("invites.bulk.selected.label"),
+            selectStudents: t("invites.bulk.selectStudents"),
+            selectStudentsDescription: t(
+              "invites.bulk.selectStudentsDescription",
+            ),
+          }}
+          students={activeStudents ?? []}
+        />
+      </CollapsibleFormSection>
 
       <FilterPanel
         action="/invite-codes"

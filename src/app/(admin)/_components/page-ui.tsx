@@ -75,6 +75,61 @@ export function HeaderActionLink({
   );
 }
 
+export function CollapsibleFormSection({
+  children,
+  description,
+  hideLabel,
+  id,
+  showLabel,
+  title,
+}: {
+  children: React.ReactNode;
+  description: string;
+  hideLabel: string;
+  id: string;
+  showLabel: string;
+  title: string;
+}) {
+  const summaryId = `${id}-summary`;
+  const contentId = `${id}-form`;
+
+  return (
+    <section
+      aria-labelledby={summaryId}
+      className="collapsible-form-section section-card section-card-padded"
+      id={id}
+    >
+      <div
+        className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+        id={summaryId}
+      >
+        <div>
+          <h2 className="section-title">{title}</h2>
+          <p className="section-description">{description}</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+          <Link
+            aria-controls={contentId}
+            className="collapsible-form-show btn btn-primary w-full sm:w-auto"
+            href={`#${id}`}
+          >
+            {showLabel}
+          </Link>
+          <Link
+            className="collapsible-form-hide btn btn-secondary w-full sm:w-auto"
+            href={`#${summaryId}`}
+          >
+            {hideLabel}
+          </Link>
+        </div>
+      </div>
+      <div className="collapsible-form-content mt-4" id={contentId}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
 export function DetailsDisclosure({
   children,
   label,

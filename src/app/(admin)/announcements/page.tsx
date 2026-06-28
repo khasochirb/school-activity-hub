@@ -11,6 +11,7 @@ import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
+  CollapsibleFormSection,
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
@@ -120,30 +121,25 @@ export default async function AnnouncementsPage({
       />
 
       {isStaff ? (
-        <section
-          className="section-card section-card-padded"
+        <CollapsibleFormSection
+          description={t("announcements.create.description")}
+          hideLabel={t("common.hideForm")}
           id="create-announcement"
+          showLabel={t("common.showForm")}
+          title={t("announcements.create.title")}
         >
-          <h2 className="section-title">
-            {t("announcements.create.title")}
-          </h2>
-          <p className="section-description">
-            {t("announcements.create.description")}
-          </p>
-          <div className="mt-4">
-            <CreateAnnouncementForm
-              labels={{
-                active: t("status.active"),
-                archived: t("status.archived"),
-                body: t("announcements.form.body"),
-                create: t("announcements.actions.create"),
-                posting: t("announcements.actions.posting"),
-                status: t("announcements.form.status"),
-                title: t("announcements.form.title"),
-              }}
-            />
-          </div>
-        </section>
+          <CreateAnnouncementForm
+            labels={{
+              active: t("status.active"),
+              archived: t("status.archived"),
+              body: t("announcements.form.body"),
+              create: t("announcements.actions.create"),
+              posting: t("announcements.actions.posting"),
+              status: t("announcements.form.status"),
+              title: t("announcements.form.title"),
+            }}
+          />
+        </CollapsibleFormSection>
       ) : null}
 
       <FilterPanel

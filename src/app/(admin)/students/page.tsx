@@ -11,6 +11,7 @@ import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
+  CollapsibleFormSection,
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
@@ -125,42 +126,42 @@ export default async function StudentsPage({
         title={t("students.title")}
       />
 
-      <section className="section-card section-card-padded" id="add-student">
-        <h2 className="section-title">{t("students.addSection.title")}</h2>
-        <p className="section-description">
-          {t("students.addSection.description")}
-        </p>
-        <div className="mt-4">
-          <CreateStudentForm
-            labels={{
-              adding: t("students.form.adding"),
-              classGroup: t("students.form.classGroup"),
-              fullName: t("students.form.fullName"),
-              grade: t("students.form.grade"),
-              studentNumber: t("students.form.studentNumber"),
-              submit: t("students.form.submit"),
-            }}
-          />
-        </div>
-      </section>
+      <CollapsibleFormSection
+        description={t("students.addSection.description")}
+        hideLabel={t("common.hideForm")}
+        id="add-student"
+        showLabel={t("common.showForm")}
+        title={t("students.addSection.title")}
+      >
+        <CreateStudentForm
+          labels={{
+            adding: t("students.form.adding"),
+            classGroup: t("students.form.classGroup"),
+            fullName: t("students.form.fullName"),
+            grade: t("students.form.grade"),
+            studentNumber: t("students.form.studentNumber"),
+            submit: t("students.form.submit"),
+          }}
+        />
+      </CollapsibleFormSection>
 
-      <section className="section-card section-card-padded" id="import-csv">
-        <h2 className="section-title">{t("students.importSection.title")}</h2>
-        <p className="section-description">
-          {t("students.importSection.description")}
-        </p>
-        <div className="mt-4">
-          <ImportStudentsForm
-            labels={{
-              fileLabel: t("students.import.fileLabel"),
-              importing: t("students.import.importing"),
-              sampleCsv: t("students.import.sampleCsv"),
-              sampleTitle: t("students.import.sampleTitle"),
-              submit: t("students.import.submit"),
-            }}
-          />
-        </div>
-      </section>
+      <CollapsibleFormSection
+        description={t("students.importSection.description")}
+        hideLabel={t("common.hideForm")}
+        id="import-csv"
+        showLabel={t("common.showForm")}
+        title={t("students.importSection.title")}
+      >
+        <ImportStudentsForm
+          labels={{
+            fileLabel: t("students.import.fileLabel"),
+            importing: t("students.import.importing"),
+            sampleCsv: t("students.import.sampleCsv"),
+            sampleTitle: t("students.import.sampleTitle"),
+            submit: t("students.import.submit"),
+          }}
+        />
+      </CollapsibleFormSection>
 
       <FilterPanel
         action="/students"
