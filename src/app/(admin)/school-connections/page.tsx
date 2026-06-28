@@ -8,7 +8,16 @@ import {
 import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
+import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
+import {
+  EmptyState,
+  FilterPanel,
+  NoResultsState,
+  PageHeader,
+  SearchField,
+  SelectFilter,
+} from "../_components/page-ui";
 import {
   requestSchoolConnection,
   respondToSchoolConnection,
@@ -46,7 +55,10 @@ type SchoolConnection = {
 };
 
 type SearchParams = {
+  direction?: string | string[];
   error?: string | string[];
+  q?: string | string[];
+  status?: string | string[];
   success?: string | string[];
 };
 
@@ -61,6 +73,11 @@ export default async function SchoolConnectionsPage({
   const t = (key: string) => translate(dictionary, key);
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
+  const searchQuery = getSearchParam(params.q);
+  const selectedStatus = parseConnectionStatus(getSearchValue(params.status));
+  const selectedDirection = parseConnectionDirection(
+    getSearchValue(params.direction),
+  );
   const supabase = await createClient();
   const {
     data: { user },
@@ -134,19 +151,49 @@ export default async function SchoolConnectionsPage({
       connection.receiver_school_id === profile.school_id &&
       connection.status === "pending",
   );
+  const filteredIncomingRequests = incomingRequests.filter((connection) =>
+    matchesSchoolSearch(
+      searchQuery,
+      schoolsById.get(connection.requester_school_id),
+    ),
+  );
+  const filteredOtherSchools = otherSchools.filter((school) => {
+    const connection = connectionByOtherSchoolId.get(school.id);
+
+    return (
+      matchesSchoolSearch(searchQuery, school) &&
+      matchesConnectionFilters(
+        connection,
+        profile.school_id,
+        selectedStatus,
+        selectedDirection,
+      )
+    );
+  });
+  const connectionHistory = connections ?? [];
+  const filteredConnections = connectionHistory.filter((connection) => {
+    const school = schoolsById.get(otherSchoolId(connection, profile.school_id));
+
+    return (
+      matchesSchoolSearch(searchQuery, school) &&
+      matchesConnectionFilters(
+        connection,
+        profile.school_id,
+        selectedStatus,
+        selectedDirection,
+      )
+    );
+  });
+  const hasFilters = Boolean(searchQuery || selectedStatus || selectedDirection);
   const activeMessage = getSearchValue(params.success);
   const errorMessage = getSearchValue(params.error);
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">
-          {t("schoolConnections.title")}
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          {t("schoolConnections.description")}
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        description={t("schoolConnections.description")}
+        title={t("schoolConnections.title")}
+      />
 
       {activeMessage ? (
         <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
@@ -158,6 +205,45 @@ export default async function SchoolConnectionsPage({
           {errorMessage}
         </p>
       ) : null}
+
+      <FilterPanel
+        action="/school-connections"
+        clearHref="/school-connections"
+        clearLabel={t("filters.clear")}
+        resultCountLabel={tf("filters.showingResults", {
+          count: filteredOtherSchools.length + filteredConnections.length,
+        })}
+        submitLabel={t("filters.filter")}
+      >
+        <SearchField
+          defaultValue={searchQuery}
+          label={t("filters.search")}
+          placeholder={t("filters.searchSchools")}
+        />
+        <SelectFilter
+          defaultValue={selectedStatus}
+          label={t("filters.status")}
+          name="status"
+          options={[
+            { label: t("filters.all"), value: "" },
+            { label: t("status.pending"), value: "pending" },
+            { label: t("status.approved"), value: "approved" },
+            { label: t("status.rejected"), value: "rejected" },
+            { label: t("status.blocked"), value: "blocked" },
+            { label: t("status.archived"), value: "archived" },
+          ]}
+        />
+        <SelectFilter
+          defaultValue={selectedDirection}
+          label={t("filters.direction")}
+          name="direction"
+          options={[
+            { label: t("filters.all"), value: "" },
+            { label: t("filters.sent"), value: "sent" },
+            { label: t("filters.received"), value: "received" },
+          ]}
+        />
+      </FilterPanel>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-zinc-950">
@@ -202,9 +288,9 @@ export default async function SchoolConnectionsPage({
             </p>
           ) : null}
         </div>
-        {incomingRequests.length ? (
+        {incomingRequests.length && filteredIncomingRequests.length ? (
           <div className="grid gap-4 p-4">
-            {incomingRequests.map((connection) => {
+            {filteredIncomingRequests.map((connection) => {
               const requester = schoolsById.get(connection.requester_school_id);
 
               return (
@@ -247,6 +333,15 @@ export default async function SchoolConnectionsPage({
               );
             })}
           </div>
+        ) : incomingRequests.length && searchQuery ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/school-connections"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
+          </div>
         ) : (
           <div className="p-6">
             <p className="text-sm font-medium text-zinc-950">
@@ -272,9 +367,9 @@ export default async function SchoolConnectionsPage({
             </p>
           ) : null}
         </div>
-        {otherSchools.length ? (
+        {otherSchools.length && filteredOtherSchools.length ? (
           <div className="grid gap-4 p-4 md:grid-cols-2">
-            {otherSchools.map((school) => {
+            {filteredOtherSchools.map((school) => {
               const connection = connectionByOtherSchoolId.get(school.id);
 
               return (
@@ -322,14 +417,21 @@ export default async function SchoolConnectionsPage({
               );
             })}
           </div>
+        ) : otherSchools.length && hasFilters ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/school-connections"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
+          </div>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">
-              {t("schoolConnections.otherSchools.emptyTitle")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              {t("schoolConnections.otherSchools.emptyDescription")}
-            </p>
+          <div className="p-4">
+            <EmptyState
+              description={t("schoolConnections.otherSchools.emptyDescription")}
+              title={t("schoolConnections.otherSchools.emptyTitle")}
+            />
           </div>
         )}
       </section>
@@ -340,9 +442,9 @@ export default async function SchoolConnectionsPage({
             {t("schoolConnections.history.title")}
           </h2>
         </div>
-        {connections?.length ? (
+        {connectionHistory.length && filteredConnections.length ? (
           <div className="grid gap-4 p-4">
-            {connections.map((connection) => {
+            {filteredConnections.map((connection) => {
               const otherSchool = schoolsById.get(
                 otherSchoolId(connection, profile.school_id),
               );
@@ -373,14 +475,21 @@ export default async function SchoolConnectionsPage({
               );
             })}
           </div>
+        ) : connectionHistory.length && hasFilters ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/school-connections"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
+          </div>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">
-              {t("schoolConnections.history.emptyTitle")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              {t("schoolConnections.history.emptyDescription")}
-            </p>
+          <div className="p-4">
+            <EmptyState
+              description={t("schoolConnections.history.emptyDescription")}
+              title={t("schoolConnections.history.emptyTitle")}
+            />
           </div>
         )}
       </section>
@@ -538,6 +647,45 @@ function otherSchoolId(
 
 function statusLabel(status: string, t: (key: string) => string) {
   return t(`status.${status}`);
+}
+
+function matchesSchoolSearch(query: string, school: School | undefined) {
+  if (!school) {
+    return !query;
+  }
+
+  return matchesSearch(query, [school.name, school.slug, school.province]);
+}
+
+function matchesConnectionFilters(
+  connection: SchoolConnection | undefined,
+  currentSchoolId: string,
+  selectedStatus: ConnectionStatus | "",
+  selectedDirection: "received" | "sent" | "",
+) {
+  if (!connection) {
+    return !selectedStatus && !selectedDirection;
+  }
+
+  const direction =
+    connection.requester_school_id === currentSchoolId ? "sent" : "received";
+
+  return (
+    (!selectedStatus || connection.status === selectedStatus) &&
+    (!selectedDirection || direction === selectedDirection)
+  );
+}
+
+function parseConnectionStatus(value: string): ConnectionStatus | "" {
+  return ["pending", "approved", "rejected", "blocked", "archived"].includes(
+    value,
+  )
+    ? (value as ConnectionStatus)
+    : "";
+}
+
+function parseConnectionDirection(value: string) {
+  return value === "sent" || value === "received" ? value : "";
 }
 
 function getSearchValue(value: string | string[] | undefined) {

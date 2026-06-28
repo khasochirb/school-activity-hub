@@ -12,7 +12,15 @@ import {
   formatTime,
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
+import {
+  EmptyState,
+  FilterPanel,
+  NoResultsState,
+  PageHeader,
+  SearchField,
+} from "../_components/page-ui";
 import { approveEvent, rejectEvent } from "./actions";
 
 type StaffProfile = {
@@ -44,12 +52,22 @@ type Club = {
 
 type Translate = (key: string) => string;
 
-export default async function ApprovalsPage() {
+type ApprovalsSearchParams = {
+  q?: string | string[];
+};
+
+export default async function ApprovalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<ApprovalsSearchParams>;
+}) {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
+  const params = await searchParams;
+  const searchQuery = getSearchParam(params.q);
   const supabase = await createClient();
   const {
     data: { user },
@@ -95,23 +113,37 @@ export default async function ApprovalsPage() {
     : { data: [] };
 
   const clubNameById = new Map((clubs ?? []).map((club) => [club.id, club.name]));
+  const pendingQueue = pendingEvents ?? [];
+  const filteredEvents = pendingQueue.filter((event) =>
+    matchesSearch(searchQuery, [event.title, event.location, event.category]),
+  );
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">
-          {t("approvals.title")}
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          {t("approvals.description")}
-        </p>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        description={t("approvals.description")}
+        title={t("approvals.title")}
+      />
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-950">
-            {t("approvals.pending.title")}
-          </h2>
+      <FilterPanel
+        action="/approvals"
+        clearHref="/approvals"
+        clearLabel={t("filters.clear")}
+        resultCountLabel={tf("filters.showingResults", {
+          count: filteredEvents.length,
+        })}
+        submitLabel={t("filters.filter")}
+      >
+        <SearchField
+          defaultValue={searchQuery}
+          label={t("filters.search")}
+          placeholder={t("filters.searchEvents")}
+        />
+      </FilterPanel>
+
+      <section className="section-card">
+        <div className="section-header">
+          <h2 className="section-title">{t("approvals.pending.title")}</h2>
           {eventsError ? (
             <p className="mt-2 text-sm text-red-600">
               {tf("approvals.errors.loadFailed", {
@@ -120,9 +152,9 @@ export default async function ApprovalsPage() {
             </p>
           ) : null}
         </div>
-        {pendingEvents?.length ? (
+        {pendingQueue.length && filteredEvents.length ? (
           <div className="grid gap-4 p-4">
-            {pendingEvents.map((event) => (
+            {filteredEvents.map((event) => (
               <article
                 className="rounded-lg border border-zinc-200 p-4"
                 key={event.id}
@@ -140,7 +172,7 @@ export default async function ApprovalsPage() {
                   <form action={approveEvent}>
                     <input name="event_id" type="hidden" value={event.id} />
                     <PendingSubmitButton
-                      className="h-9 cursor-pointer rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+                      className="btn btn-primary min-h-9 px-3"
                       pendingLabel={t("approvals.actions.approving")}
                     >
                       {t("approvals.actions.approve")}
@@ -234,7 +266,7 @@ export default async function ApprovalsPage() {
                     />
                   </label>
                   <PendingSubmitButton
-                    className="h-9 w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 sm:w-fit"
+                    className="btn btn-secondary min-h-9 w-full px-3 sm:w-fit"
                     pendingLabel={t("approvals.actions.rejecting")}
                   >
                     {t("approvals.actions.reject")}
@@ -243,14 +275,21 @@ export default async function ApprovalsPage() {
               </article>
             ))}
           </div>
+        ) : pendingQueue.length && searchQuery ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/approvals"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
+          </div>
         ) : (
-          <div className="p-6">
-            <p className="text-sm font-medium text-zinc-950">
-              {t("approvals.empty.title")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              {t("approvals.empty.description")}
-            </p>
+          <div className="p-4">
+            <EmptyState
+              description={t("approvals.empty.description")}
+              title={t("approvals.empty.title")}
+            />
           </div>
         )}
       </section>

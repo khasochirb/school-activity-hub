@@ -7,12 +7,17 @@ import {
 } from "@/lib/i18n/dictionary";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
   EmptyState,
+  FilterPanel,
   HeaderActionLink,
+  NoResultsState,
   PageHeader,
+  SearchField,
+  SelectFilter,
   StatusBadge,
 } from "../_components/page-ui";
 import { archiveAnnouncement } from "./actions";
@@ -32,12 +37,24 @@ type Announcement = {
   created_at: string;
 };
 
-export default async function AnnouncementsPage() {
+type AnnouncementsSearchParams = {
+  q?: string | string[];
+  status?: string | string[];
+};
+
+export default async function AnnouncementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<AnnouncementsSearchParams>;
+}) {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
+  const params = await searchParams;
+  const searchQuery = getSearchParam(params.q);
+  const selectedStatus = parseAnnouncementStatus(getSearchParam(params.status));
   const supabase = await createClient();
   const {
     data: { user },
@@ -76,6 +93,15 @@ export default async function AnnouncementsPage() {
     "announcements.query.list",
     () => announcementsQuery.returns<Announcement[]>(),
   );
+  const announcementList = announcements ?? [];
+  const filteredAnnouncements = announcementList.filter(
+    (announcement) =>
+      (!isStaff ||
+        !selectedStatus ||
+        announcement.status === selectedStatus) &&
+      matchesSearch(searchQuery, [announcement.title]),
+  );
+  const hasFilters = Boolean(searchQuery || (isStaff && selectedStatus));
 
   return (
     <div className="page-stack">
@@ -119,6 +145,34 @@ export default async function AnnouncementsPage() {
         </section>
       ) : null}
 
+      <FilterPanel
+        action="/announcements"
+        clearHref="/announcements"
+        clearLabel={t("filters.clear")}
+        resultCountLabel={tf("filters.showingResults", {
+          count: filteredAnnouncements.length,
+        })}
+        submitLabel={t("filters.filter")}
+      >
+        <SearchField
+          defaultValue={searchQuery}
+          label={t("filters.search")}
+          placeholder={t("filters.searchAnnouncements")}
+        />
+        {isStaff ? (
+          <SelectFilter
+            defaultValue={selectedStatus}
+            label={t("filters.status")}
+            name="status"
+            options={[
+              { label: t("filters.all"), value: "" },
+              { label: t("status.active"), value: "active" },
+              { label: t("status.archived"), value: "archived" },
+            ]}
+          />
+        ) : null}
+      </FilterPanel>
+
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">
@@ -134,9 +188,9 @@ export default async function AnnouncementsPage() {
             </p>
           ) : null}
         </div>
-        {announcements?.length ? (
+        {announcementList.length && filteredAnnouncements.length ? (
           <div className="grid gap-4 p-4">
-            {announcements.map((announcement) => (
+            {filteredAnnouncements.map((announcement) => (
               <article
                 className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
                 key={announcement.id}
@@ -170,6 +224,15 @@ export default async function AnnouncementsPage() {
                 </p>
               </article>
             ))}
+          </div>
+        ) : announcementList.length && hasFilters ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/announcements"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
           </div>
         ) : (
           <div className="p-4">
@@ -236,4 +299,8 @@ function statusLabel(status: string, t: (key: string) => string) {
   }
 
   return status;
+}
+
+function parseAnnouncementStatus(value: string) {
+  return value === "active" || value === "archived" ? value : "";
 }

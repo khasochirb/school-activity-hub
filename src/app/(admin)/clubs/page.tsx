@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
@@ -12,6 +11,7 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { getSearchParam } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -23,8 +23,12 @@ import {
 import {
   CategoryBadge,
   EmptyState,
+  FilterPanel,
   HeaderActionLink,
+  NoResultsState,
   PageHeader,
+  SearchField,
+  SelectFilter,
   StatusBadge,
 } from "../_components/page-ui";
 import { CreateClubForm } from "./create-club-form";
@@ -60,6 +64,8 @@ type ClubMembership = {
 
 type ClubsSearchParams = {
   category?: string | string[];
+  q?: string | string[];
+  status?: string | string[];
 };
 
 export default async function ClubsPage({
@@ -73,6 +79,7 @@ export default async function ClubsPage({
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
   const params = await searchParams;
+  const searchQuery = getSearchParam(params.q);
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const supabase = await createClient();
   const {
@@ -98,15 +105,24 @@ export default async function ClubsPage({
   }
 
   const isStaff = profile.role === "school_admin" || profile.role === "teacher";
+  const selectedStatus =
+    isStaff ? parseClubStatus(getSearchParam(params.status)) || "active" : "active";
 
   let clubsQuery = supabase
     .from("clubs")
     .select("id, name, description, category, status")
-    .eq("school_id", profile.school_id)
-    .eq("status", "active");
+    .eq("school_id", profile.school_id);
+
+  if (selectedStatus !== "all") {
+    clubsQuery = clubsQuery.eq("status", selectedStatus);
+  }
 
   if (selectedCategory) {
     clubsQuery = clubsQuery.eq("category", selectedCategory);
+  }
+
+  if (searchQuery) {
+    clubsQuery = clubsQuery.ilike("name", `%${searchQuery}%`);
   }
 
   const { data: clubs, error: clubsError } = await timeServer(
@@ -193,26 +209,45 @@ export default async function ClubsPage({
         </section>
       ) : null}
 
-      <section className="section-card section-card-padded">
-        <h2 className="section-title">{t("clubs.filters.title")}</h2>
-        <p className="section-description">
-          {t("clubs.filters.description")}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <CategoryFilterLink active={!selectedCategory} href="/clubs">
-            {t("filters.allCategories")}
-          </CategoryFilterLink>
-          {ACTIVITY_CATEGORIES.map((category) => (
-            <CategoryFilterLink
-              active={selectedCategory === category}
-              href={`/clubs?category=${encodeURIComponent(category)}`}
-              key={category}
-            >
-              {categoryLabel(category, t)}
-            </CategoryFilterLink>
-          ))}
-        </div>
-      </section>
+      <FilterPanel
+        action="/clubs"
+        clearHref="/clubs"
+        clearLabel={t("filters.clear")}
+        resultCountLabel={tf("filters.showingResults", {
+          count: clubs?.length ?? 0,
+        })}
+        submitLabel={t("filters.filter")}
+      >
+        <SearchField
+          defaultValue={searchQuery}
+          label={t("filters.search")}
+          placeholder={t("filters.searchClubs")}
+        />
+        <SelectFilter
+          defaultValue={selectedCategory ?? ""}
+          label={t("filters.category")}
+          name="category"
+          options={[
+            { label: t("filters.all"), value: "" },
+            ...ACTIVITY_CATEGORIES.map((category) => ({
+              label: categoryLabel(category, t),
+              value: category,
+            })),
+          ]}
+        />
+        {isStaff ? (
+          <SelectFilter
+            defaultValue={selectedStatus}
+            label={t("filters.status")}
+            name="status"
+            options={[
+              { label: t("filters.all"), value: "all" },
+              { label: t("status.active"), value: "active" },
+              { label: t("status.archived"), value: "archived" },
+            ]}
+          />
+        ) : null}
+      </FilterPanel>
 
       <section className="section-card">
         <div className="section-header">
@@ -272,6 +307,7 @@ export default async function ClubsPage({
                       isStaff={isStaff}
                       labels={{
                         archive: t("clubs.actions.archive"),
+                        archived: t("status.archived"),
                         archiving: t("clubs.actions.archiving"),
                         join: t("clubs.actions.join"),
                         joining: t("clubs.actions.joining"),
@@ -338,6 +374,15 @@ export default async function ClubsPage({
               );
             })}
           </div>
+        ) : searchQuery || selectedCategory || selectedStatus !== "active" ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/clubs"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
+          </div>
         ) : (
           <div className="p-4">
             <EmptyState
@@ -376,6 +421,7 @@ function ClubActions({
   isStaff: boolean;
   labels: {
     archive: string;
+    archived: string;
     archiving: string;
     join: string;
     joining: string;
@@ -385,6 +431,10 @@ function ClubActions({
   role: Profile["role"];
 }) {
   if (isStaff) {
+    if (club.status !== "active") {
+      return <span className="text-sm text-zinc-500">{labels.archived}</span>;
+    }
+
     return (
       <form action={archiveClub}>
         <input name="club_id" type="hidden" value={club.id} />
@@ -416,29 +466,6 @@ function ClubActions({
         {isJoined ? labels.leave : labels.join}
       </PendingSubmitButton>
     </form>
-  );
-}
-
-function CategoryFilterLink({
-  active,
-  children,
-  href,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  href: string;
-}) {
-  return (
-    <Link
-      className={
-        active
-          ? "btn btn-primary min-h-9 px-3"
-          : "btn btn-secondary min-h-9 px-3"
-      }
-      href={href}
-    >
-      {children}
-    </Link>
   );
 }
 
@@ -495,4 +522,8 @@ function statusLabel(status: string, t: (key: string) => string) {
 
 function getSearchValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function parseClubStatus(value: string) {
+  return ["active", "archived", "all"].includes(value) ? value : "";
 }

@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import {
   EmptyState,
@@ -17,6 +21,8 @@ export default async function ReportsPage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const profile = await getCurrentStaffProfile();
 
   if (!profile) {
@@ -125,6 +131,9 @@ export default async function ReportsPage() {
             detail: t("reports.table.detail"),
             emptyTitle: t("reports.tables.emptyTitle"),
             name: t("reports.table.name"),
+            resultCount: tf("filters.showingResults", {
+              count: reports.studentsWithMostRegistrations.length,
+            }),
           }}
           rows={reports.studentsWithMostRegistrations}
           title={t("reports.tables.studentsWithMostRegistrations.title")}
@@ -138,6 +147,9 @@ export default async function ReportsPage() {
             detail: t("reports.table.detail"),
             emptyTitle: t("reports.tables.emptyTitle"),
             name: t("reports.table.name"),
+            resultCount: tf("filters.showingResults", {
+              count: reports.studentsWithMostCheckins.length,
+            }),
           }}
           rows={reports.studentsWithMostCheckins}
           title={t("reports.tables.studentsWithMostCheckins.title")}
@@ -151,6 +163,9 @@ export default async function ReportsPage() {
             detail: t("reports.table.detail"),
             emptyTitle: t("reports.tables.emptyTitle"),
             name: t("reports.table.name"),
+            resultCount: tf("filters.showingResults", {
+              count: reports.eventsWithMostRegistrations.length,
+            }),
           }}
           rows={reports.eventsWithMostRegistrations}
           title={t("reports.tables.eventsWithMostRegistrations.title")}
@@ -164,6 +179,9 @@ export default async function ReportsPage() {
             detail: t("reports.table.detail"),
             emptyTitle: t("reports.tables.emptyTitle"),
             name: t("reports.table.name"),
+            resultCount: tf("filters.showingResults", {
+              count: reports.eventsWithMostCheckins.length,
+            }),
           }}
           rows={reports.eventsWithMostCheckins}
           title={t("reports.tables.eventsWithMostCheckins.title")}
@@ -212,6 +230,7 @@ function SummaryTable({
     detail: string;
     emptyTitle: string;
     name: string;
+    resultCount: string;
   };
   rows: ReportTableRow[];
   title: string;
@@ -220,6 +239,7 @@ function SummaryTable({
     <section className="section-card">
       <div className="section-header">
         <h2 className="section-title">{title}</h2>
+        <p className="section-description">{labels.resultCount}</p>
       </div>
       {rows.length ? (
         <>

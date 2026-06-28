@@ -17,14 +17,19 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
+import { getSearchParam } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   CategoryBadge,
   EmptyState,
+  FilterPanel,
   HeaderActionLink,
+  NoResultsState,
   PageHeader,
+  SearchField,
+  SelectFilter,
   StatusBadge,
 } from "../_components/page-ui";
 import {
@@ -100,11 +105,22 @@ type EventShare = {
 
 type EventFilter = "upcoming" | "registered" | "club";
 type EventScope = "mine" | "shared";
+type EventTimeFilter = "past" | "upcoming";
+type EventStatusFilter =
+  | "all"
+  | "approved"
+  | "canceled"
+  | "draft"
+  | "pending_approval"
+  | "rejected";
 
 type EventsSearchParams = {
   category?: string | string[];
   filter?: string | string[];
+  q?: string | string[];
   scope?: string | string[];
+  status?: string | string[];
+  time?: string | string[];
 };
 
 type Translate = (key: string) => string;
@@ -124,9 +140,11 @@ export default async function EventsPage({
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
   const params = await searchParams;
+  const searchQuery = getSearchParam(params.q);
   const selectedFilter = parseEventFilter(getSearchValue(params.filter));
   const selectedScope = parseEventScope(getSearchValue(params.scope));
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
+  const selectedTime = parseEventTime(getSearchParam(params.time));
   const supabase = await createClient();
   const {
     data: { user },
@@ -152,6 +170,9 @@ export default async function EventsPage({
 
   const admin = createAdminClient();
   const isStaff = profile.role === "school_admin" || profile.role === "teacher";
+  const selectedStatus = isStaff
+    ? parseEventStatus(getSearchParam(params.status))
+    : "approved";
   const currentStudent = await getCurrentStudent(admin, profile);
   const now = new Date().toISOString();
   const needsConnectedSchools = isStaff || selectedScope === "shared";
@@ -191,10 +212,14 @@ export default async function EventsPage({
     connectedSchoolIds,
     filter: selectedFilter,
     registeredEventIds,
+    searchQuery,
     schoolId: profile.school_id,
     selectedCategory,
+    selectedStatus,
+    selectedTime,
     sharedEventIds,
     scope: selectedScope,
+    isStaff,
     now,
   });
 
@@ -316,10 +341,16 @@ export default async function EventsPage({
       <EventFilters
         categoryOptions={categoryOptions}
         currentStudent={currentStudent}
+        resultCount={events.length}
+        isStaff={isStaff}
+        searchQuery={searchQuery}
         selectedCategory={selectedCategory}
         selectedFilter={selectedFilter}
         selectedScope={selectedScope}
+        selectedStatus={selectedStatus}
+        selectedTime={selectedTime}
         t={t}
+        tf={tf}
       />
 
       <section className="section-card">
@@ -385,6 +416,20 @@ export default async function EventsPage({
               );
             })}
           </div>
+        ) : searchQuery ||
+          selectedCategory ||
+          selectedFilter !== "upcoming" ||
+          selectedScope !== "mine" ||
+          selectedStatus !== "approved" ||
+          selectedTime !== "upcoming" ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/events"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
+          </div>
         ) : (
           <div className="p-4">
             <EmptyState
@@ -416,141 +461,102 @@ export default async function EventsPage({
 function EventFilters({
   categoryOptions,
   currentStudent,
+  resultCount,
+  isStaff,
+  searchQuery,
   selectedCategory,
   selectedFilter,
   selectedScope,
+  selectedStatus,
+  selectedTime,
   t,
+  tf,
 }: {
   categoryOptions: readonly string[];
   currentStudent: StudentRoster | null;
+  resultCount: number;
+  isStaff: boolean;
+  searchQuery: string;
   selectedCategory: string | null;
   selectedFilter: EventFilter;
   selectedScope: EventScope;
+  selectedStatus: EventStatusFilter;
+  selectedTime: EventTimeFilter;
   t: Translate;
+  tf: FormatTranslate;
 }) {
   return (
-    <section className="section-card section-card-padded">
-      <h2 className="section-title">{t("events.filters.title")}</h2>
-      <p className="section-description">
-        {t("events.filters.description")}
-      </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <FilterLink
-          active={selectedScope === "mine"}
-          href={eventsHref({
-            category: selectedCategory,
-            filter: selectedFilter,
-            scope: "mine",
-          })}
-        >
-          {t("events.filters.mySchool")}
-        </FilterLink>
-        <FilterLink
-          active={selectedScope === "shared"}
-          href={eventsHref({
-            category: selectedCategory,
-            filter: selectedFilter,
-            scope: "shared",
-          })}
-        >
-          {t("events.filters.shared")}
-        </FilterLink>
-      </div>
-      <div className="mt-4 border-t border-zinc-200 pt-4">
-        <p className="text-sm font-medium text-zinc-700">
-          {t("events.filters.viewLabel")}
-        </p>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <FilterLink
-          active={selectedFilter === "upcoming"}
-          href={eventsHref({
-            category: selectedCategory,
-            filter: "upcoming",
-            scope: selectedScope,
-        })}
-      >
-          {t("events.filters.upcoming")}
-        </FilterLink>
-        {currentStudent ? (
-          <FilterLink
-            active={selectedFilter === "registered"}
-            href={eventsHref({
-              category: selectedCategory,
-              filter: "registered",
-              scope: selectedScope,
-            })}
-          >
-            {t("events.filters.myRegistered")}
-          </FilterLink>
-        ) : null}
-        <FilterLink
-          active={selectedFilter === "club"}
-          href={eventsHref({
-            category: selectedCategory,
-            filter: "club",
-            scope: selectedScope,
-          })}
-        >
-          {t("events.filters.club")}
-        </FilterLink>
-      </div>
-
-      {categoryOptions.length ? (
-        <div className="mt-4 border-t border-zinc-200 pt-4">
-          <p className="text-sm font-medium text-zinc-700">
-            {t("events.filters.category")}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <FilterLink
-              active={!selectedCategory}
-              href={eventsHref({
-                filter: selectedFilter,
-                scope: selectedScope,
-              })}
-            >
-              {t("filters.allCategories")}
-            </FilterLink>
-            {categoryOptions.map((category) => (
-              <FilterLink
-                active={selectedCategory === category}
-                href={eventsHref({
-                  category,
-                  filter: selectedFilter,
-                  scope: selectedScope,
-                })}
-                key={category}
-              >
-                {categoryLabel(category, t)}
-              </FilterLink>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-function FilterLink({
-  active,
-  children,
-  href,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  href: string;
-}) {
-  return (
-    <Link
-      className={
-        active
-          ? "btn btn-primary min-h-9 px-3"
-          : "btn btn-secondary min-h-9 px-3"
-      }
-      href={href}
+    <FilterPanel
+      action="/events"
+      clearHref="/events"
+      clearLabel={t("filters.clear")}
+      resultCountLabel={tf("filters.showingResults", { count: resultCount })}
+      submitLabel={t("filters.filter")}
     >
-      {children}
-    </Link>
+      <SearchField
+        defaultValue={searchQuery}
+        label={t("filters.search")}
+        placeholder={t("filters.searchEvents")}
+      />
+      <SelectFilter
+        defaultValue={selectedScope}
+        label={t("events.filters.viewLabel")}
+        name="scope"
+        options={[
+          { label: t("events.filters.mySchool"), value: "mine" },
+          { label: t("events.filters.shared"), value: "shared" },
+        ]}
+      />
+      <SelectFilter
+        defaultValue={selectedFilter}
+        label={t("filters.filter")}
+        name="filter"
+        options={[
+          { label: t("events.filters.upcoming"), value: "upcoming" },
+          ...(currentStudent
+            ? [{ label: t("events.filters.myRegistered"), value: "registered" }]
+            : []),
+          { label: t("events.filters.club"), value: "club" },
+        ]}
+      />
+      <SelectFilter
+        defaultValue={selectedTime}
+        label={t("filters.time")}
+        name="time"
+        options={[
+          { label: t("filters.upcoming"), value: "upcoming" },
+          { label: t("filters.past"), value: "past" },
+        ]}
+      />
+      {categoryOptions.length ? (
+        <SelectFilter
+          defaultValue={selectedCategory ?? ""}
+          label={t("filters.category")}
+          name="category"
+          options={[
+            { label: t("filters.all"), value: "" },
+            ...categoryOptions.map((category) => ({
+              label: categoryLabel(category, t),
+              value: category,
+            })),
+          ]}
+        />
+      ) : null}
+      {isStaff ? (
+        <SelectFilter
+          defaultValue={selectedStatus}
+          label={t("filters.status")}
+          name="status"
+          options={[
+            { label: t("status.approved"), value: "approved" },
+            { label: t("status.canceled"), value: "canceled" },
+            { label: t("status.pendingApproval"), value: "pending_approval" },
+            { label: t("status.rejected"), value: "rejected" },
+            { label: t("filters.all"), value: "all" },
+          ]}
+        />
+      ) : null}
+    </FilterPanel>
   );
 }
 
@@ -1011,19 +1017,27 @@ async function getFilteredEvents(
   {
     connectedSchoolIds,
     filter,
+    isStaff,
     now,
     registeredEventIds,
+    searchQuery,
     schoolId,
     selectedCategory,
+    selectedStatus,
+    selectedTime,
     sharedEventIds,
     scope,
   }: {
     connectedSchoolIds: string[];
     filter: EventFilter;
+    isStaff: boolean;
     now: string;
     registeredEventIds: string[];
+    searchQuery: string;
     schoolId: string;
     selectedCategory: string | null;
+    selectedStatus: EventStatusFilter;
+    selectedTime: EventTimeFilter;
     sharedEventIds: string[];
     scope: EventScope;
   },
@@ -1043,15 +1057,24 @@ async function getFilteredEvents(
     .from("events")
     .select(
       "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note",
-    )
-    .eq("status", "approved")
-    .gte("starts_at", now);
+    );
 
   if (scope === "shared") {
     query = query.in("id", sharedEventIds).in("school_id", connectedSchoolIds);
   } else {
     query = query.eq("school_id", schoolId);
   }
+
+  if (!isStaff || scope === "shared") {
+    query = query.eq("status", "approved");
+  } else if (selectedStatus !== "all") {
+    query = query.eq("status", selectedStatus);
+  }
+
+  query =
+    selectedTime === "past"
+      ? query.lt("starts_at", now)
+      : query.gte("starts_at", now);
 
   if (filter === "registered") {
     query = query.in("id", registeredEventIds);
@@ -1065,9 +1088,16 @@ async function getFilteredEvents(
     query = query.eq("category", selectedCategory);
   }
 
+  if (searchQuery) {
+    query = query.ilike("title", `%${searchQuery}%`);
+  }
+
   const { data: events, error } = await timeServer(
     "events.query.filtered-events",
-    () => query.order("starts_at", { ascending: true }).returns<Event[]>(),
+    () =>
+      query
+        .order("starts_at", { ascending: selectedTime !== "past" })
+        .returns<Event[]>(),
   );
 
   return { error, events: events ?? [] };
@@ -1377,36 +1407,25 @@ function parseEventScope(value: string | undefined): EventScope {
   return value === "shared" ? "shared" : "mine";
 }
 
-function getSearchValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
+function parseEventTime(value: string): EventTimeFilter {
+  return value === "past" ? "past" : "upcoming";
 }
 
-function eventsHref({
-  category,
-  filter,
-  scope,
-}: {
-  category?: string | null;
-  filter: EventFilter;
-  scope: EventScope;
-}) {
-  const params = new URLSearchParams();
+function parseEventStatus(value: string): EventStatusFilter {
+  return [
+    "all",
+    "approved",
+    "canceled",
+    "draft",
+    "pending_approval",
+    "rejected",
+  ].includes(value)
+    ? (value as EventStatusFilter)
+    : "approved";
+}
 
-  if (scope === "shared") {
-    params.set("scope", scope);
-  }
-
-  if (filter !== "upcoming") {
-    params.set("filter", filter);
-  }
-
-  if (category) {
-    params.set("category", category);
-  }
-
-  const query = params.toString();
-
-  return query ? `/events?${query}` : "/events";
+function getSearchValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function eventListTitle(

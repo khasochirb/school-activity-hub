@@ -7,12 +7,16 @@ import {
 } from "@/lib/i18n/dictionary";
 import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { getSearchParam } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
   EmptyState,
+  FilterPanel,
   HeaderActionLink,
+  NoResultsState,
   PageHeader,
+  SelectFilter,
   StatusBadge,
 } from "../_components/page-ui";
 import { revokeInviteCode } from "./actions";
@@ -44,12 +48,22 @@ type InviteCode = {
   redeemed_at: string | null;
 };
 
-export default async function InviteCodesPage() {
+type InviteCodesSearchParams = {
+  status?: string | string[];
+};
+
+export default async function InviteCodesPage({
+  searchParams,
+}: {
+  searchParams: Promise<InviteCodesSearchParams>;
+}) {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
+  const params = await searchParams;
+  const selectedStatus = parseInviteStatusFilter(getSearchParam(params.status));
   const supabase = await createClient();
   const {
     data: { user },
@@ -101,6 +115,15 @@ export default async function InviteCodesPage() {
   const studentMap = new Map(
     (activeStudents ?? []).map((student) => [student.id, student]),
   );
+  const now = new Date().toISOString();
+  const inviteHistory = inviteCodes ?? [];
+  const filteredInviteCodes = inviteHistory.filter((invite) => {
+    if (!selectedStatus) {
+      return true;
+    }
+
+    return inviteDisplayStatus(invite, now) === selectedStatus;
+  });
 
   return (
     <div className="page-stack">
@@ -196,6 +219,29 @@ export default async function InviteCodesPage() {
         </div>
       </section>
 
+      <FilterPanel
+        action="/invite-codes"
+        clearHref="/invite-codes"
+        clearLabel={t("filters.clear")}
+        resultCountLabel={tf("filters.showingResults", {
+          count: filteredInviteCodes.length,
+        })}
+        submitLabel={t("filters.filter")}
+      >
+        <SelectFilter
+          defaultValue={selectedStatus}
+          label={t("filters.status")}
+          name="status"
+          options={[
+            { label: t("filters.all"), value: "" },
+            { label: t("status.active"), value: "active" },
+            { label: t("status.redeemed"), value: "redeemed" },
+            { label: t("status.revoked"), value: "revoked" },
+            { label: t("filters.expired"), value: "expired" },
+          ]}
+        />
+      </FilterPanel>
+
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">
@@ -209,7 +255,7 @@ export default async function InviteCodesPage() {
             </p>
           ) : null}
         </div>
-        {inviteCodes?.length ? (
+        {inviteHistory.length && filteredInviteCodes.length ? (
           <>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-left text-sm">
@@ -236,7 +282,7 @@ export default async function InviteCodesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
-                  {inviteCodes.map((invite) => (
+                  {filteredInviteCodes.map((invite) => (
                     <tr key={invite.id}>
                       <td className="px-4 py-3 font-medium text-zinc-950">
                         {studentName(
@@ -245,8 +291,8 @@ export default async function InviteCodesPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={invite.status}>
-                          {statusLabel(invite.status, t)}
+                        <StatusBadge status={inviteDisplayStatus(invite, now)}>
+                          {statusLabel(inviteDisplayStatus(invite, now), t)}
                         </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
@@ -278,7 +324,7 @@ export default async function InviteCodesPage() {
               </table>
             </div>
             <div className="divide-y divide-zinc-200 md:hidden">
-              {inviteCodes.map((invite) => (
+              {filteredInviteCodes.map((invite) => (
                 <article className="p-4" key={invite.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -293,8 +339,8 @@ export default async function InviteCodesPage() {
                         {formatDate(invite.created_at, locale)}
                       </p>
                     </div>
-                    <StatusBadge status={invite.status}>
-                      {statusLabel(invite.status, t)}
+                    <StatusBadge status={inviteDisplayStatus(invite, now)}>
+                      {statusLabel(inviteDisplayStatus(invite, now), t)}
                     </StatusBadge>
                   </div>
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -333,6 +379,15 @@ export default async function InviteCodesPage() {
               ))}
             </div>
           </>
+        ) : inviteHistory.length && selectedStatus ? (
+          <div className="p-4">
+            <NoResultsState
+              clearHref="/invite-codes"
+              clearLabel={t("filters.clear")}
+              description={t("filters.noResultsDescription")}
+              title={t("filters.noResults")}
+            />
+          </div>
         ) : (
           <div className="p-4">
             <EmptyState
@@ -410,5 +465,23 @@ function statusLabel(status: string, t: (key: string) => string) {
     return t("status.redeemed");
   }
 
+  if (status === "expired") {
+    return t("filters.expired");
+  }
+
   return status;
+}
+
+function inviteDisplayStatus(invite: InviteCode, now: string) {
+  if (invite.status === "active" && invite.expires_at < now) {
+    return "expired";
+  }
+
+  return invite.status;
+}
+
+function parseInviteStatusFilter(value: string) {
+  return ["active", "redeemed", "revoked", "expired"].includes(value)
+    ? value
+    : "";
 }

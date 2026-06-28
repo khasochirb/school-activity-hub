@@ -75,6 +75,123 @@ export function HeaderActionLink({
   );
 }
 
+export function FilterPanel({
+  action,
+  children,
+  clearHref,
+  clearLabel,
+  resultCountLabel,
+  submitLabel,
+}: {
+  action: string;
+  children: React.ReactNode;
+  clearHref: string;
+  clearLabel: string;
+  resultCountLabel: string;
+  submitLabel: string;
+}) {
+  return (
+    <section className="section-card section-card-padded">
+      <form
+        action={action}
+        className="grid gap-3 md:grid-cols-[repeat(3,minmax(0,1fr))_auto_auto]"
+      >
+        {children}
+        <button className="btn btn-primary min-h-11 md:self-end" type="submit">
+          {submitLabel}
+        </button>
+        <Link
+          className="btn btn-secondary min-h-11 md:self-end"
+          href={clearHref}
+        >
+          {clearLabel}
+        </Link>
+      </form>
+      <p className="mt-3 text-sm font-medium text-slate-600">
+        {resultCountLabel}
+      </p>
+    </section>
+  );
+}
+
+export function SearchField({
+  defaultValue,
+  label,
+  name = "q",
+  placeholder,
+}: {
+  defaultValue?: string;
+  label: string;
+  name?: string;
+  placeholder: string;
+}) {
+  return (
+    <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+      {label}
+      <input
+        className="h-11 rounded-md border px-3 text-base font-normal outline-none transition"
+        defaultValue={defaultValue}
+        name={name}
+        placeholder={placeholder}
+        type="search"
+      />
+    </label>
+  );
+}
+
+export function SelectFilter({
+  defaultValue,
+  label,
+  name,
+  options,
+}: {
+  defaultValue?: string;
+  label: string;
+  name: string;
+  options: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+      {label}
+      <select
+        className="h-11 cursor-pointer rounded-md border px-3 text-base font-normal outline-none transition"
+        defaultValue={defaultValue ?? ""}
+        name={name}
+      >
+        {options.map((option) => (
+          <option key={option.value || "all"} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export function NoResultsState({
+  clearHref,
+  clearLabel,
+  description,
+  title,
+}: {
+  clearHref: string;
+  clearLabel: string;
+  description: string;
+  title: string;
+}) {
+  return (
+    <EmptyState
+      action={
+        <HeaderActionLink href={clearHref} variant="secondary">
+          {clearLabel}
+        </HeaderActionLink>
+      }
+      description={description}
+      title={title}
+    />
+  );
+}
+
 export function StatusBadge({
   children,
   status,
@@ -122,6 +239,7 @@ function variantForStatus(status: string | undefined): BadgeVariant {
     status === "archived" ||
     status === "canceled" ||
     status === "declined" ||
+    status === "expired" ||
     status === "inactive" ||
     status === "rejected" ||
     status === "revoked"
