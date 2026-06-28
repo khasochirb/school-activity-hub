@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ToastProvider } from "@/components/toast-provider";
 import { getCurrentTheme } from "@/lib/get-theme";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
@@ -26,6 +27,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
   const theme = await getCurrentTheme();
   const htmlClassName =
     theme === "dark" ? "dark h-full antialiased" : "h-full antialiased";
@@ -44,7 +47,19 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ToastProvider
+          labels={{
+            close: t("common.close"),
+            error: t("feedback.error"),
+            info: t("feedback.info"),
+            success: t("feedback.success"),
+            warning: t("feedback.warning"),
+          }}
+        >
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/toast-provider";
 import { createClient } from "@/lib/supabase/client";
 
 export type LoginFormLabels = {
@@ -15,6 +16,7 @@ export type LoginFormLabels = {
 
 export function LoginForm({ labels }: { labels: LoginFormLabels }) {
   const router = useRouter();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,6 +39,11 @@ export function LoginForm({ labels }: { labels: LoginFormLabels }) {
 
     if (signInError) {
       setError(signInError.message);
+      toast.notify({
+        message: signInError.message,
+        title: toast.labels.error,
+        variant: "error",
+      });
       return;
     }
 

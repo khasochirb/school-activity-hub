@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useToast } from "@/components/toast-provider";
 import { createClient } from "@/lib/supabase/client";
 
 type ResetPasswordFormLabels = {
@@ -16,6 +17,7 @@ export function ResetPasswordForm({
 }: {
   labels: ResetPasswordFormLabels;
 }) {
+  const toast = useToast();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,6 +33,11 @@ export function ResetPasswordForm({
 
     if (!email) {
       setError(labels.emailRequired);
+      toast.notify({
+        message: labels.emailRequired,
+        title: toast.labels.error,
+        variant: "error",
+      });
       setIsSubmitting(false);
       return;
     }
@@ -47,10 +54,20 @@ export function ResetPasswordForm({
 
     if (resetError) {
       setError(resetError.message);
+      toast.notify({
+        message: resetError.message,
+        title: toast.labels.error,
+        variant: "error",
+      });
       return;
     }
 
     setMessage(labels.success);
+    toast.notify({
+      message: labels.success,
+      title: toast.labels.success,
+      variant: "success",
+    });
     event.currentTarget.reset();
   }
 

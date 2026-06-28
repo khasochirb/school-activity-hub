@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { ActionToast } from "@/components/toast-provider";
 import { checkInToEvent, type CheckInState } from "./actions";
 
 const initialState: CheckInState = {
@@ -25,6 +26,7 @@ export function CheckInForm({
 
   return (
     <form action={formAction} className="mt-5 flex flex-col gap-3">
+      <ActionToast message={state.message} success={state.success} />
       <input name="event_id" type="hidden" value={eventId} />
       {state.message ? (
         <div

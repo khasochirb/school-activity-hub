@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
@@ -774,12 +775,16 @@ function EventActions({
         </Link>
         <form action={cancelEvent}>
           <input name="event_id" type="hidden" value={event.id} />
-          <PendingSubmitButton
+          <ConfirmSubmitButton
+            cancelLabel={t("common.cancel")}
             className="btn btn-secondary min-h-9 px-3"
+            confirmDescription={t("feedback.cannotBeUndone")}
+            confirmLabel={t("feedback.confirm")}
+            confirmTitle={t("feedback.cancelEvent")}
             pendingLabel={t("events.actions.cancelling")}
           >
             {t("events.actions.cancel")}
-          </PendingSubmitButton>
+          </ConfirmSubmitButton>
         </form>
         <SharingForm
           connectedSchools={connectedSchools}
@@ -811,6 +816,7 @@ function EventActions({
         <PendingSubmitButton
           className="btn btn-secondary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
           pendingLabel={t("events.actions.cancelling")}
+          toastMessage={t("events.actions.cancelling")}
         >
           {t("events.actions.cancelMyRegistration")}
         </PendingSubmitButton>
@@ -847,6 +853,7 @@ function EventActions({
           className="btn btn-primary min-h-12 w-full px-4 text-base disabled:cursor-not-allowed disabled:bg-zinc-400 sm:min-h-10 sm:w-auto sm:text-sm"
           disabled={isFull}
           pendingLabel={t("events.actions.joining")}
+          toastMessage={t("events.actions.joining")}
         >
           {isFull ? t("events.actions.eventFull") : t("events.actions.join")}
         </PendingSubmitButton>
@@ -892,6 +899,7 @@ function SafetyForm({ event, t }: { event: Event; t: Translate }) {
       <PendingSubmitButton
         className="btn btn-secondary min-h-9 px-3"
         pendingLabel={t("common.saving")}
+        toastMessage={t("common.saving")}
       >
         {t("events.actions.saveSafety")}
       </PendingSubmitButton>
@@ -957,6 +965,7 @@ function SharingForm({
         className="btn btn-secondary min-h-9 px-3 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
         disabled={!connectedSchools.length && !sharedSchoolIds.length}
         pendingLabel={t("common.saving")}
+        toastMessage={t("common.saving")}
       >
         {t("events.actions.saveSharing")}
       </PendingSubmitButton>

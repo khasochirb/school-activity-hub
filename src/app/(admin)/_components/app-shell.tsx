@@ -281,6 +281,7 @@ function AccountPanel({
         <PendingSubmitButton
           className="btn btn-secondary w-full"
           pendingLabel={logoutPendingLabel}
+          toastMessage={logoutPendingLabel}
         >
           {logoutLabel}
         </PendingSubmitButton>
@@ -337,6 +338,7 @@ function MobileAccount({
         <PendingSubmitButton
           className="btn btn-secondary w-full"
           pendingLabel={logoutPendingLabel}
+          toastMessage={logoutPendingLabel}
         >
           {logoutLabel}
         </PendingSubmitButton>

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { ActionToast } from "@/components/toast-provider";
 import {
   updateSchoolSettings,
   type UpdateSchoolSettingsState,
@@ -34,6 +35,7 @@ export function SchoolSettingsForm({
 
   return (
     <form action={formAction} className="compact-form-sm flex flex-col gap-3">
+      <ActionToast message={state.message} success={state.success} />
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.schoolName}
         <input

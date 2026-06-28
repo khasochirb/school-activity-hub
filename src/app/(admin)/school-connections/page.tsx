@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ActionToast } from "@/components/toast-provider";
 import {
   formatTranslation,
   getDictionary,
@@ -195,6 +196,8 @@ export default async function SchoolConnectionsPage({
         description={t("schoolConnections.description")}
         title={t("schoolConnections.title")}
       />
+      <ActionToast message={activeMessage} success />
+      <ActionToast message={errorMessage} success={false} />
 
       {activeMessage ? (
         <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
@@ -518,6 +521,7 @@ function RequestConnectionForm({
       <PendingSubmitButton
         className="btn btn-primary h-10 w-full sm:w-auto"
         pendingLabel={labels.requesting}
+        toastMessage={labels.requesting}
       >
         {labels.request}
       </PendingSubmitButton>
@@ -552,6 +556,7 @@ function ConnectionResponseForm({
             : "btn btn-secondary h-10"
         }
         pendingLabel={isApprove ? labels.approving : labels.rejecting}
+        toastMessage={isApprove ? labels.approving : labels.rejecting}
       >
         {isApprove ? labels.approve : labels.reject}
       </PendingSubmitButton>

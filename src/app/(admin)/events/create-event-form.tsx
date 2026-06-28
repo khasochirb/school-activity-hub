@@ -7,6 +7,7 @@ import {
   type FormEvent,
 } from "react";
 import { useFormStatus } from "react-dom";
+import { ActionToast } from "@/components/toast-provider";
 import { formatSchedulePreview } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
 import { createEvent, type CreateEventState } from "./actions";
@@ -156,6 +157,8 @@ export function CreateEventForm({
       className="compact-form-xl flex flex-col gap-4"
       onSubmit={handleSubmit}
     >
+      <ActionToast message={clientError} success={false} />
+      <ActionToast message={state.message} success={state.success} />
       <fieldset className="form-group">
         <legend className="form-group-title">{labels.basicDetails}</legend>
         <div className="mt-3 grid gap-3 md:grid-cols-[minmax(16rem,2fr)_minmax(11rem,1fr)_minmax(13rem,1.4fr)]">

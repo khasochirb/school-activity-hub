@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   formatTranslation,
   getDictionary,
@@ -243,6 +243,11 @@ export default async function StaffPage({
                         <TeacherStatusForm
                           currentAdminId={profile.id}
                           labels={{
+                            cancel: t("common.cancel"),
+                            confirm: t("feedback.confirm"),
+                            confirmDeactivate: t("feedback.deactivateStaff"),
+                            confirmDescription: t("feedback.cannotBeUndone"),
+                            confirmReactivate: t("feedback.reactivateStaff"),
                             deactivate: t("staff.actions.deactivateTeacher"),
                             protectedAccount: t("staff.actions.protectedAccount"),
                             reactivate: t("staff.actions.reactivateTeacher"),
@@ -294,6 +299,11 @@ export default async function StaffPage({
                     <TeacherStatusForm
                       currentAdminId={profile.id}
                       labels={{
+                        cancel: t("common.cancel"),
+                        confirm: t("feedback.confirm"),
+                        confirmDeactivate: t("feedback.deactivateStaff"),
+                        confirmDescription: t("feedback.cannotBeUndone"),
+                        confirmReactivate: t("feedback.reactivateStaff"),
                         deactivate: t("staff.actions.deactivateTeacher"),
                         protectedAccount: t("staff.actions.protectedAccount"),
                         reactivate: t("staff.actions.reactivateTeacher"),
@@ -348,6 +358,11 @@ function TeacherStatusForm({
 }: {
   currentAdminId: string;
   labels: {
+    cancel: string;
+    confirm: string;
+    confirmDeactivate: string;
+    confirmDescription: string;
+    confirmReactivate: string;
     deactivate: string;
     protectedAccount: string;
     reactivate: string;
@@ -365,12 +380,20 @@ function TeacherStatusForm({
     <form action={updateTeacherStatus}>
       <input name="profile_id" type="hidden" value={staff.id} />
       <input name="status" type="hidden" value={nextStatus} />
-      <PendingSubmitButton
+      <ConfirmSubmitButton
+        cancelLabel={labels.cancel}
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        confirmDescription={labels.confirmDescription}
+        confirmLabel={labels.confirm}
+        confirmTitle={
+          nextStatus === "inactive"
+            ? labels.confirmDeactivate
+            : labels.confirmReactivate
+        }
         pendingLabel={labels.saving}
       >
         {nextStatus === "inactive" ? labels.deactivate : labels.reactivate}
-      </PendingSubmitButton>
+      </ConfirmSubmitButton>
     </form>
   );
 }

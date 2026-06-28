@@ -371,6 +371,7 @@ function InactiveForm({
       <PendingSubmitButton
         className="btn btn-secondary min-h-9 px-3"
         pendingLabel={labels.saving}
+        toastMessage={labels.saving}
       >
         {labels.markInactive}
       </PendingSubmitButton>

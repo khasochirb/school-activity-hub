@@ -647,6 +647,7 @@ function PermissionCell({
         <PendingSubmitButton
           className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
           pendingLabel={t("common.saving")}
+          toastMessage={t("common.saving")}
         >
           {t("attendance.actions.savePermission")}
         </PendingSubmitButton>

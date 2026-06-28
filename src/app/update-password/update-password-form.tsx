@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/toast-provider";
 import { createClient } from "@/lib/supabase/client";
 
 type UpdatePasswordFormLabels = {
@@ -25,6 +26,7 @@ export function UpdatePasswordForm({
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const toast = useToast();
   const [sessionMessage, setSessionMessage] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,12 +81,22 @@ export function UpdatePasswordForm({
 
     if (password.length < 8) {
       setError(labels.passwordMinLength);
+      toast.notify({
+        message: labels.passwordMinLength,
+        title: toast.labels.error,
+        variant: "error",
+      });
       setIsSubmitting(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError(labels.passwordMismatch);
+      toast.notify({
+        message: labels.passwordMismatch,
+        title: toast.labels.error,
+        variant: "error",
+      });
       setIsSubmitting(false);
       return;
     }
@@ -97,10 +109,20 @@ export function UpdatePasswordForm({
 
     if (updateError) {
       setError(updateError.message);
+      toast.notify({
+        message: updateError.message,
+        title: toast.labels.error,
+        variant: "error",
+      });
       return;
     }
 
     setMessage(labels.success);
+    toast.notify({
+      message: labels.success,
+      title: toast.labels.success,
+      variant: "success",
+    });
     event.currentTarget.reset();
     router.refresh();
   }

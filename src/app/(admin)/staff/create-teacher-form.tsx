@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { ActionToast } from "@/components/toast-provider";
 import { createTeacher, type CreateTeacherState } from "./actions";
 
 const initialState: CreateTeacherState = {
@@ -26,6 +27,7 @@ export function CreateTeacherForm({
 
   return (
     <form action={formAction} className="compact-form-lg grid gap-3 md:grid-cols-3">
+      <ActionToast message={state.message} success={state.success} />
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.fullName}
         <input

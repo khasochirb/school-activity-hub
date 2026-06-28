@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   formatTranslation,
   getDictionary,
@@ -211,6 +211,9 @@ export default async function AnnouncementsPage({
                         labels={{
                           archive: t("announcements.actions.archive"),
                           archiving: t("announcements.actions.archiving"),
+                          cancel: t("common.cancel"),
+                          confirm: t("feedback.confirm"),
+                          confirmDescription: t("feedback.cannotBeUndone"),
                         }}
                       />
                     ) : null}
@@ -265,6 +268,9 @@ function ArchiveForm({
   labels: {
     archive: string;
     archiving: string;
+    cancel: string;
+    confirm: string;
+    confirmDescription: string;
   };
 }) {
   if (announcement.status !== "active") {
@@ -274,12 +280,16 @@ function ArchiveForm({
   return (
     <form action={archiveAnnouncement}>
       <input name="announcement_id" type="hidden" value={announcement.id} />
-      <PendingSubmitButton
+      <ConfirmSubmitButton
+        cancelLabel={labels.cancel}
         className="btn btn-secondary min-h-9 px-3"
+        confirmDescription={labels.confirmDescription}
+        confirmLabel={labels.confirm}
+        confirmTitle={labels.archive}
         pendingLabel={labels.archiving}
       >
         {labels.archive}
-      </PendingSubmitButton>
+      </ConfirmSubmitButton>
     </form>
   );
 }

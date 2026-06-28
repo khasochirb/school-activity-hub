@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
@@ -311,6 +312,10 @@ export default async function ClubsPage({
                         archive: t("clubs.actions.archive"),
                         archived: t("status.archived"),
                         archiving: t("clubs.actions.archiving"),
+                        cancel: t("common.cancel"),
+                        confirm: t("feedback.confirm"),
+                        confirmArchive: t("feedback.archiveClub"),
+                        confirmDescription: t("feedback.cannotBeUndone"),
                         join: t("clubs.actions.join"),
                         joining: t("clubs.actions.joining"),
                         leave: t("clubs.actions.leave"),
@@ -357,6 +362,7 @@ export default async function ClubsPage({
                                   <PendingSubmitButton
                                     className="btn btn-secondary min-h-9 px-3"
                                     pendingLabel={t("common.saving")}
+                                    toastMessage={t("common.saving")}
                                   >
                                     {t("clubs.actions.makeLeader")}
                                   </PendingSubmitButton>
@@ -425,6 +431,10 @@ function ClubActions({
     archive: string;
     archived: string;
     archiving: string;
+    cancel: string;
+    confirm: string;
+    confirmArchive: string;
+    confirmDescription: string;
     join: string;
     joining: string;
     leave: string;
@@ -440,12 +450,16 @@ function ClubActions({
     return (
       <form action={archiveClub}>
         <input name="club_id" type="hidden" value={club.id} />
-        <PendingSubmitButton
+        <ConfirmSubmitButton
+          cancelLabel={labels.cancel}
           className="btn btn-secondary min-h-9 px-3"
+          confirmDescription={labels.confirmDescription}
+          confirmLabel={labels.confirm}
+          confirmTitle={labels.confirmArchive}
           pendingLabel={labels.archiving}
         >
           {labels.archive}
-        </PendingSubmitButton>
+        </ConfirmSubmitButton>
       </form>
     );
   }
@@ -464,6 +478,7 @@ function ClubActions({
             : "btn btn-primary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
         }
         pendingLabel={isJoined ? labels.leaving : labels.joining}
+        toastMessage={isJoined ? labels.leaving : labels.joining}
       >
         {isJoined ? labels.leave : labels.join}
       </PendingSubmitButton>

@@ -175,6 +175,7 @@ export default async function ApprovalsPage({
                     <PendingSubmitButton
                       className="btn btn-primary min-h-9 px-3"
                       pendingLabel={t("approvals.actions.approving")}
+                      toastMessage={t("approvals.actions.approving")}
                     >
                       {t("approvals.actions.approve")}
                     </PendingSubmitButton>
@@ -271,6 +272,7 @@ export default async function ApprovalsPage({
                   <PendingSubmitButton
                     className="btn btn-secondary min-h-9 w-full px-3 sm:w-fit"
                     pendingLabel={t("approvals.actions.rejecting")}
+                    toastMessage={t("approvals.actions.rejecting")}
                   >
                     {t("approvals.actions.reject")}
                   </PendingSubmitButton>

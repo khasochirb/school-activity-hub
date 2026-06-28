@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { ActionToast } from "@/components/toast-provider";
 import {
   bulkGenerateInviteCodes,
   type BulkGenerateInviteState,
@@ -73,6 +74,7 @@ export function BulkGenerateInviteForm({
   return (
     <div className="compact-form-xl flex flex-col gap-3">
       <form action={formAction} className="flex flex-col gap-3">
+        <ActionToast message={state.message} success={state.success} />
         <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-semibold text-slate-800">
             {labels.scope}

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   formatTranslation,
   getDictionary,
@@ -311,6 +311,10 @@ export default async function InviteCodesPage({
                             alreadyUsedOrInactive: t(
                               "invites.actions.alreadyUsedOrInactive",
                             ),
+                            cancel: t("common.cancel"),
+                            confirm: t("feedback.confirm"),
+                            confirmDescription: t("feedback.cannotBeUndone"),
+                            confirmRevoke: t("feedback.revokeInviteCode"),
                             revoke: t("invites.actions.revoke"),
                             revoking: t("invites.actions.revoking"),
                           }}
@@ -370,6 +374,10 @@ export default async function InviteCodesPage({
                         alreadyUsedOrInactive: t(
                           "invites.actions.alreadyUsedOrInactive",
                         ),
+                        cancel: t("common.cancel"),
+                        confirm: t("feedback.confirm"),
+                        confirmDescription: t("feedback.cannotBeUndone"),
+                        confirmRevoke: t("feedback.revokeInviteCode"),
                         revoke: t("invites.actions.revoke"),
                         revoking: t("invites.actions.revoking"),
                       }}
@@ -418,6 +426,10 @@ function RevokeForm({
   invite: InviteCode;
   labels: {
     alreadyUsedOrInactive: string;
+    cancel: string;
+    confirm: string;
+    confirmDescription: string;
+    confirmRevoke: string;
     revoke: string;
     revoking: string;
   };
@@ -436,12 +448,16 @@ function RevokeForm({
   return (
     <form action={revokeInviteCode}>
       <input name="invite_code_id" type="hidden" value={invite.id} />
-      <PendingSubmitButton
+      <ConfirmSubmitButton
+        cancelLabel={labels.cancel}
         className="btn btn-secondary min-h-9 px-3"
+        confirmDescription={labels.confirmDescription}
+        confirmLabel={labels.confirm}
+        confirmTitle={labels.confirmRevoke}
         pendingLabel={labels.revoking}
       >
         {labels.revoke}
-      </PendingSubmitButton>
+      </ConfirmSubmitButton>
     </form>
   );
 }
