@@ -27,7 +27,7 @@ import {
   DetailsDisclosure,
   EmptyState,
   FilterPanel,
-  HeaderActionLink,
+  FormSectionToggleButton,
   NoResultsState,
   PageHeader,
   SearchField,
@@ -177,9 +177,9 @@ export default async function ClubsPage({
       <PageHeader
         actions={
           isStaff ? (
-            <HeaderActionLink href="#create-club">
+            <FormSectionToggleButton targetId="create-club">
               {t("clubs.actions.create")}
-            </HeaderActionLink>
+            </FormSectionToggleButton>
           ) : undefined
         }
         description={t("clubs.description")}
@@ -396,9 +396,9 @@ export default async function ClubsPage({
             <EmptyState
               action={
                 isStaff ? (
-                  <HeaderActionLink href="#create-club">
+                  <FormSectionToggleButton targetId="create-club">
                     {t("clubs.actions.create")}
-                  </HeaderActionLink>
+                  </FormSectionToggleButton>
                 ) : undefined
               }
               description={

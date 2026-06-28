@@ -15,7 +15,7 @@ import {
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
-  HeaderActionLink,
+  FormSectionToggleButton,
   NoResultsState,
   PageHeader,
   SearchField,
@@ -113,12 +113,12 @@ export default async function StudentsPage({
       <PageHeader
         actions={
           <>
-            <HeaderActionLink href="#add-student">
+            <FormSectionToggleButton targetId="add-student">
               {t("students.actions.add")}
-            </HeaderActionLink>
-            <HeaderActionLink href="#import-csv" variant="secondary">
+            </FormSectionToggleButton>
+            <FormSectionToggleButton targetId="import-csv" variant="secondary">
               {t("students.actions.importCsv")}
-            </HeaderActionLink>
+            </FormSectionToggleButton>
           </>
         }
         description={t("students.description")}
@@ -332,12 +332,12 @@ export default async function StudentsPage({
             <EmptyState
               action={
                 <>
-                  <HeaderActionLink href="#add-student">
+                  <FormSectionToggleButton targetId="add-student">
                     {t("students.actions.add")}
-                  </HeaderActionLink>
-                  <HeaderActionLink href="#import-csv" variant="secondary">
+                  </FormSectionToggleButton>
+                  <FormSectionToggleButton targetId="import-csv" variant="secondary">
                     {t("students.actions.importCsv")}
-                  </HeaderActionLink>
+                  </FormSectionToggleButton>
                 </>
               }
               description={t("students.empty.description")}

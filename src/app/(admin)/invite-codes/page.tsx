@@ -15,7 +15,7 @@ import {
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
-  HeaderActionLink,
+  FormSectionToggleButton,
   NoResultsState,
   PageHeader,
   SelectFilter,
@@ -132,12 +132,12 @@ export default async function InviteCodesPage({
       <PageHeader
         actions={
           <>
-            <HeaderActionLink href="#generate-invite">
+            <FormSectionToggleButton targetId="generate-invite">
               {t("invites.actions.generate")}
-            </HeaderActionLink>
-            <HeaderActionLink href="#bulk-generate" variant="secondary">
+            </FormSectionToggleButton>
+            <FormSectionToggleButton targetId="bulk-generate" variant="secondary">
               {t("invites.actions.bulkGenerateShort")}
-            </HeaderActionLink>
+            </FormSectionToggleButton>
           </>
         }
         description={t("invites.description")}
@@ -401,12 +401,12 @@ export default async function InviteCodesPage({
             <EmptyState
               action={
                 <>
-                  <HeaderActionLink href="#generate-invite">
+                  <FormSectionToggleButton targetId="generate-invite">
                     {t("invites.actions.generate")}
-                  </HeaderActionLink>
-                  <HeaderActionLink href="#bulk-generate" variant="secondary">
+                  </FormSectionToggleButton>
+                  <FormSectionToggleButton targetId="bulk-generate" variant="secondary">
                     {t("invites.actions.bulkGenerateShort")}
-                  </HeaderActionLink>
+                  </FormSectionToggleButton>
                 </>
               }
               description={t("invites.empty.description")}

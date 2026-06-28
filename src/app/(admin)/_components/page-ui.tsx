@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  CollapsibleFormSection as ClientCollapsibleFormSection,
+  FormSectionToggleButton as ClientFormSectionToggleButton,
+} from "./collapsible-form-section";
 
 type BadgeVariant =
   | "danger"
@@ -90,43 +94,32 @@ export function CollapsibleFormSection({
   showLabel: string;
   title: string;
 }) {
-  const summaryId = `${id}-summary`;
-  const contentId = `${id}-form`;
-
   return (
-    <section
-      aria-labelledby={summaryId}
-      className="collapsible-form-section section-card section-card-padded"
+    <ClientCollapsibleFormSection
+      description={description}
+      hideLabel={hideLabel}
       id={id}
+      showLabel={showLabel}
+      title={title}
     >
-      <div
-        className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
-        id={summaryId}
-      >
-        <div className="max-w-xl">
-          <h2 className="section-title">{title}</h2>
-          <p className="section-description">{description}</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:justify-end">
-          <Link
-            aria-controls={contentId}
-            className="collapsible-form-show btn btn-primary w-full sm:w-auto"
-            href={`#${id}`}
-          >
-            {showLabel}
-          </Link>
-          <Link
-            className="collapsible-form-hide btn btn-secondary w-full sm:w-auto"
-            href={`#${summaryId}`}
-          >
-            {hideLabel}
-          </Link>
-        </div>
-      </div>
-      <div className="collapsible-form-content mt-3" id={contentId}>
-        {children}
-      </div>
-    </section>
+      {children}
+    </ClientCollapsibleFormSection>
+  );
+}
+
+export function FormSectionToggleButton({
+  children,
+  targetId,
+  variant = "primary",
+}: {
+  children: React.ReactNode;
+  targetId: string;
+  variant?: "primary" | "secondary";
+}) {
+  return (
+    <ClientFormSectionToggleButton targetId={targetId} variant={variant}>
+      {children}
+    </ClientFormSectionToggleButton>
   );
 }
 

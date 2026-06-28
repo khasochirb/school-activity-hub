@@ -15,7 +15,7 @@ import {
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
-  HeaderActionLink,
+  FormSectionToggleButton,
   NoResultsState,
   PageHeader,
   SearchField,
@@ -110,9 +110,9 @@ export default async function AnnouncementsPage({
       <PageHeader
         actions={
           isStaff ? (
-            <HeaderActionLink href="#create-announcement">
+            <FormSectionToggleButton targetId="create-announcement">
               {t("announcements.actions.create")}
-            </HeaderActionLink>
+            </FormSectionToggleButton>
           ) : undefined
         }
         description={t("announcements.description")}
@@ -241,9 +241,9 @@ export default async function AnnouncementsPage({
             <EmptyState
               action={
                 isStaff ? (
-                  <HeaderActionLink href="#create-announcement">
+                  <FormSectionToggleButton targetId="create-announcement">
                     {t("announcements.actions.create")}
-                  </HeaderActionLink>
+                  </FormSectionToggleButton>
                 ) : undefined
               }
               description={

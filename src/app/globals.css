@@ -721,23 +721,6 @@ a:hover .stat-card {
   scroll-margin-top: 1rem;
 }
 
-.collapsible-form-content,
-.collapsible-form-hide {
-  display: none;
-}
-
-.collapsible-form-section:target .collapsible-form-content {
-  display: block;
-}
-
-.collapsible-form-section:target .collapsible-form-show {
-  display: none;
-}
-
-.collapsible-form-section:target .collapsible-form-hide {
-  display: inline-flex;
-}
-
 .form-group {
   border: 1px solid var(--border);
   border-radius: 0.5rem;

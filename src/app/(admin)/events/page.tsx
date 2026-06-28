@@ -28,6 +28,7 @@ import {
   DetailsDisclosure,
   EmptyState,
   FilterPanel,
+  FormSectionToggleButton,
   HeaderActionLink,
   NoResultsState,
   PageHeader,
@@ -272,9 +273,9 @@ export default async function EventsPage({
       <PageHeader
         actions={
           canCreate ? (
-            <HeaderActionLink href="#create-event">
+            <FormSectionToggleButton targetId="create-event">
               {t("events.actions.create")}
-            </HeaderActionLink>
+            </FormSectionToggleButton>
           ) : undefined
         }
         description={t("events.description")}
@@ -443,9 +444,9 @@ export default async function EventsPage({
             <EmptyState
               action={
                 canCreate ? (
-                  <HeaderActionLink href="#create-event">
+                  <FormSectionToggleButton targetId="create-event">
                     {t("events.actions.create")}
-                  </HeaderActionLink>
+                  </FormSectionToggleButton>
                 ) : (
                   <HeaderActionLink href="/events" variant="secondary">
                     {t("events.actions.resetFilters")}

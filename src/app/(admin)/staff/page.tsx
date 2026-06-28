@@ -15,7 +15,7 @@ import {
   EmptyState,
   DetailsDisclosure,
   FilterPanel,
-  HeaderActionLink,
+  FormSectionToggleButton,
   NoResultsState,
   PageHeader,
   SearchField,
@@ -116,9 +116,9 @@ export default async function StaffPage({
     <div className="page-stack">
       <PageHeader
         actions={
-          <HeaderActionLink href="#create-teacher">
+          <FormSectionToggleButton targetId="create-teacher">
             {t("staff.actions.createTeacher")}
-          </HeaderActionLink>
+          </FormSectionToggleButton>
         }
         description={t("staff.description")}
         title={t("staff.title")}
