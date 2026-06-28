@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  formatDateTime,
+  formatTime,
+} from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -152,7 +156,8 @@ export default async function StudentCheckInPage({
           <div>
             <dt className="text-zinc-500">{t("checkIn.details.time")}</dt>
             <dd className="text-zinc-800">
-              {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
+              {formatDateTime(event.starts_at, locale)} -{" "}
+              {formatTime(event.ends_at, locale)}
             </dd>
           </div>
           <div>
@@ -312,23 +317,6 @@ async function isEventSharedWithSchool(
     .maybeSingle<{ id: string }>();
 
   return Boolean(share);
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 function riskLabel(riskLevel: EventRecord["risk_level"], t: Translate) {

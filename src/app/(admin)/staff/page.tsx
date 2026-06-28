@@ -5,6 +5,7 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -166,7 +167,7 @@ export default async function StaffPage() {
                         />
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(staff.created_at)}
+                        {formatDate(staff.created_at, locale)}
                       </td>
                       <td className="px-4 py-3">
                         <TeacherStatusForm
@@ -213,7 +214,7 @@ export default async function StaffPage() {
                         {t("staff.table.created")}
                       </dt>
                       <dd className="text-zinc-800">
-                        {formatDate(staff.created_at)}
+                        {formatDate(staff.created_at, locale)}
                       </dd>
                     </div>
                   </dl>
@@ -318,12 +319,4 @@ function roleLabel(role: StaffProfile["role"], t: (key: string) => string) {
 
 function statusLabel(status: string, t: (key: string) => string) {
   return t(`status.${status}`);
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }

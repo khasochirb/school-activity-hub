@@ -5,6 +5,7 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { formatDateTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
@@ -146,7 +147,7 @@ export default async function AnnouncementsPage() {
                       {announcement.title}
                     </h3>
                     <p className="mt-1 text-sm text-zinc-600">
-                      {formatDateTime(announcement.created_at)}
+                      {formatDateTime(announcement.created_at, locale)}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -223,16 +224,6 @@ function ArchiveForm({
 
 function isSchoolStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 function statusLabel(status: string, t: (key: string) => string) {

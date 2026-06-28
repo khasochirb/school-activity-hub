@@ -12,6 +12,10 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import {
+  formatDateTime,
+  formatTime,
+} from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -195,7 +199,8 @@ export default async function EventAttendancePage({
             </h1>
             <p className="mt-2 text-sm text-zinc-600">{event.title}</p>
             <p className="mt-1 text-sm text-zinc-600">
-              {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
+              {formatDateTime(event.starts_at, locale)} -{" "}
+              {formatTime(event.ends_at, locale)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <SafetyBadge riskLevel={event.risk_level} t={t} />
@@ -353,9 +358,9 @@ export default async function EventAttendancePage({
                         </td>
                         <td className="px-4 py-3 text-zinc-700">
                           {checkin
-                            ? formatDateTime(checkin.checked_in_at)
+                            ? formatDateTime(checkin.checked_in_at, locale)
                             : attendee.checked_in_at
-                              ? formatDateTime(attendee.checked_in_at)
+                              ? formatDateTime(attendee.checked_in_at, locale)
                               : "-"}
                         </td>
                         <td className="px-4 py-3 text-zinc-700">
@@ -424,9 +429,9 @@ export default async function EventAttendancePage({
                         </dt>
                         <dd className="text-zinc-800">
                           {checkin
-                            ? formatDateTime(checkin.checked_in_at)
+                            ? formatDateTime(checkin.checked_in_at, locale)
                             : attendee.checked_in_at
-                              ? formatDateTime(attendee.checked_in_at)
+                              ? formatDateTime(attendee.checked_in_at, locale)
                               : "-"}
                         </dd>
                       </div>
@@ -729,21 +734,4 @@ function attendeeName(
   }
 
   return attendeeProfile?.full_name ?? fallbackName;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

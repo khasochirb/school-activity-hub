@@ -5,7 +5,9 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import type { Locale } from "@/lib/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 import {
   requestSchoolConnection,
@@ -215,7 +217,7 @@ export default async function SchoolConnectionsPage({
                       fallback={t("schoolConnections.fallback.unknownSchool")}
                       school={requester}
                       subtitle={tf("schoolConnections.incoming.requestedDate", {
-                        date: formatDate(connection.requested_at),
+                        date: formatDate(connection.requested_at, locale),
                       })}
                     />
                     <div className="flex flex-wrap gap-2">
@@ -300,6 +302,7 @@ export default async function SchoolConnectionsPage({
                           {connectionDescription(
                             connection,
                             profile.school_id,
+                            locale,
                             t,
                             tf,
                           )}
@@ -356,6 +359,7 @@ export default async function SchoolConnectionsPage({
                       subtitle={connectionDescription(
                         connection,
                         profile.school_id,
+                        locale,
                         t,
                         tf,
                       )}
@@ -500,6 +504,7 @@ function ConnectionBadge({
 function connectionDescription(
   connection: SchoolConnection,
   currentSchoolId: string,
+  locale: Locale,
   t: (key: string) => string,
   tf: (key: string, values: Record<string, string | number>) => string,
 ) {
@@ -513,7 +518,7 @@ function connectionDescription(
       : connection.responded_at ?? connection.requested_at;
 
   return tf("schoolConnections.history.description", {
-    date: formatDate(date),
+    date: formatDate(date, locale),
     direction,
     status: statusLabel(connection.status, t),
   });
@@ -533,14 +538,6 @@ function otherSchoolId(
 
 function statusLabel(status: string, t: (key: string) => string) {
   return t(`status.${status}`);
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function getSearchValue(value: string | string[] | undefined) {

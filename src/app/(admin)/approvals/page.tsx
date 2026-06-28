@@ -6,6 +6,11 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import {
+  formatDate,
+  formatDateTime,
+  formatTime,
+} from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import { approveEvent, rejectEvent } from "./actions";
@@ -128,7 +133,8 @@ export default async function ApprovalsPage() {
                       {event.title}
                     </h3>
                     <p className="mt-1 text-sm text-zinc-600">
-                      {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
+                      {formatDateTime(event.starts_at, locale)} -{" "}
+                      {formatTime(event.ends_at, locale)}
                     </p>
                   </div>
                   <form action={approveEvent}>
@@ -182,8 +188,8 @@ export default async function ApprovalsPage() {
                     </dt>
                     <dd className="text-zinc-800">
                       {event.submitted_at
-                        ? formatDate(event.submitted_at)
-                        : formatDate(event.created_at)}
+                        ? formatDate(event.submitted_at, locale)
+                        : formatDate(event.created_at, locale)}
                     </dd>
                   </div>
                   <div>
@@ -296,29 +302,4 @@ function categoryLabel(category: string, t: Translate) {
   const key = getActivityCategoryTranslationKey(category);
 
   return key ? t(key) : category;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }

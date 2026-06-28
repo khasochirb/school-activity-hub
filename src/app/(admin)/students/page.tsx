@@ -5,6 +5,7 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
@@ -190,7 +191,7 @@ export default async function StudentsPage() {
                         </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(student.created_at)}
+                        {formatDate(student.created_at, locale)}
                       </td>
                       <td className="px-4 py-3">
                         <InactiveForm
@@ -240,7 +241,7 @@ export default async function StudentsPage() {
                         {t("students.table.created")}
                       </dt>
                       <dd className="text-zinc-800">
-                        {formatDate(student.created_at)}
+                        {formatDate(student.created_at, locale)}
                       </dd>
                     </div>
                   </dl>
@@ -319,12 +320,4 @@ function statusLabel(status: string, t: (key: string) => string) {
   }
 
   return status;
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }

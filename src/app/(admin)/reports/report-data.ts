@@ -1,5 +1,7 @@
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { formatDateTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import type { Locale } from "@/lib/i18n/locales";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
@@ -122,7 +124,11 @@ export async function getReportsData(
   fallbackLabelOverrides: Partial<ReportFallbackLabels> = {},
 ): Promise<ReportsData> {
   const admin = createAdminClient();
-  const fallbackLabels = await getReportFallbackLabels(fallbackLabelOverrides);
+  const locale = await getCurrentLocale();
+  const fallbackLabels = getReportFallbackLabels(
+    fallbackLabelOverrides,
+    locale,
+  );
   const [summary, activeRegistrations, successfulCheckins] = await Promise.all([
     getReportSummary(admin, schoolId),
     getActiveRegistrationRows(admin, schoolId),
@@ -167,11 +173,13 @@ export async function getReportsData(
       eventsWithMostCheckins,
       eventsById,
       fallbackLabels,
+      locale,
     ),
     eventsWithMostRegistrations: summarizeEvents(
       eventsWithMostRegistrations,
       eventsById,
       fallbackLabels,
+      locale,
     ),
     studentsWithMostCheckins: summarizeStudents(
       studentsWithMostCheckins,
@@ -189,7 +197,8 @@ export async function getReportsData(
 
 export async function getReportCsvExport(type: string, schoolId: string) {
   const admin = createAdminClient();
-  const fallbackLabels = await getReportFallbackLabels();
+  const locale = await getCurrentLocale();
+  const fallbackLabels = getReportFallbackLabels({}, locale);
 
   if (type === "student-roster") {
     const students = await getStudentRosters(admin, schoolId);
@@ -241,10 +250,10 @@ export async function getReportCsvExport(type: string, schoolId: string) {
   return null;
 }
 
-async function getReportFallbackLabels(
+function getReportFallbackLabels(
   overrides: Partial<ReportFallbackLabels> = {},
-): Promise<ReportFallbackLabels> {
-  const locale = await getCurrentLocale();
+  locale: Locale,
+): ReportFallbackLabels {
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
 
@@ -558,13 +567,14 @@ function summarizeEvents(
   counts: CountBucket[],
   eventsById: Map<string, EventRecord>,
   fallbackLabels: ReportFallbackLabels,
+  locale: Locale,
 ) {
   return counts.map(({ count, id }) => {
     const event = eventsById.get(id);
 
     return {
       count,
-      detail: event ? formatDateTime(event.starts_at) : "",
+      detail: event ? formatDateTime(event.starts_at, locale) : "",
       id,
       name: event?.title ?? fallbackLabels.event,
     };
@@ -732,14 +742,4 @@ function formatReportLabel(
 
     return value === undefined ? match : String(value);
   });
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

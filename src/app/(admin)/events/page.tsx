@@ -11,7 +11,12 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import {
+  formatDateTime,
+  formatTime,
+} from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import type { Locale } from "@/lib/i18n/locales";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -349,6 +354,7 @@ export default async function EventsPage({
                   isFull={isFull}
                   isStaff={isStaff}
                   key={event.id}
+                  locale={locale}
                   ownerSchoolName={
                     schoolNameById.get(event.school_id) ??
                     t("events.fallback.connectedSchool")
@@ -541,6 +547,7 @@ function EventCard({
   event,
   isFull,
   isStaff,
+  locale,
   ownerSchoolName,
   registeredCount,
   registrationStatus,
@@ -556,6 +563,7 @@ function EventCard({
   event: Event;
   isFull: boolean;
   isStaff: boolean;
+  locale: Locale;
   ownerSchoolName: string;
   permissionStatus: EventPermissionStatus | undefined;
   registeredCount: number;
@@ -577,7 +585,8 @@ function EventCard({
             {event.title}
           </h3>
           <p className="mt-1 text-sm text-zinc-600">
-            {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
+            {formatDateTime(event.starts_at, locale)} -{" "}
+            {formatTime(event.ends_at, locale)}
           </p>
         </div>
         <EventActions
@@ -1400,21 +1409,4 @@ function categoryLabel(category: string, t: Translate) {
   const key = getActivityCategoryTranslationKey(category);
 
   return key ? t(key) : category;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

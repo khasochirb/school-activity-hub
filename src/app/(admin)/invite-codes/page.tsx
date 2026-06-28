@@ -5,6 +5,7 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
@@ -249,13 +250,15 @@ export default async function InviteCodesPage() {
                         </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(invite.created_at)}
+                        {formatDate(invite.created_at, locale)}
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(invite.expires_at)}
+                        {formatDate(invite.expires_at, locale)}
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
-                        {invite.redeemed_at ? formatDate(invite.redeemed_at) : "-"}
+                        {invite.redeemed_at
+                          ? formatDate(invite.redeemed_at, locale)
+                          : "-"}
                       </td>
                       <td className="px-4 py-3">
                         <RevokeForm
@@ -286,7 +289,8 @@ export default async function InviteCodesPage() {
                         )}
                       </h3>
                       <p className="mt-1 text-sm text-zinc-600">
-                        {t("invites.table.created")} {formatDate(invite.created_at)}
+                        {t("invites.table.created")}{" "}
+                        {formatDate(invite.created_at, locale)}
                       </p>
                     </div>
                     <StatusBadge status={invite.status}>
@@ -298,14 +302,18 @@ export default async function InviteCodesPage() {
                       <dt className="text-zinc-500">
                         {t("invites.table.expires")}
                       </dt>
-                      <dd className="text-zinc-800">{formatDate(invite.expires_at)}</dd>
+                      <dd className="text-zinc-800">
+                        {formatDate(invite.expires_at, locale)}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-zinc-500">
                         {t("invites.table.redeemed")}
                       </dt>
                       <dd className="text-zinc-800">
-                        {invite.redeemed_at ? formatDate(invite.redeemed_at) : "-"}
+                        {invite.redeemed_at
+                          ? formatDate(invite.redeemed_at, locale)
+                          : "-"}
                       </dd>
                     </div>
                   </dl>
@@ -403,12 +411,4 @@ function statusLabel(status: string, t: (key: string) => string) {
   }
 
   return status;
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }

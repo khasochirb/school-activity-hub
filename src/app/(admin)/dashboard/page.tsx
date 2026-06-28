@@ -6,7 +6,12 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import {
+  formatDateTime,
+  formatTime,
+} from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import type { Locale } from "@/lib/i18n/locales";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -88,20 +93,22 @@ export default async function DashboardPage() {
   if (isSchoolStaff(profile)) {
     const analytics = await getStaffAnalytics(admin, profile.school_id);
 
-    return <StaffDashboard analytics={analytics} t={t} tf={tf} />;
+    return <StaffDashboard analytics={analytics} locale={locale} t={t} tf={tf} />;
   }
 
   const analytics = await getStudentAnalytics(admin, profile);
 
-  return <StudentDashboard analytics={analytics} t={t} />;
+  return <StudentDashboard analytics={analytics} locale={locale} t={t} />;
 }
 
 function StaffDashboard({
   analytics,
+  locale,
   t,
   tf,
 }: {
   analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+  locale: Locale;
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
 }) {
@@ -138,8 +145,16 @@ function StaffDashboard({
       </MetricGrid>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <UpcomingEventsSection events={analytics.upcomingEvents} t={t} />
-        <RecentCheckinsSection checkins={analytics.recentCheckins} t={t} />
+        <UpcomingEventsSection
+          events={analytics.upcomingEvents}
+          locale={locale}
+          t={t}
+        />
+        <RecentCheckinsSection
+          checkins={analytics.recentCheckins}
+          locale={locale}
+          t={t}
+        />
       </div>
     </DashboardShell>
   );
@@ -147,9 +162,11 @@ function StaffDashboard({
 
 function StudentDashboard({
   analytics,
+  locale,
   t,
 }: {
   analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
+  locale: Locale;
   t: (key: string) => string;
 }) {
   return (
@@ -181,7 +198,11 @@ function StudentDashboard({
         />
       </MetricGrid>
 
-      <UpcomingEventsSection events={analytics.upcomingEvents} t={t} />
+      <UpcomingEventsSection
+        events={analytics.upcomingEvents}
+        locale={locale}
+        t={t}
+      />
     </DashboardShell>
   );
 }
@@ -543,9 +564,11 @@ function MetricCard({ label, value }: { label: string; value: number }) {
 
 function UpcomingEventsSection({
   events,
+  locale,
   t,
 }: {
   events: UpcomingEvent[];
+  locale: Locale;
   t: (key: string) => string;
 }) {
   return (
@@ -562,7 +585,8 @@ function UpcomingEventsSection({
             <li className="p-4" key={event.id}>
               <p className="font-semibold text-slate-950">{event.title}</p>
               <p className="mt-1 text-sm text-slate-600">
-                {formatDateTime(event.starts_at)} - {formatTime(event.ends_at)}
+                {formatDateTime(event.starts_at, locale)} -{" "}
+                {formatTime(event.ends_at, locale)}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {event.location || t("dashboard.upcoming.locationNotSet")}
@@ -584,9 +608,11 @@ function UpcomingEventsSection({
 
 function RecentCheckinsSection({
   checkins,
+  locale,
   t,
 }: {
   checkins: RecentCheckin[];
+  locale: Locale;
   t: (key: string) => string;
 }) {
   return (
@@ -615,7 +641,7 @@ function RecentCheckinsSection({
                 </span>
               </div>
               <p className="mt-2 text-sm text-slate-600">
-                {formatDateTime(checkin.checked_in_at)}
+                {formatDateTime(checkin.checked_in_at, locale)}
               </p>
             </li>
           ))}
@@ -965,21 +991,4 @@ function checkInMethodLabel(method: string, t: (key: string) => string) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
