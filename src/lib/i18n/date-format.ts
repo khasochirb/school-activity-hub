@@ -38,6 +38,29 @@ export function formatTime(value: DateInput, locale: Locale) {
   });
 }
 
+export function formatSchedulePreview(
+  startsAt: DateInput,
+  endsAt: DateInput,
+  locale: Locale,
+) {
+  const intlLocale = resolveIntlLocale(locale);
+  const startDate = new Date(startsAt);
+  const endDate = new Date(endsAt);
+  const dateFormatter = new Intl.DateTimeFormat(intlLocale, {
+    day: "numeric",
+    month: "short",
+    weekday: "short",
+  });
+  const timeFormatter = new Intl.DateTimeFormat(intlLocale, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return `${dateFormatter.format(startDate)} \u00b7 ${timeFormatter.format(
+    startDate,
+  )}\u2013${timeFormatter.format(endDate)}`;
+}
+
 function formatWithLocale(
   value: DateInput,
   locale: Locale,

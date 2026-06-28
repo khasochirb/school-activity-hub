@@ -268,13 +268,22 @@ export default async function EventsPage({
               categories={categorySelectOptions}
               clubs={createClubOptions}
               isStaff={isStaff}
+              locale={locale}
               labels={{
                 category: t("events.form.category"),
                 club: t("events.form.club"),
                 createApproved: t("events.actions.createApproved"),
                 creating: t("events.actions.creating"),
+                dateRequired: t("events.validation.dateRequired"),
                 description: t("events.form.description"),
-                endsAt: t("events.form.endsAt"),
+                duration30: t("events.form.duration30"),
+                duration60: t("events.form.duration60"),
+                duration90: t("events.form.duration90"),
+                duration120: t("events.form.duration120"),
+                endTime: t("events.form.endTime"),
+                endTimeRequired: t("events.validation.endTimeRequired"),
+                eventDate: t("events.form.eventDate"),
+                eventTimePreview: t("events.form.eventTimePreview"),
                 leaderNeedsClub: t("events.create.leaderNeedsClub"),
                 location: t("events.form.location"),
                 maxParticipants: t("events.form.maxParticipants"),
@@ -288,10 +297,15 @@ export default async function EventsPage({
                 riskLevel: t("events.form.riskLevel"),
                 riskLow: t("events.risk.low"),
                 riskMedium: t("events.risk.medium"),
+                quickDuration: t("events.form.quickDuration"),
                 schoolWideEvent: t("events.form.schoolWideEvent"),
-                startsAt: t("events.form.startsAt"),
+                startTime: t("events.form.startTime"),
+                startTimeRequired: t("events.validation.startTimeRequired"),
                 submitForApproval: t("events.actions.submitForApproval"),
                 submitting: t("events.actions.submitting"),
+                timeOrder: t("events.validation.timeOrder"),
+                timePreviewEmpty: t("events.form.timePreviewEmpty"),
+                timezoneHelper: t("events.form.timezoneHelper"),
                 title: t("events.form.title"),
               }}
             />
