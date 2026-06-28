@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { getCurrentTheme } from "@/lib/get-theme";
 import {
   formatTranslation,
   getDictionary,
@@ -10,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
   const locale = await getCurrentLocale();
+  const theme = await getCurrentTheme();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const tf = (key: string, values: Record<string, string | number>) =>
@@ -53,7 +56,7 @@ export default async function HomePage() {
             </span>
             <span className="font-bold tracking-tight">{t("app.name")}</span>
           </Link>
-          <nav className="flex items-center gap-2">
+          <nav className="flex flex-wrap items-center justify-end gap-2">
             <LanguageSwitcher
               currentLocale={locale}
               label={t("language.label")}
@@ -61,6 +64,17 @@ export default async function HomePage() {
                 en: t("language.en"),
                 mn: t("language.mn"),
               }}
+            />
+            <ThemeToggle
+              currentTheme={theme}
+              label={t("theme.label")}
+              labels={{
+                dark: t("theme.dark"),
+                light: t("theme.light"),
+                system: t("theme.system"),
+              }}
+              showLabel={false}
+              switchLabel={t("theme.switch")}
             />
             {user ? (
               <Link className="btn btn-primary" href="/dashboard">

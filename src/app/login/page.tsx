@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { getCurrentTheme } from "@/lib/get-theme";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
@@ -10,6 +12,7 @@ import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
   const locale = await getCurrentLocale();
+  const theme = await getCurrentTheme();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const supabase = await createClient();
@@ -40,14 +43,27 @@ export default async function LoginPage() {
             </span>
             <span>{t("app.name")}</span>
           </Link>
-          <LanguageSwitcher
-            currentLocale={locale}
-            label={t("language.label")}
-            labels={{
-              en: t("language.en"),
-              mn: t("language.mn"),
-            }}
-          />
+          <div className="flex flex-wrap justify-end gap-2">
+            <LanguageSwitcher
+              currentLocale={locale}
+              label={t("language.label")}
+              labels={{
+                en: t("language.en"),
+                mn: t("language.mn"),
+              }}
+            />
+            <ThemeToggle
+              currentTheme={theme}
+              label={t("theme.label")}
+              labels={{
+                dark: t("theme.dark"),
+                light: t("theme.light"),
+                system: t("theme.system"),
+              }}
+              showLabel={false}
+              switchLabel={t("theme.switch")}
+            />
+          </div>
         </div>
         <section className="section-card p-6 sm:p-8">
           <p className="page-eyebrow">{t("auth.login.eyebrow")}</p>

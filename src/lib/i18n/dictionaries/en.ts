@@ -394,6 +394,13 @@ export const en = {
     label: "Language",
     mn: "Монгол",
   },
+  theme: {
+    dark: "Dark",
+    label: "Theme",
+    light: "Light",
+    switch: "Switch theme",
+    system: "System",
+  },
   metadata: {
     description: "Private school clubs, events, invite codes, and attendance.",
   },

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { getCurrentTheme } from "@/lib/get-theme";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
+import type { ThemePreference } from "@/lib/theme";
 import { logout } from "../actions";
 import { AppNav, type NavItem, type NavSection } from "./app-nav";
 
@@ -85,6 +88,7 @@ export async function AppShell({
   profile: Profile;
 }) {
   const locale = await getCurrentLocale();
+  const theme = await getCurrentTheme();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const visibleNavSections = navSections
@@ -102,6 +106,11 @@ export async function AppShell({
   const languageLabels = {
     en: t("language.en"),
     mn: t("language.mn"),
+  };
+  const themeLabels = {
+    dark: t("theme.dark"),
+    light: t("theme.light"),
+    system: t("theme.system"),
   };
 
   return (
@@ -126,6 +135,10 @@ export async function AppShell({
           logoutLabel={t("nav.logout")}
           logoutPendingLabel={t("nav.loggingOut")}
           roleLabel={formattedRole}
+          switchThemeLabel={t("theme.switch")}
+          theme={theme}
+          themeLabel={t("theme.label")}
+          themeLabels={themeLabels}
         />
       </aside>
 
@@ -154,6 +167,10 @@ export async function AppShell({
                     logoutLabel={t("nav.logout")}
                     logoutPendingLabel={t("nav.loggingOut")}
                     roleLabel={formattedRole}
+                    switchThemeLabel={t("theme.switch")}
+                    theme={theme}
+                    themeLabel={t("theme.label")}
+                    themeLabels={themeLabels}
                   />
                 </div>
               </div>
@@ -224,6 +241,10 @@ function AccountPanel({
   logoutLabel,
   logoutPendingLabel,
   roleLabel,
+  switchThemeLabel,
+  theme,
+  themeLabel,
+  themeLabels,
 }: {
   email: string | null;
   languageLabels: Record<Locale, string>;
@@ -232,14 +253,24 @@ function AccountPanel({
   logoutLabel: string;
   logoutPendingLabel: string;
   roleLabel: string;
+  switchThemeLabel: string;
+  theme: ThemePreference;
+  themeLabel: string;
+  themeLabels: Record<ThemePreference, string>;
 }) {
   return (
     <div className="border-t border-slate-200 p-4">
-      <div className="mb-3">
+      <div className="mb-3 grid gap-3">
         <LanguageSwitcher
           currentLocale={locale}
           label={languageLabel}
           labels={languageLabels}
+        />
+        <ThemeToggle
+          currentTheme={theme}
+          label={themeLabel}
+          labels={themeLabels}
+          switchLabel={switchThemeLabel}
         />
       </div>
       <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 shadow-inner">
@@ -266,6 +297,10 @@ function MobileAccount({
   logoutLabel,
   logoutPendingLabel,
   roleLabel,
+  switchThemeLabel,
+  theme,
+  themeLabel,
+  themeLabels,
 }: {
   email: string | null;
   languageLabels: Record<Locale, string>;
@@ -274,6 +309,10 @@ function MobileAccount({
   logoutLabel: string;
   logoutPendingLabel: string;
   roleLabel: string;
+  switchThemeLabel: string;
+  theme: ThemePreference;
+  themeLabel: string;
+  themeLabels: Record<ThemePreference, string>;
 }) {
   return (
     <div className="space-y-3">
@@ -281,6 +320,12 @@ function MobileAccount({
         currentLocale={locale}
         label={languageLabel}
         labels={languageLabels}
+      />
+      <ThemeToggle
+        currentTheme={theme}
+        label={themeLabel}
+        labels={themeLabels}
+        switchLabel={switchThemeLabel}
       />
       <div className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
         <p className="break-all">{email}</p>
