@@ -267,7 +267,7 @@ export default async function ClubsPage({
           ) : null}
         </div>
         {clubs?.length ? (
-          <div className="grid gap-4 p-4 md:grid-cols-2">
+          <div className="grid gap-3 p-3 md:grid-cols-2">
             {clubs.map((club) => {
               const clubMemberships = membershipsByClub.get(club.id) ?? [];
               const isJoined = currentStudentMemberships.has(club.id);

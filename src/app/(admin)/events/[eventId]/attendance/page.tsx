@@ -232,7 +232,7 @@ export default async function EventAttendancePage({
         <p className="mt-2 text-sm text-zinc-600">
           {t("attendance.checkInLink.description")}
         </p>
-        <div className="mt-4 grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:items-start">
+        <div className="mt-3 grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:items-start">
           <div className="flex justify-center rounded-lg border border-zinc-200 bg-white p-3">
             <svg
               aria-label={t("attendance.qr.ariaLabel")}
@@ -252,7 +252,7 @@ export default async function EventAttendancePage({
             <div className="mt-2 break-all rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800">
               {checkInUrl}
             </div>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <CopyCheckInLinkButton
                 labels={{
                   copied: t("attendance.actions.copied"),

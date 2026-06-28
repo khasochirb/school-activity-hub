@@ -154,7 +154,7 @@ export default async function ApprovalsPage({
           ) : null}
         </div>
         {pendingQueue.length && filteredEvents.length ? (
-          <div className="grid gap-4 p-4">
+          <div className="grid gap-3 p-3">
             {filteredEvents.map((event) => (
               <article
                 className="rounded-lg border border-zinc-200 p-4"
@@ -247,7 +247,7 @@ export default async function ApprovalsPage({
                     </div>
                   </dl>
                   {event.permission_note ? (
-                    <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+                    <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
                       <p className="font-medium text-zinc-900">
                         {t("events.permission.note")}
                       </p>
@@ -255,12 +255,12 @@ export default async function ApprovalsPage({
                     </div>
                   ) : null}
                   {event.description ? (
-                    <p className="mt-4 text-sm leading-6 text-zinc-600">
+                    <p className="mt-3 text-sm leading-6 text-zinc-600">
                       {event.description}
                     </p>
                   ) : null}
                 </DetailsDisclosure>
-                <form action={rejectEvent} className="mt-4 flex flex-col gap-3">
+                <form action={rejectEvent} className="mt-3 flex max-w-xl flex-col gap-3">
                   <input name="event_id" type="hidden" value={event.id} />
                   <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
                     {t("approvals.reject.reasonLabel")}

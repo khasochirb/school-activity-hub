@@ -186,7 +186,7 @@ export default async function AnnouncementsPage({
           ) : null}
         </div>
         {announcementList.length && filteredAnnouncements.length ? (
-          <div className="grid gap-4 p-4">
+          <div className="grid gap-3 p-3">
             {filteredAnnouncements.map((announcement) => (
               <article
                 className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"

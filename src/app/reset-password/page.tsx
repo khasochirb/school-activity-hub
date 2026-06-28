@@ -44,7 +44,7 @@ export default async function ResetPasswordPage() {
             />
           </div>
         </div>
-        <section className="section-card p-5 shadow-sm sm:p-6">
+        <section className="section-card p-4 shadow-sm sm:p-5">
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">
             {t("auth.reset.title")}
           </h1>

@@ -73,7 +73,7 @@ export default async function ReportsPage() {
         </section>
       ) : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <SummaryCard
           label={t("reports.summary.activeStudents")}
           value={formatNumber(reports.summary.activeStudents)}
@@ -111,7 +111,7 @@ export default async function ReportsPage() {
         <p className="section-description">
           {t("reports.exports.description")}
         </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <ExportLink href="/reports/exports/student-roster">
             {t("reports.exports.studentRoster")}
           </ExportLink>
@@ -124,7 +124,7 @@ export default async function ReportsPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-3 lg:grid-cols-2">
         <SummaryTable
           countLabel={t("reports.countLabels.registrations")}
           emptyMessage={t(

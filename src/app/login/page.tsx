@@ -65,7 +65,7 @@ export default async function LoginPage() {
             />
           </div>
         </div>
-        <section className="section-card p-5 sm:p-6">
+        <section className="section-card p-4 sm:p-5">
           <p className="page-eyebrow">{t("auth.login.eyebrow")}</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
             {t("auth.login.title")}

@@ -24,7 +24,7 @@ export default async function SetupPage() {
 
   return (
     <main className="app-surface flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
-      <div className="section-card w-full max-w-md p-5 shadow-sm sm:p-6">
+      <div className="section-card w-full max-w-md p-4 shadow-sm sm:p-5">
         <h1 className="text-2xl font-semibold text-zinc-950">
           {t("setup.title")}
         </h1>

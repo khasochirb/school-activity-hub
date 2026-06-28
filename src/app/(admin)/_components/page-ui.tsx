@@ -20,7 +20,7 @@ export function PageHeader({
 }) {
   return (
     <section className="page-header">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           {eyebrow ? <p className="page-eyebrow">{eyebrow}</p> : null}
           <h1 className="page-title">{title}</h1>
@@ -48,10 +48,10 @@ export function EmptyState({
   return (
     <div className="empty-state">
       <p className="text-sm font-bold text-slate-950">{title}</p>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+      <p className="mt-1.5 max-w-xl text-sm leading-6 text-slate-600">
         {description}
       </p>
-      {action ? <div className="mt-4 flex flex-wrap gap-2">{action}</div> : null}
+      {action ? <div className="mt-3 flex flex-wrap gap-2">{action}</div> : null}
     </div>
   );
 }
@@ -100,14 +100,14 @@ export function CollapsibleFormSection({
       id={id}
     >
       <div
-        className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+        className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
         id={summaryId}
       >
-        <div>
+        <div className="max-w-xl">
           <h2 className="section-title">{title}</h2>
           <p className="section-description">{description}</p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:justify-end">
           <Link
             aria-controls={contentId}
             className="collapsible-form-show btn btn-primary w-full sm:w-auto"
@@ -123,7 +123,7 @@ export function CollapsibleFormSection({
           </Link>
         </div>
       </div>
-      <div className="collapsible-form-content mt-4" id={contentId}>
+      <div className="collapsible-form-content mt-3" id={contentId}>
         {children}
       </div>
     </section>
@@ -167,17 +167,19 @@ export function FilterPanel({
         className="compact-filter-grid"
       >
         {children}
-        <button className="btn btn-primary min-h-11 md:self-end" type="submit">
-          {submitLabel}
-        </button>
-        <Link
-          className="btn btn-secondary min-h-11 md:self-end"
-          href={clearHref}
-        >
-          {clearLabel}
-        </Link>
+        <div className="compact-filter-actions">
+          <button className="btn btn-primary min-h-11 md:min-h-10" type="submit">
+            {submitLabel}
+          </button>
+          <Link
+            className="btn btn-secondary min-h-11 md:min-h-10"
+            href={clearHref}
+          >
+            {clearLabel}
+          </Link>
+        </div>
       </form>
-      <p className="mt-3 text-sm font-medium text-slate-600">
+      <p className="mt-2 text-sm font-medium text-slate-600">
         {resultCountLabel}
       </p>
     </section>

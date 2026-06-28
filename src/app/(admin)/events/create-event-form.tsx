@@ -154,7 +154,7 @@ export function CreateEventForm({
   return (
     <form
       action={formAction}
-      className="compact-form-xl flex flex-col gap-4"
+      className="compact-form-xl flex flex-col gap-3"
       onSubmit={handleSubmit}
     >
       <ActionToast message={clientError} success={false} />

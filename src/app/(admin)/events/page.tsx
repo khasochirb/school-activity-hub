@@ -378,7 +378,7 @@ export default async function EventsPage({
           ) : null}
         </div>
         {events.length ? (
-          <div className="grid gap-4 p-4 xl:grid-cols-2">
+          <div className="grid gap-3 p-3 xl:grid-cols-2">
             {events.map((event) => {
               const registeredCount = attendeeCounts.get(event.id) ?? 0;
               const isFull =
@@ -723,7 +723,7 @@ function EventCard({
         </dl>
 
         {event.permission_note ? (
-          <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+          <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
             <p className="font-medium text-zinc-900">
               {t("events.permission.note")}
             </p>
@@ -732,7 +732,7 @@ function EventCard({
         ) : null}
 
         {event.description ? (
-          <p className="mt-4 text-sm leading-6 text-zinc-600">
+          <p className="mt-3 text-sm leading-6 text-zinc-600">
             {event.description}
           </p>
         ) : null}

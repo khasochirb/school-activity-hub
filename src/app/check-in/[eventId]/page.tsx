@@ -152,7 +152,7 @@ export default async function StudentCheckInPage({
 
   return (
     <CheckInShell>
-      <section className="section-card p-5 sm:p-6">
+      <section className="section-card p-4 sm:p-5">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-2xl">
           {t("checkIn.title")}
         </h1>
@@ -174,7 +174,7 @@ export default async function StudentCheckInPage({
         </dl>
 
         {event.permission_required ? (
-          <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
             {t("events.permission.studentNotice")}
           </p>
         ) : null}
@@ -200,7 +200,7 @@ export default async function StudentCheckInPage({
           </dl>
 
           {event.permission_note ? (
-            <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+            <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
               <p className="font-medium text-zinc-900">
                 {t("checkIn.permissionNote")}
               </p>
@@ -279,7 +279,7 @@ function UnavailableMessage({
   title: string;
 }) {
   return (
-    <section className="section-card p-5 sm:p-6">
+    <section className="section-card p-4 sm:p-5">
       <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-2xl">
         {title}
       </h1>

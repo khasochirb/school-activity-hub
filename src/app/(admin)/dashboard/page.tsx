@@ -157,7 +157,7 @@ function StaffDashboard({
         />
       </MetricGrid>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <UpcomingEventsSection
           events={analytics.upcomingEvents}
           locale={locale}
@@ -545,7 +545,7 @@ function NeedsAttention({
                   {formatNumber(item.count)}
                 </StatusBadge>
               </div>
-              <p className="mt-4 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
+              <p className="mt-3 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
                 {item.action}
               </p>
             </Link>
@@ -566,7 +566,7 @@ function NeedsAttention({
 function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
   return (
     <section className="section-card overflow-hidden">
-      <div className="p-5 sm:p-6">
+      <div className="p-4 sm:p-5">
         <p className="page-eyebrow">{t("dashboard.studentEyebrow")}</p>
         <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-xl">
           {t("dashboard.studentOverviewTitle")}
@@ -637,7 +637,7 @@ function QuickActions({ t }: { t: (key: string) => string }) {
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {action.description}
             </p>
-            <p className="mt-4 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
+            <p className="mt-3 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
               {t("common.open")}
             </p>
           </Link>
