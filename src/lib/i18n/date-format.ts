@@ -46,6 +46,15 @@ export function formatSchedulePreview(
   const intlLocale = resolveIntlLocale(locale);
   const startDate = new Date(startsAt);
   const endDate = new Date(endsAt);
+
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    Number.isNaN(endDate.getTime()) ||
+    endDate <= startDate
+  ) {
+    return "";
+  }
+
   const dateFormatter = new Intl.DateTimeFormat(intlLocale, {
     day: "numeric",
     month: "short",

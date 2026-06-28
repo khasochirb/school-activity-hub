@@ -87,6 +87,10 @@ export function CreateEventForm({
   const startsAtValue = eventDate && startTime ? `${eventDate}T${startTime}` : "";
   const endsAtValue = eventDate && endTime ? `${eventDate}T${endTime}` : "";
   const schedulePreview = useMemo(() => {
+    if (!eventDate || !startTime || !endTime) {
+      return "";
+    }
+
     const startsAt = parseLocalDateTime(eventDate, startTime);
     const endsAt = parseLocalDateTime(eventDate, endTime);
 
@@ -406,20 +410,48 @@ function getScheduleError(
 }
 
 function parseLocalDateTime(dateValue: string, timeValue: string) {
-  const [year, month, day] = dateValue.split("-").map(Number);
-  const [hour, minute] = timeValue.split(":").map(Number);
-
   if (
-    !year ||
-    !month ||
-    !day ||
-    Number.isNaN(hour) ||
-    Number.isNaN(minute)
+    !/^\d{4}-\d{2}-\d{2}$/.test(dateValue) ||
+    !/^\d{2}:\d{2}$/.test(timeValue)
   ) {
     return null;
   }
 
-  return new Date(year, month - 1, day, hour, minute);
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const [hour, minute] = timeValue.split(":").map(Number);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day, hour, minute);
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day ||
+    date.getHours() !== hour ||
+    date.getMinutes() !== minute
+  ) {
+    return null;
+  }
+
+  return date;
 }
 
 function formatTimeInputValue(date: Date) {
