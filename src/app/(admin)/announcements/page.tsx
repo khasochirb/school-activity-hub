@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -26,6 +32,11 @@ type Announcement = {
 };
 
 export default async function AnnouncementsPage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -71,13 +82,13 @@ export default async function AnnouncementsPage() {
         actions={
           isStaff ? (
             <HeaderActionLink href="#create-announcement">
-              Create announcement
+              {t("announcements.actions.create")}
             </HeaderActionLink>
           ) : undefined
         }
-        description="Post school notices that students and staff can see after login."
-        eyebrow="School notices"
-        title="Announcements"
+        description={t("announcements.description")}
+        eyebrow={t("announcements.eyebrow")}
+        title={t("announcements.title")}
       />
 
       {isStaff ? (
@@ -86,13 +97,23 @@ export default async function AnnouncementsPage() {
           id="create-announcement"
         >
           <h2 className="section-title">
-            Post announcement
+            {t("announcements.create.title")}
           </h2>
           <p className="section-description">
-            Keep notices short and school-wide for this pilot.
+            {t("announcements.create.description")}
           </p>
           <div className="mt-4">
-            <CreateAnnouncementForm />
+            <CreateAnnouncementForm
+              labels={{
+                active: t("status.active"),
+                archived: t("status.archived"),
+                body: t("announcements.form.body"),
+                create: t("announcements.actions.create"),
+                posting: t("announcements.actions.posting"),
+                status: t("announcements.form.status"),
+                title: t("announcements.form.title"),
+              }}
+            />
           </div>
         </section>
       ) : null}
@@ -100,11 +121,15 @@ export default async function AnnouncementsPage() {
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">
-            {isStaff ? "School notices" : "Active notices"}
+            {isStaff
+              ? t("announcements.list.staffTitle")
+              : t("announcements.list.studentTitle")}
           </h2>
           {error ? (
             <p className="mt-2 text-sm text-red-600">
-              Announcements could not be loaded: {error.message}
+              {tf("announcements.errors.loadFailed", {
+                error: error.message,
+              })}
             </p>
           ) : null}
         </div>
@@ -125,9 +150,17 @@ export default async function AnnouncementsPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={announcement.status} />
+                    <StatusBadge status={announcement.status}>
+                      {statusLabel(announcement.status, t)}
+                    </StatusBadge>
                     {isStaff ? (
-                      <ArchiveForm announcement={announcement} />
+                      <ArchiveForm
+                        announcement={announcement}
+                        labels={{
+                          archive: t("announcements.actions.archive"),
+                          archiving: t("announcements.actions.archiving"),
+                        }}
+                      />
                     ) : null}
                   </div>
                 </div>
@@ -143,16 +176,16 @@ export default async function AnnouncementsPage() {
               action={
                 isStaff ? (
                   <HeaderActionLink href="#create-announcement">
-                    Create announcement
+                    {t("announcements.actions.create")}
                   </HeaderActionLink>
                 ) : undefined
               }
               description={
                 isStaff
-                  ? "Post a school notice when there is something students should see."
-                  : "Active school notices will appear here when staff post them."
+                  ? t("announcements.empty.staffDescription")
+                  : t("announcements.empty.studentDescription")
               }
-              title="No announcements yet"
+              title={t("announcements.empty.title")}
             />
           </div>
         )}
@@ -161,7 +194,16 @@ export default async function AnnouncementsPage() {
   );
 }
 
-function ArchiveForm({ announcement }: { announcement: Announcement }) {
+function ArchiveForm({
+  announcement,
+  labels,
+}: {
+  announcement: Announcement;
+  labels: {
+    archive: string;
+    archiving: string;
+  };
+}) {
   if (announcement.status !== "active") {
     return null;
   }
@@ -171,9 +213,9 @@ function ArchiveForm({ announcement }: { announcement: Announcement }) {
       <input name="announcement_id" type="hidden" value={announcement.id} />
       <PendingSubmitButton
         className="btn btn-secondary min-h-9 px-3"
-        pendingLabel="Archiving..."
+        pendingLabel={labels.archiving}
       >
-        Archive notice
+        {labels.archive}
       </PendingSubmitButton>
     </form>
   );
@@ -191,4 +233,16 @@ function formatDateTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function statusLabel(status: string, t: (key: string) => string) {
+  if (status === "active") {
+    return t("status.active");
+  }
+
+  if (status === "archived") {
+    return t("status.archived");
+  }
+
+  return status;
 }

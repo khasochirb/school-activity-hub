@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 
 const PAGE_PATH = "/school-connections";
@@ -23,7 +29,13 @@ type PendingConnection = {
   status: string;
 };
 
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
+
 export async function requestSchoolConnection(formData: FormData) {
+  const i18n = await getServerI18n();
   const profile = await getCurrentSchoolAdminProfile();
 
   if (!profile) {
@@ -35,7 +47,7 @@ export async function requestSchoolConnection(formData: FormData) {
   ).trim();
 
   if (!isUuid(receiverSchoolId) || receiverSchoolId === profile.school_id) {
-    redirectWithMessage("error", "Choose a valid school to connect with.");
+    redirectWithMessage("error", i18n.t("schoolConnections.errors.invalidSchool"));
   }
 
   const supabase = await createClient();
@@ -47,7 +59,10 @@ export async function requestSchoolConnection(formData: FormData) {
     .maybeSingle<{ id: string }>();
 
   if (!receiverSchool) {
-    redirectWithMessage("error", "That active school could not be found.");
+    redirectWithMessage(
+      "error",
+      i18n.t("schoolConnections.errors.activeSchoolNotFound"),
+    );
   }
 
   const { data: existingConnection } = await supabase
@@ -59,7 +74,7 @@ export async function requestSchoolConnection(formData: FormData) {
   if (existingConnection) {
     redirectWithMessage(
       "error",
-      `A ${formatStatus(existingConnection.status)} connection already exists with that school.`,
+      i18n.t("schoolConnections.errors.connectionExists"),
     );
   }
 
@@ -74,16 +89,19 @@ export async function requestSchoolConnection(formData: FormData) {
     redirectWithMessage(
       "error",
       error.code === "23505"
-        ? "A connection already exists with that school."
-        : `Connection request could not be sent: ${error.message}`,
+        ? i18n.t("schoolConnections.errors.connectionExists")
+        : i18n.tf("schoolConnections.errors.requestFailed", {
+            error: error.message,
+          }),
     );
   }
 
   revalidatePath(PAGE_PATH);
-  redirectWithMessage("success", "Connection request sent.");
+  redirectWithMessage("success", i18n.t("schoolConnections.success.requestSent"));
 }
 
 export async function respondToSchoolConnection(formData: FormData) {
+  const i18n = await getServerI18n();
   const profile = await getCurrentSchoolAdminProfile();
 
   if (!profile) {
@@ -100,7 +118,10 @@ export async function respondToSchoolConnection(formData: FormData) {
         : null;
 
   if (!isUuid(connectionId) || !nextStatus) {
-    redirectWithMessage("error", "Choose a valid connection response.");
+    redirectWithMessage(
+      "error",
+      i18n.t("schoolConnections.errors.invalidResponse"),
+    );
   }
 
   const supabase = await createClient();
@@ -115,7 +136,10 @@ export async function respondToSchoolConnection(formData: FormData) {
     connection.receiver_school_id !== profile.school_id ||
     connection.status !== "pending"
   ) {
-    redirectWithMessage("error", "That pending request could not be found.");
+    redirectWithMessage(
+      "error",
+      i18n.t("schoolConnections.errors.pendingRequestNotFound"),
+    );
   }
 
   const { error } = await supabase
@@ -132,7 +156,9 @@ export async function respondToSchoolConnection(formData: FormData) {
   if (error) {
     redirectWithMessage(
       "error",
-      `Connection request could not be updated: ${error.message}`,
+      i18n.tf("schoolConnections.errors.updateFailed", {
+        error: error.message,
+      }),
     );
   }
 
@@ -140,8 +166,8 @@ export async function respondToSchoolConnection(formData: FormData) {
   redirectWithMessage(
     "success",
     nextStatus === "approved"
-      ? "Connection request approved."
-      : "Connection request rejected.",
+      ? i18n.t("schoolConnections.success.approved")
+      : i18n.t("schoolConnections.success.rejected"),
   );
 }
 
@@ -179,12 +205,18 @@ function redirectWithMessage(type: "error" | "success", message: string): never 
   redirect(`${PAGE_PATH}?${type}=${encodeURIComponent(message)}`);
 }
 
-function formatStatus(status: string) {
-  return status.replaceAll("_", " ");
-}
-
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
 }

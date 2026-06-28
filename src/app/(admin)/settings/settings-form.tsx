@@ -13,9 +13,17 @@ const initialState: UpdateSchoolSettingsState = {
 };
 
 export function SchoolSettingsForm({
+  labels,
   name,
   province,
 }: {
+  labels: {
+    province: string;
+    provincePlaceholder: string;
+    save: string;
+    saving: string;
+    schoolName: string;
+  };
   name: string;
   province: string | null;
 }) {
@@ -27,7 +35,7 @@ export function SchoolSettingsForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        School name
+        {labels.schoolName}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           defaultValue={name}
@@ -36,12 +44,12 @@ export function SchoolSettingsForm({
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Province
+        {labels.province}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           defaultValue={province ?? ""}
           name="province"
-          placeholder="British Columbia"
+          placeholder={labels.provincePlaceholder}
         />
       </label>
       {state.message ? (
@@ -56,12 +64,19 @@ export function SchoolSettingsForm({
           {state.message}
         </p>
       ) : null}
-      <SubmitButton />
+      <SubmitButton labels={labels} />
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  labels,
+}: {
+  labels: {
+    save: string;
+    saving: string;
+  };
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -70,7 +85,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Saving..." : "Save school settings"}
+      {pending ? labels.saving : labels.save}
     </button>
   );
 }

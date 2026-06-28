@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { updateTeacherStatus } from "./actions";
@@ -24,6 +30,11 @@ type StaffProfile = {
 };
 
 export default async function StaffPage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -66,34 +77,47 @@ export default async function StaffPage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Staff</h1>
+        <h1 className="text-2xl font-semibold text-zinc-950">
+          {t("staff.title")}
+        </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Create teacher accounts and manage staff access for{" "}
-          {school?.name ?? "this school"}.
+          {t("staff.description")}
         </p>
+        {school?.name ? (
+          <p className="mt-1 text-xs font-medium text-zinc-500">
+            {school.name}
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-zinc-950">
-          Create teacher account
+          {t("staff.create.title")}
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          Create an email/password login for a teacher. Email invitations are
-          not enabled yet.
+          {t("staff.create.description")}
         </p>
         <div className="mt-4">
-          <CreateTeacherForm />
+          <CreateTeacherForm
+            labels={{
+              create: t("staff.actions.createTeacher"),
+              creating: t("staff.actions.creating"),
+              email: t("staff.form.email"),
+              fullName: t("staff.form.fullName"),
+              temporaryPassword: t("staff.form.temporaryPassword"),
+            }}
+          />
         </div>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Staff profiles
+            {t("staff.profiles.title")}
           </h2>
           {staffError ? (
             <p className="mt-2 text-sm text-red-600">
-              Staff could not be loaded: {staffError.message}
+              {tf("staff.errors.loadFailed", { error: staffError.message })}
             </p>
           ) : null}
         </div>
@@ -103,12 +127,24 @@ export default async function StaffPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Full name</th>
-                    <th className="px-4 py-3 font-medium">Email</th>
-                    <th className="px-4 py-3 font-medium">Role</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Created</th>
-                    <th className="px-4 py-3 font-medium">Actions</th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("staff.table.fullName")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("staff.table.email")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("staff.table.role")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("staff.table.status")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("staff.table.created")}
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("staff.table.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
@@ -121,10 +157,13 @@ export default async function StaffPage() {
                         {emailByProfileId.get(staff.id) ?? "-"}
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
-                        {formatRole(staff.role)}
+                        {roleLabel(staff.role, t)}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={staff.status} />
+                        <StatusBadge
+                          label={statusLabel(staff.status, t)}
+                          status={staff.status}
+                        />
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
                         {formatDate(staff.created_at)}
@@ -132,6 +171,12 @@ export default async function StaffPage() {
                       <td className="px-4 py-3">
                         <TeacherStatusForm
                           currentAdminId={profile.id}
+                          labels={{
+                            deactivate: t("staff.actions.deactivateTeacher"),
+                            protectedAccount: t("staff.actions.protectedAccount"),
+                            reactivate: t("staff.actions.reactivateTeacher"),
+                            saving: t("common.saving"),
+                          }}
                           staff={staff}
                         />
                       </td>
@@ -149,25 +194,40 @@ export default async function StaffPage() {
                         {staff.full_name}
                       </h3>
                       <p className="mt-1 break-all text-sm text-zinc-600">
-                        {emailByProfileId.get(staff.id) ?? "Email unavailable"}
+                        {emailByProfileId.get(staff.id) ??
+                          t("staff.fallback.emailUnavailable")}
                       </p>
                     </div>
-                    <StatusBadge status={staff.status} />
+                    <StatusBadge
+                      label={statusLabel(staff.status, t)}
+                      status={staff.status}
+                    />
                   </div>
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <dt className="text-zinc-500">Role</dt>
-                      <dd className="text-zinc-800">{formatRole(staff.role)}</dd>
+                      <dt className="text-zinc-500">{t("staff.table.role")}</dt>
+                      <dd className="text-zinc-800">{roleLabel(staff.role, t)}</dd>
                     </div>
                     <div>
-                      <dt className="text-zinc-500">Created</dt>
+                      <dt className="text-zinc-500">
+                        {t("staff.table.created")}
+                      </dt>
                       <dd className="text-zinc-800">
                         {formatDate(staff.created_at)}
                       </dd>
                     </div>
                   </dl>
                   <div className="mt-4">
-                    <TeacherStatusForm currentAdminId={profile.id} staff={staff} />
+                    <TeacherStatusForm
+                      currentAdminId={profile.id}
+                      labels={{
+                        deactivate: t("staff.actions.deactivateTeacher"),
+                        protectedAccount: t("staff.actions.protectedAccount"),
+                        reactivate: t("staff.actions.reactivateTeacher"),
+                        saving: t("common.saving"),
+                      }}
+                      staff={staff}
+                    />
                   </div>
                 </article>
               ))}
@@ -176,10 +236,10 @@ export default async function StaffPage() {
         ) : (
           <div className="p-6">
             <p className="text-sm font-medium text-zinc-950">
-              No staff profiles yet
+              {t("staff.empty.title")}
             </p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Teacher accounts created by the school admin will appear here.
+              {t("staff.empty.description")}
             </p>
           </div>
         )}
@@ -203,13 +263,20 @@ async function getAuthEmailsByProfileId(staffProfiles: StaffProfile[]) {
 
 function TeacherStatusForm({
   currentAdminId,
+  labels,
   staff,
 }: {
   currentAdminId: string;
+  labels: {
+    deactivate: string;
+    protectedAccount: string;
+    reactivate: string;
+    saving: string;
+  };
   staff: StaffProfile;
 }) {
   if (staff.role !== "teacher" || staff.id === currentAdminId) {
-    return <span className="text-sm text-zinc-500">Protected account</span>;
+    return <span className="text-sm text-zinc-500">{labels.protectedAccount}</span>;
   }
 
   const nextStatus = staff.status === "active" ? "inactive" : "active";
@@ -220,15 +287,15 @@ function TeacherStatusForm({
       <input name="status" type="hidden" value={nextStatus} />
       <PendingSubmitButton
         className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-        pendingLabel="Saving..."
+        pendingLabel={labels.saving}
       >
-        {nextStatus === "inactive" ? "Deactivate teacher" : "Reactivate teacher"}
+        {nextStatus === "inactive" ? labels.deactivate : labels.reactivate}
       </PendingSubmitButton>
     </form>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ label, status }: { label: string; status: string }) {
   const color =
     status === "active"
       ? "bg-emerald-50 text-emerald-700"
@@ -236,16 +303,21 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>
-      {status}
+      {label}
     </span>
   );
 }
 
-function formatRole(role: StaffProfile["role"]) {
-  return role
-    .split("_")
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(" ");
+function roleLabel(role: StaffProfile["role"], t: (key: string) => string) {
+  if (role === "school_admin") {
+    return t("roles.schoolAdmin");
+  }
+
+  return t(`roles.${role}`);
+}
+
+function statusLabel(status: string, t: (key: string) => string) {
+  return t(`status.${status}`);
 }
 
 function formatDate(value: string) {

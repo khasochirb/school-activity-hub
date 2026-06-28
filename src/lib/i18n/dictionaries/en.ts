@@ -91,6 +91,7 @@ export const en = {
     create: "Create",
     delete: "Delete",
     inactive: "Inactive",
+    notAvailableShort: "N/A",
     pending: "Pending",
     rejected: "Rejected",
     revoked: "Revoked",
@@ -104,6 +105,7 @@ export const en = {
     active: "Active",
     approved: "Approved",
     archived: "Archived",
+    blocked: "Blocked",
     canceled: "Canceled",
     inactive: "Inactive",
     pending: "Pending",
@@ -890,6 +892,314 @@ export const en = {
       checkedIn: "Checked in successfully.",
     },
     title: "Event check-in",
+  },
+  reports: {
+    actions: {
+      exportCsv: "Export CSV",
+    },
+    countLabels: {
+      checkins: "Check-ins",
+      registrations: "Registrations",
+    },
+    description:
+      "Review school-wide activity summaries and export roster, registration, and attendance CSV files.",
+    empty: {
+      addStudents: "Add students",
+      createEvent: "Create event",
+      description:
+        "Reports will fill in after students, clubs, events, registrations, and check-ins are created for this school.",
+      title: "No reports data yet",
+    },
+    exports: {
+      attendanceCheckins: "Attendance check-ins",
+      description:
+        "Download school-scoped CSV files for a pilot review or admin handoff.",
+      eventRegistrations: "Event registrations",
+      studentRoster: "Student roster",
+      title: "CSV exports",
+    },
+    eyebrow: "Operations reporting",
+    fallback: {
+      event: "Event",
+      rosterStudent: "Roster student",
+    },
+    summary: {
+      activeClubs: "Active clubs",
+      activeStudents: "Active students",
+      approvedEvents: "Approved events",
+      attendanceCheckins: "Attendance check-ins",
+      attendanceRate: "Attendance rate",
+      eventRegistrations: "Event registrations",
+    },
+    table: {
+      detail: "Detail",
+      name: "Name",
+    },
+    tables: {
+      emptyTitle: "No table data yet",
+      eventsWithMostCheckins: {
+        emptyDescription:
+          "No event check-in totals yet. Events will appear here after students check in.",
+        title: "Events with most check-ins",
+      },
+      eventsWithMostRegistrations: {
+        emptyDescription:
+          "No event registration totals yet. Events will appear here after students register.",
+        title: "Events with most registrations",
+      },
+      studentsWithMostCheckins: {
+        emptyDescription:
+          "No student attendance totals yet. Check-ins will appear after events use the QR link.",
+        title: "Students with most attendance check-ins",
+      },
+      studentsWithMostRegistrations: {
+        emptyDescription:
+          "No student registration totals yet. Students will appear here after joining events.",
+        title: "Students with most event registrations",
+      },
+    },
+    title: "Reports",
+  },
+  announcements: {
+    actions: {
+      archive: "Archive notice",
+      archiving: "Archiving...",
+      create: "Create announcement",
+      posting: "Posting...",
+    },
+    create: {
+      description: "Keep notices short and school-wide for this pilot.",
+      title: "Post announcement",
+    },
+    description:
+      "Post school notices that students and staff can see after login.",
+    empty: {
+      staffDescription:
+        "Post a school notice when there is something students should see.",
+      studentDescription:
+        "Active school notices will appear here when staff post them.",
+      title: "No announcements yet",
+    },
+    errors: {
+      bodyRequired: "Announcement body is required.",
+      createFailed: "Announcement could not be created: {error}",
+      invalidStatus: "Choose a valid announcement status.",
+      loadFailed: "Announcements could not be loaded: {error}",
+      staffOnlyCreate:
+        "Only school admins and teachers can create announcements.",
+      titleRequired: "Announcement title is required.",
+    },
+    eyebrow: "School notices",
+    form: {
+      body: "Body",
+      status: "Status",
+      title: "Title",
+    },
+    list: {
+      staffTitle: "School notices",
+      studentTitle: "Active notices",
+    },
+    success: {
+      created: "Announcement created.",
+    },
+    title: "Announcements",
+  },
+  profile: {
+    accountDetails: "Account details",
+    actions: {
+      save: "Save profile",
+    },
+    description: "View your account details and update your display name.",
+    errors: {
+      fullNameRequired: "Full name is required.",
+      updateFailed: "Profile could not be updated: {error}",
+    },
+    fallback: {
+      noProfileFound: "No profile found",
+      notAvailable: "Not available",
+    },
+    fields: {
+      email: "Email",
+      fullName: "Full name",
+      role: "Role",
+      school: "School",
+      status: "Status",
+    },
+    roster: {
+      classGroup: "Class group / homeroom",
+      grade: "Grade",
+      name: "Roster name",
+      notFound: "No linked roster record was found for this student account.",
+      status: "Roster status",
+      studentNumber: "Student number",
+      title: "Student roster",
+    },
+    settings: {
+      description:
+        "You can update your full name. Role and school are managed by staff.",
+      noProfileRow: "No profile row is linked to this account yet.",
+      title: "Profile settings",
+    },
+    success: {
+      updated: "Profile updated.",
+    },
+    title: "Profile",
+  },
+  staff: {
+    actions: {
+      createTeacher: "Create teacher",
+      creating: "Creating...",
+      deactivateTeacher: "Deactivate teacher",
+      protectedAccount: "Protected account",
+      reactivateTeacher: "Reactivate teacher",
+    },
+    create: {
+      description:
+        "Create an email/password login for a teacher. Email invitations are not enabled yet.",
+      title: "Create teacher account",
+    },
+    description:
+      "Create teacher accounts and manage staff access for this school.",
+    empty: {
+      description:
+        "Teacher accounts created by the school admin will appear here.",
+      title: "No staff profiles yet",
+    },
+    errors: {
+      duplicateProfile: "A profile already exists for that account.",
+      emailRequired: "Teacher email is required.",
+      fullNameRequired: "Teacher full name is required.",
+      loadFailed: "Staff could not be loaded: {error}",
+      passwordMinLength: "Password must be at least 8 characters.",
+      profileCreateFailed: "Teacher profile could not be created: {error}",
+      staffOnlyCreate: "Only school admins can create teacher accounts.",
+      teacherCreateFailed: "Teacher account could not be created.",
+    },
+    fallback: {
+      emailUnavailable: "Email unavailable",
+    },
+    form: {
+      email: "Email",
+      fullName: "Full name",
+      temporaryPassword: "Temporary password",
+    },
+    profiles: {
+      title: "Staff profiles",
+    },
+    success: {
+      created: "Teacher account created.",
+    },
+    table: {
+      actions: "Actions",
+      created: "Created",
+      email: "Email",
+      fullName: "Full name",
+      role: "Role",
+      status: "Status",
+    },
+    title: "Staff",
+  },
+  settings: {
+    actions: {
+      save: "Save school settings",
+    },
+    description: "Manage basic school settings for your activity hub.",
+    empty: {
+      noSchool: "No school record was found for your profile.",
+    },
+    errors: {
+      loadFailed: "School information could not be loaded: {error}",
+      nameRequired: "School name is required.",
+      updateFailed: "School settings could not be updated: {error}",
+      updateStaffOnly: "Only school admins can update school settings.",
+    },
+    fields: {
+      province: "Province",
+      schoolName: "School name",
+      slug: "Slug",
+      status: "Status",
+    },
+    form: {
+      provincePlaceholder: "British Columbia",
+    },
+    schoolInfo: {
+      title: "School information",
+    },
+    success: {
+      updated: "School settings updated.",
+    },
+    title: "Settings",
+    update: {
+      description:
+        "You can update the school name and province. Slug, status, and school ownership are managed separately.",
+      title: "Update school settings",
+    },
+  },
+  schoolConnections: {
+    actions: {
+      approve: "Approve",
+      approving: "Approving...",
+      reject: "Reject",
+      rejecting: "Rejecting...",
+      request: "Request connection",
+      requesting: "Requesting...",
+    },
+    description:
+      "Request and approve school-to-school connections. Student rosters and personal student data are not shared here.",
+    direction: {
+      received: "Received",
+      sent: "Sent",
+    },
+    errors: {
+      connectionExists: "A connection already exists with that school.",
+      connectionsLoadFailed: "Connections could not be loaded: {error}",
+      currentSchoolMissing: "Your school record could not be loaded.",
+      invalidResponse: "Choose a valid connection response.",
+      invalidSchool: "Choose a valid school to connect with.",
+      pendingRequestNotFound: "That pending request could not be found.",
+      requestFailed: "Connection request could not be sent: {error}",
+      schoolsLoadFailed: "Schools could not be loaded: {error}",
+      updateFailed: "Connection request could not be updated: {error}",
+      activeSchoolNotFound: "That active school could not be found.",
+    },
+    fallback: {
+      unknownSchool: "Unknown school",
+    },
+    fields: {
+      province: "Province",
+      schoolName: "School name",
+      slug: "Slug",
+      status: "Status",
+    },
+    history: {
+      description: "{direction} {status} on {date}",
+      emptyDescription:
+        "Approved, rejected, and pending connections will be listed here.",
+      emptyTitle: "No school connections yet",
+      title: "Connection history",
+    },
+    incoming: {
+      emptyDescription:
+        "Connection requests from other schools will appear here for admin review.",
+      emptyTitle: "No incoming requests",
+      requestedDate: "Requested {date}",
+      title: "Incoming requests",
+    },
+    otherSchools: {
+      emptyDescription:
+        "Other active schools will appear here when they join the platform.",
+      emptyTitle: "No other active schools yet",
+      title: "Other active schools",
+    },
+    success: {
+      approved: "Connection request approved.",
+      rejected: "Connection request rejected.",
+      requestSent: "Connection request sent.",
+    },
+    title: "School connections",
+    yourSchool: {
+      title: "Your school",
+    },
   },
   workflow: {
     addStudents: "Add students",

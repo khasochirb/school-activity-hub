@@ -1,4 +1,10 @@
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import { SchoolSettingsForm } from "./settings-form";
 
@@ -17,6 +23,11 @@ type School = {
 };
 
 export default async function SettingsPage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,31 +56,39 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Settings</h1>
+        <h1 className="text-2xl font-semibold text-zinc-950">
+          {t("settings.title")}
+        </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Manage basic school settings for your activity hub.
+          {t("settings.description")}
         </p>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-zinc-950">
-          School information
+          {t("settings.schoolInfo.title")}
         </h2>
         {schoolError ? (
           <p className="mt-2 text-sm text-red-600">
-            School information could not be loaded: {schoolError.message}
+            {tf("settings.errors.loadFailed", { error: schoolError.message })}
           </p>
         ) : null}
         {school ? (
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <DetailItem label="School name" value={school.name} />
-            <DetailItem label="Slug" value={school.slug} />
-            <DetailItem label="Province" value={school.province ?? "-"} />
-            <DetailItem label="Status" value={school.status} />
+            <DetailItem label={t("settings.fields.schoolName")} value={school.name} />
+            <DetailItem label={t("settings.fields.slug")} value={school.slug} />
+            <DetailItem
+              label={t("settings.fields.province")}
+              value={school.province ?? "-"}
+            />
+            <DetailItem
+              label={t("settings.fields.status")}
+              value={statusLabel(school.status, t)}
+            />
           </dl>
         ) : (
           <p className="mt-2 text-sm text-zinc-600">
-            No school record was found for your profile.
+            {t("settings.empty.noSchool")}
           </p>
         )}
       </section>
@@ -77,14 +96,20 @@ export default async function SettingsPage() {
       {school ? (
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Update school settings
+            {t("settings.update.title")}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            You can update the school name and province. Slug, status, and
-            school ownership are managed separately.
+            {t("settings.update.description")}
           </p>
           <div className="mt-4">
             <SchoolSettingsForm
+              labels={{
+                province: t("settings.fields.province"),
+                provincePlaceholder: t("settings.form.provincePlaceholder"),
+                save: t("settings.actions.save"),
+                saving: t("common.saving"),
+                schoolName: t("settings.fields.schoolName"),
+              }}
               name={school.name}
               province={school.province}
             />
@@ -104,4 +129,8 @@ function DetailItem({ label, value }: { label: string; value: string }) {
       </dd>
     </div>
   );
+}
+
+function statusLabel(status: string, t: (key: string) => string) {
+  return t(`status.${status}`);
 }

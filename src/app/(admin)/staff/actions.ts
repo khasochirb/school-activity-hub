@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,15 +22,21 @@ export type CreateTeacherState = {
   success: boolean;
 };
 
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
+
 export async function createTeacher(
   _state: CreateTeacherState,
   formData: FormData,
 ): Promise<CreateTeacherState> {
+  const i18n = await getServerI18n();
   const profile = await getCurrentSchoolAdminProfile();
 
   if (!profile) {
     return {
-      message: "Only school admins can create teacher accounts.",
+      message: i18n.t("staff.errors.staffOnlyCreate"),
       success: false,
     };
   }
@@ -34,15 +46,21 @@ export async function createTeacher(
   const password = String(formData.get("password") ?? "");
 
   if (!fullName) {
-    return { message: "Teacher full name is required.", success: false };
+    return {
+      message: i18n.t("staff.errors.fullNameRequired"),
+      success: false,
+    };
   }
 
   if (!email) {
-    return { message: "Teacher email is required.", success: false };
+    return { message: i18n.t("staff.errors.emailRequired"), success: false };
   }
 
   if (password.length < 8) {
-    return { message: "Password must be at least 8 characters.", success: false };
+    return {
+      message: i18n.t("staff.errors.passwordMinLength"),
+      success: false,
+    };
   }
 
   const admin = createAdminClient();
@@ -58,7 +76,7 @@ export async function createTeacher(
 
   if (authError || !authData.user) {
     return {
-      message: authError?.message ?? "Teacher account could not be created.",
+      message: i18n.t("staff.errors.teacherCreateFailed"),
       success: false,
     };
   }
@@ -77,15 +95,17 @@ export async function createTeacher(
     return {
       message:
         profileError.code === "23505"
-          ? "A profile already exists for that account."
-          : `Teacher profile could not be created: ${profileError.message}`,
+          ? i18n.t("staff.errors.duplicateProfile")
+          : i18n.tf("staff.errors.profileCreateFailed", {
+              error: profileError.message,
+            }),
       success: false,
     };
   }
 
   revalidatePath("/staff");
 
-  return { message: "Teacher account created.", success: true };
+  return { message: i18n.t("staff.success.created"), success: true };
 }
 
 export async function updateTeacherStatus(formData: FormData) {
@@ -138,4 +158,14 @@ async function getCurrentSchoolAdminProfile(): Promise<AdminProfile | null> {
   }
 
   return profile;
+}
+
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
 }

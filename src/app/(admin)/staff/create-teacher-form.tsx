@@ -9,13 +9,25 @@ const initialState: CreateTeacherState = {
   success: false,
 };
 
-export function CreateTeacherForm() {
+type CreateTeacherFormLabels = {
+  create: string;
+  creating: string;
+  email: string;
+  fullName: string;
+  temporaryPassword: string;
+};
+
+export function CreateTeacherForm({
+  labels,
+}: {
+  labels: CreateTeacherFormLabels;
+}) {
   const [state, formAction] = useActionState(createTeacher, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
-        Full name
+        {labels.fullName}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="full_name"
@@ -23,7 +35,7 @@ export function CreateTeacherForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Email
+        {labels.email}
         <input
           autoComplete="email"
           className="h-11 rounded-md border px-3 text-base outline-none transition"
@@ -33,7 +45,7 @@ export function CreateTeacherForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Temporary password
+        {labels.temporaryPassword}
         <input
           autoComplete="new-password"
           className="h-11 rounded-md border px-3 text-base outline-none transition"
@@ -56,13 +68,13 @@ export function CreateTeacherForm() {
         </p>
       ) : null}
       <div className="sm:col-span-2">
-        <SubmitButton />
+        <SubmitButton labels={labels} />
       </div>
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({ labels }: { labels: CreateTeacherFormLabels }) {
   const { pending } = useFormStatus();
 
   return (
@@ -71,7 +83,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Creating..." : "Create teacher"}
+      {pending ? labels.creating : labels.create}
     </button>
   );
 }

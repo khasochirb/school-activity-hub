@@ -9,13 +9,25 @@ const initialState: UpdateProfileState = {
   success: false,
 };
 
-export function ProfileForm({ fullName }: { fullName: string }) {
+type ProfileFormLabels = {
+  fullName: string;
+  save: string;
+  saving: string;
+};
+
+export function ProfileForm({
+  fullName,
+  labels,
+}: {
+  fullName: string;
+  labels: ProfileFormLabels;
+}) {
   const [state, formAction] = useActionState(updateProfile, initialState);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Full name
+        {labels.fullName}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           defaultValue={fullName}
@@ -35,12 +47,12 @@ export function ProfileForm({ fullName }: { fullName: string }) {
           {state.message}
         </p>
       ) : null}
-      <SubmitButton />
+      <SubmitButton labels={labels} />
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({ labels }: { labels: ProfileFormLabels }) {
   const { pending } = useFormStatus();
 
   return (
@@ -49,7 +61,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Saving..." : "Save profile"}
+      {pending ? labels.saving : labels.save}
     </button>
   );
 }

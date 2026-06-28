@@ -82,6 +82,16 @@ export type ReportsData = {
   summary: ReportSummary;
 };
 
+type ReportFallbackLabels = {
+  event: string;
+  rosterStudent: string;
+};
+
+const defaultFallbackLabels: ReportFallbackLabels = {
+  event: "Event",
+  rosterStudent: "Roster student",
+};
+
 export async function getCurrentStaffProfile() {
   const supabase = await createClient();
   const {
@@ -109,7 +119,10 @@ export async function getCurrentStaffProfile() {
   return profile;
 }
 
-export async function getReportsData(schoolId: string): Promise<ReportsData> {
+export async function getReportsData(
+  schoolId: string,
+  fallbackLabels: ReportFallbackLabels = defaultFallbackLabels,
+): Promise<ReportsData> {
   const admin = createAdminClient();
   const [summary, activeRegistrations, successfulCheckins] = await Promise.all([
     getReportSummary(admin, schoolId),
@@ -154,18 +167,22 @@ export async function getReportsData(schoolId: string): Promise<ReportsData> {
     eventsWithMostCheckins: summarizeEvents(
       eventsWithMostCheckins,
       eventsById,
+      fallbackLabels,
     ),
     eventsWithMostRegistrations: summarizeEvents(
       eventsWithMostRegistrations,
       eventsById,
+      fallbackLabels,
     ),
     studentsWithMostCheckins: summarizeStudents(
       studentsWithMostCheckins,
       studentsById,
+      fallbackLabels,
     ),
     studentsWithMostRegistrations: summarizeStudents(
       studentsWithMostRegistrations,
       studentsById,
+      fallbackLabels,
     ),
     summary,
   };
@@ -499,6 +516,7 @@ function uniqueIds(ids: string[]) {
 function summarizeStudents(
   counts: CountBucket[],
   studentsById: Map<string, StudentRoster>,
+  fallbackLabels: ReportFallbackLabels,
 ) {
   return counts.map(({ count, id }) => {
     const student = studentsById.get(id);
@@ -507,7 +525,7 @@ function summarizeStudents(
       count,
       detail: student ? studentDetail(student) : "",
       id,
-      name: student ? studentName(student) : "Roster student",
+      name: student ? studentName(student) : fallbackLabels.rosterStudent,
     };
   });
 }
@@ -515,6 +533,7 @@ function summarizeStudents(
 function summarizeEvents(
   counts: CountBucket[],
   eventsById: Map<string, EventRecord>,
+  fallbackLabels: ReportFallbackLabels,
 ) {
   return counts.map(({ count, id }) => {
     const event = eventsById.get(id);
@@ -523,7 +542,7 @@ function summarizeEvents(
       count,
       detail: event ? formatDateTime(event.starts_at) : "",
       id,
-      name: event?.title ?? "Event",
+      name: event?.title ?? fallbackLabels.event,
     };
   });
 }

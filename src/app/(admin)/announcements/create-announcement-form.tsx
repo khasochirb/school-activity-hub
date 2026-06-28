@@ -12,7 +12,21 @@ const initialState: CreateAnnouncementState = {
   success: false,
 };
 
-export function CreateAnnouncementForm() {
+type CreateAnnouncementFormLabels = {
+  active: string;
+  archived: string;
+  body: string;
+  create: string;
+  posting: string;
+  status: string;
+  title: string;
+};
+
+export function CreateAnnouncementForm({
+  labels,
+}: {
+  labels: CreateAnnouncementFormLabels;
+}) {
   const [state, formAction] = useActionState(
     createAnnouncement,
     initialState,
@@ -21,7 +35,7 @@ export function CreateAnnouncementForm() {
   return (
     <form action={formAction} className="grid gap-4">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Title
+        {labels.title}
         <input
           className="h-11 rounded-md border px-3 text-base outline-none transition"
           name="title"
@@ -29,7 +43,7 @@ export function CreateAnnouncementForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
-        Body
+        {labels.body}
         <textarea
           className="min-h-32 rounded-md border px-3 py-2 text-base outline-none transition"
           name="body"
@@ -37,14 +51,14 @@ export function CreateAnnouncementForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:max-w-xs">
-        Status
+        {labels.status}
         <select
-          className="h-11 rounded-md border bg-white px-3 text-base outline-none transition"
+          className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
           defaultValue="active"
           name="status"
         >
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
+          <option value="active">{labels.active}</option>
+          <option value="archived">{labels.archived}</option>
         </select>
       </label>
       {state.message ? (
@@ -59,12 +73,18 @@ export function CreateAnnouncementForm() {
           {state.message}
         </p>
       ) : null}
-      <SubmitButton />
+      <SubmitButton createLabel={labels.create} postingLabel={labels.posting} />
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  createLabel,
+  postingLabel,
+}: {
+  createLabel: string;
+  postingLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -73,7 +93,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Posting..." : "Create announcement"}
+      {pending ? postingLabel : createLabel}
     </button>
   );
 }

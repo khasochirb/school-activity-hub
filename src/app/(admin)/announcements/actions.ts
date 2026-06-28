@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,15 +22,21 @@ export type CreateAnnouncementState = {
   success: boolean;
 };
 
+type ServerI18n = {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+};
+
 export async function createAnnouncement(
   _state: CreateAnnouncementState,
   formData: FormData,
 ): Promise<CreateAnnouncementState> {
+  const i18n = await getServerI18n();
   const profile = await getCurrentProfile();
 
   if (!profile || !isStaff(profile)) {
     return {
-      message: "Only school admins and teachers can create announcements.",
+      message: i18n.t("announcements.errors.staffOnlyCreate"),
       success: false,
     };
   }
@@ -34,15 +46,24 @@ export async function createAnnouncement(
   const status = String(formData.get("status") ?? "active").trim();
 
   if (!title) {
-    return { message: "Announcement title is required.", success: false };
+    return {
+      message: i18n.t("announcements.errors.titleRequired"),
+      success: false,
+    };
   }
 
   if (!body) {
-    return { message: "Announcement body is required.", success: false };
+    return {
+      message: i18n.t("announcements.errors.bodyRequired"),
+      success: false,
+    };
   }
 
   if (!["active", "archived"].includes(status)) {
-    return { message: "Choose a valid announcement status.", success: false };
+    return {
+      message: i18n.t("announcements.errors.invalidStatus"),
+      success: false,
+    };
   }
 
   const supabase = await createClient();
@@ -58,14 +79,16 @@ export async function createAnnouncement(
 
   if (error) {
     return {
-      message: `Announcement could not be created: ${error.message}`,
+      message: i18n.tf("announcements.errors.createFailed", {
+        error: error.message,
+      }),
       success: false,
     };
   }
 
   revalidatePath("/announcements");
 
-  return { message: "Announcement created.", success: true };
+  return { message: i18n.t("announcements.success.created"), success: true };
 }
 
 export async function archiveAnnouncement(formData: FormData) {
@@ -122,4 +145,14 @@ async function getCurrentProfile(): Promise<Profile | null> {
 
 function isStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
+}
+
+async function getServerI18n(): Promise<ServerI18n> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
+
+  return { t, tf };
 }

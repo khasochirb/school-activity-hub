@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import {
   requestSchoolConnection,
@@ -48,6 +54,11 @@ export default async function SchoolConnectionsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const {
     data: { user },
@@ -128,11 +139,10 @@ export default async function SchoolConnectionsPage({
     <div className="flex flex-col gap-6">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">
-          School connections
+          {t("schoolConnections.title")}
         </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Request and approve school-to-school connections. Student rosters and
-          personal student data are not shared here.
+          {t("schoolConnections.description")}
         </p>
       </section>
 
@@ -148,20 +158,31 @@ export default async function SchoolConnectionsPage({
       ) : null}
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Your school</h2>
+        <h2 className="text-lg font-semibold text-zinc-950">
+          {t("schoolConnections.yourSchool.title")}
+        </h2>
         {currentSchool ? (
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <DetailItem label="School name" value={currentSchool.name} />
-            <DetailItem label="Slug" value={currentSchool.slug} />
             <DetailItem
-              label="Province"
+              label={t("schoolConnections.fields.schoolName")}
+              value={currentSchool.name}
+            />
+            <DetailItem
+              label={t("schoolConnections.fields.slug")}
+              value={currentSchool.slug}
+            />
+            <DetailItem
+              label={t("schoolConnections.fields.province")}
               value={currentSchool.province ?? "-"}
             />
-            <DetailItem label="Status" value={currentSchool.status} />
+            <DetailItem
+              label={t("schoolConnections.fields.status")}
+              value={statusLabel(currentSchool.status, t)}
+            />
           </dl>
         ) : (
           <p className="mt-2 text-sm text-zinc-600">
-            Your school record could not be loaded.
+            {t("schoolConnections.errors.currentSchoolMissing")}
           </p>
         )}
       </section>
@@ -169,11 +190,13 @@ export default async function SchoolConnectionsPage({
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Incoming requests
+            {t("schoolConnections.incoming.title")}
           </h2>
           {connectionsError ? (
             <p className="mt-2 text-sm text-red-600">
-              Connections could not be loaded: {connectionsError.message}
+              {tf("schoolConnections.errors.connectionsLoadFailed", {
+                error: connectionsError.message,
+              })}
             </p>
           ) : null}
         </div>
@@ -189,18 +212,32 @@ export default async function SchoolConnectionsPage({
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <SchoolSummary
-                      fallback="Unknown school"
+                      fallback={t("schoolConnections.fallback.unknownSchool")}
                       school={requester}
-                      subtitle={`Requested ${formatDate(connection.requested_at)}`}
+                      subtitle={tf("schoolConnections.incoming.requestedDate", {
+                        date: formatDate(connection.requested_at),
+                      })}
                     />
                     <div className="flex flex-wrap gap-2">
                       <ConnectionResponseForm
                         connectionId={connection.id}
                         decision="approve"
+                        labels={{
+                          approve: t("schoolConnections.actions.approve"),
+                          approving: t("schoolConnections.actions.approving"),
+                          reject: t("schoolConnections.actions.reject"),
+                          rejecting: t("schoolConnections.actions.rejecting"),
+                        }}
                       />
                       <ConnectionResponseForm
                         connectionId={connection.id}
                         decision="reject"
+                        labels={{
+                          approve: t("schoolConnections.actions.approve"),
+                          approving: t("schoolConnections.actions.approving"),
+                          reject: t("schoolConnections.actions.reject"),
+                          rejecting: t("schoolConnections.actions.rejecting"),
+                        }}
                       />
                     </div>
                   </div>
@@ -211,11 +248,10 @@ export default async function SchoolConnectionsPage({
         ) : (
           <div className="p-6">
             <p className="text-sm font-medium text-zinc-950">
-              No incoming requests
+              {t("schoolConnections.incoming.emptyTitle")}
             </p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Connection requests from other schools will appear here for admin
-              review.
+              {t("schoolConnections.incoming.emptyDescription")}
             </p>
           </div>
         )}
@@ -224,11 +260,13 @@ export default async function SchoolConnectionsPage({
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Other active schools
+            {t("schoolConnections.otherSchools.title")}
           </h2>
           {schoolsError ? (
             <p className="mt-2 text-sm text-red-600">
-              Schools could not be loaded: {schoolsError.message}
+              {tf("schoolConnections.errors.schoolsLoadFailed", {
+                error: schoolsError.message,
+              })}
             </p>
           ) : null}
         </div>
@@ -245,21 +283,35 @@ export default async function SchoolConnectionsPage({
                   <div className="flex h-full flex-col gap-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <SchoolSummary
-                        fallback="Unknown school"
+                        fallback={t("schoolConnections.fallback.unknownSchool")}
                         school={school}
                         subtitle={school.province ?? school.slug}
                       />
                       {connection ? (
-                        <ConnectionBadge status={connection.status} />
+                        <ConnectionBadge
+                          label={statusLabel(connection.status, t)}
+                          status={connection.status}
+                        />
                       ) : null}
                     </div>
                     <div className="mt-auto">
                       {connection ? (
                         <p className="text-sm text-zinc-600">
-                          {connectionDescription(connection, profile.school_id)}
+                          {connectionDescription(
+                            connection,
+                            profile.school_id,
+                            t,
+                            tf,
+                          )}
                         </p>
                       ) : (
-                        <RequestConnectionForm schoolId={school.id} />
+                        <RequestConnectionForm
+                          labels={{
+                            request: t("schoolConnections.actions.request"),
+                            requesting: t("schoolConnections.actions.requesting"),
+                          }}
+                          schoolId={school.id}
+                        />
                       )}
                     </div>
                   </div>
@@ -270,11 +322,10 @@ export default async function SchoolConnectionsPage({
         ) : (
           <div className="p-6">
             <p className="text-sm font-medium text-zinc-950">
-              No other active schools yet
+              {t("schoolConnections.otherSchools.emptyTitle")}
             </p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Other active schools will appear here when they join the
-              platform.
+              {t("schoolConnections.otherSchools.emptyDescription")}
             </p>
           </div>
         )}
@@ -283,7 +334,7 @@ export default async function SchoolConnectionsPage({
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 p-6">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Connection history
+            {t("schoolConnections.history.title")}
           </h2>
         </div>
         {connections?.length ? (
@@ -300,14 +351,19 @@ export default async function SchoolConnectionsPage({
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <SchoolSummary
-                      fallback="Unknown school"
+                      fallback={t("schoolConnections.fallback.unknownSchool")}
                       school={otherSchool}
                       subtitle={connectionDescription(
                         connection,
                         profile.school_id,
+                        t,
+                        tf,
                       )}
                     />
-                    <ConnectionBadge status={connection.status} />
+                    <ConnectionBadge
+                      label={statusLabel(connection.status, t)}
+                      status={connection.status}
+                    />
                   </div>
                 </article>
               );
@@ -316,10 +372,10 @@ export default async function SchoolConnectionsPage({
         ) : (
           <div className="p-6">
             <p className="text-sm font-medium text-zinc-950">
-              No school connections yet
+              {t("schoolConnections.history.emptyTitle")}
             </p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Approved, rejected, and pending connections will be listed here.
+              {t("schoolConnections.history.emptyDescription")}
             </p>
           </div>
         )}
@@ -328,15 +384,24 @@ export default async function SchoolConnectionsPage({
   );
 }
 
-function RequestConnectionForm({ schoolId }: { schoolId: string }) {
+function RequestConnectionForm({
+  labels,
+  schoolId,
+}: {
+  labels: {
+    request: string;
+    requesting: string;
+  };
+  schoolId: string;
+}) {
   return (
     <form action={requestSchoolConnection}>
       <input name="receiver_school_id" type="hidden" value={schoolId} />
       <PendingSubmitButton
         className="h-10 w-full cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 sm:w-auto"
-        pendingLabel="Requesting..."
+        pendingLabel={labels.requesting}
       >
-        Request connection
+        {labels.request}
       </PendingSubmitButton>
     </form>
   );
@@ -345,9 +410,16 @@ function RequestConnectionForm({ schoolId }: { schoolId: string }) {
 function ConnectionResponseForm({
   connectionId,
   decision,
+  labels,
 }: {
   connectionId: string;
   decision: "approve" | "reject";
+  labels: {
+    approve: string;
+    approving: string;
+    reject: string;
+    rejecting: string;
+  };
 }) {
   const isApprove = decision === "approve";
 
@@ -361,9 +433,9 @@ function ConnectionResponseForm({
             ? "h-10 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
             : "h-10 cursor-pointer rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
         }
-        pendingLabel={isApprove ? "Approving..." : "Rejecting..."}
+        pendingLabel={isApprove ? labels.approving : labels.rejecting}
       >
-        {isApprove ? "Approve" : "Reject"}
+        {isApprove ? labels.approve : labels.reject}
       </PendingSubmitButton>
     </form>
   );
@@ -402,7 +474,13 @@ function DetailItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ConnectionBadge({ status }: { status: ConnectionStatus }) {
+function ConnectionBadge({
+  label,
+  status,
+}: {
+  label: string;
+  status: ConnectionStatus;
+}) {
   const color =
     status === "approved"
       ? "bg-emerald-50 text-emerald-700"
@@ -414,7 +492,7 @@ function ConnectionBadge({ status }: { status: ConnectionStatus }) {
 
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>
-      {formatStatus(status)}
+      {label}
     </span>
   );
 }
@@ -422,15 +500,23 @@ function ConnectionBadge({ status }: { status: ConnectionStatus }) {
 function connectionDescription(
   connection: SchoolConnection,
   currentSchoolId: string,
+  t: (key: string) => string,
+  tf: (key: string, values: Record<string, string | number>) => string,
 ) {
   const direction =
-    connection.requester_school_id === currentSchoolId ? "Sent" : "Received";
+    connection.requester_school_id === currentSchoolId
+      ? t("schoolConnections.direction.sent")
+      : t("schoolConnections.direction.received");
   const date =
     connection.status === "pending"
       ? connection.requested_at
       : connection.responded_at ?? connection.requested_at;
 
-  return `${direction} ${formatStatus(connection.status)} on ${formatDate(date)}`;
+  return tf("schoolConnections.history.description", {
+    date: formatDate(date),
+    direction,
+    status: statusLabel(connection.status, t),
+  });
 }
 
 function otherSchoolId(
@@ -445,11 +531,8 @@ function otherSchoolId(
     : connection.requester_school_id;
 }
 
-function formatStatus(status: string) {
-  return status
-    .split("_")
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(" ");
+function statusLabel(status: string, t: (key: string) => string) {
+  return t(`status.${status}`);
 }
 
 function formatDate(value: string) {

@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
 
@@ -25,6 +27,9 @@ type StudentRoster = {
 };
 
 export default async function ProfilePage() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
   const supabase = await createClient();
   const {
     data: { user },
@@ -69,47 +74,68 @@ export default async function ProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">Profile</h1>
+        <h1 className="text-2xl font-semibold text-zinc-950">
+          {t("profile.title")}
+        </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          View your account details and update your display name.
+          {t("profile.description")}
         </p>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-zinc-950">
-          Account details
+          {t("profile.accountDetails")}
         </h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-          <DetailItem label="Email" value={user.email ?? "Not available"} />
           <DetailItem
-            label="Full name"
-            value={profile?.full_name ?? "No profile found"}
+            label={t("profile.fields.email")}
+            value={user.email ?? t("profile.fallback.notAvailable")}
           />
-          <DetailItem label="Role" value={profile ? formatRole(profile.role) : "-"} />
-          <DetailItem label="School" value={school?.name ?? "-"} />
-          <DetailItem label="Status" value={profile?.status ?? "-"} />
+          <DetailItem
+            label={t("profile.fields.fullName")}
+            value={profile?.full_name ?? t("profile.fallback.noProfileFound")}
+          />
+          <DetailItem
+            label={t("profile.fields.role")}
+            value={profile ? roleLabel(profile.role, t) : "-"}
+          />
+          <DetailItem
+            label={t("profile.fields.school")}
+            value={school?.name ?? "-"}
+          />
+          <DetailItem
+            label={t("profile.fields.status")}
+            value={profile ? statusLabel(profile.status, t) : "-"}
+          />
         </dl>
       </section>
 
       {profile ? (
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Profile settings
+            {t("profile.settings.title")}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            You can update your full name. Role and school are managed by staff.
+            {t("profile.settings.description")}
           </p>
           <div className="mt-4">
-            <ProfileForm fullName={profile.full_name} />
+            <ProfileForm
+              fullName={profile.full_name}
+              labels={{
+                fullName: t("profile.fields.fullName"),
+                save: t("profile.actions.save"),
+                saving: t("common.saving"),
+              }}
+            />
           </div>
         </section>
       ) : (
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Profile settings
+            {t("profile.settings.title")}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            No profile row is linked to this account yet.
+            {t("profile.settings.noProfileRow")}
           </p>
         </section>
       )}
@@ -117,28 +143,34 @@ export default async function ProfilePage() {
       {profile?.role === "student" ? (
         <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-zinc-950">
-            Student roster
+            {t("profile.roster.title")}
           </h2>
           {studentRoster ? (
             <dl className="mt-4 grid gap-4 sm:grid-cols-2">
               <DetailItem
-                label="Roster name"
+                label={t("profile.roster.name")}
                 value={studentRosterName(studentRoster)}
               />
-              <DetailItem label="Grade" value={studentRoster.grade_level ?? "-"} />
               <DetailItem
-                label="Class group / homeroom"
+                label={t("profile.roster.grade")}
+                value={studentRoster.grade_level ?? "-"}
+              />
+              <DetailItem
+                label={t("profile.roster.classGroup")}
                 value={studentRoster.homeroom ?? "-"}
               />
               <DetailItem
-                label="Student number"
+                label={t("profile.roster.studentNumber")}
                 value={studentRoster.student_number ?? "-"}
               />
-              <DetailItem label="Roster status" value={studentRoster.status} />
+              <DetailItem
+                label={t("profile.roster.status")}
+                value={statusLabel(studentRoster.status, t)}
+              />
             </dl>
           ) : (
             <p className="mt-2 text-sm text-zinc-600">
-              No linked roster record was found for this student account.
+              {t("profile.roster.notFound")}
             </p>
           )}
         </section>
@@ -164,9 +196,14 @@ function studentRosterName(student: StudentRoster) {
     : `${student.first_name} ${student.last_name}`;
 }
 
-function formatRole(role: Profile["role"]) {
-  return role
-    .split("_")
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(" ");
+function roleLabel(role: Profile["role"], t: (key: string) => string) {
+  if (role === "school_admin") {
+    return t("roles.schoolAdmin");
+  }
+
+  return t(`roles.${role}`);
+}
+
+function statusLabel(status: string, t: (key: string) => string) {
+  return t(`status.${status}`);
 }
