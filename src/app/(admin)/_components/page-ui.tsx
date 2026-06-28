@@ -106,10 +106,10 @@ export function FilterPanel({
   submitLabel: string;
 }) {
   return (
-    <section className="section-card section-card-padded">
+    <section className="compact-filter-card section-card section-card-padded">
       <form
         action={action}
-        className="grid gap-3 md:grid-cols-[repeat(3,minmax(0,1fr))_auto_auto]"
+        className="compact-filter-grid"
       >
         {children}
         <button className="btn btn-primary min-h-11 md:self-end" type="submit">
@@ -141,7 +141,7 @@ export function SearchField({
   placeholder: string;
 }) {
   return (
-    <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+    <label className="compact-field flex flex-col gap-2 text-sm font-semibold text-slate-800">
       {label}
       <input
         className="h-11 rounded-md border px-3 text-base font-normal outline-none transition"
@@ -166,7 +166,7 @@ export function SelectFilter({
   options: Array<{ label: string; value: string }>;
 }) {
   return (
-    <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+    <label className="compact-select flex flex-col gap-2 text-sm font-semibold text-slate-800">
       {label}
       <select
         className="h-11 cursor-pointer rounded-md border px-3 text-base font-normal outline-none transition"

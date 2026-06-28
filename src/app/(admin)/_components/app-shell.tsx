@@ -205,8 +205,8 @@ function Brand({
         aria-label={`${name} ${dashboardLabel}`}
         className={
           compact
-            ? "flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-teal-700 text-xs font-bold text-white shadow-sm transition hover:bg-teal-800"
-            : "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md bg-teal-700 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
+            ? "brand-mark flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md text-xs font-bold shadow-sm transition"
+            : "brand-mark flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-sm font-bold shadow-sm transition"
         }
         href="/dashboard"
       >

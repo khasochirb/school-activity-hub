@@ -150,7 +150,7 @@ export function CreateEventForm({
   return (
     <form
       action={formAction}
-      className="grid gap-4 sm:grid-cols-2"
+      className="compact-form-xl grid gap-4 sm:grid-cols-2"
       onSubmit={handleSubmit}
     >
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">

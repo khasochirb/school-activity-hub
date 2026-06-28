@@ -71,7 +71,7 @@ export function BulkGenerateInviteForm({
   const hasEligibleStudents = eligibleStudents.length > 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="compact-form-xl flex flex-col gap-4">
       <form action={formAction} className="flex flex-col gap-4">
         <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-semibold text-slate-800">

@@ -51,9 +51,7 @@ export function AppNav({
                   <Link
                     aria-current={active ? "page" : undefined}
                     className={
-                      active
-                        ? "flex min-h-11 cursor-pointer items-center rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-bold text-teal-950 shadow-sm ring-1 ring-teal-100 transition hover:bg-teal-100"
-                        : "flex min-h-11 cursor-pointer items-center rounded-md border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
+                      active ? "nav-link nav-link-active" : "nav-link nav-link-muted"
                     }
                     href={item.href}
                     key={item.href}

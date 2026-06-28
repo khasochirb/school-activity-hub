@@ -33,7 +33,7 @@ export function SchoolSettingsForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="compact-form-sm flex flex-col gap-4">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.schoolName}
         <input

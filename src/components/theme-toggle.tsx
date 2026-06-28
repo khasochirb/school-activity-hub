@@ -73,7 +73,7 @@ export function ThemeToggle({
               aria-pressed={active}
               className={
                 active
-                  ? "min-h-8 cursor-pointer rounded bg-teal-50 px-3 text-sm font-bold text-teal-900"
+                  ? "choice-pill-active min-h-8 cursor-pointer rounded px-3 text-sm font-bold"
                   : "min-h-8 cursor-pointer rounded px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
               }
               key={option}
