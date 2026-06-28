@@ -4,6 +4,9 @@ export const en = {
     shortName: "SAH",
     subtitle: "Clubs, events, invites, and attendance",
   },
+  a11y: {
+    primaryNavigation: "Primary navigation",
+  },
   auth: {
     backToSignIn: "Back to sign in",
     errors: {
@@ -28,6 +31,7 @@ export const en = {
         inviteRequired: "Enter your invite code.",
         inviteUsedDuringSignup:
           "This invite code was used before your signup finished.",
+        profileSaveFailed: "Account was not finished: {error}",
         rosterClaimed:
           "This roster student was claimed before your signup finished.",
         studentAlreadyLinked: "This student already has an account.",
@@ -184,6 +188,10 @@ export const en = {
       empty:
         "No members yet. Students will appear here after they join this club.",
       title: "Members",
+    },
+    memberRoles: {
+      leader: "Leader",
+      member: "Member",
     },
     student: {
       noRosterWarning:
@@ -388,6 +396,30 @@ export const en = {
   },
   metadata: {
     description: "Private school clubs, events, invite codes, and attendance.",
+  },
+  setup: {
+    actions: {
+      createSchool: "Create school",
+      creating: "Creating...",
+    },
+    description:
+      "Create the first school. Your current account will become the school admin for this workspace.",
+    errors: {
+      adminProfileSaveFailed:
+        "School was not created because the admin profile could not be saved: {error}",
+      createFailed: "Unable to create the school.",
+      loginRequired: "You must be logged in to create the first school.",
+      nameRequired: "School name is required.",
+      slugMinLength: "School slug must be at least 3 characters.",
+    },
+    form: {
+      schoolName: "School name",
+      schoolSlug: "School slug",
+      slugPlaceholder: "my-school",
+      timezone: "Timezone",
+      timezoneDefault: "America/Vancouver",
+    },
+    title: "First-time setup",
   },
   nav: {
     account: "Account",
@@ -835,6 +867,11 @@ export const en = {
       registeredCount: "{count} registered student(s)",
       title: "Attendance list",
     },
+    methods: {
+      admin: "Admin",
+      manual: "Manual",
+      qr: "QR",
+    },
     permission: {
       badge: {
         declined: "Permission declined",
@@ -861,6 +898,10 @@ export const en = {
       school: "School",
       status: "Status",
       student: "Student",
+    },
+    status: {
+      attended: "Attended",
+      registered: "Registered",
     },
     title: "Event attendance",
   },
@@ -915,6 +956,8 @@ export const en = {
       description:
         "Download school-scoped CSV files for a pilot review or admin handoff.",
       eventRegistrations: "Event registrations",
+      exportNotFound: "Export not found",
+      notFound: "Not found",
       studentRoster: "Student roster",
       title: "CSV exports",
     },
@@ -933,6 +976,7 @@ export const en = {
     },
     table: {
       detail: "Detail",
+      gradeDetail: "Grade {grade}",
       name: "Name",
     },
     tables: {

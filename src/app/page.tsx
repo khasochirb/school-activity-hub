@@ -49,7 +49,7 @@ export default async function HomePage() {
             href="/"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-md bg-teal-700 text-sm font-bold text-white">
-              SAH
+              {t("app.shortName")}
             </span>
             <span className="font-bold tracking-tight">{t("app.name")}</span>
           </Link>

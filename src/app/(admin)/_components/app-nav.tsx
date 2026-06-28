@@ -13,12 +13,24 @@ export type NavSection = {
   label: string;
 };
 
-export function AppNav({ sections }: { sections: NavSection[] }) {
+export function AppNav({
+  ariaLabel,
+  sections,
+}: {
+  ariaLabel?: string;
+  sections: NavSection[];
+}) {
   const pathname = usePathname();
+  const navigationLabel =
+    ariaLabel ||
+    sections
+      .map((section) => section.label)
+      .filter(Boolean)
+      .join(", ");
 
   return (
     <nav
-      aria-label="Primary navigation"
+      aria-label={navigationLabel}
       className="flex flex-col gap-6"
     >
       {sections.map((section) => {

@@ -349,7 +349,7 @@ export default async function EventAttendancePage({
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <StatusBadge status={attendee.status} />
+                          <StatusBadge status={attendee.status} t={t} />
                         </td>
                         <td className="px-4 py-3 text-zinc-700">
                           {checkin
@@ -359,7 +359,9 @@ export default async function EventAttendancePage({
                               : "-"}
                         </td>
                         <td className="px-4 py-3 text-zinc-700">
-                          {checkin?.method ?? "-"}
+                          {checkin
+                            ? checkInMethodLabel(checkin.method, t)
+                            : "-"}
                         </td>
                       </tr>
                     );
@@ -401,7 +403,7 @@ export default async function EventAttendancePage({
                           {student?.homeroom ? `, ${student.homeroom}` : ""}
                         </p>
                       </div>
-                      <StatusBadge status={attendee.status} />
+                      <StatusBadge status={attendee.status} t={t} />
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div>
@@ -433,7 +435,9 @@ export default async function EventAttendancePage({
                           {t("attendance.table.method")}
                         </dt>
                         <dd className="text-zinc-800">
-                          {checkin?.method ?? "-"}
+                          {checkin
+                            ? checkInMethodLabel(checkin.method, t)
+                            : "-"}
                         </dd>
                       </div>
                     </dl>
@@ -559,7 +563,7 @@ function isSchoolStaff(profile: StaffProfile) {
   return profile.role === "school_admin" || profile.role === "teacher";
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, t }: { status: string; t: Translate }) {
   const isAttended = status === "attended";
 
   return (
@@ -570,9 +574,29 @@ function StatusBadge({ status }: { status: string }) {
           : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
       }
     >
-      {status}
+      {attendanceStatusLabel(status, t)}
     </span>
   );
+}
+
+function attendanceStatusLabel(status: string, t: Translate) {
+  if (status === "attended") {
+    return t("attendance.status.attended");
+  }
+
+  if (status === "registered") {
+    return t("attendance.status.registered");
+  }
+
+  return status;
+}
+
+function checkInMethodLabel(method: string, t: Translate) {
+  if (method === "admin" || method === "manual" || method === "qr") {
+    return t(`attendance.methods.${method}`);
+  }
+
+  return method;
 }
 
 function PermissionCell({

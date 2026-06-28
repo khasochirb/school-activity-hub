@@ -1,6 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -13,13 +19,14 @@ export async function createFirstSchool(
   _state: SetupState,
   formData: FormData,
 ): Promise<SetupState> {
+  const i18n = await getServerI18n();
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { message: "You must be logged in to create the first school." };
+    return { message: i18n.t("setup.errors.loginRequired") };
   }
 
   if (await hasAnySchool()) {
@@ -32,13 +39,13 @@ export async function createFirstSchool(
     String(formData.get("timezone") ?? "").trim() || "America/Vancouver";
 
   if (!name) {
-    return { message: "School name is required." };
+    return { message: i18n.t("setup.errors.nameRequired") };
   }
 
   const slug = toSlug(slugInput || name);
 
   if (slug.length < 3) {
-    return { message: "School slug must be at least 3 characters." };
+    return { message: i18n.t("setup.errors.slugMinLength") };
   }
 
   const admin = createAdminClient();
@@ -55,7 +62,7 @@ export async function createFirstSchool(
 
   if (schoolError || !school) {
     return {
-      message: schoolError?.message ?? "Unable to create the school.",
+      message: i18n.t("setup.errors.createFailed"),
     };
   }
 
@@ -75,11 +82,24 @@ export async function createFirstSchool(
     await admin.from("schools").delete().eq("id", school.id);
 
     return {
-      message: `School was not created because the admin profile could not be saved: ${profileError.message}`,
+      message: i18n.tf("setup.errors.adminProfileSaveFailed", {
+        error: profileError.message,
+      }),
     };
   }
 
   redirect("/dashboard");
+}
+
+async function getServerI18n() {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+
+  return {
+    t: (key: string) => translate(dictionary, key),
+    tf: (key: string, values: Record<string, string | number>) =>
+      formatTranslation(dictionary, key, values),
+  };
 }
 
 function toSlug(value: string) {

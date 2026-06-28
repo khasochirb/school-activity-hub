@@ -2,7 +2,11 @@
 
 import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -42,6 +46,8 @@ export async function redeemInviteCode(
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
 
   if (!normalizedCode) {
     return { message: t("auth.join.errors.inviteRequired"), success: false };
@@ -133,7 +139,9 @@ export async function redeemInviteCode(
   if (profileError) {
     await cleanupCreatedStudentAccount(userId);
     return {
-      message: `Account was not finished: ${profileError.message}`,
+      message: tf("auth.join.errors.profileSaveFailed", {
+        error: profileError.message,
+      }),
       success: false,
     };
   }

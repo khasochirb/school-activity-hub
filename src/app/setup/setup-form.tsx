@@ -8,13 +8,23 @@ const initialState: SetupState = {
   message: "",
 };
 
-export function SetupForm() {
+type SetupFormLabels = {
+  createSchool: string;
+  creating: string;
+  schoolName: string;
+  schoolSlug: string;
+  slugPlaceholder: string;
+  timezone: string;
+  timezoneDefault: string;
+};
+
+export function SetupForm({ labels }: { labels: SetupFormLabels }) {
   const [state, formAction] = useActionState(createFirstSchool, initialState);
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-        School name
+        {labels.schoolName}
         <input
           className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
           name="name"
@@ -22,19 +32,19 @@ export function SetupForm() {
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-        School slug
+        {labels.schoolSlug}
         <input
           className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
           name="slug"
-          placeholder="my-school"
+          placeholder={labels.slugPlaceholder}
         />
       </label>
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
-        Timezone
+        {labels.timezone}
         <input
           className="h-11 rounded-md border border-zinc-300 px-3 text-base outline-none transition focus:border-zinc-900"
           name="timezone"
-          defaultValue="America/Vancouver"
+          defaultValue={labels.timezoneDefault}
           required
         />
       </label>
@@ -43,12 +53,21 @@ export function SetupForm() {
           {state.message}
         </p>
       ) : null}
-      <SubmitButton />
+      <SubmitButton
+        createLabel={labels.createSchool}
+        pendingLabel={labels.creating}
+      />
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({
+  createLabel,
+  pendingLabel,
+}: {
+  createLabel: string;
+  pendingLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -57,7 +76,7 @@ function SubmitButton() {
       disabled={pending}
       type="submit"
     >
-      {pending ? "Creating..." : "Create school"}
+      {pending ? pendingLabel : createLabel}
     </button>
   );
 }

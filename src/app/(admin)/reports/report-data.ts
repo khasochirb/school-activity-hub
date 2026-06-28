@@ -1,3 +1,5 @@
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
@@ -84,12 +86,8 @@ export type ReportsData = {
 
 type ReportFallbackLabels = {
   event: string;
+  gradeDetail: string;
   rosterStudent: string;
-};
-
-const defaultFallbackLabels: ReportFallbackLabels = {
-  event: "Event",
-  rosterStudent: "Roster student",
 };
 
 export async function getCurrentStaffProfile() {
@@ -121,9 +119,10 @@ export async function getCurrentStaffProfile() {
 
 export async function getReportsData(
   schoolId: string,
-  fallbackLabels: ReportFallbackLabels = defaultFallbackLabels,
+  fallbackLabelOverrides: Partial<ReportFallbackLabels> = {},
 ): Promise<ReportsData> {
   const admin = createAdminClient();
+  const fallbackLabels = await getReportFallbackLabels(fallbackLabelOverrides);
   const [summary, activeRegistrations, successfulCheckins] = await Promise.all([
     getReportSummary(admin, schoolId),
     getActiveRegistrationRows(admin, schoolId),
@@ -190,6 +189,7 @@ export async function getReportsData(
 
 export async function getReportCsvExport(type: string, schoolId: string) {
   const admin = createAdminClient();
+  const fallbackLabels = await getReportFallbackLabels();
 
   if (type === "student-roster") {
     const students = await getStudentRosters(admin, schoolId);
@@ -209,7 +209,12 @@ export async function getReportCsvExport(type: string, schoolId: string) {
     );
 
     return {
-      csv: createEventRegistrationsCsv(attendees, studentsById, eventsById),
+      csv: createEventRegistrationsCsv(
+        attendees,
+        studentsById,
+        eventsById,
+        fallbackLabels,
+      ),
       filename: "event-registrations.csv",
     };
   }
@@ -223,12 +228,31 @@ export async function getReportCsvExport(type: string, schoolId: string) {
     );
 
     return {
-      csv: createAttendanceCheckinsCsv(checkins, studentsById, eventsById),
+      csv: createAttendanceCheckinsCsv(
+        checkins,
+        studentsById,
+        eventsById,
+        fallbackLabels,
+      ),
       filename: "attendance-checkins.csv",
     };
   }
 
   return null;
+}
+
+async function getReportFallbackLabels(
+  overrides: Partial<ReportFallbackLabels> = {},
+): Promise<ReportFallbackLabels> {
+  const locale = await getCurrentLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+
+  return {
+    event: overrides.event ?? t("reports.fallback.event"),
+    gradeDetail: overrides.gradeDetail ?? t("reports.table.gradeDetail"),
+    rosterStudent: overrides.rosterStudent ?? t("reports.fallback.rosterStudent"),
+  };
 }
 
 async function getReportSummary(
@@ -523,7 +547,7 @@ function summarizeStudents(
 
     return {
       count,
-      detail: student ? studentDetail(student) : "",
+      detail: student ? studentDetail(student, fallbackLabels) : "",
       id,
       name: student ? studentName(student) : fallbackLabels.rosterStudent,
     };
@@ -591,17 +615,18 @@ function createEventRegistrationsCsv(
   attendees: EventAttendee[],
   studentsById: Map<string, StudentRoster>,
   eventsById: Map<string, EventRecord>,
+  fallbackLabels: ReportFallbackLabels,
 ) {
   const rows = attendees.map((attendee) => {
     const student = studentsById.get(attendee.student_roster_id ?? "");
     const event = eventsById.get(attendee.event_id);
 
     return [
-      student ? studentName(student) : "Roster student",
+      student ? studentName(student) : fallbackLabels.rosterStudent,
       student?.grade_level ?? "",
       student?.homeroom ?? "",
       student?.student_number ?? "",
-      event?.title ?? "Event",
+      event?.title ?? fallbackLabels.event,
       event?.starts_at ?? "",
       attendee.status,
       attendee.registered_at,
@@ -629,17 +654,18 @@ function createAttendanceCheckinsCsv(
   checkins: AttendanceCheckin[],
   studentsById: Map<string, StudentRoster>,
   eventsById: Map<string, EventRecord>,
+  fallbackLabels: ReportFallbackLabels,
 ) {
   const rows = checkins.map((checkin) => {
     const student = studentsById.get(checkin.student_roster_id ?? "");
     const event = eventsById.get(checkin.event_id);
 
     return [
-      student ? studentName(student) : "Roster student",
+      student ? studentName(student) : fallbackLabels.rosterStudent,
       student?.grade_level ?? "",
       student?.homeroom ?? "",
       student?.student_number ?? "",
-      event?.title ?? "Event",
+      event?.title ?? fallbackLabels.event,
       checkin.checked_in_at,
       checkin.method,
       checkin.result,
@@ -680,14 +706,32 @@ function studentName(student: StudentRoster) {
   return `${student.first_name} ${student.last_name}`;
 }
 
-function studentDetail(student: StudentRoster) {
+function studentDetail(
+  student: StudentRoster,
+  fallbackLabels: ReportFallbackLabels,
+) {
   const parts = [
-    student.grade_level ? `Grade ${student.grade_level}` : "",
+    student.grade_level
+      ? formatReportLabel(fallbackLabels.gradeDetail, {
+          grade: student.grade_level,
+        })
+      : "",
     student.homeroom,
     student.student_number,
   ].filter(Boolean);
 
   return parts.join(", ");
+}
+
+function formatReportLabel(
+  template: string,
+  values: Record<string, string | number>,
+) {
+  return template.replace(/\{(\w+)\}/g, (match, name) => {
+    const value = values[name];
+
+    return value === undefined ? match : String(value);
+  });
 }
 
 function formatDateTime(value: string) {

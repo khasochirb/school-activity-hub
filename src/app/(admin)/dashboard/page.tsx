@@ -611,7 +611,7 @@ function RecentCheckinsSection({
                   </p>
                 </div>
                 <span className="badge badge-success w-fit">
-                  {checkin.method}
+                  {checkInMethodLabel(checkin.method, t)}
                 </span>
               </div>
               <p className="mt-2 text-sm text-slate-600">
@@ -953,6 +953,14 @@ function studentName(
   }
 
   return `${student.first_name} ${student.last_name}`;
+}
+
+function checkInMethodLabel(method: string, t: (key: string) => string) {
+  if (method === "admin" || method === "manual" || method === "qr") {
+    return t(`attendance.methods.${method}`);
+  }
+
+  return method;
 }
 
 function formatNumber(value: number) {

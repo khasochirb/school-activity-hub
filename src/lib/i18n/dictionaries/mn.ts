@@ -6,6 +6,9 @@ export const mn = {
     shortName: "SAH",
     subtitle: "Клуб, арга хэмжээ, урилга ба ирц",
   },
+  a11y: {
+    primaryNavigation: "Үндсэн навигаци",
+  },
   auth: {
     backToSignIn: "Нэвтрэх рүү буцах",
     errors: {
@@ -31,6 +34,7 @@ export const mn = {
         inviteRequired: "Урилгын кодоо оруулна уу.",
         inviteUsedDuringSignup:
           "Таны бүртгэл дуусахаас өмнө энэ урилгын код ашиглагдсан байна.",
+        profileSaveFailed: "Бүртгэл бүрэн дууссангүй: {error}",
         rosterClaimed:
           "Таны бүртгэл дуусахаас өмнө энэ жагсаалтын сурагчийн бүртгэл хэн нэгэнд холбогдсон байна.",
         studentAlreadyLinked: "Энэ сурагч аль хэдийн бүртгэлтэй байна.",
@@ -105,10 +109,12 @@ export const mn = {
     active: "Идэвхтэй",
     approved: "Батлагдсан",
     archived: "Архивлагдсан",
+    blocked: "Хориглосон",
     canceled: "Цуцлагдсан",
     inactive: "Идэвхгүй",
     pending: "Хүлээгдэж буй",
     pendingApproval: "pending_approval",
+    redeemed: "Ашигласан",
     rejected: "Татгалзсан",
     revoked: "Хүчингүй болгосон",
   },
@@ -186,6 +192,10 @@ export const mn = {
       empty:
         "Гишүүд одоогоор алга. Сурагчид энэ клубт нэгдсэний дараа энд харагдана.",
       title: "Гишүүд",
+    },
+    memberRoles: {
+      leader: "Ахлагч",
+      member: "Гишүүн",
     },
     student: {
       noRosterWarning:
@@ -415,6 +425,11 @@ export const mn = {
       registeredCount: "{count} бүртгүүлсэн сурагч",
       title: "Ирцийн жагсаалт",
     },
+    methods: {
+      admin: "Админ",
+      manual: "Гараар",
+      qr: "QR",
+    },
     permission: {
       badge: {
         declined: "Зөвшөөрөл татгалзсан",
@@ -441,6 +456,10 @@ export const mn = {
       school: "Сургууль",
       status: "Төлөв",
       student: "Сурагч",
+    },
+    status: {
+      attended: "Ирсэн",
+      registered: "Бүртгүүлсэн",
     },
     title: "Арга хэмжээний ирц",
   },
@@ -495,6 +514,8 @@ export const mn = {
       description:
         "Туршилтын үнэлгээ эсвэл админы хүлээлгэн өгөхөд зориулж сургуулийн хүрээний CSV файлууд татна уу.",
       eventRegistrations: "Арга хэмжээний бүртгэлүүд",
+      exportNotFound: "Экспорт олдсонгүй",
+      notFound: "Олдсонгүй",
       studentRoster: "Сурагчдын жагсаалт",
       title: "CSV экспорт",
     },
@@ -513,6 +534,7 @@ export const mn = {
     },
     table: {
       detail: "Дэлгэрэнгүй",
+      gradeDetail: "Анги {grade}",
       name: "Нэр",
     },
     tables: {
@@ -969,6 +991,30 @@ export const mn = {
   },
   metadata: {
     description: "Хувийн сургуулийн клуб, арга хэмжээ, урилгын код, ирц.",
+  },
+  setup: {
+    actions: {
+      createSchool: "Сургууль үүсгэх",
+      creating: "Үүсгэж байна...",
+    },
+    description:
+      "Эхний сургуулийг үүсгэнэ үү. Таны одоогийн бүртгэл энэ ажлын талбарын сургуулийн админ болно.",
+    errors: {
+      adminProfileSaveFailed:
+        "Админ профайлыг хадгалж чадсангүй тул сургууль үүссэнгүй: {error}",
+      createFailed: "Сургуулийг үүсгэж чадсангүй.",
+      loginRequired: "Эхний сургуулийг үүсгэхийн тулд та нэвтэрсэн байх ёстой.",
+      nameRequired: "Сургуулийн нэр шаардлагатай.",
+      slugMinLength: "Сургуулийн slug дор хаяж 3 тэмдэгттэй байх ёстой.",
+    },
+    form: {
+      schoolName: "Сургуулийн нэр",
+      schoolSlug: "Сургуулийн slug",
+      slugPlaceholder: "my-school",
+      timezone: "Цагийн бүс",
+      timezoneDefault: "America/Vancouver",
+    },
+    title: "Анхны тохиргоо",
   },
   nav: {
     account: "Бүртгэл",

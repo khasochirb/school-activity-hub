@@ -295,7 +295,7 @@ export default async function ClubsPage({
                                 )}
                               </p>
                               <p className="text-xs text-zinc-500">
-                                {membership.role}
+                                {memberRoleLabel(membership.role, t)}
                               </p>
                             </div>
                             {isStaff && membership.role !== "leader" ? (
@@ -450,6 +450,17 @@ function memberName(membership: ClubMembership, fallbackName: string) {
   }
 
   return `${student.first_name} ${student.last_name}`;
+}
+
+function memberRoleLabel(
+  role: ClubMembership["role"],
+  t: (key: string) => string,
+) {
+  if (role === "leader") {
+    return t("clubs.memberRoles.leader");
+  }
+
+  return t("clubs.memberRoles.member");
 }
 
 function categoryLabel(category: string, t: (key: string) => string) {
