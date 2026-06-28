@@ -188,27 +188,29 @@ function StudentDashboard({
       title={t("dashboard.title")}
     >
       <StudentWelcomeOverview t={t} />
-      <StudentNextSteps t={t} />
       {!analytics.currentStudent ? (
         <section className="notice-box notice-warning">
           <p>{t("dashboard.student.noRosterWarning")}</p>
         </section>
       ) : null}
 
-      <MetricGrid>
+      <section className="grid gap-3 sm:grid-cols-3">
         <MetricCard
           label={t("dashboard.studentStats.joinedClubs")}
           value={analytics.joinedClubs}
+          href="/clubs"
         />
         <MetricCard
           label={t("dashboard.studentStats.registeredUpcomingEvents")}
           value={analytics.registeredUpcomingEvents}
+          href="/events?filter=registered"
         />
         <MetricCard
           label={t("dashboard.studentStats.attendedEvents")}
           value={analytics.attendedEvents}
+          href="/events?filter=registered"
         />
-      </MetricGrid>
+      </section>
 
       <UpcomingEventsSection
         events={analytics.upcomingEvents}
@@ -567,66 +569,27 @@ function NeedsAttention({
 
 function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
   return (
-    <section className="section-card section-card-padded">
-      <p className="page-eyebrow">{t("dashboard.studentEyebrow")}</p>
-      <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
-        {t("dashboard.studentOverviewTitle")}
-      </h2>
-      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-        {t("dashboard.studentOverviewDescription")}
-      </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Link className="btn btn-primary" href="/events">
+    <section className="section-card overflow-hidden">
+      <div className="p-5 sm:p-6">
+        <p className="page-eyebrow">{t("dashboard.studentEyebrow")}</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-xl">
+          {t("dashboard.studentOverviewTitle")}
+        </h2>
+        <p className="mt-2 max-w-3xl text-base leading-7 text-slate-600 sm:text-sm sm:leading-6">
+          {t("dashboard.studentOverviewDescription")}
+        </p>
+      </div>
+      <div className="grid gap-3 border-t border-slate-200 p-4 sm:grid-cols-3">
+        <Link className="btn btn-primary min-h-12 w-full text-base sm:text-sm" href="/events">
           {t("dashboard.browseEvents")}
         </Link>
-        <Link className="btn btn-secondary" href="/clubs">
+        <Link className="btn btn-secondary min-h-12 w-full text-base sm:text-sm" href="/clubs">
           {t("dashboard.joinClubs")}
         </Link>
-        <Link className="btn btn-secondary" href="/events?filter=registered">
+        <Link className="btn btn-secondary min-h-12 w-full text-base sm:text-sm" href="/events?filter=registered">
           {t("dashboard.viewRegisteredEvents")}
         </Link>
       </div>
-    </section>
-  );
-}
-
-function StudentNextSteps({ t }: { t: (key: string) => string }) {
-  const actions = [
-    {
-      description: t("dashboard.studentActions.browseEvents.description"),
-      href: "/events",
-      label: t("dashboard.browseEvents"),
-    },
-    {
-      description: t("dashboard.studentActions.joinClubs.description"),
-      href: "/clubs",
-      label: t("dashboard.joinClubs"),
-    },
-    {
-      description: t(
-        "dashboard.studentActions.viewRegisteredEvents.description",
-      ),
-      href: "/events?filter=registered",
-      label: t("dashboard.viewRegisteredEvents"),
-    },
-  ];
-
-  return (
-    <section className="grid gap-3 md:grid-cols-3">
-      {actions.map((action) => (
-        <Link
-          className="group rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          href={action.href}
-          key={action.href}
-        >
-          <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
-            {action.label}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {action.description}
-          </p>
-        </Link>
-      ))}
     </section>
   );
 }

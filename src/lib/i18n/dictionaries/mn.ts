@@ -212,7 +212,7 @@ export const mn = {
     actions: {
       attendanceQr: "Ирц ба QR",
       cancel: "Арга хэмжээг цуцлах",
-      cancelMyRegistration: "Миний бүртгэлийг цуцлах",
+      cancelMyRegistration: "Бүртгэл цуцлах",
       cancelling: "Цуцалж байна...",
       create: "Арга хэмжээ үүсгэх",
       createApproved: "Батлагдсан арга хэмжээ үүсгэх",
@@ -347,6 +347,7 @@ export const mn = {
       maxSuffix: "/ дээд тал нь {count}",
       notJoined: "Нэгдээгүй",
       unavailable: "Бүртгүүлэх боломжгүй",
+      youAreRegistered: "Та бүртгүүлсэн байна",
     },
     risk: {
       high: "Өндөр эрсдэл",
@@ -504,11 +505,14 @@ export const mn = {
       noRoster:
         "Таны бүртгэл идэвхтэй жагсаалтын сурагчтай холбогдоогүй байна.",
     },
+    failedTitle: "Ирц бүртгэгдсэнгүй",
+    helpText: "Тусламж хэрэгтэй бол энэ хуудсыг ажилтанд үзүүлнэ үү.",
     permissionNote: "Зөвшөөрлийн тэмдэглэл",
     success: {
       alreadyCheckedIn: "Та аль хэдийн check-in хийсэн байна.",
-      checkedIn: "Check-in амжилттай боллоо.",
+      checkedIn: "Ирц амжилттай бүртгэгдлээ",
     },
+    successTitle: "Ирц амжилттай бүртгэгдлээ",
     title: "Арга хэмжээний check-in",
   },
   reports: {
@@ -980,7 +984,7 @@ export const mn = {
       locationNotSet: "Байршил тохируулаагүй",
       title: "Удахгүй болох батлагдсан арга хэмжээнүүд",
     },
-    viewRegisteredEvents: "Бүртгүүлсэн арга хэмжээг харах",
+    viewRegisteredEvents: "Миний бүртгүүлсэн арга хэмжээнүүд",
   },
   landing: {
     activityLabelAttendance: "Ирц",

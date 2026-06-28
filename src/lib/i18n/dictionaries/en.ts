@@ -361,7 +361,7 @@ export const en = {
       locationNotSet: "Location not set",
       title: "Upcoming approved events",
     },
-    viewRegisteredEvents: "View registered events",
+    viewRegisteredEvents: "My registered events",
   },
   landing: {
     activityLabelAttendance: "Attendance",
@@ -669,8 +669,8 @@ export const en = {
     actions: {
       attendanceQr: "Attendance and QR",
       cancel: "Cancel event",
-      cancelMyRegistration: "Cancel my registration",
-      cancelling: "Cancelling...",
+      cancelMyRegistration: "Cancel registration",
+      cancelling: "Canceling...",
       create: "Create event",
       createApproved: "Create approved event",
       creating: "Creating event...",
@@ -805,6 +805,7 @@ export const en = {
       maxSuffix: "/ {count} max",
       notJoined: "Not joined",
       unavailable: "Registration unavailable",
+      youAreRegistered: "You are registered",
     },
     risk: {
       high: "High risk",
@@ -961,11 +962,14 @@ export const en = {
       noRoster: "Your account is not linked to an active roster student.",
       recordFailed: "Check-in could not be recorded: {error}",
     },
+    failedTitle: "Check-in failed",
+    helpText: "Show this page to staff if you need help.",
     permissionNote: "Permission note",
     success: {
       alreadyCheckedIn: "You are already checked in.",
-      checkedIn: "Checked in successfully.",
+      checkedIn: "Checked in successfully",
     },
+    successTitle: "Checked in successfully",
     title: "Event check-in",
   },
   reports: {

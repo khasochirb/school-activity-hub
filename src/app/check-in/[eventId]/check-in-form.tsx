@@ -17,6 +17,8 @@ export function CheckInForm({
   labels: {
     checkIn: string;
     checkingIn: string;
+    failedTitle: string;
+    helpText: string;
   };
 }) {
   const [state, formAction] = useActionState(checkInToEvent, initialState);
@@ -25,14 +27,22 @@ export function CheckInForm({
     <form action={formAction} className="mt-6 flex flex-col gap-4">
       <input name="event_id" type="hidden" value={eventId} />
       {state.message ? (
-        <p
+        <div
           className={
-            state.success ? "text-sm text-emerald-700" : "text-sm text-red-600"
+            state.success
+              ? "notice-box notice-success"
+              : "notice-box notice-danger"
           }
           role="status"
         >
-          {state.message}
-        </p>
+          {state.success ? null : (
+            <p className="text-lg font-bold">{labels.failedTitle}</p>
+          )}
+          <p className={state.success ? "text-lg font-bold" : "mt-1 leading-6"}>
+            {state.message}
+          </p>
+          <p className="mt-2 text-sm leading-6">{labels.helpText}</p>
+        </div>
       ) : null}
       {state.success ? null : <SubmitButton labels={labels} />}
     </form>
@@ -45,13 +55,15 @@ function SubmitButton({
   labels: {
     checkIn: string;
     checkingIn: string;
+    failedTitle: string;
+    helpText: string;
   };
 }) {
   const { pending } = useFormStatus();
 
   return (
     <button
-      className="h-11 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+      className="btn btn-primary min-h-12 w-full text-base disabled:cursor-not-allowed disabled:opacity-60"
       disabled={pending}
       type="submit"
     >

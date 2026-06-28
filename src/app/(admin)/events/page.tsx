@@ -590,12 +590,19 @@ function EventCard({
   const isJoined =
     registrationStatus === "registered" || registrationStatus === "attended";
   const isOwnSchoolEvent = event.school_id === userSchoolId;
+  const isStudentView = Boolean(currentStudent) && !isStaff;
 
   return (
-    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-zinc-950">
+    <article
+      className={
+        isStudentView
+          ? "rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+          : "rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+      }
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h3 className={isStudentView ? "text-xl font-semibold text-zinc-950" : "text-lg font-semibold text-zinc-950"}>
             {event.title}
           </h3>
           <p className="mt-1 text-sm text-zinc-600">
@@ -620,7 +627,7 @@ function EventCard({
         {currentStudent ? (
           <StatusBadge variant={isJoined ? "success" : "default"}>
             {isJoined
-              ? t("events.registration.joined")
+              ? t("events.registration.youAreRegistered")
               : t("events.registration.notJoined")}
           </StatusBadge>
         ) : null}
@@ -649,7 +656,13 @@ function EventCard({
         ) : null}
       </div>
 
-      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+      <dl
+        className={
+          isStudentView
+            ? "mt-4 grid gap-3 rounded-lg bg-slate-50 p-3 text-sm sm:grid-cols-2"
+            : "mt-4 grid gap-3 text-sm sm:grid-cols-2"
+        }
+      >
         <div>
           <dt className="text-zinc-500">{t("events.card.location")}</dt>
           <dd className="text-zinc-800">{event.location || "-"}</dd>
@@ -785,10 +798,10 @@ function EventActions({
 
   if (registrationStatus === "registered") {
     return (
-      <form action={cancelEventRegistration}>
+      <form action={cancelEventRegistration} className="w-full sm:w-auto">
         <input name="event_id" type="hidden" value={event.id} />
         <PendingSubmitButton
-          className="btn btn-secondary min-h-9 px-3"
+          className="btn btn-secondary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
           pendingLabel={t("events.actions.cancelling")}
         >
           {t("events.actions.cancelMyRegistration")}
@@ -799,7 +812,7 @@ function EventActions({
 
   if (registrationStatus === "attended") {
     return (
-      <span className="inline-flex h-9 items-center rounded-md bg-emerald-50 px-3 text-sm font-medium text-emerald-700">
+      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-emerald-50 px-3 text-sm font-medium text-emerald-700 sm:w-auto">
         {t("events.registration.checkedIn")}
       </span>
     );
@@ -807,23 +820,23 @@ function EventActions({
 
   if (!canCurrentStudentRegister(event, userSchoolId)) {
     return (
-      <span className="inline-flex h-9 items-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700 sm:w-auto">
         {t("events.registration.unavailable")}
       </span>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex w-full flex-col gap-2 sm:w-auto">
       {event.permission_required ? (
-        <p className="max-w-64 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+        <p className="rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-800 sm:max-w-72">
           {t("events.permission.studentNotice")}
         </p>
       ) : null}
-      <form action={joinEvent}>
+      <form action={joinEvent} className="w-full sm:w-auto">
         <input name="event_id" type="hidden" value={event.id} />
         <PendingSubmitButton
-          className="btn btn-primary min-h-9 px-3 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          className="btn btn-primary min-h-12 w-full px-4 text-base disabled:cursor-not-allowed disabled:bg-zinc-400 sm:min-h-10 sm:w-auto sm:text-sm"
           disabled={isFull}
           pendingLabel={t("events.actions.joining")}
         >

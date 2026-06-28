@@ -233,15 +233,20 @@ export default async function ClubsPage({
             {clubs.map((club) => {
               const clubMemberships = membershipsByClub.get(club.id) ?? [];
               const isJoined = currentStudentMemberships.has(club.id);
+              const isStudentView = profile.role === "student";
 
               return (
                 <article
-                  className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+                  className={
+                    isStudentView
+                      ? "rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+                      : "rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+                  }
                   key={club.id}
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-zinc-950">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className={isStudentView ? "text-xl font-semibold text-zinc-950" : "text-lg font-semibold text-zinc-950"}>
                         {club.name}
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -253,6 +258,11 @@ export default async function ClubsPage({
                         <StatusBadge status={club.status}>
                           {statusLabel(club.status, t)}
                         </StatusBadge>
+                        {isStudentView && isJoined ? (
+                          <StatusBadge variant="success">
+                            {t("clubs.memberRoles.member")}
+                          </StatusBadge>
+                        ) : null}
                       </div>
                     </div>
                     <ClubActions
@@ -272,56 +282,58 @@ export default async function ClubsPage({
                     />
                   </div>
                   {club.description ? (
-                    <p className="mt-3 text-sm leading-6 text-zinc-600">
+                    <p className="mt-3 text-base leading-7 text-zinc-600 sm:text-sm sm:leading-6">
                       {club.description}
                     </p>
                   ) : null}
-                  <div className="mt-4 border-t border-zinc-200 pt-4">
-                    <h4 className="text-sm font-medium text-zinc-950">
-                      {t("clubs.members.title")}
-                    </h4>
-                    {clubMemberships.length ? (
-                      <ul className="mt-2 flex flex-col gap-2">
-                        {clubMemberships.map((membership) => (
-                          <li
-                            className="flex flex-col gap-2 rounded-md bg-zinc-50 p-3 sm:flex-row sm:items-center sm:justify-between"
-                            key={membership.id}
-                          >
-                            <div>
-                              <p className="text-sm font-medium text-zinc-900">
-                                {memberName(
-                                  membership,
-                                  t("clubs.fallback.rosterStudent"),
-                                )}
-                              </p>
-                              <p className="text-xs text-zinc-500">
-                                {memberRoleLabel(membership.role, t)}
-                              </p>
-                            </div>
-                            {isStaff && membership.role !== "leader" ? (
-                              <form action={assignClubLeader}>
-                                <input
-                                  name="membership_id"
-                                  type="hidden"
-                                  value={membership.id}
-                                />
-                                <PendingSubmitButton
-                                  className="btn btn-secondary min-h-9 px-3"
-                                  pendingLabel={t("common.saving")}
-                                >
-                                  {t("clubs.actions.makeLeader")}
-                                </PendingSubmitButton>
-                              </form>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-2 text-sm text-zinc-600">
-                        {t("clubs.members.empty")}
-                      </p>
-                    )}
-                  </div>
+                  {isStaff ? (
+                    <div className="mt-4 border-t border-zinc-200 pt-4">
+                      <h4 className="text-sm font-medium text-zinc-950">
+                        {t("clubs.members.title")}
+                      </h4>
+                      {clubMemberships.length ? (
+                        <ul className="mt-2 flex flex-col gap-2">
+                          {clubMemberships.map((membership) => (
+                            <li
+                              className="flex flex-col gap-2 rounded-md bg-zinc-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+                              key={membership.id}
+                            >
+                              <div>
+                                <p className="text-sm font-medium text-zinc-900">
+                                  {memberName(
+                                    membership,
+                                    t("clubs.fallback.rosterStudent"),
+                                  )}
+                                </p>
+                                <p className="text-xs text-zinc-500">
+                                  {memberRoleLabel(membership.role, t)}
+                                </p>
+                              </div>
+                              {membership.role !== "leader" ? (
+                                <form action={assignClubLeader}>
+                                  <input
+                                    name="membership_id"
+                                    type="hidden"
+                                    value={membership.id}
+                                  />
+                                  <PendingSubmitButton
+                                    className="btn btn-secondary min-h-9 px-3"
+                                    pendingLabel={t("common.saving")}
+                                  >
+                                    {t("clubs.actions.makeLeader")}
+                                  </PendingSubmitButton>
+                                </form>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-zinc-600">
+                          {t("clubs.members.empty")}
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
@@ -391,13 +403,13 @@ function ClubActions({
   }
 
   return (
-    <form action={isJoined ? leaveClub : joinClub}>
+    <form action={isJoined ? leaveClub : joinClub} className="w-full sm:w-auto">
       <input name="club_id" type="hidden" value={club.id} />
       <PendingSubmitButton
         className={
           isJoined
-            ? "btn btn-secondary min-h-9 px-3"
-            : "btn btn-primary min-h-9 px-3"
+            ? "btn btn-secondary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+            : "btn btn-primary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
         }
         pendingLabel={isJoined ? labels.leaving : labels.joining}
       >

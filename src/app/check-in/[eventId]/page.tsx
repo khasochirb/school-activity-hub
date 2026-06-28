@@ -75,7 +75,9 @@ export default async function StudentCheckInPage({
       <CheckInShell>
         <UnavailableMessage
           backLabel={t("common.backToDashboard")}
+          helpText={t("checkIn.helpText")}
           message={t("checkIn.errors.activeStudentsOnly")}
+          statusTitle={t("checkIn.failedTitle")}
           title={t("checkIn.title")}
         />
       </CheckInShell>
@@ -113,11 +115,13 @@ export default async function StudentCheckInPage({
       <CheckInShell>
         <UnavailableMessage
           backLabel={t("common.backToDashboard")}
+          helpText={t("checkIn.helpText")}
           message={
             !student
               ? t("checkIn.errors.noRoster")
               : t("checkIn.errors.eventUnavailable")
           }
+          statusTitle={t("checkIn.failedTitle")}
           title={t("checkIn.title")}
         />
       </CheckInShell>
@@ -147,12 +151,14 @@ export default async function StudentCheckInPage({
 
   return (
     <CheckInShell>
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-950">
+      <section className="section-card p-5 sm:p-6">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-2xl">
           {t("checkIn.title")}
         </h1>
-        <p className="mt-2 text-sm text-zinc-600">{event.title}</p>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+        <p className="mt-2 text-base font-semibold text-zinc-800">
+          {event.title}
+        </p>
+        <dl className="mt-4 grid gap-3 rounded-lg bg-zinc-50 p-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-zinc-500">{t("checkIn.details.time")}</dt>
             <dd className="text-zinc-800">
@@ -203,26 +209,39 @@ export default async function StudentCheckInPage({
             labels={{
               checkIn: t("checkIn.actions.checkIn"),
               checkingIn: t("checkIn.actions.checkingIn"),
+              failedTitle: t("checkIn.failedTitle"),
+              helpText: t("checkIn.helpText"),
             }}
           />
         ) : null}
 
         {!attendee || attendee.status === "canceled" ? (
-          <StatusMessage message={t("checkIn.errors.mustJoinFirst")} />
+          <StatusMessage
+            helpText={t("checkIn.helpText")}
+            message={t("checkIn.errors.mustJoinFirst")}
+            title={t("checkIn.failedTitle")}
+          />
         ) : null}
         {alreadyCheckedIn ? (
-          <StatusMessage message={t("checkIn.success.alreadyCheckedIn")} success />
+          <StatusMessage
+            helpText={t("checkIn.helpText")}
+            message={t("checkIn.success.alreadyCheckedIn")}
+            success
+            title={t("checkIn.successTitle")}
+          />
         ) : null}
         {attendee &&
         attendee.status !== "registered" &&
         attendee.status !== "attended" ? (
           <StatusMessage
+            helpText={t("checkIn.helpText")}
             message={t("checkIn.errors.invalidRegistrationStatus")}
+            title={t("checkIn.failedTitle")}
           />
         ) : null}
 
         <Link
-          className="mt-6 inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+          className="btn btn-secondary mt-6 min-h-11 w-full sm:w-auto"
           href="/events"
         >
           {t("common.backToEvents")}
@@ -234,7 +253,7 @@ export default async function StudentCheckInPage({
 
 function CheckInShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-8 text-zinc-950 sm:px-6">
+    <main className="app-surface min-h-screen px-4 py-5 text-zinc-950 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-xl">{children}</div>
     </main>
   );
@@ -242,19 +261,25 @@ function CheckInShell({ children }: { children: React.ReactNode }) {
 
 function UnavailableMessage({
   backLabel,
+  helpText,
   message,
+  statusTitle,
   title,
 }: {
   backLabel: string;
+  helpText: string;
   message: string;
+  statusTitle: string;
   title: string;
 }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold text-zinc-950">{title}</h1>
-      <StatusMessage message={message} />
+    <section className="section-card p-5 sm:p-6">
+      <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-2xl">
+        {title}
+      </h1>
+      <StatusMessage helpText={helpText} message={message} title={statusTitle} />
       <Link
-        className="mt-6 inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="btn btn-secondary mt-6 min-h-11 w-full sm:w-auto"
         href="/dashboard"
       >
         {backLabel}
@@ -264,23 +289,29 @@ function UnavailableMessage({
 }
 
 function StatusMessage({
+  helpText,
   message,
   success = false,
+  title,
 }: {
+  helpText?: string;
   message: string;
   success?: boolean;
+  title?: string;
 }) {
   return (
-    <p
+    <div
       className={
         success
-          ? "mt-4 text-sm text-emerald-700"
-          : "mt-4 text-sm text-zinc-600"
+          ? "notice-box notice-success mt-4"
+          : "notice-box notice-danger mt-4"
       }
       role="status"
     >
-      {message}
-    </p>
+      {title ? <p className="text-lg font-bold">{title}</p> : null}
+      <p className={title ? "mt-1 leading-6" : "leading-6"}>{message}</p>
+      {helpText ? <p className="mt-2 text-sm leading-6">{helpText}</p> : null}
+    </div>
   );
 }
 

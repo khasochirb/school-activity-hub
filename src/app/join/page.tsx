@@ -13,9 +13,9 @@ export default async function JoinPage() {
   const t = (key: string) => translate(dictionary, key);
 
   return (
-    <main className="app-surface px-4 py-8 sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
-        <div className="mb-6 flex items-center justify-between gap-3">
+    <main className="app-surface px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-md flex-col justify-center">
+        <div className="mb-5 flex items-center justify-between gap-3">
           <Link
             className="flex w-fit cursor-pointer items-center gap-3 text-sm font-bold text-slate-700 transition hover:text-teal-800"
             href="/"
@@ -47,12 +47,12 @@ export default async function JoinPage() {
             />
           </div>
         </div>
-        <section className="section-card p-6 sm:p-8">
+        <section className="section-card p-5 sm:p-8">
           <p className="page-eyebrow">{t("auth.join.eyebrow")}</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-2xl">
             {t("auth.join.title")}
           </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-base leading-7 text-slate-600 sm:text-sm sm:leading-6">
             {t("auth.join.description")}
           </p>
           <JoinForm
@@ -61,6 +61,7 @@ export default async function JoinPage() {
               creatingAccount: t("auth.join.creatingAccount"),
               email: t("auth.join.email"),
               inviteCode: t("auth.join.inviteCode"),
+              inviteCodeHelper: t("auth.join.description"),
               inviteCodePlaceholder: t("auth.join.inviteCodePlaceholder"),
               password: t("auth.join.password"),
             }}
