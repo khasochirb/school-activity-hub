@@ -49,7 +49,8 @@ export const en = {
         inviteRequired: "Enter your invite code.",
         inviteUsedDuringSignup:
           "This invite code was used before your signup finished.",
-        profileSaveFailed: "Account was not finished: {error}",
+        profileSaveFailed:
+          "Account was created, but the profile could not be finished. Ask school staff to help.",
         rosterClaimed:
           "This roster student was claimed before your signup finished.",
         studentAlreadyLinked: "This student already has an account.",
@@ -240,11 +241,11 @@ export const en = {
       title: "No clubs yet",
     },
     errors: {
-      createFailed: "Club could not be created: {error}",
+      createFailed: "Club could not be created. Check the details and try again.",
       duplicateName: "A club with that name already exists.",
       invalidCategory: "Choose a valid category.",
       invalidStatus: "Choose a valid club status.",
-      loadFailed: "Clubs could not be loaded: {error}",
+      loadFailed: "Clubs could not be loaded. Refresh and try again.",
       nameRequired: "Club name is required.",
       nameTooShort:
         "Club name must include at least 3 letters or numbers.",
@@ -502,7 +503,7 @@ export const en = {
       "Create the first school. Your current account will become the school admin for this workspace.",
     errors: {
       adminProfileSaveFailed:
-        "School was not created because the admin profile could not be saved: {error}",
+        "School was not created because the admin profile could not be saved. Check the admin details and try again.",
       createFailed: "Unable to create the school.",
       loginRequired: "You must be logged in to create the first school.",
       nameRequired: "School name is required.",
@@ -607,15 +608,16 @@ export const en = {
       title: "No invite codes yet",
     },
     errors: {
-      codesLoadFailed: "Invite codes could not be loaded: {error}",
-      createFailed: "Invite code could not be created: {error}",
-      generateFailed: "Invite codes could not be generated: {error}",
+      codesLoadFailed: "Invite codes could not be loaded. Refresh and try again.",
+      createFailed: "Invite code could not be created. Check the details and try again.",
+      generateFailed:
+        "Invite codes could not be generated. Check the selected students and try again.",
       staffOnly: "Only school admins and teachers can create invite codes.",
       studentAlreadyHasActiveCode:
         "This student already has an active invite code.",
       studentInactiveOrWrongSchool:
         "That student is not active or is not in your school.",
-      studentsLoadFailed: "Students could not be loaded: {error}",
+      studentsLoadFailed: "Students could not be loaded. Refresh and try again.",
       studentRequired: "Choose an active student.",
     },
     eyebrow: "Verified registration",
@@ -672,13 +674,13 @@ export const en = {
       title: "No students yet",
     },
     errors: {
-      addFailed: "Student could not be added: {error}",
+      addFailed: "Student could not be added. Check the details and try again.",
       duplicateStudentNumber:
         "A student with that student number already exists.",
       firstAndLastName: "Enter both a first and last name.",
       fullNameRequired: "Student full name is required.",
       gradeRequired: "Grade is required.",
-      loadFailed: "Students could not be loaded: {error}",
+      loadFailed: "Students could not be loaded. Refresh and try again.",
       staffOnlyAdd: "Only school admins and teachers can add students.",
     },
     eyebrow: "Roster management",
@@ -704,7 +706,8 @@ export const en = {
           "Import stopped because one or more student numbers already exist.",
         fullNameFirstLast:
           "Row {row}: full_name must include first and last name.",
-        importFailed: "Students could not be imported: {error}",
+        importFailed:
+          "Students could not be imported. Check the CSV and try again.",
         missingFullName: "Row {row}: missing full_name.",
         missingFullNameHeader:
           "Header row is missing required column: full_name.",
@@ -821,13 +824,13 @@ export const en = {
       title: "No events match these filters",
     },
     errors: {
-      createFailed: "Event could not be created: {error}",
+      createFailed: "Event could not be created. Check the details and try again.",
       invalidCategory: "Choose a valid category.",
       invalidClub: "Choose a valid club.",
       invalidRiskLevel: "Choose a valid risk level.",
       leaderClubRequired:
         "Club leaders must choose one of their clubs.",
-      loadFailed: "Events could not be loaded: {error}",
+      loadFailed: "Events could not be loaded. Refresh and try again.",
       locationRequired: "Location is required.",
       maxParticipantsPositive:
         "Max participants must be a positive number.",
@@ -979,7 +982,7 @@ export const en = {
       title: "No event approvals pending",
     },
     errors: {
-      loadFailed: "Pending events could not be loaded: {error}",
+      loadFailed: "Pending events could not be loaded. Refresh and try again.",
     },
     event: {
       location: "Location",
@@ -1104,7 +1107,7 @@ export const en = {
       missingEvent: "This check-in link is missing an event.",
       mustJoinFirst: "Join this event before checking in.",
       noRoster: "Your account is not linked to an active roster student.",
-      recordFailed: "Check-in could not be recorded: {error}",
+      recordFailed: "Check-in could not be recorded. Try again or ask staff for help.",
     },
     failedTitle: "Check-in failed",
     helpText: "Show this page to staff if you need help.",
@@ -1217,9 +1220,10 @@ export const en = {
     },
     errors: {
       bodyRequired: "Announcement body is required.",
-      createFailed: "Announcement could not be created: {error}",
+      createFailed:
+        "Announcement could not be created. Check the details and try again.",
       invalidStatus: "Choose a valid announcement status.",
-      loadFailed: "Announcements could not be loaded: {error}",
+      loadFailed: "Announcements could not be loaded. Refresh and try again.",
       staffOnlyCreate:
         "Only school admins and teachers can create announcements.",
       titleRequired: "Announcement title is required.",
@@ -1247,7 +1251,7 @@ export const en = {
     description: "View your account details and update your display name.",
     errors: {
       fullNameRequired: "Full name is required.",
-      updateFailed: "Profile could not be updated: {error}",
+      updateFailed: "Profile could not be updated. Check the details and try again.",
     },
     fallback: {
       noProfileFound: "No profile found",
@@ -1304,9 +1308,10 @@ export const en = {
       duplicateProfile: "A profile already exists for that account.",
       emailRequired: "Teacher email is required.",
       fullNameRequired: "Teacher full name is required.",
-      loadFailed: "Staff could not be loaded: {error}",
+      loadFailed: "Staff could not be loaded. Refresh and try again.",
       passwordMinLength: "Password must be at least 8 characters.",
-      profileCreateFailed: "Teacher profile could not be created: {error}",
+      profileCreateFailed:
+        "Teacher profile could not be created. Check the details and try again.",
       staffOnlyCreate: "Only school admins can create teacher accounts.",
       teacherCreateFailed: "Teacher account could not be created.",
     },
@@ -1343,9 +1348,10 @@ export const en = {
       noSchool: "No school record was found for your profile.",
     },
     errors: {
-      loadFailed: "School information could not be loaded: {error}",
+      loadFailed: "School information could not be loaded. Refresh and try again.",
       nameRequired: "School name is required.",
-      updateFailed: "School settings could not be updated: {error}",
+      updateFailed:
+        "School settings could not be updated. Check the details and try again.",
       updateStaffOnly: "Only school admins can update school settings.",
     },
     fields: {
@@ -1387,14 +1393,17 @@ export const en = {
     },
     errors: {
       connectionExists: "A connection already exists with that school.",
-      connectionsLoadFailed: "Connections could not be loaded: {error}",
+      connectionsLoadFailed:
+        "Connections could not be loaded. Refresh and try again.",
       currentSchoolMissing: "Your school record could not be loaded.",
       invalidResponse: "Choose a valid connection response.",
       invalidSchool: "Choose a valid school to connect with.",
       pendingRequestNotFound: "That pending request could not be found.",
-      requestFailed: "Connection request could not be sent: {error}",
-      schoolsLoadFailed: "Schools could not be loaded: {error}",
-      updateFailed: "Connection request could not be updated: {error}",
+      requestFailed:
+        "Connection request could not be sent. Check the school and try again.",
+      schoolsLoadFailed: "Schools could not be loaded. Refresh and try again.",
+      updateFailed:
+        "Connection request could not be updated. Refresh and try again.",
       activeSchoolNotFound: "That active school could not be found.",
     },
     fallback: {
@@ -1508,11 +1517,12 @@ export const en = {
       errors: {
         connectionExists:
           "These schools are already connected or have a pending connection.",
-        createFailed: "Connection could not be created: {error}",
+        createFailed:
+          "Connection could not be created. Check the selected schools and try again.",
         invalidAction: "Choose a valid connection action.",
         schoolsRequired: "Choose both schools for this connection.",
         selfConnection: "A school cannot connect to itself.",
-        updateFailed: "Connection could not be updated: {error}",
+        updateFailed: "Connection could not be updated. Refresh and try again.",
       },
       fallback: {
         unknownSchool: "Unknown school",
@@ -1562,12 +1572,12 @@ export const en = {
         "Create a new school and optionally add the first school admin account.",
       errors: {
         adminCreateFailed:
-          "School admin account could not be created: {error}",
+          "School admin account could not be created. Check the admin details and try again.",
         adminFieldsRequired:
           "Enter admin full name, email, and temporary password, or create the school only.",
         adminProfileFailed:
-          "School admin profile could not be created: {error}",
-        createFailed: "School could not be created: {error}",
+          "School admin profile could not be created. Check the admin details and try again.",
+        createFailed: "School could not be created. Check the details and try again.",
         invalidSlug:
           "Use lowercase letters, numbers, and hyphens for the school identifier.",
         invalidStatus: "Choose a valid school status.",
@@ -1622,16 +1632,18 @@ export const en = {
         title: "No platform admins found",
       },
       errors: {
-        addFailed: "Platform admin could not be added: {error}",
+        addFailed:
+          "Platform admin could not be added. Check the email and try again.",
         alreadyPlatformAdmin: "This user is already a platform admin.",
         cannotDeactivateSelf:
           "You cannot deactivate your own platform access here",
         emailRequired: "Admin email is required.",
         invalidAction: "Choose a valid platform admin action.",
-        lookupFailed: "User lookup failed: {error}",
+        lookupFailed: "User lookup failed. Check the email and try again.",
         profileRequired:
           "User must have an existing profile before becoming platform admin",
-        updateFailed: "Platform admin could not be updated: {error}",
+        updateFailed:
+          "Platform admin could not be updated. Refresh and try again.",
         userNotFound: "User not found",
       },
       fields: {
@@ -1688,13 +1700,13 @@ export const en = {
         adminAlreadyExists:
           "A user with that email already exists. Use a different email or manage the existing profile.",
         adminCreateFailed:
-          "School admin account could not be created: {error}",
+          "School admin account could not be created. Check the admin details and try again.",
         adminEmailRequired: "Admin email is required.",
         adminFullNameRequired: "Admin full name is required.",
         adminProfileFailed:
-          "School admin profile could not be created: {error}",
+          "School admin profile could not be created. Check the admin details and try again.",
         adminStatusFailed:
-          "School admin status could not be updated: {error}",
+          "School admin status could not be updated. Refresh and try again.",
         cannotDeactivateSelf:
           "You cannot deactivate your own platform admin profile here.",
         invalidStatus: "Choose a valid school status.",
@@ -1702,7 +1714,7 @@ export const en = {
           "Some school details could not be loaded. Refresh and try again.",
         nameRequired: "School name is required.",
         schoolNotFound: "School not found.",
-        updateFailed: "School could not be updated: {error}",
+        updateFailed: "School could not be updated. Check the details and try again.",
       },
       fields: {
         actions: "Actions",

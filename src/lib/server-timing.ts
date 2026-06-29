@@ -21,6 +21,10 @@ function logServerTiming(
   startedAt: number,
   status: TimingStatus,
 ) {
+  if (process.env.ENABLE_SERVER_TIMING_LOGS !== "true") {
+    return;
+  }
+
   const durationMs = Date.now() - startedAt;
 
   console.log(`[perf] ${label} status=${status} duration_ms=${durationMs}`);
