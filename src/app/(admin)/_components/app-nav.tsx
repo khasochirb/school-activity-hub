@@ -73,5 +73,9 @@ function isActivePath(pathname: string, href: string) {
     return pathname === href;
   }
 
+  if (href === "/super-admin") {
+    return pathname === href;
+  }
+
   return pathname === href || pathname.startsWith(`${href}/`);
 }

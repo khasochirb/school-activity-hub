@@ -81,6 +81,16 @@ const navSections: Array<{
         labelKey: "nav.superAdmin",
         platformAdminOnly: true,
       },
+      {
+        href: "/super-admin/schools",
+        labelKey: "nav.schools",
+        platformAdminOnly: true,
+      },
+      {
+        href: "/super-admin/connections",
+        labelKey: "nav.schoolConnections",
+        platformAdminOnly: true,
+      },
     ],
   },
   {

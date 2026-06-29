@@ -534,6 +534,7 @@ export const en = {
     reports: "Reports",
     schoolConnections: "School Connections",
     settings: "School Settings",
+    schools: "Schools",
     staff: "Staff",
     students: "Students",
     superAdmin: "Super Admin",
@@ -1435,7 +1436,66 @@ export const en = {
     actions: {
       backToSchools: "Back to schools",
       backToPlatformDashboard: "Back to platform dashboard",
+      viewConnections: "View connections",
       viewSchools: "View schools",
+    },
+    connections: {
+      actions: {
+        approve: "Approve",
+        approving: "Approving...",
+        create: "Create connection",
+        creating: "Creating...",
+        noActions: "No actions available",
+        reject: "Reject",
+        rejecting: "Rejecting...",
+        revoke: "Revoke",
+        revoking: "Revoking...",
+      },
+      allConnections: "All connections",
+      create: {
+        description:
+          "Create a pending or active connection between two active schools.",
+        title: "Create connection",
+      },
+      description:
+        "Review, create, approve, reject, and revoke school-to-school connections at the platform level.",
+      emptyDescription:
+        "School connection requests and active connections will appear here.",
+      emptyTitle: "No connections found",
+      errors: {
+        connectionExists:
+          "These schools are already connected or have a pending connection.",
+        createFailed: "Connection could not be created: {error}",
+        invalidAction: "Choose a valid connection action.",
+        schoolsRequired: "Choose both schools for this connection.",
+        selfConnection: "A school cannot connect to itself.",
+        updateFailed: "Connection could not be updated: {error}",
+      },
+      fallback: {
+        unknownSchool: "Unknown school",
+      },
+      fields: {
+        actions: "Actions",
+        fromSchool: "From school",
+        requested: "Requested date",
+        status: "Connection status",
+        toSchool: "To school",
+        updated: "Updated date",
+      },
+      form: {
+        chooseSchool: "Choose school",
+      },
+      status: {
+        active: "Active",
+        pending: "Pending",
+        rejected: "Rejected",
+        revoked: "Revoked",
+      },
+      success: {
+        created: "Connection created",
+        updated: "Connection updated",
+      },
+      title: "Platform connection control",
     },
     dashboard: {
       description:

@@ -62,9 +62,14 @@ export default async function SuperAdminPage() {
     <div className="page-stack">
       <PageHeader
         actions={
-          <HeaderActionLink href="/super-admin/schools">
-            {t("superAdmin.actions.viewSchools")}
-          </HeaderActionLink>
+          <>
+            <HeaderActionLink href="/super-admin/schools">
+              {t("superAdmin.actions.viewSchools")}
+            </HeaderActionLink>
+            <HeaderActionLink href="/super-admin/connections" variant="secondary">
+              {t("superAdmin.actions.viewConnections")}
+            </HeaderActionLink>
+          </>
         }
         description={t("superAdmin.dashboard.description")}
         eyebrow={t("nav.superAdmin")}

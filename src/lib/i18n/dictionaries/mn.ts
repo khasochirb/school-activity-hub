@@ -1206,6 +1206,7 @@ export const mn = {
     reports: "Тайлангууд",
     schoolConnections: "Сургуулийн холболтууд",
     settings: "Сургуулийн тохиргоо",
+    schools: "Сургуулиуд",
     staff: "Ажилтнууд",
     students: "Сурагчид",
     superAdmin: "Супер админ",
@@ -1408,7 +1409,66 @@ export const mn = {
     actions: {
       backToSchools: "Сургуулиуд руу буцах",
       backToPlatformDashboard: "Платформын хянах самбар руу буцах",
+      viewConnections: "Холболтууд харах",
       viewSchools: "Сургуулиуд харах",
+    },
+    connections: {
+      actions: {
+        approve: "Зөвшөөрөх",
+        approving: "Зөвшөөрч байна...",
+        create: "Холболт үүсгэх",
+        creating: "Үүсгэж байна...",
+        noActions: "Үйлдэл байхгүй",
+        reject: "Татгалзах",
+        rejecting: "Татгалзаж байна...",
+        revoke: "Цуцлах",
+        revoking: "Цуцалж байна...",
+      },
+      allConnections: "Бүх холболтууд",
+      create: {
+        description:
+          "Хоёр идэвхтэй сургуулийн хооронд хүлээгдэж буй эсвэл идэвхтэй холболт үүсгэнэ үү.",
+        title: "Холболт үүсгэх",
+      },
+      description:
+        "Сургууль хоорондын холболтыг платформын түвшинд шалгах, үүсгэх, зөвшөөрөх, татгалзах болон цуцлах.",
+      emptyDescription:
+        "Сургуулийн холболтын хүсэлт болон идэвхтэй холболтууд энд харагдана.",
+      emptyTitle: "Холболт олдсонгүй",
+      errors: {
+        connectionExists:
+          "Эдгээр сургуулиуд аль хэдийн холбогдсон эсвэл хүлээгдэж буй холболттой байна.",
+        createFailed: "Холболт үүсгэж чадсангүй: {error}",
+        invalidAction: "Зөв холболтын үйлдэл сонгоно уу.",
+        schoolsRequired: "Энэ холболтод хоёр сургуулийг хоёуланг нь сонгоно уу.",
+        selfConnection: "Сургууль өөртэйгөө холбогдох боломжгүй.",
+        updateFailed: "Холболт шинэчилж чадсангүй: {error}",
+      },
+      fallback: {
+        unknownSchool: "Тодорхойгүй сургууль",
+      },
+      fields: {
+        actions: "Үйлдэл",
+        fromSchool: "Илгээсэн сургууль",
+        requested: "Хүсэлт илгээсэн огноо",
+        status: "Холболтын төлөв",
+        toSchool: "Хүлээн авах сургууль",
+        updated: "Шинэчилсэн огноо",
+      },
+      form: {
+        chooseSchool: "Сургууль сонгох",
+      },
+      status: {
+        active: "Идэвхтэй",
+        pending: "Хүлээгдэж байна",
+        rejected: "Татгалзсан",
+        revoked: "Цуцалсан",
+      },
+      success: {
+        created: "Холболт үүслээ",
+        updated: "Холболт шинэчлэгдлээ",
+      },
+      title: "Платформын холболтын удирдлага",
     },
     dashboard: {
       description:
