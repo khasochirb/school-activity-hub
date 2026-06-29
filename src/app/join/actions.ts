@@ -137,7 +137,7 @@ export async function redeemInviteCode(
   );
 
   if (profileError) {
-    await cleanupCreatedStudentAccount(userId);
+    await cleanupCreatedStudentAccount(userId, invite.school_id);
     return {
       message: tf("auth.join.errors.profileSaveFailed", {
         error: profileError.message,
@@ -157,7 +157,7 @@ export async function redeemInviteCode(
     .maybeSingle<{ id: string }>();
 
   if (linkError || !linkedStudent) {
-    await cleanupCreatedStudentAccount(userId);
+    await cleanupCreatedStudentAccount(userId, invite.school_id);
     return {
       message:
         linkError?.message ??
@@ -185,7 +185,7 @@ export async function redeemInviteCode(
     .maybeSingle<{ id: string }>();
 
   if (redeemError || !redeemedInvite) {
-    await cleanupCreatedStudentAccount(userId);
+    await cleanupCreatedStudentAccount(userId, invite.school_id);
     return {
       message:
         redeemError?.message ??
@@ -260,13 +260,18 @@ function fullNameForStudent(student: RosterStudent) {
   return `${student.first_name} ${student.last_name}`.trim();
 }
 
-async function cleanupCreatedStudentAccount(userId: string) {
+async function cleanupCreatedStudentAccount(userId: string, schoolId: string) {
   const admin = createAdminClient();
 
   await admin
     .from("student_rosters")
     .update({ profile_id: null })
-    .eq("profile_id", userId);
-  await admin.from("profiles").delete().eq("id", userId);
+    .eq("profile_id", userId)
+    .eq("school_id", schoolId);
+  await admin
+    .from("profiles")
+    .delete()
+    .eq("id", userId)
+    .eq("school_id", schoolId);
   await admin.auth.admin.deleteUser(userId);
 }

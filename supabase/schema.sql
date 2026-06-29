@@ -1153,7 +1153,13 @@ create policy "School event managers can create attendees"
   to authenticated
   with check (
     school_id = public.current_profile_school_id()
-    and public.current_user_can_manage_event(event_id)
+    and public.current_user_can_manage_school(school_id)
+    and exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.school_id = event_attendees.school_id
+    )
   );
 
 drop policy if exists "Students can register themselves for approved events" on public.event_attendees;
@@ -1162,7 +1168,9 @@ create policy "Students can register themselves for approved events"
   for insert
   to authenticated
   with check (
-    attendee_school_id = public.current_profile_school_id()
+    public.current_profile_role() = 'student'
+    and public.current_student_roster_id() is not null
+    and attendee_school_id = public.current_profile_school_id()
     and attendee_profile_id = auth.uid()
     and status = 'registered'
     and exists (
@@ -1223,11 +1231,23 @@ create policy "School event managers can update attendees"
   to authenticated
   using (
     school_id = public.current_profile_school_id()
-    and public.current_user_can_manage_event(event_id)
+    and public.current_user_can_manage_school(school_id)
+    and exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.school_id = event_attendees.school_id
+    )
   )
   with check (
     school_id = public.current_profile_school_id()
-    and public.current_user_can_manage_event(event_id)
+    and public.current_user_can_manage_school(school_id)
+    and exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.school_id = event_attendees.school_id
+    )
   );
 
 drop policy if exists "Checkins are visible to managers and self" on public.attendance_checkins;
@@ -1236,7 +1256,15 @@ create policy "Checkins are visible to managers and self"
   for select
   to authenticated
   using (
-    public.current_user_can_manage_event(event_id)
+    (
+      public.current_user_can_manage_school(school_id)
+      and exists (
+        select 1
+        from public.events e
+        where e.id = event_id
+          and e.school_id = attendance_checkins.school_id
+      )
+    )
     or student_roster_id = public.current_student_roster_id()
     or attendee_profile_id = auth.uid()
   );
@@ -1248,7 +1276,13 @@ create policy "Event managers can create checkins"
   to authenticated
   with check (
     school_id = public.current_profile_school_id()
-    and public.current_user_can_manage_event(event_id)
+    and public.current_user_can_manage_school(school_id)
+    and exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.school_id = attendance_checkins.school_id
+    )
   );
 
 -- Fake seed data only. These rows are for local/demo development and should be
