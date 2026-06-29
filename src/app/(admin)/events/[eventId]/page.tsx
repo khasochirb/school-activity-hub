@@ -22,7 +22,6 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CategoryBadge,
   HeaderActionLink,
-  PageHeader,
   StatusBadge,
 } from "../../_components/page-ui";
 import {
@@ -182,27 +181,27 @@ export default async function EventDetailPage({
 
   return (
     <div className="page-stack">
-      <PageHeader
-        actions={
-          <HeaderActionLink href="/events" variant="secondary">
-            {t("common.backToEvents")}
-          </HeaderActionLink>
-        }
-        description={`${formatDateTime(event.starts_at, locale)} - ${formatTime(
-          event.ends_at,
-          locale,
-        )}`}
-        eyebrow={t("events.card.details")}
-        title={event.title}
-      />
-
       <section className="section-card section-card-padded">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <h2 className="section-title">{t("events.detail.eventInformation")}</h2>
-            <p className="section-description">
-              {event.location || "-"}
-            </p>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <HeaderActionLink href="/events" variant="secondary">
+                {t("common.backToEvents")}
+              </HeaderActionLink>
+              <span className="page-eyebrow">{t("events.detail.overview")}</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-normal text-zinc-950 sm:text-3xl">
+                {event.title}
+              </h1>
+              <p className="mt-2 text-sm font-medium text-zinc-700">
+                {formatDateTime(event.starts_at, locale)} -{" "}
+                {formatTime(event.ends_at, locale)}
+              </p>
+              {event.location ? (
+                <p className="mt-1 text-sm text-zinc-600">{event.location}</p>
+              ) : null}
+            </div>
             <EventBadges
               clubName={club?.name ?? null}
               event={event}
@@ -215,21 +214,28 @@ export default async function EventDetailPage({
               tf={tf}
             />
           </div>
-          <PrimaryActionPanel
-            currentRegistration={currentRegistration}
-            currentStudent={currentStudent}
-            event={event}
-            isFull={isFull}
-            isOwnSchoolEvent={isOwnSchoolEvent}
-            isStaff={isStaff}
-            t={t}
-            userSchoolId={profile.school_id}
-          />
+          <div className="w-full rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 lg:max-w-xs">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              {t("common.primaryAction")}
+            </p>
+            <div className="mt-2">
+              <PrimaryActionPanel
+                currentRegistration={currentRegistration}
+                currentStudent={currentStudent}
+                event={event}
+                isFull={isFull}
+                isOwnSchoolEvent={isOwnSchoolEvent}
+                isStaff={isStaff}
+                t={t}
+                userSchoolId={profile.school_id}
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
-        <article className="section-card section-card-padded">
+      <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <article className="section-card section-card-padded xl:col-start-1 xl:row-start-1">
           <h2 className="section-title">{t("events.detail.eventInformation")}</h2>
           <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
             <DetailItem label={t("events.form.startsAt")}>
@@ -257,20 +263,10 @@ export default async function EventDetailPage({
               {eventStatusLabel(event.status, t)}
             </DetailItem>
           </dl>
-          {event.description ? (
-            <div className="mt-4 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
-              <h3 className="text-sm font-semibold text-zinc-950">
-                {t("events.form.description")}
-              </h3>
-              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700">
-                {event.description}
-              </p>
-            </div>
-          ) : null}
         </article>
 
-        <article className="section-card section-card-padded">
-          <h2 className="section-title">{t("events.card.registration")}</h2>
+        <article className="section-card section-card-padded xl:col-start-2 xl:row-start-1">
+          <h2 className="section-title">{t("events.detail.registrationSummary")}</h2>
           <dl className="mt-3 grid gap-3 text-sm">
             <DetailItem label={t("events.card.registration")}>
               {tf("events.registration.count", { count: registeredCount })}
@@ -283,31 +279,33 @@ export default async function EventDetailPage({
             <DetailItem label={t("events.card.maxParticipants")}>
               {event.capacity ?? t("events.capacity.noLimit")}
             </DetailItem>
-            {currentRegistration ? (
+            {currentStudent ? (
+              <DetailItem label={t("filters.status")}>
+                {currentRegistration?.status === "attended"
+                  ? t("events.detail.youHaveCheckedIn")
+                  : currentRegistration?.status === "registered"
+                    ? t("events.registration.youAreRegistered")
+                    : t("events.registration.notJoined")}
+              </DetailItem>
+            ) : null}
+            {currentRegistration && event.permission_required ? (
               <DetailItem label={t("events.card.permission")}>
                 {permissionLabel(currentRegistration.permission_status, t)}
               </DetailItem>
             ) : null}
           </dl>
-          <div className="mt-4">
-            <PrimaryActionPanel
-              currentRegistration={currentRegistration}
-              currentStudent={currentStudent}
-              event={event}
-              isFull={isFull}
-              isOwnSchoolEvent={isOwnSchoolEvent}
-              isStaff={isStaff}
-              t={t}
-              userSchoolId={profile.school_id}
-            />
-          </div>
         </article>
-      </section>
 
-      <section className="grid gap-3 lg:grid-cols-2">
-        <article className="section-card section-card-padded">
+        <article className="section-card section-card-padded xl:col-start-1 xl:row-start-2">
+          <h2 className="section-title">{t("events.form.description")}</h2>
+          <p className="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-700">
+            {event.description || t("events.detail.noDescription")}
+          </p>
+        </article>
+
+        <article className="section-card section-card-padded xl:col-start-1 xl:row-start-3">
           <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
-          <dl className="mt-3 grid gap-3 text-sm">
+          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
             <DetailItem label={t("events.card.safety")}>
               {riskLabel(event.risk_level, t)}
             </DetailItem>
@@ -335,79 +333,73 @@ export default async function EventDetailPage({
         </article>
 
         {isStaff && isOwnSchoolEvent ? (
-          <article className="section-card section-card-padded">
-            <h2 className="section-title">{t("events.detail.attendance")}</h2>
-            <p className="section-description">
-              {tf("events.registration.count", { count: registeredCount })}
-            </p>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Link
-                className="btn btn-primary min-h-10 px-3"
-                href={`/events/${event.id}/attendance`}
+          <article className="section-card section-card-padded xl:col-start-2 xl:row-start-2">
+            <h2 className="section-title">{t("events.detail.management")}</h2>
+            <p className="section-description">{t("events.detail.staffTools")}</p>
+            <form action={cancelEvent} className="mt-3">
+              <input name="event_id" type="hidden" value={event.id} />
+              <ConfirmSubmitButton
+                cancelLabel={t("common.cancel")}
+                className="btn btn-secondary min-h-10 w-full px-3"
+                confirmDescription={t("feedback.cannotBeUndone")}
+                confirmLabel={t("feedback.confirm")}
+                confirmTitle={t("feedback.cancelEvent")}
+                pendingLabel={t("events.actions.cancelling")}
               >
-                {t("events.actions.attendanceQr")}
-              </Link>
-              <form action={cancelEvent}>
-                <input name="event_id" type="hidden" value={event.id} />
-                <ConfirmSubmitButton
-                  cancelLabel={t("common.cancel")}
-                  className="btn btn-secondary min-h-10 px-3"
-                  confirmDescription={t("feedback.cannotBeUndone")}
-                  confirmLabel={t("feedback.confirm")}
-                  confirmTitle={t("feedback.cancelEvent")}
-                  pendingLabel={t("events.actions.cancelling")}
-                >
-                  {t("events.actions.cancel")}
-                </ConfirmSubmitButton>
-              </form>
+                {t("events.actions.cancel")}
+              </ConfirmSubmitButton>
+            </form>
+          </article>
+        ) : null}
+
+        {isStaff && isOwnSchoolEvent ? (
+          <article className="section-card section-card-padded xl:col-start-2 xl:row-start-3">
+            <h2 className="section-title">{t("events.detail.sharing")}</h2>
+            <p className="section-description">
+              {sharingLabel(event, sharedSchoolIds, t, tf)}
+            </p>
+            <div className="mt-4">
+              <SharingForm
+                connectedSchools={connectedSchools}
+                event={event}
+                sharedSchoolIds={sharedSchoolIds}
+                t={t}
+              />
             </div>
           </article>
         ) : null}
-      </section>
 
-      {isStaff && isOwnSchoolEvent ? (
-        <section className="section-card section-card-padded">
-          <h2 className="section-title">{t("events.detail.sharing")}</h2>
-          <p className="section-description">
-            {sharingLabel(event, sharedSchoolIds, t, tf)}
-          </p>
-          <div className="mt-4">
-            <SharingForm
-              connectedSchools={connectedSchools}
-              event={event}
-              sharedSchoolIds={sharedSchoolIds}
-              t={t}
-            />
-          </div>
-        </section>
-      ) : null}
-
-      <section className="section-card section-card-padded">
-        <h2 className="section-title">{t("events.detail.statusInformation")}</h2>
-        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <DetailItem label={t("filters.status")}>
-            {eventStatusLabel(event.status, t)}
-          </DetailItem>
-          <DetailItem label={t("events.detail.createdAt")}>
-            {formatDate(event.created_at, locale)}
-          </DetailItem>
-          <DetailItem label={t("events.detail.submittedAt")}>
-            {event.submitted_at ? formatDate(event.submitted_at, locale) : "-"}
-          </DetailItem>
-          <DetailItem label={t("events.detail.approvedAt")}>
-            {event.approved_at ? formatDate(event.approved_at, locale) : "-"}
-          </DetailItem>
-        </dl>
-        {event.rejection_reason ? (
-          <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
-            <h3 className="text-sm font-semibold text-zinc-950">
-              {t("events.detail.rejectionReason")}
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-zinc-700">
-              {event.rejection_reason}
-            </p>
-          </div>
-        ) : null}
+        <article
+          className={`section-card section-card-padded xl:col-start-2 ${
+            isStaff && isOwnSchoolEvent ? "xl:row-start-4" : "xl:row-start-2"
+          }`}
+        >
+          <h2 className="section-title">{t("events.detail.timeline")}</h2>
+          <dl className="mt-3 grid gap-3 text-sm">
+            <DetailItem label={t("filters.status")}>
+              {eventStatusLabel(event.status, t)}
+            </DetailItem>
+            <DetailItem label={t("events.detail.createdAt")}>
+              {formatDate(event.created_at, locale)}
+            </DetailItem>
+            <DetailItem label={t("events.detail.submittedAt")}>
+              {event.submitted_at ? formatDate(event.submitted_at, locale) : "-"}
+            </DetailItem>
+            <DetailItem label={t("events.detail.approvedAt")}>
+              {event.approved_at ? formatDate(event.approved_at, locale) : "-"}
+            </DetailItem>
+          </dl>
+          {event.rejection_reason ? (
+            <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
+              <h3 className="text-sm font-semibold text-zinc-950">
+                {t("events.detail.rejectionReason")}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-700">
+                {event.rejection_reason}
+              </p>
+            </div>
+          ) : null}
+        </article>
       </section>
     </div>
   );
@@ -502,7 +494,7 @@ function PrimaryActionPanel({
   if (isStaff && isOwnSchoolEvent) {
     return (
       <Link
-        className="btn btn-primary min-h-10 px-3"
+        className="btn btn-primary min-h-10 w-full px-3"
         href={`/events/${event.id}/attendance`}
       >
         {t("events.actions.attendanceQr")}
@@ -512,7 +504,7 @@ function PrimaryActionPanel({
 
   if (isStaff) {
     return (
-      <span className="inline-flex min-h-10 items-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+      <span className="inline-flex min-h-10 w-full items-center justify-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
         {t("events.sharing.sharedEvent")}
       </span>
     );
@@ -524,10 +516,10 @@ function PrimaryActionPanel({
 
   if (currentRegistration?.status === "registered") {
     return (
-      <form action={cancelEventRegistration} className="w-full sm:w-auto">
+      <form action={cancelEventRegistration} className="w-full">
         <input name="event_id" type="hidden" value={event.id} />
         <PendingSubmitButton
-          className="btn btn-secondary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+          className="btn btn-secondary min-h-12 w-full px-4 text-base sm:min-h-10 sm:text-sm"
           pendingLabel={t("events.actions.cancelling")}
           toastMessage={t("events.actions.cancelling")}
         >
@@ -539,7 +531,7 @@ function PrimaryActionPanel({
 
   if (currentRegistration?.status === "attended") {
     return (
-      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-emerald-50 px-3 text-sm font-medium text-emerald-700 sm:w-auto">
+      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-emerald-50 px-3 text-sm font-medium text-emerald-700">
         {t("events.detail.youHaveCheckedIn")}
       </span>
     );
@@ -547,23 +539,23 @@ function PrimaryActionPanel({
 
   if (!canCurrentStudentRegister(event, currentStudent, userSchoolId)) {
     return (
-      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700 sm:w-auto">
+      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
         {t("events.registration.unavailable")}
       </span>
     );
   }
 
   return (
-    <div className="flex w-full flex-col gap-2 sm:w-auto">
+    <div className="flex w-full flex-col gap-2">
       {event.permission_required ? (
-        <p className="rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-800 sm:max-w-80">
+        <p className="rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-800">
           {t("events.permission.studentNotice")}
         </p>
       ) : null}
-      <form action={joinEvent} className="w-full sm:w-auto">
+      <form action={joinEvent} className="w-full">
         <input name="event_id" type="hidden" value={event.id} />
         <PendingSubmitButton
-          className="btn btn-primary min-h-12 w-full px-4 text-base disabled:cursor-not-allowed disabled:bg-zinc-400 sm:min-h-10 sm:w-auto sm:text-sm"
+          className="btn btn-primary min-h-12 w-full px-4 text-base disabled:cursor-not-allowed disabled:bg-zinc-400 sm:min-h-10 sm:text-sm"
           disabled={isFull}
           pendingLabel={t("events.actions.joining")}
           toastMessage={t("events.actions.joining")}
@@ -574,7 +566,6 @@ function PrimaryActionPanel({
     </div>
   );
 }
-
 function DetailItem({
   children,
   label,
@@ -1004,7 +995,7 @@ function sharingLabel(
   tf: FormatTranslate,
 ) {
   if (!sharedSchoolIds.length) {
-    return t("events.sharing.internalOnly");
+    return t("events.detail.internalEvent");
   }
 
   if (event.allow_connected_school_registration && sharedSchoolIds.length > 1) {
