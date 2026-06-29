@@ -529,12 +529,14 @@ export const en = {
     manage: "Manage",
     menu: "Menu",
     operations: "Operations",
+    platform: "Platform",
     profile: "Profile",
     reports: "Reports",
     schoolConnections: "School Connections",
     settings: "School Settings",
     staff: "Staff",
     students: "Students",
+    superAdmin: "Super Admin",
   },
   invites: {
     actions: {
@@ -1426,6 +1428,40 @@ export const en = {
     title: "School connections",
     yourSchool: {
       title: "Your school",
+    },
+  },
+  superAdmin: {
+    accessRequired: "Platform access required",
+    actions: {
+      backToPlatformDashboard: "Back to platform dashboard",
+      viewSchools: "View schools",
+    },
+    dashboard: {
+      description:
+        "Review high-level platform activity without opening student rosters, invite codes, attendance records, or other private school data.",
+      title: "Platform dashboard",
+    },
+    metrics: {
+      activeSchools: "Active schools",
+      allSchools: "All schools",
+      platformAdmins: "Platform admins",
+      schoolConnections: "School connections",
+    },
+    schools: {
+      allSchools: "All schools",
+      description:
+        "Read-only school directory for platform oversight.",
+      emptyDescription:
+        "Create schools in a later super admin phase. This phase is read-only.",
+      emptyTitle: "No schools found",
+      fields: {
+        created: "Created",
+        name: "School name",
+        province: "Province",
+        schoolIdentifier: "School identifier",
+        status: "Status",
+      },
+      title: "Schools",
     },
   },
   workflow: {

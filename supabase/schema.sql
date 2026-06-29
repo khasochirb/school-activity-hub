@@ -167,6 +167,12 @@ create unique index if not exists profiles_school_username_unique
   on public.profiles (school_id, lower(username))
   where username is not null;
 
+create table if not exists public.platform_admins (
+  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  status public.profile_status not null default 'active',
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.school_connections (
   id uuid primary key default gen_random_uuid(),
   requester_school_id uuid not null references public.schools(id) on delete cascade,
@@ -629,6 +635,21 @@ as $$
   select public.current_profile_role() in ('school_admin', 'teacher')
 $$;
 
+create or replace function public.current_user_is_platform_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.platform_admins pa
+    where pa.profile_id = auth.uid()
+      and pa.status = 'active'
+  )
+$$;
+
 create or replace function public.current_user_can_manage_school(target_school_id uuid)
 returns boolean
 language sql
@@ -760,6 +781,7 @@ $$;
 
 alter table public.schools enable row level security;
 alter table public.profiles enable row level security;
+alter table public.platform_admins enable row level security;
 alter table public.school_connections enable row level security;
 alter table public.student_rosters enable row level security;
 alter table public.announcements enable row level security;
@@ -856,6 +878,13 @@ create policy "Teachers can update student profiles"
     school_id = public.current_profile_school_id()
     and role = 'student'
   );
+
+drop policy if exists "Platform admins can view platform admins" on public.platform_admins;
+create policy "Platform admins can view platform admins"
+  on public.platform_admins
+  for select
+  to authenticated
+  using (public.current_user_is_platform_admin());
 
 drop policy if exists "School admins can view their school connections" on public.school_connections;
 create policy "School admins can view their school connections"

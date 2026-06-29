@@ -1201,12 +1201,14 @@ export const mn = {
     manage: "Удирдах",
     menu: "Цэс",
     operations: "Үйл ажиллагаа",
+    platform: "Платформ",
     profile: "Профайл",
     reports: "Тайлангууд",
     schoolConnections: "Сургуулийн холболтууд",
     settings: "Сургуулийн тохиргоо",
     staff: "Ажилтнууд",
     students: "Сурагчид",
+    superAdmin: "Супер админ",
   },
   invites: {
     actions: {
@@ -1400,6 +1402,39 @@ export const mn = {
       studentNumber: "Сурагчийн дугаар",
     },
     title: "Сурагчид",
+  },
+  superAdmin: {
+    accessRequired: "Платформын эрх шаардлагатай",
+    actions: {
+      backToPlatformDashboard: "Платформын хянах самбар руу буцах",
+      viewSchools: "Сургуулиуд харах",
+    },
+    dashboard: {
+      description:
+        "Сурагчдын жагсаалт, урилгын код, ирцийн бүртгэл болон бусад хувийн сургуулийн өгөгдлийг нээхгүйгээр платформын өндөр түвшний үйл ажиллагааг хянана уу.",
+      title: "Платформын хянах самбар",
+    },
+    metrics: {
+      activeSchools: "Идэвхтэй сургуулиуд",
+      allSchools: "Бүх сургуулиуд",
+      platformAdmins: "Платформын админууд",
+      schoolConnections: "Сургуулийн холболтууд",
+    },
+    schools: {
+      allSchools: "Бүх сургуулиуд",
+      description: "Платформын хяналтад зориулсан зөвхөн унших сургуулийн лавлах.",
+      emptyDescription:
+        "Дараагийн супер админ үе шатанд сургуулиуд үүсгэнэ. Энэ үе шат зөвхөн унших горимтой.",
+      emptyTitle: "Сургууль олдсонгүй",
+      fields: {
+        created: "Үүсгэсэн",
+        name: "Сургуулийн нэр",
+        province: "Аймаг/муж",
+        schoolIdentifier: "Сургуулийн таних нэр",
+        status: "Төлөв",
+      },
+      title: "Сургуулиуд",
+    },
   },
   workflow: {
     addStudents: "Сурагч нэмэх",

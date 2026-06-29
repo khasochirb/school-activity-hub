@@ -19,6 +19,7 @@ type Profile = {
 type RoleAwareNavItem = {
   href: string;
   labelKey: string;
+  platformAdminOnly?: boolean;
   roles?: Role[];
 };
 
@@ -73,6 +74,16 @@ const navSections: Array<{
     ],
   },
   {
+    labelKey: "nav.platform",
+    items: [
+      {
+        href: "/super-admin",
+        labelKey: "nav.superAdmin",
+        platformAdminOnly: true,
+      },
+    ],
+  },
+  {
     labelKey: "nav.account",
     items: [{ href: "/profile", labelKey: "nav.profile" }],
   },
@@ -81,10 +92,12 @@ const navSections: Array<{
 export async function AppShell({
   children,
   email,
+  isPlatformAdmin,
   profile,
 }: {
   children: React.ReactNode;
   email: string | null;
+  isPlatformAdmin: boolean;
   profile: Profile;
 }) {
   const locale = await getCurrentLocale();
@@ -95,7 +108,7 @@ export async function AppShell({
     .map((section) => ({
       label: t(section.labelKey),
       items: section.items
-        .filter((item) => isVisibleForRole(item, profile))
+        .filter((item) => isVisibleForRole(item, profile, isPlatformAdmin))
         .map<NavItem>((item) => ({
           href: item.href,
           label: t(item.labelKey),
@@ -347,7 +360,15 @@ function MobileAccount({
   );
 }
 
-function isVisibleForRole(item: RoleAwareNavItem, profile: Profile) {
+function isVisibleForRole(
+  item: RoleAwareNavItem,
+  profile: Profile,
+  isPlatformAdmin: boolean,
+) {
+  if (item.platformAdminOnly) {
+    return isPlatformAdmin;
+  }
+
   return !item.roles || (profile?.role && item.roles.includes(profile.role));
 }
 

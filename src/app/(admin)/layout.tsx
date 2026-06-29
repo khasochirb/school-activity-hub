@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getCurrentPlatformAdminProfile } from "@/lib/auth/platform-admin";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "./_components/app-shell";
@@ -26,9 +27,14 @@ export default async function AdminLayout({
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
+  const platformAdminProfile = await getCurrentPlatformAdminProfile();
 
   return (
-    <AppShell email={user.email ?? null} profile={profile}>
+    <AppShell
+      email={user.email ?? null}
+      isPlatformAdmin={Boolean(platformAdminProfile)}
+      profile={profile}
+    >
       {children}
     </AppShell>
   );
