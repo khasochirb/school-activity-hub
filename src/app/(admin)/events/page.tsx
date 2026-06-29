@@ -110,6 +110,7 @@ type EventShare = {
 type EventFilter = "upcoming" | "registered" | "club";
 type EventScope = "mine" | "shared";
 type EventTimeFilter = "past" | "upcoming";
+type EventBrowseView = "list" | "schedule";
 type EventStatusFilter =
   | "all"
   | "approved"
@@ -125,6 +126,7 @@ type EventsSearchParams = {
   scope?: string | string[];
   status?: string | string[];
   time?: string | string[];
+  view?: string | string[];
 };
 
 type Translate = (key: string) => string;
@@ -149,6 +151,7 @@ export default async function EventsPage({
   const selectedScope = parseEventScope(getSearchValue(params.scope));
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const selectedTime = parseEventTime(getSearchParam(params.time));
+  const selectedView = parseEventBrowseView(getSearchParam(params.view));
   const supabase = await createClient();
   const {
     data: { user },
@@ -267,6 +270,60 @@ export default async function EventsPage({
     ownerSchools.map((school) => [school.id, school.name]),
   );
   const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
+  const hasResultFilters = Boolean(
+    searchQuery ||
+      selectedCategory ||
+      selectedFilter !== "upcoming" ||
+      selectedScope !== "mine" ||
+      selectedStatus !== "approved",
+  );
+  const emptyTitle =
+    selectedTime === "past"
+      ? t("events.empty.noPastTitle")
+      : t("events.empty.noUpcomingTitle");
+  const renderEventCard = (event: Event) => {
+    const registeredCount = attendeeCounts.get(event.id) ?? 0;
+    const isFull =
+      event.capacity !== null && registeredCount >= event.capacity;
+    const registrationStatus = currentStudentRegistrationByEventId.get(
+      event.id,
+    );
+    const permissionStatus = registrationStatus?.permission_status;
+    const sharedSchoolIds =
+      event.school_id === profile.school_id
+        ? sharedSchoolIdsByEventId.get(event.id) ?? []
+        : sharedEventIds.includes(event.id)
+          ? [profile.school_id]
+          : [];
+
+    return (
+      <EventCard
+        clubName={
+          event.club_id
+            ? clubNameById.get(event.club_id) ?? t("events.fallback.clubEvent")
+            : null
+        }
+        connectedSchools={connectedSchools}
+        currentStudent={currentStudent}
+        event={event}
+        isFull={isFull}
+        isStaff={isStaff}
+        key={event.id}
+        locale={locale}
+        ownerSchoolName={
+          schoolNameById.get(event.school_id) ??
+          t("events.fallback.connectedSchool")
+        }
+        registeredCount={registeredCount}
+        registrationStatus={registrationStatus?.status}
+        permissionStatus={permissionStatus}
+        sharedSchoolIds={sharedSchoolIds}
+        t={t}
+        tf={tf}
+        userSchoolId={profile.school_id}
+      />
+    );
+  };
 
   return (
     <div className="page-stack">
@@ -358,79 +415,70 @@ export default async function EventsPage({
         selectedScope={selectedScope}
         selectedStatus={selectedStatus}
         selectedTime={selectedTime}
+        selectedView={selectedView}
         t={t}
         tf={tf}
       />
 
       <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">
-            {eventListTitle(selectedFilter, selectedCategory, selectedScope, t)}
-          </h2>
-          {eventsError ? (
-            <p className="mt-2 text-sm text-red-600">
-              {tf("events.errors.loadFailed", { error: eventsError.message })}
-            </p>
-          ) : null}
-          {profile.role === "student" && !currentStudent ? (
-            <p className="mt-2 text-sm text-zinc-600">
-              {t("events.student.noRosterWarning")}
-            </p>
-          ) : null}
+        <div className="section-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="section-title">
+              {eventListTitle(
+                selectedFilter,
+                selectedCategory,
+                selectedScope,
+                selectedTime,
+                t,
+              )}
+            </h2>
+            {eventsError ? (
+              <p className="mt-2 text-sm text-red-600">
+                {tf("events.errors.loadFailed", { error: eventsError.message })}
+              </p>
+            ) : null}
+            {profile.role === "student" && !currentStudent ? (
+              <p className="mt-2 text-sm text-zinc-600">
+                {t("events.student.noRosterWarning")}
+              </p>
+            ) : null}
+          </div>
+          <EventViewToggle
+            params={params}
+            selectedView={selectedView}
+            t={t}
+          />
         </div>
         {events.length ? (
-          <div className="grid gap-3 p-3 xl:grid-cols-2">
-            {events.map((event) => {
-              const registeredCount = attendeeCounts.get(event.id) ?? 0;
-              const isFull =
-                event.capacity !== null && registeredCount >= event.capacity;
-              const registrationStatus = currentStudentRegistrationByEventId.get(
-                event.id,
-              );
-              const permissionStatus = registrationStatus?.permission_status;
-              const sharedSchoolIds =
-                event.school_id === profile.school_id
-                  ? sharedSchoolIdsByEventId.get(event.id) ?? []
-                  : sharedEventIds.includes(event.id)
-                    ? [profile.school_id]
-                    : [];
-
-              return (
-                <EventCard
-                  clubName={
-                    event.club_id
-                      ? clubNameById.get(event.club_id) ??
-                        t("events.fallback.clubEvent")
-                      : null
-                  }
-                  currentStudent={currentStudent}
-                  event={event}
-                  isFull={isFull}
-                  isStaff={isStaff}
-                  key={event.id}
-                  locale={locale}
-                  ownerSchoolName={
-                    schoolNameById.get(event.school_id) ??
-                    t("events.fallback.connectedSchool")
-                  }
-                  registeredCount={registeredCount}
-                  registrationStatus={registrationStatus?.status}
-                  permissionStatus={permissionStatus}
-                  connectedSchools={connectedSchools}
-                  sharedSchoolIds={sharedSchoolIds}
-                  t={t}
-                  tf={tf}
-                  userSchoolId={profile.school_id}
-                />
-              );
-            })}
-          </div>
-        ) : searchQuery ||
-          selectedCategory ||
-          selectedFilter !== "upcoming" ||
-          selectedScope !== "mine" ||
-          selectedStatus !== "approved" ||
-          selectedTime !== "upcoming" ? (
+          selectedView === "schedule" ? (
+            <div className="space-y-3 p-3">
+              {groupEventsForSchedule(events, now).map((group) => (
+                <section
+                  className="rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3"
+                  key={group.key}
+                >
+                  <div className="mb-3 flex flex-col gap-1 border-b border-[var(--border)] pb-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-sm font-bold text-slate-950">
+                      {scheduleGroupLabel(group.key, t)}
+                    </h3>
+                    <p className="text-xs font-medium text-slate-500">
+                      {tf("filters.showingResults", {
+                        count: group.events.length,
+                      })}
+                    </p>
+                  </div>
+                  <div className="grid gap-3 xl:grid-cols-2">
+                    {group.events.map(renderEventCard)}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-3 p-3 xl:grid-cols-2">
+              {events.map(renderEventCard)}
+            </div>
+          )
+        ) : hasResultFilters ? (
           <div className="p-4">
             <NoResultsState
               clearHref="/events"
@@ -458,7 +506,7 @@ export default async function EventsPage({
                   ? t("events.empty.staffDescription")
                   : t("events.empty.studentDescription")
               }
-              title={t("events.empty.title")}
+              title={emptyTitle}
             />
           </div>
         )}
@@ -478,6 +526,7 @@ function EventFilters({
   selectedScope,
   selectedStatus,
   selectedTime,
+  selectedView,
   t,
   tf,
 }: {
@@ -491,6 +540,7 @@ function EventFilters({
   selectedScope: EventScope;
   selectedStatus: EventStatusFilter;
   selectedTime: EventTimeFilter;
+  selectedView: EventBrowseView;
   t: Translate;
   tf: FormatTranslate;
 }) {
@@ -507,6 +557,9 @@ function EventFilters({
         label={t("filters.search")}
         placeholder={t("filters.searchEvents")}
       />
+      {selectedView !== "list" ? (
+        <input name="view" type="hidden" value={selectedView} />
+      ) : null}
       <SelectFilter
         defaultValue={selectedScope}
         label={t("events.filters.viewLabel")}
@@ -569,6 +622,145 @@ function EventFilters({
   );
 }
 
+function EventViewToggle({
+  params,
+  selectedView,
+  t,
+}: {
+  params: EventsSearchParams;
+  selectedView: EventBrowseView;
+  t: Translate;
+}) {
+  return (
+    <nav
+      aria-label={t("events.filters.viewLabel")}
+      className="inline-flex w-full rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-1 sm:w-auto"
+    >
+      <Link
+        aria-label={t("events.view.viewList")}
+        className={viewToggleClassName(selectedView === "list")}
+        href={buildEventsViewHref(params, "list")}
+      >
+        {t("events.view.list")}
+      </Link>
+      <Link
+        aria-label={t("events.view.viewSchedule")}
+        className={viewToggleClassName(selectedView === "schedule")}
+        href={buildEventsViewHref(params, "schedule")}
+      >
+        {t("events.view.schedule")}
+      </Link>
+    </nav>
+  );
+}
+
+function viewToggleClassName(isActive: boolean) {
+  return [
+    "flex min-h-9 flex-1 items-center justify-center rounded px-3 text-sm font-semibold transition sm:flex-none",
+    isActive
+      ? "bg-[var(--primary-soft)] text-[var(--primary-strong)] shadow-sm"
+      : "text-slate-600 hover:bg-[var(--card)] hover:text-slate-950",
+  ].join(" ");
+}
+
+function buildEventsViewHref(
+  params: EventsSearchParams,
+  view: EventBrowseView,
+) {
+  const query = new URLSearchParams();
+  const keys: Array<keyof Pick<
+    EventsSearchParams,
+    "category" | "filter" | "q" | "scope" | "status" | "time"
+  >> = ["category", "filter", "q", "scope", "status", "time"];
+
+  keys.forEach((key) => {
+    const value = getSearchParam(params[key]);
+
+    if (value) {
+      query.set(key, value);
+    }
+  });
+
+  if (view === "schedule") {
+    query.set("view", view);
+  }
+
+  const search = query.toString();
+
+  return search ? `/events?${search}` : "/events";
+}
+
+type ScheduleGroupKey = "later" | "past" | "thisWeek" | "today";
+
+function groupEventsForSchedule(events: Event[], now: string) {
+  const currentDate = new Date(now);
+  const groups = new Map<ScheduleGroupKey, Event[]>();
+
+  events.forEach((event) => {
+    const key = scheduleGroupKey(event.starts_at, currentDate);
+    const groupEvents = groups.get(key) ?? [];
+    groupEvents.push(event);
+    groups.set(key, groupEvents);
+  });
+
+  return (["today", "thisWeek", "later", "past"] as ScheduleGroupKey[])
+    .map((key) => ({ key, events: groups.get(key) ?? [] }))
+    .filter((group) => group.events.length > 0);
+}
+
+function scheduleGroupKey(
+  startsAt: string,
+  currentDate: Date,
+): ScheduleGroupKey {
+  const eventDate = new Date(startsAt);
+
+  if (Number.isNaN(eventDate.getTime())) {
+    return "later";
+  }
+
+  if (eventDate < currentDate) {
+    return "past";
+  }
+
+  if (isSameCalendarDay(eventDate, currentDate)) {
+    return "today";
+  }
+
+  return eventDate <= endOfThisWeek(currentDate) ? "thisWeek" : "later";
+}
+
+function isSameCalendarDay(firstDate: Date, secondDate: Date) {
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function endOfThisWeek(date: Date) {
+  const end = new Date(date);
+  end.setDate(end.getDate() + (6 - end.getDay()));
+  end.setHours(23, 59, 59, 999);
+
+  return end;
+}
+
+function scheduleGroupLabel(key: ScheduleGroupKey, t: Translate) {
+  if (key === "today") {
+    return t("events.schedule.today");
+  }
+
+  if (key === "thisWeek") {
+    return t("events.schedule.thisWeek");
+  }
+
+  if (key === "past") {
+    return t("events.schedule.past");
+  }
+
+  return t("events.schedule.later");
+}
+
 function EventCard({
   clubName,
   connectedSchools,
@@ -629,24 +821,27 @@ function EventCard({
           </p>
         </div>
         <EventActions
-          connectedSchools={connectedSchools}
           currentStudent={currentStudent}
           event={event}
           isFull={isFull}
           isStaff={isStaff}
           registrationStatus={registrationStatus}
-          sharedSchoolIds={sharedSchoolIds}
           t={t}
           userSchoolId={userSchoolId}
         />
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        <StatusBadge status={event.status}>
+          {eventStatusLabel(event.status, t)}
+        </StatusBadge>
         {currentStudent ? (
           <StatusBadge variant={isJoined ? "success" : "default"}>
-            {isJoined
-              ? t("events.registration.youAreRegistered")
-              : t("events.registration.notJoined")}
+            {registrationStatus === "attended"
+              ? t("events.registration.checkedIn")
+              : isJoined
+                ? t("events.registration.youAreRegistered")
+                : t("events.registration.notJoined")}
           </StatusBadge>
         ) : null}
         {clubName ? <StatusBadge>{clubName}</StatusBadge> : null}
@@ -674,7 +869,7 @@ function EventCard({
         ) : null}
       </div>
 
-      <DetailsDisclosure label={t("common.viewDetails")}>
+      <DetailsDisclosure label={t("events.card.details")}>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-zinc-500">{t("events.card.registration")}</dt>
@@ -737,29 +932,46 @@ function EventCard({
             {event.description}
           </p>
         ) : null}
+        {isStaff && isOwnSchoolEvent ? (
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-md border border-[var(--border)] bg-[var(--card)] p-3">
+              <h4 className="mb-2 text-sm font-semibold text-zinc-950">
+                {t("events.sharing.shareWith")}
+              </h4>
+              <SharingForm
+                connectedSchools={connectedSchools}
+                event={event}
+                sharedSchoolIds={sharedSchoolIds}
+                t={t}
+              />
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--card)] p-3">
+              <h4 className="mb-2 text-sm font-semibold text-zinc-950">
+                {t("events.formGroups.safetyPermissions")}
+              </h4>
+              <SafetyForm event={event} t={t} />
+            </div>
+          </div>
+        ) : null}
       </DetailsDisclosure>
     </article>
   );
 }
 
 function EventActions({
-  connectedSchools,
   currentStudent,
   event,
   isFull,
   isStaff,
   registrationStatus,
-  sharedSchoolIds,
   t,
   userSchoolId,
 }: {
-  connectedSchools: SchoolOption[];
   currentStudent: StudentRoster | null;
   event: Event;
   isFull: boolean;
   isStaff: boolean;
   registrationStatus: string | undefined;
-  sharedSchoolIds: string[];
   t: Translate;
   userSchoolId: string;
 }) {
@@ -787,13 +999,6 @@ function EventActions({
             {t("events.actions.cancel")}
           </ConfirmSubmitButton>
         </form>
-        <SharingForm
-          connectedSchools={connectedSchools}
-          event={event}
-          sharedSchoolIds={sharedSchoolIds}
-          t={t}
-        />
-        <SafetyForm event={event} t={t} />
       </div>
     );
   }
@@ -990,6 +1195,30 @@ function riskLabel(riskLevel: Event["risk_level"], t: Translate) {
   return riskLevel === "medium"
     ? t("events.risk.medium")
     : t("events.risk.low");
+}
+
+function eventStatusLabel(status: string, t: Translate) {
+  if (status === "approved") {
+    return t("status.approved");
+  }
+
+  if (status === "canceled") {
+    return t("status.canceled");
+  }
+
+  if (status === "draft") {
+    return t("status.draft");
+  }
+
+  if (status === "pending_approval") {
+    return t("status.pendingApproval");
+  }
+
+  if (status === "rejected") {
+    return t("status.rejected");
+  }
+
+  return status;
 }
 
 function canCurrentStudentRegister(event: Event, userSchoolId: string) {
@@ -1423,6 +1652,10 @@ function parseEventTime(value: string): EventTimeFilter {
   return value === "past" ? "past" : "upcoming";
 }
 
+function parseEventBrowseView(value: string): EventBrowseView {
+  return value === "schedule" ? "schedule" : "list";
+}
+
 function parseEventStatus(value: string): EventStatusFilter {
   return [
     "all",
@@ -1444,16 +1677,21 @@ function eventListTitle(
   filter: EventFilter,
   category: string | null,
   scope: EventScope,
+  time: EventTimeFilter,
   t: Translate,
 ) {
   const baseTitleKey =
-    filter === "registered"
+    time === "past" && filter === "upcoming"
+      ? "events.listTitles.past"
+      : filter === "registered"
       ? "events.listTitles.registered"
       : filter === "club"
         ? "events.listTitles.club"
         : "events.listTitles.upcoming";
   const sharedTitleKey =
-    filter === "registered"
+    time === "past" && filter === "upcoming"
+      ? "events.listTitles.sharedPast"
+      : filter === "registered"
       ? "events.listTitles.sharedRegistered"
       : filter === "club"
         ? "events.listTitles.sharedClub"

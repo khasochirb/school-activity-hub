@@ -189,6 +189,7 @@ export const en = {
     archived: "Archived",
     blocked: "Blocked",
     canceled: "Canceled",
+    draft: "Draft",
     inactive: "Inactive",
     pending: "Pending",
     pendingApproval: "Pending approval",
@@ -763,6 +764,7 @@ export const en = {
       noLimit: "No limit",
     },
     card: {
+      details: "Event details",
       eventType: "Event type",
       hostedBy: "Hosted by",
       location: "Location",
@@ -784,6 +786,8 @@ export const en = {
     description:
       "Create approved activities, manage student registrations, and open attendance check-in when an event begins.",
     empty: {
+      noPastTitle: "No past events",
+      noUpcomingTitle: "No upcoming events",
       staffDescription:
         "Create an approved event, wait for a club event to be approved, or adjust the filters.",
       studentDescription:
@@ -860,8 +864,10 @@ export const en = {
     },
     listTitles: {
       club: "Club events",
+      past: "Past events",
       registered: "My registered events",
       sharedClub: "Shared club events",
+      sharedPast: "Shared past events",
       sharedRegistered: "Shared registered events",
       sharedUpcoming: "Shared upcoming events",
       upcoming: "Upcoming events",
@@ -893,6 +899,12 @@ export const en = {
       low: "Low risk",
       medium: "Medium risk",
     },
+    schedule: {
+      later: "Later",
+      past: "Past events",
+      thisWeek: "This week",
+      today: "Today",
+    },
     sharing: {
       allowConnectedRegistration: "Allow connected students to register",
       internalOnly: "Internal only",
@@ -917,6 +929,12 @@ export const en = {
       endTimeRequired: "End time is required.",
       startTimeRequired: "Start time is required.",
       timeOrder: "End time must be after start time.",
+    },
+    view: {
+      list: "List view",
+      schedule: "Schedule view",
+      viewList: "View list",
+      viewSchedule: "View schedule",
     },
     title: "Events",
   },
