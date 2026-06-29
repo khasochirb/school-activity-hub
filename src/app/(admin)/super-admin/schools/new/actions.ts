@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createPlatformAuditLog } from "@/lib/audit/platform-audit";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import {
   formatTranslation,
@@ -31,7 +32,7 @@ export async function createPlatformSchool(
   _state: CreateSchoolState,
   formData: FormData,
 ): Promise<CreateSchoolState> {
-  await requirePlatformAdmin();
+  const platformAdmin = await requirePlatformAdmin();
 
   const i18n = await getServerI18n();
   const name = String(formData.get("name") ?? "").trim();
@@ -172,10 +173,39 @@ export async function createPlatformSchool(
         success: false,
       };
     }
+
+    await createPlatformAuditLog({
+      action: "platform.school_admin.created",
+      actor: platformAdmin,
+      metadata: {
+        school_name: name,
+        school_slug: slug,
+        target_admin_email: adminEmail,
+      },
+      targetId: authData.user.id,
+      targetSchoolId: school.id,
+      targetType: "profile",
+    });
   }
+
+  await createPlatformAuditLog({
+    action: "platform.school.created",
+    actor: platformAdmin,
+    metadata: {
+      created_school_admin: shouldCreateAdmin,
+      school_name: name,
+      school_slug: slug,
+      school_status: status,
+      target_admin_email: shouldCreateAdmin ? adminEmail : null,
+    },
+    targetId: school.id,
+    targetSchoolId: school.id,
+    targetType: "school",
+  });
 
   revalidatePath("/super-admin");
   revalidatePath("/super-admin/schools");
+  revalidatePath("/super-admin/audit-log");
 
   redirect(
     `/super-admin/schools?success=${encodeURIComponent(

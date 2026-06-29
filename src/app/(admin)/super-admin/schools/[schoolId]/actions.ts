@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createPlatformAuditLog } from "@/lib/audit/platform-audit";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import {
   formatTranslation,
@@ -24,10 +25,20 @@ type ServerI18n = {
 
 type SchoolRow = {
   id: string;
+  name: string;
+  province: string | null;
+  slug: string;
+  status: SchoolStatus;
+};
+
+type SchoolAdminRow = {
+  full_name: string;
+  id: string;
+  status: ProfileStatus;
 };
 
 export async function updatePlatformSchool(formData: FormData) {
-  await requirePlatformAdmin();
+  const platformAdmin = await requirePlatformAdmin();
 
   const i18n = await getServerI18n();
   const schoolId = String(formData.get("school_id") ?? "").trim();
@@ -57,6 +68,12 @@ export async function updatePlatformSchool(formData: FormData) {
   }
 
   const admin = createAdminClient();
+  const { data: previousSchool } = await admin
+    .from("schools")
+    .select("id, name, slug, province, status")
+    .eq("id", schoolId)
+    .maybeSingle<SchoolRow>();
+
   const { error } = await admin
     .from("schools")
     .update({
@@ -77,6 +94,23 @@ export async function updatePlatformSchool(formData: FormData) {
     );
   }
 
+  await createPlatformAuditLog({
+    action: "platform.school.updated",
+    actor: platformAdmin,
+    metadata: {
+      new_name: name,
+      new_province: province || null,
+      new_status: status,
+      previous_name: previousSchool?.name ?? null,
+      previous_province: previousSchool?.province ?? null,
+      previous_status: previousSchool?.status ?? null,
+      school_slug: previousSchool?.slug ?? null,
+    },
+    targetId: schoolId,
+    targetSchoolId: schoolId,
+    targetType: "school",
+  });
+
   revalidateSchoolPages(schoolId);
   redirectWithMessage(
     schoolId,
@@ -86,7 +120,7 @@ export async function updatePlatformSchool(formData: FormData) {
 }
 
 export async function createPlatformSchoolAdmin(formData: FormData) {
-  await requirePlatformAdmin();
+  const platformAdmin = await requirePlatformAdmin();
 
   const i18n = await getServerI18n();
   const schoolId = String(formData.get("school_id") ?? "").trim();
@@ -125,7 +159,7 @@ export async function createPlatformSchoolAdmin(formData: FormData) {
   const admin = createAdminClient();
   const { data: school } = await admin
     .from("schools")
-    .select("id")
+    .select("id, name, slug, province, status")
     .eq("id", schoolId)
     .maybeSingle<SchoolRow>();
 
@@ -181,6 +215,19 @@ export async function createPlatformSchoolAdmin(formData: FormData) {
     );
   }
 
+  await createPlatformAuditLog({
+    action: "platform.school_admin.created",
+    actor: platformAdmin,
+    metadata: {
+      school_name: school.name,
+      school_slug: school.slug,
+      target_admin_email: email,
+    },
+    targetId: authData.user.id,
+    targetSchoolId: schoolId,
+    targetType: "profile",
+  });
+
   revalidateSchoolPages(schoolId);
   redirectWithMessage(
     schoolId,
@@ -211,6 +258,14 @@ export async function updatePlatformSchoolAdminStatus(formData: FormData) {
   }
 
   const admin = createAdminClient();
+  const { data: previousAdminProfile } = await admin
+    .from("profiles")
+    .select("id, full_name, status")
+    .eq("id", profileId)
+    .eq("school_id", schoolId)
+    .eq("role", "school_admin")
+    .maybeSingle<SchoolAdminRow>();
+
   const { error } = await admin
     .from("profiles")
     .update({
@@ -230,6 +285,22 @@ export async function updatePlatformSchoolAdminStatus(formData: FormData) {
       }),
     );
   }
+
+  await createPlatformAuditLog({
+    action:
+      status === "active"
+        ? "platform.school_admin.reactivated"
+        : "platform.school_admin.deactivated",
+    actor: platformAdmin,
+    metadata: {
+      new_status: status,
+      previous_status: previousAdminProfile?.status ?? null,
+      target_admin_name: previousAdminProfile?.full_name ?? null,
+    },
+    targetId: profileId,
+    targetSchoolId: schoolId,
+    targetType: "profile",
+  });
 
   revalidateSchoolPages(schoolId);
   redirectWithMessage(
@@ -257,6 +328,7 @@ function revalidateSchoolPages(schoolId: string) {
   revalidatePath("/super-admin");
   revalidatePath("/super-admin/schools");
   revalidatePath(`/super-admin/schools/${schoolId}`);
+  revalidatePath("/super-admin/audit-log");
 }
 
 function redirectWithMessage(

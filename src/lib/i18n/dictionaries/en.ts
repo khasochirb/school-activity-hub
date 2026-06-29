@@ -132,6 +132,7 @@ export const en = {
     importFromCsv: "Import from CSV",
     lessDetails: "Less details",
     moreDetails: "More details",
+    no: "No",
     noExtraDetails: "No extra details",
     notAvailableShort: "N/A",
     open: "Open",
@@ -153,6 +154,7 @@ export const en = {
     viewAll: "View all",
     viewDetails: "View details",
     warning: "Warning",
+    yes: "Yes",
   },
   filters: {
     active: "Active",
@@ -519,6 +521,7 @@ export const en = {
     account: "Account",
     announcements: "Announcements",
     approvals: "Approvals",
+    auditLog: "Audit log",
     clubs: "Clubs",
     dashboard: "Dashboard",
     events: "Events",
@@ -1438,6 +1441,37 @@ export const en = {
       backToPlatformDashboard: "Back to platform dashboard",
       viewConnections: "View connections",
       viewSchools: "View schools",
+    },
+    auditLog: {
+      actionLabels: {
+        connectionApproved: "Connection approved",
+        connectionCreated: "Connection created",
+        connectionRejected: "Connection rejected",
+        connectionRevoked: "Connection revoked",
+        schoolAdminCreated: "School admin created",
+        schoolAdminDeactivated: "School admin deactivated",
+        schoolAdminReactivated: "School admin reactivated",
+        schoolCreated: "School created",
+        schoolUpdated: "School updated",
+      },
+      description:
+        "Review recent platform-level changes made by platform admins.",
+      emptyDescription:
+        "Platform actions will appear here after super admins make changes.",
+      emptyTitle: "No audit logs found",
+      fields: {
+        action: "Action",
+        actor: "Actor",
+        createdAt: "Created at",
+        date: "Date",
+        metadata: "Metadata",
+        target: "Target",
+        targetSchool: "Target school",
+      },
+      platformSafety: "Platform safety",
+      recentActions: "Recent platform actions",
+      searchPlaceholder: "Search audit logs",
+      title: "Platform audit log",
     },
     connections: {
       actions: {

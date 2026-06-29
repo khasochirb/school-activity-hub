@@ -125,6 +125,7 @@ export const mn = {
     importFromCsv: "CSV-ээс импортлох",
     lessDetails: "Бага дэлгэрэнгүй",
     moreDetails: "Илүү дэлгэрэнгүй",
+    no: "Үгүй",
     noExtraDetails: "Нэмэлт мэдээлэл алга",
     notAvailableShort: "N/A",
     open: "Нээх",
@@ -140,6 +141,7 @@ export const mn = {
     summary: "Товч мэдээлэл",
     viewAll: "Бүгдийг харах",
     viewDetails: "Дэлгэрэнгүй харах",
+    yes: "Тийм",
   },
   status: {
     active: "Идэвхтэй",
@@ -1191,6 +1193,7 @@ export const mn = {
     account: "Бүртгэл",
     announcements: "Зарлал",
     approvals: "Батлах хүсэлтүүд",
+    auditLog: "Аудитын бүртгэл",
     clubs: "Клубууд",
     dashboard: "Хянах самбар",
     events: "Арга хэмжээ",
@@ -1411,6 +1414,37 @@ export const mn = {
       backToPlatformDashboard: "Платформын хянах самбар руу буцах",
       viewConnections: "Холболтууд харах",
       viewSchools: "Сургуулиуд харах",
+    },
+    auditLog: {
+      actionLabels: {
+        connectionApproved: "Холболт зөвшөөрөгдсөн",
+        connectionCreated: "Холболт үүссэн",
+        connectionRejected: "Холболт татгалзсан",
+        connectionRevoked: "Холболт цуцалсан",
+        schoolAdminCreated: "Сургуулийн админ үүссэн",
+        schoolAdminDeactivated: "Сургуулийн админ идэвхгүй болсон",
+        schoolAdminReactivated: "Сургуулийн админ дахин идэвхжсэн",
+        schoolCreated: "Сургууль үүссэн",
+        schoolUpdated: "Сургууль шинэчлэгдсэн",
+      },
+      description:
+        "Платформын админуудын хийсэн сүүлийн платформын түвшний өөрчлөлтүүдийг шалгана.",
+      emptyDescription:
+        "Супер админууд өөрчлөлт хийсний дараа платформын үйлдлүүд энд харагдана.",
+      emptyTitle: "Аудитын бүртгэл олдсонгүй",
+      fields: {
+        action: "Үйлдэл",
+        actor: "Үйлдэл хийсэн хэрэглэгч",
+        createdAt: "Үүссэн огноо",
+        date: "Огноо",
+        metadata: "Нэмэлт мэдээлэл",
+        target: "Зорилтот зүйл",
+        targetSchool: "Холбогдох сургууль",
+      },
+      platformSafety: "Платформын аюулгүй байдал",
+      recentActions: "Сүүлийн платформын үйлдлүүд",
+      searchPlaceholder: "Аудитын бүртгэл хайх",
+      title: "Платформын аудитын бүртгэл",
     },
     connections: {
       actions: {

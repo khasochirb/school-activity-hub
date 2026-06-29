@@ -91,6 +91,11 @@ const navSections: Array<{
         labelKey: "nav.schoolConnections",
         platformAdminOnly: true,
       },
+      {
+        href: "/super-admin/audit-log",
+        labelKey: "nav.auditLog",
+        platformAdminOnly: true,
+      },
     ],
   },
   {

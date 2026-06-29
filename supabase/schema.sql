@@ -173,6 +173,23 @@ create table if not exists public.platform_admins (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.platform_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_profile_id uuid references public.profiles(id) on delete set null,
+  action text not null,
+  target_type text not null,
+  target_id uuid,
+  target_school_id uuid references public.schools(id) on delete set null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists platform_audit_logs_created_at_idx
+  on public.platform_audit_logs (created_at desc);
+
+create index if not exists platform_audit_logs_target_school_created_at_idx
+  on public.platform_audit_logs (target_school_id, created_at desc);
+
 create table if not exists public.school_connections (
   id uuid primary key default gen_random_uuid(),
   requester_school_id uuid not null references public.schools(id) on delete cascade,
@@ -782,6 +799,7 @@ $$;
 alter table public.schools enable row level security;
 alter table public.profiles enable row level security;
 alter table public.platform_admins enable row level security;
+alter table public.platform_audit_logs enable row level security;
 alter table public.school_connections enable row level security;
 alter table public.student_rosters enable row level security;
 alter table public.announcements enable row level security;
@@ -882,6 +900,13 @@ create policy "Teachers can update student profiles"
 drop policy if exists "Platform admins can view platform admins" on public.platform_admins;
 create policy "Platform admins can view platform admins"
   on public.platform_admins
+  for select
+  to authenticated
+  using (public.current_user_is_platform_admin());
+
+drop policy if exists "Platform admins can view platform audit logs" on public.platform_audit_logs;
+create policy "Platform admins can view platform audit logs"
+  on public.platform_audit_logs
   for select
   to authenticated
   using (public.current_user_is_platform_admin());

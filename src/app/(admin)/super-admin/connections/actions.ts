@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createPlatformAuditLog } from "@/lib/audit/platform-audit";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import {
   formatTranslation,
@@ -22,7 +23,13 @@ type ConnectionStatus =
 
 type ExistingConnection = {
   id: string;
+  receiver_school_id: string;
+  requester_school_id: string;
   status: ConnectionStatus;
+};
+
+type CreatedConnection = {
+  id: string;
 };
 
 type ServerI18n = {
@@ -71,27 +78,44 @@ export async function createPlatformConnection(formData: FormData) {
   }
 
   const now = new Date().toISOString();
-  const { error } = await admin.from("school_connections").insert({
-    requester_school_id: requesterSchoolId,
-    receiver_school_id: receiverSchoolId,
-    requested_by_profile_id: platformAdmin.id,
-    responded_by_profile_id:
-      status === "approved" ? platformAdmin.id : null,
-    responded_at: status === "approved" ? now : null,
-    status,
-    updated_at: now,
-  });
+  const { data: createdConnection, error } = await admin
+    .from("school_connections")
+    .insert({
+      requester_school_id: requesterSchoolId,
+      receiver_school_id: receiverSchoolId,
+      requested_by_profile_id: platformAdmin.id,
+      responded_by_profile_id:
+        status === "approved" ? platformAdmin.id : null,
+      responded_at: status === "approved" ? now : null,
+      status,
+      updated_at: now,
+    })
+    .select("id")
+    .single<CreatedConnection>();
 
-  if (error) {
+  if (error || !createdConnection) {
     redirectWithMessage(
       "error",
-      error.code === "23505"
+      error?.code === "23505"
         ? i18n.t("superAdmin.connections.errors.connectionExists")
         : i18n.tf("superAdmin.connections.errors.createFailed", {
-            error: error.message,
+            error: error?.message ?? i18n.t("common.error"),
           }),
     );
   }
+
+  await createPlatformAuditLog({
+    action: "platform.connection.created",
+    actor: platformAdmin,
+    metadata: {
+      connection_status: status,
+      receiver_school_id: receiverSchoolId,
+      requester_school_id: requesterSchoolId,
+    },
+    targetId: createdConnection.id,
+    targetSchoolId: receiverSchoolId,
+    targetType: "school_connection",
+  });
 
   revalidatePlatformConnectionPages();
   redirectWithMessage("success", i18n.t("superAdmin.connections.success.created"));
@@ -125,6 +149,11 @@ export async function updatePlatformConnectionStatus(formData: FormData) {
   }
 
   const admin = createAdminClient();
+  const { data: previousConnection } = await admin
+    .from("school_connections")
+    .select("id, requester_school_id, receiver_school_id, status")
+    .eq("id", connectionId)
+    .maybeSingle<ExistingConnection>();
   const now = new Date().toISOString();
   const { error } = await admin
     .from("school_connections")
@@ -146,6 +175,20 @@ export async function updatePlatformConnectionStatus(formData: FormData) {
     );
   }
 
+  await createPlatformAuditLog({
+    action: platformConnectionAction(decision),
+    actor: platformAdmin,
+    metadata: {
+      connection_status: nextStatus,
+      previous_status: previousConnection?.status ?? currentStatus,
+      receiver_school_id: previousConnection?.receiver_school_id ?? null,
+      requester_school_id: previousConnection?.requester_school_id ?? null,
+    },
+    targetId: connectionId,
+    targetSchoolId: previousConnection?.receiver_school_id ?? null,
+    targetType: "school_connection",
+  });
+
   revalidatePlatformConnectionPages();
   redirectWithMessage("success", i18n.t("superAdmin.connections.success.updated"));
 }
@@ -153,6 +196,7 @@ export async function updatePlatformConnectionStatus(formData: FormData) {
 function revalidatePlatformConnectionPages() {
   revalidatePath("/super-admin");
   revalidatePath(PAGE_PATH);
+  revalidatePath("/super-admin/audit-log");
 }
 
 function connectionPairFilter(schoolA: string, schoolB: string) {
@@ -170,6 +214,18 @@ function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+function platformConnectionAction(decision: string) {
+  if (decision === "approve") {
+    return "platform.connection.approved";
+  }
+
+  if (decision === "reject") {
+    return "platform.connection.rejected";
+  }
+
+  return "platform.connection.revoked";
 }
 
 async function getServerI18n(): Promise<ServerI18n> {
