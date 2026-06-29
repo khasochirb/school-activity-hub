@@ -1433,6 +1433,7 @@ export const en = {
   superAdmin: {
     accessRequired: "Platform access required",
     actions: {
+      backToSchools: "Back to schools",
       backToPlatformDashboard: "Back to platform dashboard",
       viewSchools: "View schools",
     },
@@ -1446,6 +1447,50 @@ export const en = {
       allSchools: "All schools",
       platformAdmins: "Platform admins",
       schoolConnections: "School connections",
+    },
+    newSchool: {
+      actions: {
+        createSchool: "Create school",
+        createSchoolAndAdmin: "Create school and admin",
+        createSchoolOnly: "Create school only",
+        creating: "Creating...",
+      },
+      description:
+        "Create a new school and optionally add the first school admin account.",
+      errors: {
+        adminCreateFailed:
+          "School admin account could not be created: {error}",
+        adminFieldsRequired:
+          "Enter admin full name, email, and temporary password, or create the school only.",
+        adminProfileFailed:
+          "School admin profile could not be created: {error}",
+        createFailed: "School could not be created: {error}",
+        invalidSlug:
+          "Use lowercase letters, numbers, and hyphens for the school identifier.",
+        invalidStatus: "Choose a valid school status.",
+        nameRequired: "School name is required.",
+        slugExists: "School identifier already exists",
+        slugRequired: "School identifier is required.",
+      },
+      form: {
+        adminEmail: "Admin email",
+        adminFullName: "Admin full name",
+        createAdmin: "Create first school admin",
+        firstSchoolAdmin: "First school admin",
+        province: "Province",
+        schoolIdentifier: "School identifier",
+        schoolName: "School name",
+        slugHelp:
+          "Auto-generated from school name. Use lowercase letters, numbers, and hyphens.",
+        status: "Status",
+        temporaryPassword: "Temporary password",
+      },
+      success: {
+        created: "School created successfully",
+      },
+      title: "New school",
+      warning:
+        "Only platform admins can create schools. School admins can manage only their own school.",
     },
     schools: {
       allSchools: "All schools",

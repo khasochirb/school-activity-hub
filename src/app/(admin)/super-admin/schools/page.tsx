@@ -1,3 +1,4 @@
+import { ActionToast } from "@/components/toast-provider";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { formatDate } from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
@@ -19,12 +20,24 @@ type School = {
   status: "active" | "archived";
 };
 
-export default async function SuperAdminSchoolsPage() {
+type SchoolsSearchParams = {
+  error?: string | string[];
+  success?: string | string[];
+};
+
+export default async function SuperAdminSchoolsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SchoolsSearchParams>;
+}) {
   await requirePlatformAdmin();
 
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const params = await searchParams;
+  const successMessage = getSearchValue(params.success);
+  const errorMessage = getSearchValue(params.error);
   const admin = createAdminClient();
   const { data: schools, error } = await admin
     .from("schools")
@@ -38,14 +51,32 @@ export default async function SuperAdminSchoolsPage() {
     <div className="page-stack">
       <PageHeader
         actions={
-          <HeaderActionLink href="/super-admin" variant="secondary">
-            {t("superAdmin.actions.backToPlatformDashboard")}
-          </HeaderActionLink>
+          <>
+            <HeaderActionLink href="/super-admin/schools/new">
+              {t("superAdmin.newSchool.actions.createSchool")}
+            </HeaderActionLink>
+            <HeaderActionLink href="/super-admin" variant="secondary">
+              {t("superAdmin.actions.backToPlatformDashboard")}
+            </HeaderActionLink>
+          </>
         }
         description={t("superAdmin.schools.description")}
         eyebrow={t("nav.superAdmin")}
         title={t("superAdmin.schools.title")}
       />
+      <ActionToast message={successMessage} success />
+      <ActionToast message={errorMessage} success={false} />
+
+      {successMessage ? (
+        <p className="notice-box notice-success text-sm" role="status">
+          {successMessage}
+        </p>
+      ) : null}
+      {errorMessage ? (
+        <p className="notice-box notice-danger text-sm" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
 
       <section className="section-card">
         <div className="section-header">
@@ -171,4 +202,8 @@ function schoolStatusLabel(
   }
 
   return t("status.archived");
+}
+
+function getSearchValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }

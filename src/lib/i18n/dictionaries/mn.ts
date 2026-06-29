@@ -1406,6 +1406,7 @@ export const mn = {
   superAdmin: {
     accessRequired: "Платформын эрх шаардлагатай",
     actions: {
+      backToSchools: "Сургуулиуд руу буцах",
       backToPlatformDashboard: "Платформын хянах самбар руу буцах",
       viewSchools: "Сургуулиуд харах",
     },
@@ -1419,6 +1420,50 @@ export const mn = {
       allSchools: "Бүх сургуулиуд",
       platformAdmins: "Платформын админууд",
       schoolConnections: "Сургуулийн холболтууд",
+    },
+    newSchool: {
+      actions: {
+        createSchool: "Сургууль үүсгэх",
+        createSchoolAndAdmin: "Сургууль болон админ үүсгэх",
+        createSchoolOnly: "Зөвхөн сургууль үүсгэх",
+        creating: "Үүсгэж байна...",
+      },
+      description:
+        "Шинэ сургууль үүсгээд шаардлагатай бол анхны сургуулийн админ бүртгэлийг нэмнэ үү.",
+      errors: {
+        adminCreateFailed:
+          "Сургуулийн админы бүртгэл үүсгэж чадсангүй: {error}",
+        adminFieldsRequired:
+          "Админы бүтэн нэр, имэйл, түр нууц үгийг оруулна уу эсвэл зөвхөн сургууль үүсгэнэ үү.",
+        adminProfileFailed:
+          "Сургуулийн админы профайл үүсгэж чадсангүй: {error}",
+        createFailed: "Сургууль үүсгэж чадсангүй: {error}",
+        invalidSlug:
+          "Сургуулийн таних нэрэнд жижиг үсэг, тоо болон зураас ашиглана уу.",
+        invalidStatus: "Зөв сургуулийн төлөв сонгоно уу.",
+        nameRequired: "Сургуулийн нэр шаардлагатай.",
+        slugExists: "Энэ сургуулийн таних нэр аль хэдийн байна",
+        slugRequired: "Сургуулийн таних нэр шаардлагатай.",
+      },
+      form: {
+        adminEmail: "Админы имэйл",
+        adminFullName: "Админы бүтэн нэр",
+        createAdmin: "Анхны сургуулийн админ үүсгэх",
+        firstSchoolAdmin: "Анхны сургуулийн админ",
+        province: "Аймаг/муж",
+        schoolIdentifier: "Сургуулийн таних нэр",
+        schoolName: "Сургуулийн нэр",
+        slugHelp:
+          "Сургуулийн нэрээс автоматаар үүснэ. Жижиг үсэг, тоо болон зураас ашиглана уу.",
+        status: "Төлөв",
+        temporaryPassword: "Түр нууц үг",
+      },
+      success: {
+        created: "Сургууль амжилттай үүслээ",
+      },
+      title: "Шинэ сургууль",
+      warning:
+        "Зөвхөн платформын админ сургууль үүсгэх боломжтой. Сургуулийн админ зөвхөн өөрийн сургуулийг удирдана.",
     },
     schools: {
       allSchools: "Бүх сургуулиуд",
