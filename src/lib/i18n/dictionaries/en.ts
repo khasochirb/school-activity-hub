@@ -1469,9 +1469,13 @@ export const en = {
         targetSchool: "Target school",
       },
       platformSafety: "Platform safety",
+      noRecentActions: "No recent platform actions yet.",
       recentActions: "Recent platform actions",
       searchPlaceholder: "Search audit logs",
       title: "Platform audit log",
+      unavailableDescription:
+        "Run the platform audit log migration, then refresh this page.",
+      unavailableTitle: "Audit logs are not available yet.",
     },
     connections: {
       actions: {

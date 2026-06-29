@@ -1442,9 +1442,13 @@ export const mn = {
         targetSchool: "Холбогдох сургууль",
       },
       platformSafety: "Платформын аюулгүй байдал",
+      noRecentActions: "Одоогоор платформын сүүлийн үйлдэл алга.",
       recentActions: "Сүүлийн платформын үйлдлүүд",
       searchPlaceholder: "Аудитын бүртгэл хайх",
       title: "Платформын аудитын бүртгэл",
+      unavailableDescription:
+        "Платформын аудитын бүртгэлийн migration-ийг ажиллуулаад энэ хуудсыг дахин сэргээнэ үү.",
+      unavailableTitle: "Аудитын бүртгэл одоогоор ашиглах боломжгүй байна.",
     },
     connections: {
       actions: {

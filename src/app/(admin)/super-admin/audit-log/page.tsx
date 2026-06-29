@@ -95,7 +95,14 @@ export default async function SuperAdminAuditLogPage({
     .limit(200)
     .returns<AuditLog[]>();
 
-  const auditLogs = logs ?? [];
+  if (error) {
+    console.error("Super Admin audit log query failed", {
+      code: error.code,
+      message: error.message,
+    });
+  }
+
+  const auditLogs = error ? [] : logs ?? [];
   const actorIds = uniqueStrings(
     auditLogs.map((log) => log.actor_profile_id).filter(Boolean),
   );
@@ -187,11 +194,20 @@ export default async function SuperAdminAuditLogPage({
             {t("superAdmin.auditLog.recentActions")}
           </h2>
           {error ? (
-            <p className="mt-2 text-sm text-red-600">
-              {t("common.somethingWentWrong")}
+            <p className="mt-2 text-sm text-amber-700">
+              {t("superAdmin.auditLog.unavailableDescription")}
             </p>
           ) : null}
         </div>
+
+        {error ? (
+          <div className="p-4">
+            <EmptyState
+              description={t("superAdmin.auditLog.unavailableDescription")}
+              title={t("superAdmin.auditLog.unavailableTitle")}
+            />
+          </div>
+        ) : null}
 
         {!error && auditLogs.length === 0 ? (
           <div className="p-4">
