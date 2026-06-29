@@ -1552,6 +1552,89 @@ export const en = {
       warning:
         "Only platform admins can create schools. School admins can manage only their own school.",
     },
+    schoolDetail: {
+      actions: {
+        addAdmin: "Add school admin",
+        addingAdmin: "Creating...",
+        deactivateAdmin: "Deactivate admin",
+        deactivatingAdmin: "Deactivating...",
+        manageSchool: "Manage school",
+        reactivateAdmin: "Reactivate admin",
+        reactivatingAdmin: "Reactivating...",
+        updateSchool: "Save school",
+        updatingSchool: "Saving...",
+      },
+      admins: {
+        description:
+          "Create and manage school admin accounts for this school only.",
+        emptyDescription:
+          "Add a school admin so this school can manage its own staff, students, clubs, and events.",
+        emptyTitle: "No school admins found",
+        title: "School admins",
+      },
+      connectionsSummary: {
+        active: "Active connections",
+        pending: "Pending connections",
+        title: "Connections summary",
+      },
+      description:
+        "Manage school profile details and school admin accounts without opening private student data.",
+      edit: {
+        description:
+          "Update the school name, province, and status. The school identifier is read-only.",
+        title: "Edit school",
+      },
+      errors: {
+        adminAlreadyExists:
+          "A user with that email already exists. Use a different email or manage the existing profile.",
+        adminCreateFailed:
+          "School admin account could not be created: {error}",
+        adminEmailRequired: "Admin email is required.",
+        adminFullNameRequired: "Admin full name is required.",
+        adminProfileFailed:
+          "School admin profile could not be created: {error}",
+        adminStatusFailed:
+          "School admin status could not be updated: {error}",
+        cannotDeactivateSelf:
+          "You cannot deactivate your own platform admin profile here.",
+        invalidStatus: "Choose a valid school status.",
+        loadFailed:
+          "Some school details could not be loaded. Refresh and try again.",
+        nameRequired: "School name is required.",
+        schoolNotFound: "School not found.",
+        updateFailed: "School could not be updated: {error}",
+      },
+      fields: {
+        actions: "Actions",
+        adminEmail: "Admin email",
+        adminFullName: "Admin full name",
+        created: "Created",
+        email: "Email",
+        fullName: "Full name",
+        province: "Province",
+        readOnly: "Read-only",
+        schoolAdmins: "School admins",
+        schoolIdentifier: "School identifier",
+        schoolName: "School name",
+        status: "Status",
+        students: "Students",
+        teachers: "Teachers",
+        temporaryPassword: "Temporary password",
+        updated: "Updated",
+      },
+      overview: {
+        title: "School overview",
+      },
+      privacyNotice:
+        "Platform admins cannot view private student data on this page.",
+      success: {
+        adminCreated: "School admin created successfully",
+        adminDeactivated: "School admin deactivated",
+        adminReactivated: "School admin reactivated",
+        updated: "School updated successfully",
+      },
+      title: "School details",
+    },
     schools: {
       allSchools: "All schools",
       description:

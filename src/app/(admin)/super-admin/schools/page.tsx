@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActionToast } from "@/components/toast-provider";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { formatDate } from "@/lib/i18n/date-format";
@@ -118,6 +119,9 @@ export default async function SuperAdminSchoolsPage({
                     <th className="px-4 py-3 font-medium">
                       {t("superAdmin.schools.fields.created")}
                     </th>
+                    <th className="px-4 py-3 font-medium">
+                      {t("superAdmin.schoolDetail.fields.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
@@ -139,6 +143,14 @@ export default async function SuperAdminSchoolsPage({
                       </td>
                       <td className="px-4 py-3 text-zinc-700">
                         {formatDate(school.created_at, locale)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link
+                          className="btn btn-secondary h-10 w-full sm:w-auto"
+                          href={`/super-admin/schools/${school.id}`}
+                        >
+                          {t("superAdmin.schoolDetail.actions.manageSchool")}
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -172,6 +184,12 @@ export default async function SuperAdminSchoolsPage({
                       value={formatDate(school.created_at, locale)}
                     />
                   </dl>
+                  <Link
+                    className="btn btn-secondary mt-4 h-10 w-full"
+                    href={`/super-admin/schools/${school.id}`}
+                  >
+                    {t("superAdmin.schoolDetail.actions.manageSchool")}
+                  </Link>
                 </article>
               ))}
             </div>
