@@ -2,13 +2,29 @@ import Link from "next/link";
 import { ActionToast } from "@/components/toast-provider";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { formatDate } from "@/lib/i18n/date-format";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import {
+  getPageParam,
+  getSearchParam,
+  pageRange,
+  pageRows,
+  postgrestSearchPattern,
+} from "@/lib/list-filters";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   EmptyState,
+  FilterPanel,
   HeaderActionLink,
+  NoResultsState,
+  PaginationControls,
   PageHeader,
+  SearchField,
+  SelectFilter,
   StatusBadge,
 } from "../../_components/page-ui";
 
@@ -23,8 +39,13 @@ type School = {
 
 type SchoolsSearchParams = {
   error?: string | string[];
+  page?: string | string[];
+  q?: string | string[];
+  status?: string | string[];
   success?: string | string[];
 };
+
+const SCHOOLS_PAGE_SIZE = 50;
 
 export default async function SuperAdminSchoolsPage({
   searchParams,
@@ -36,17 +57,46 @@ export default async function SuperAdminSchoolsPage({
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const params = await searchParams;
   const successMessage = getSearchValue(params.success);
   const errorMessage = getSearchValue(params.error);
+  const searchQuery = getSearchParam(params.q);
+  const selectedStatus = parseSchoolStatus(getSearchParam(params.status));
+  const page = getPageParam(params.page);
+  const range = pageRange(page, SCHOOLS_PAGE_SIZE);
   const admin = createAdminClient();
-  const { data: schools, error } = await admin
+  let schoolsQuery = admin
     .from("schools")
     .select("id, name, slug, province, status, created_at")
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (selectedStatus) {
+    schoolsQuery = schoolsQuery.eq("status", selectedStatus);
+  }
+
+  const searchPattern = postgrestSearchPattern(searchQuery);
+
+  if (searchPattern) {
+    schoolsQuery = schoolsQuery.or(
+      [
+        `name.ilike.${searchPattern}`,
+        `slug.ilike.${searchPattern}`,
+        `province.ilike.${searchPattern}`,
+      ].join(","),
+    );
+  }
+
+  const { data: schools, error } = await schoolsQuery
+    .range(range.from, range.to)
     .returns<School[]>();
 
-  const schoolRows = schools ?? [];
+  const { hasNextPage, rows: schoolRows } = pageRows(
+    schools,
+    SCHOOLS_PAGE_SIZE,
+  );
+  const hasFilters = Boolean(searchQuery || selectedStatus);
 
   return (
     <div className="page-stack">
@@ -79,6 +129,32 @@ export default async function SuperAdminSchoolsPage({
         </p>
       ) : null}
 
+      <FilterPanel
+        action="/super-admin/schools"
+        clearHref="/super-admin/schools"
+        clearLabel={t("filters.clear")}
+        resultCountLabel={tf("filters.showingResults", {
+          count: schoolRows.length,
+        })}
+        submitLabel={t("filters.filter")}
+      >
+        <SearchField
+          defaultValue={searchQuery}
+          label={t("filters.search")}
+          placeholder={t("filters.searchSchools")}
+        />
+        <SelectFilter
+          defaultValue={selectedStatus}
+          label={t("filters.status")}
+          name="status"
+          options={[
+            { label: t("filters.all"), value: "" },
+            { label: t("status.active"), value: "active" },
+            { label: t("status.archived"), value: "archived" },
+          ]}
+        />
+      </FilterPanel>
+
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">{t("superAdmin.schools.allSchools")}</h2>
@@ -91,10 +167,19 @@ export default async function SuperAdminSchoolsPage({
 
         {!error && schoolRows.length === 0 ? (
           <div className="p-4">
-            <EmptyState
-              description={t("superAdmin.schools.emptyDescription")}
-              title={t("superAdmin.schools.emptyTitle")}
-            />
+            {hasFilters ? (
+              <NoResultsState
+                clearHref="/super-admin/schools"
+                clearLabel={t("filters.clear")}
+                description={t("filters.noResultsDescription")}
+                title={t("filters.noResults")}
+              />
+            ) : (
+              <EmptyState
+                description={t("superAdmin.schools.emptyDescription")}
+                title={t("superAdmin.schools.emptyTitle")}
+              />
+            )}
           </div>
         ) : null}
 
@@ -195,6 +280,20 @@ export default async function SuperAdminSchoolsPage({
             </div>
           </>
         ) : null}
+        {!error && (schoolRows.length > 0 || page > 1) ? (
+          <PaginationControls
+            getHref={(nextPage) =>
+              schoolsPageHref(nextPage, searchQuery, selectedStatus)
+            }
+            hasNextPage={hasNextPage}
+            labels={{
+              next: t("common.next"),
+              page: tf("common.pageNumber", { number: page }),
+              previous: t("common.previous"),
+            }}
+            page={page}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -224,4 +323,32 @@ function schoolStatusLabel(
 
 function getSearchValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function parseSchoolStatus(value: string) {
+  return value === "active" || value === "archived" ? value : "";
+}
+
+function schoolsPageHref(
+  page: number,
+  searchQuery: string,
+  selectedStatus: string,
+) {
+  const params = new URLSearchParams();
+
+  if (searchQuery) {
+    params.set("q", searchQuery);
+  }
+
+  if (selectedStatus) {
+    params.set("status", selectedStatus);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+
+  return query ? `/super-admin/schools?${query}` : "/super-admin/schools";
 }

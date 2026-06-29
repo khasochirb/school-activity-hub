@@ -425,7 +425,7 @@ function AuditLogRow({
         <StatusBadge variant="info">{auditActionLabel(log.action, t)}</StatusBadge>
       </td>
       <td className="px-4 py-3 text-zinc-700">
-        {targetLabel(log, t)}
+        {targetLabel(log)}
       </td>
       <td className="px-4 py-3 text-zinc-700">
         <SchoolLabel
@@ -468,7 +468,7 @@ function AuditLogCard({
             {formatDateTime(log.created_at, locale)}
           </p>
         </div>
-        <StatusBadge variant="info">{targetLabel(log, t)}</StatusBadge>
+        <StatusBadge variant="info">{targetLabel(log)}</StatusBadge>
       </div>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <DetailItem
@@ -615,7 +615,7 @@ function isScalarMetadataValue(value: unknown) {
   );
 }
 
-function targetLabel(log: AuditLog, t: Translator) {
+function targetLabel(log: AuditLog) {
   return `${log.target_type}${log.target_id ? ` #${shortId(log.target_id)}` : ""}`;
 }
 

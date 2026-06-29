@@ -17,7 +17,12 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
-import { getSearchParam } from "@/lib/list-filters";
+import {
+  getPageParam,
+  getSearchParam,
+  pageRange,
+  pageRows,
+} from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -29,6 +34,7 @@ import {
   FormSectionToggleButton,
   HeaderActionLink,
   NoResultsState,
+  PaginationControls,
   PageHeader,
   SearchField,
   SelectFilter,
@@ -117,6 +123,7 @@ type EventStatusFilter =
 type EventsSearchParams = {
   category?: string | string[];
   filter?: string | string[];
+  page?: string | string[];
   q?: string | string[];
   scope?: string | string[];
   status?: string | string[];
@@ -129,6 +136,8 @@ type FormatTranslate = (
   key: string,
   values: Record<string, string | number>,
 ) => string;
+
+const EVENTS_PAGE_SIZE = 40;
 
 export default async function EventsPage({
   searchParams,
@@ -147,6 +156,8 @@ export default async function EventsPage({
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const selectedTime = parseEventTime(getSearchParam(params.time));
   const selectedView = parseEventBrowseView(getSearchParam(params.view));
+  const page = getPageParam(params.page);
+  const range = pageRange(page, EVENTS_PAGE_SIZE);
   const supabase = await createClient();
   const {
     data: { user },
@@ -210,7 +221,7 @@ export default async function EventsPage({
   }));
   const createClubOptions = isStaff ? clubOptions : leaderClubOptions;
   const canCreate = isStaff || leaderClubOptions.length > 0;
-  const { error: eventsError, events } = await getFilteredEvents(admin, {
+  const { error: eventsError, events, hasNextPage } = await getFilteredEvents(admin, {
     connectedSchoolIds,
     filter: selectedFilter,
     registeredEventIds,
@@ -223,6 +234,7 @@ export default async function EventsPage({
     scope: selectedScope,
     isStaff,
     now,
+    range,
   });
 
   const eventIds = events.map((event) => event.id);
@@ -500,6 +512,18 @@ export default async function EventsPage({
             />
           </div>
         )}
+        {!eventsError && (events.length > 0 || page > 1) ? (
+          <PaginationControls
+            getHref={(nextPage) => eventsPageHref(nextPage, params)}
+            hasNextPage={hasNextPage}
+            labels={{
+              next: t("common.next"),
+              page: tf("common.pageNumber", { number: page }),
+              previous: t("common.previous"),
+            }}
+            page={page}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -1053,6 +1077,7 @@ async function getFilteredEvents(
     selectedTime,
     sharedEventIds,
     scope,
+    range,
   }: {
     connectedSchoolIds: string[];
     filter: EventFilter;
@@ -1066,17 +1091,18 @@ async function getFilteredEvents(
     selectedTime: EventTimeFilter;
     sharedEventIds: string[];
     scope: EventScope;
+    range: { from: number; to: number };
   },
 ) {
   if (filter === "registered" && registeredEventIds.length === 0) {
-    return { error: null, events: [] };
+    return { error: null, events: [], hasNextPage: false };
   }
 
   if (
     scope === "shared" &&
     (connectedSchoolIds.length === 0 || sharedEventIds.length === 0)
   ) {
-    return { error: null, events: [] };
+    return { error: null, events: [], hasNextPage: false };
   }
 
   let query = admin
@@ -1123,10 +1149,12 @@ async function getFilteredEvents(
     () =>
       query
         .order("starts_at", { ascending: selectedTime !== "past" })
+        .range(range.from, range.to)
         .returns<Event[]>(),
   );
+  const page = pageRows(events, EVENTS_PAGE_SIZE);
 
-  return { error, events: events ?? [] };
+  return { error, events: page.rows, hasNextPage: page.hasNextPage };
 }
 
 async function getCurrentStudent(
@@ -1456,6 +1484,30 @@ function parseEventStatus(value: string): EventStatusFilter {
 
 function getSearchValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function eventsPageHref(page: number, params: EventsSearchParams) {
+  const nextParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (key === "page") {
+      return;
+    }
+
+    const paramValue = Array.isArray(value) ? value[0] : value;
+
+    if (paramValue) {
+      nextParams.set(key, paramValue);
+    }
+  });
+
+  if (page > 1) {
+    nextParams.set("page", String(page));
+  }
+
+  const query = nextParams.toString();
+
+  return query ? `/events?${query}` : "/events";
 }
 
 function eventListTitle(

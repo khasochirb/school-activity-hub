@@ -49,12 +49,6 @@ export function CollapsibleFormSection({
   );
 
   useEffect(() => {
-    const storedOpen = readStoredOpenState(id);
-
-    if (storedOpen) {
-      setIsOpen(true);
-    }
-
     function openFromHash() {
       if (!hashIncludesSectionId(window.location.hash, id)) {
         return;
@@ -68,10 +62,18 @@ export function CollapsibleFormSection({
       );
     }
 
-    openFromHash();
+    const frameId = window.requestAnimationFrame(() => {
+      if (readStoredOpenState(id)) {
+        setOpen(true);
+      }
+
+      openFromHash();
+    });
+
     window.addEventListener("hashchange", openFromHash);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       window.removeEventListener("hashchange", openFromHash);
     };
   }, [id, setOpen]);

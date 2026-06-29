@@ -257,6 +257,57 @@ export function NoResultsState({
   );
 }
 
+export function PaginationControls({
+  getHref,
+  hasNextPage,
+  labels,
+  page,
+}: {
+  getHref: (page: number) => string;
+  hasNextPage: boolean;
+  labels: {
+    next: string;
+    page: string;
+    previous: string;
+  };
+  page: number;
+}) {
+  if (page <= 1 && !hasNextPage) {
+    return null;
+  }
+
+  return (
+    <nav
+      aria-label={labels.page}
+      className="flex flex-col gap-2 border-t border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span className="text-sm font-medium text-slate-600">
+        {labels.page}
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {page > 1 ? (
+          <Link className="btn btn-secondary min-h-10" href={getHref(page - 1)}>
+            {labels.previous}
+          </Link>
+        ) : (
+          <span className="btn btn-secondary min-h-10 cursor-not-allowed opacity-50">
+            {labels.previous}
+          </span>
+        )}
+        {hasNextPage ? (
+          <Link className="btn btn-secondary min-h-10" href={getHref(page + 1)}>
+            {labels.next}
+          </Link>
+        ) : (
+          <span className="btn btn-secondary min-h-10 cursor-not-allowed opacity-50">
+            {labels.next}
+          </span>
+        )}
+      </div>
+    </nav>
+  );
+}
+
 export function StatusBadge({
   children,
   status,

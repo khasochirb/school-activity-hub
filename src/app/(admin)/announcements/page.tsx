@@ -7,7 +7,14 @@ import {
 } from "@/lib/i18n/dictionary";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
-import { getSearchParam, matchesSearch } from "@/lib/list-filters";
+import {
+  getPageParam,
+  getSearchParam,
+  matchesSearch,
+  pageRange,
+  pageRows,
+  postgrestSearchPattern,
+} from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -17,6 +24,7 @@ import {
   FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
+  PaginationControls,
   PageHeader,
   SearchField,
   SelectFilter,
@@ -40,9 +48,12 @@ type Announcement = {
 };
 
 type AnnouncementsSearchParams = {
+  page?: string | string[];
   q?: string | string[];
   status?: string | string[];
 };
+
+const ANNOUNCEMENTS_PAGE_SIZE = 30;
 
 export default async function AnnouncementsPage({
   searchParams,
@@ -57,6 +68,8 @@ export default async function AnnouncementsPage({
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
   const selectedStatus = parseAnnouncementStatus(getSearchParam(params.status));
+  const page = getPageParam(params.page);
+  const range = pageRange(page, ANNOUNCEMENTS_PAGE_SIZE);
   const supabase = await createClient();
   const {
     data: { user },
@@ -89,18 +102,29 @@ export default async function AnnouncementsPage({
 
   if (!isStaff) {
     announcementsQuery = announcementsQuery.eq("status", "active");
+  } else if (selectedStatus) {
+    announcementsQuery = announcementsQuery.eq("status", selectedStatus);
+  }
+
+  const searchPattern = postgrestSearchPattern(searchQuery);
+
+  if (searchPattern) {
+    announcementsQuery = announcementsQuery.ilike("title", searchPattern);
   }
 
   const { data: announcements, error } = await timeServer(
     "announcements.query.list",
-    () => announcementsQuery.returns<Announcement[]>(),
+    () =>
+      announcementsQuery
+        .range(range.from, range.to)
+        .returns<Announcement[]>(),
   );
-  const announcementList = announcements ?? [];
+  const { hasNextPage, rows: announcementList } = pageRows(
+    announcements,
+    ANNOUNCEMENTS_PAGE_SIZE,
+  );
   const filteredAnnouncements = announcementList.filter(
     (announcement) =>
-      (!isStaff ||
-        !selectedStatus ||
-        announcement.status === selectedStatus) &&
       matchesSearch(searchQuery, [announcement.title]),
   );
   const hasFilters = Boolean(searchQuery || (isStaff && selectedStatus));
@@ -255,6 +279,24 @@ export default async function AnnouncementsPage({
             />
           </div>
         )}
+        {!error && (filteredAnnouncements.length > 0 || page > 1) ? (
+          <PaginationControls
+            getHref={(nextPage) =>
+              announcementsPageHref(
+                nextPage,
+                searchQuery,
+                isStaff ? selectedStatus : "",
+              )
+            }
+            hasNextPage={hasNextPage}
+            labels={{
+              next: t("common.next"),
+              page: tf("common.pageNumber", { number: page }),
+              previous: t("common.previous"),
+            }}
+            page={page}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -312,4 +354,28 @@ function statusLabel(status: string, t: (key: string) => string) {
 
 function parseAnnouncementStatus(value: string) {
   return value === "active" || value === "archived" ? value : "";
+}
+
+function announcementsPageHref(
+  page: number,
+  searchQuery: string,
+  selectedStatus: string,
+) {
+  const params = new URLSearchParams();
+
+  if (searchQuery) {
+    params.set("q", searchQuery);
+  }
+
+  if (selectedStatus) {
+    params.set("status", selectedStatus);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+
+  return query ? `/announcements?${query}` : "/announcements";
 }

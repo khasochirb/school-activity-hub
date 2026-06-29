@@ -6,11 +6,7 @@ import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ActionToast } from "@/components/toast-provider";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { formatDate } from "@/lib/i18n/date-format";
-import {
-  formatTranslation,
-  getDictionary,
-  translate,
-} from "@/lib/i18n/dictionary";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -63,7 +59,6 @@ type CountResult = {
 };
 
 type Translator = (key: string) => string;
-type Locale = Awaited<ReturnType<typeof getCurrentLocale>>;
 
 export default async function SuperAdminSchoolDetailPage({
   params,
@@ -85,8 +80,6 @@ export default async function SuperAdminSchoolDetailPage({
   ]);
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
-  const tf = (key: string, values: Record<string, string | number>) =>
-    formatTranslation(dictionary, key, values);
   const successMessage = getSearchValue(queryParams.success);
   const errorMessage = getSearchValue(queryParams.error);
   const admin = createAdminClient();

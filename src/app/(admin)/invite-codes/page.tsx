@@ -7,7 +7,12 @@ import {
 } from "@/lib/i18n/dictionary";
 import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
-import { getSearchParam } from "@/lib/list-filters";
+import {
+  getPageParam,
+  getSearchParam,
+  pageRange,
+  pageRows,
+} from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -17,6 +22,7 @@ import {
   FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
+  PaginationControls,
   PageHeader,
   SelectFilter,
   StatusBadge,
@@ -51,8 +57,11 @@ type InviteCode = {
 };
 
 type InviteCodesSearchParams = {
+  page?: string | string[];
   status?: string | string[];
 };
+
+const INVITE_CODES_PAGE_SIZE = 50;
 
 export default async function InviteCodesPage({
   searchParams,
@@ -66,6 +75,9 @@ export default async function InviteCodesPage({
     formatTranslation(dictionary, key, values);
   const params = await searchParams;
   const selectedStatus = parseInviteStatusFilter(getSearchParam(params.status));
+  const page = getPageParam(params.page);
+  const range = pageRange(page, INVITE_CODES_PAGE_SIZE);
+  const now = new Date().toISOString();
   const supabase = await createClient();
   const {
     data: { user },
@@ -89,6 +101,25 @@ export default async function InviteCodesPage({
     redirect("/dashboard");
   }
 
+  let inviteHistoryQuery = supabase
+    .from("invite_codes")
+    .select(
+      "id, student_roster_id, status, use_count, created_at, expires_at, redeemed_at",
+    )
+    .eq("school_id", profile.school_id);
+
+  if (selectedStatus === "expired") {
+    inviteHistoryQuery = inviteHistoryQuery
+      .eq("status", "active")
+      .lt("expires_at", now);
+  } else if (selectedStatus === "active") {
+    inviteHistoryQuery = inviteHistoryQuery
+      .eq("status", "active")
+      .gte("expires_at", now);
+  } else if (selectedStatus) {
+    inviteHistoryQuery = inviteHistoryQuery.eq("status", selectedStatus);
+  }
+
   const [{ data: activeStudents, error: studentsError }, { data: inviteCodes, error: invitesError }] =
     await Promise.all([
       timeServer("invite-codes.query.active-students", () =>
@@ -103,13 +134,9 @@ export default async function InviteCodesPage({
           .returns<ActiveStudent[]>(),
       ),
       timeServer("invite-codes.query.invite-history", () =>
-        supabase
-          .from("invite_codes")
-          .select(
-            "id, student_roster_id, status, use_count, created_at, expires_at, redeemed_at",
-          )
-          .eq("school_id", profile.school_id)
+        inviteHistoryQuery
           .order("created_at", { ascending: false })
+          .range(range.from, range.to)
           .returns<InviteCode[]>(),
       ),
     ]);
@@ -117,15 +144,11 @@ export default async function InviteCodesPage({
   const studentMap = new Map(
     (activeStudents ?? []).map((student) => [student.id, student]),
   );
-  const now = new Date().toISOString();
-  const inviteHistory = inviteCodes ?? [];
-  const filteredInviteCodes = inviteHistory.filter((invite) => {
-    if (!selectedStatus) {
-      return true;
-    }
-
-    return inviteDisplayStatus(invite, now) === selectedStatus;
-  });
+  const { hasNextPage, rows: inviteHistory } = pageRows(
+    inviteCodes,
+    INVITE_CODES_PAGE_SIZE,
+  );
+  const filteredInviteCodes = inviteHistory;
 
   return (
     <div className="page-stack">
@@ -414,6 +437,20 @@ export default async function InviteCodesPage({
             />
           </div>
         )}
+        {!invitesError && (filteredInviteCodes.length > 0 || page > 1) ? (
+          <PaginationControls
+            getHref={(nextPage) =>
+              inviteCodesPageHref(nextPage, selectedStatus)
+            }
+            hasNextPage={hasNextPage}
+            labels={{
+              next: t("common.next"),
+              page: tf("common.pageNumber", { number: page }),
+              previous: t("common.previous"),
+            }}
+            page={page}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -500,4 +537,20 @@ function parseInviteStatusFilter(value: string) {
   return ["active", "redeemed", "revoked", "expired"].includes(value)
     ? value
     : "";
+}
+
+function inviteCodesPageHref(page: number, selectedStatus: string) {
+  const params = new URLSearchParams();
+
+  if (selectedStatus) {
+    params.set("status", selectedStatus);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+
+  return query ? `/invite-codes?${query}` : "/invite-codes";
 }

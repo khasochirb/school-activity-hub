@@ -21,3 +21,33 @@ export function matchesSearch(query: string, values: Array<string | null | undef
 export function normalize(value: string | null | undefined) {
   return (value ?? "").toLocaleLowerCase().trim();
 }
+
+export function getPageParam(value: SearchParamValue) {
+  const page = Number.parseInt(getSearchParam(value), 10);
+
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+export function pageRange(page: number, pageSize: number) {
+  const from = (page - 1) * pageSize;
+
+  return {
+    from,
+    to: from + pageSize,
+  };
+}
+
+export function pageRows<T>(rows: T[] | null | undefined, pageSize: number) {
+  const values = rows ?? [];
+
+  return {
+    hasNextPage: values.length > pageSize,
+    rows: values.slice(0, pageSize),
+  };
+}
+
+export function postgrestSearchPattern(value: string) {
+  const safeValue = value.replace(/[%,()]/g, " ").trim();
+
+  return safeValue ? `%${safeValue}%` : "";
+}

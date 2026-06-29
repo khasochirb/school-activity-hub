@@ -12,7 +12,12 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
-import { getSearchParam } from "@/lib/list-filters";
+import {
+  getPageParam,
+  getSearchParam,
+  pageRange,
+  pageRows,
+} from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -29,6 +34,7 @@ import {
   FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
+  PaginationControls,
   PageHeader,
   SearchField,
   SelectFilter,
@@ -67,9 +73,12 @@ type ClubMembership = {
 
 type ClubsSearchParams = {
   category?: string | string[];
+  page?: string | string[];
   q?: string | string[];
   status?: string | string[];
 };
+
+const CLUBS_PAGE_SIZE = 40;
 
 export default async function ClubsPage({
   searchParams,
@@ -84,6 +93,8 @@ export default async function ClubsPage({
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
+  const page = getPageParam(params.page);
+  const range = pageRange(page, CLUBS_PAGE_SIZE);
   const supabase = await createClient();
   const {
     data: { user },
@@ -130,8 +141,13 @@ export default async function ClubsPage({
 
   const { data: clubs, error: clubsError } = await timeServer(
     "clubs.query.active-clubs",
-    () => clubsQuery.order("name", { ascending: true }).returns<Club[]>(),
+    () =>
+      clubsQuery
+        .order("name", { ascending: true })
+        .range(range.from, range.to)
+        .returns<Club[]>(),
   );
+  const { hasNextPage, rows: clubRows } = pageRows(clubs, CLUBS_PAGE_SIZE);
 
   const { data: currentStudent } =
     profile.role === "student"
@@ -146,7 +162,7 @@ export default async function ClubsPage({
         )
       : { data: null };
 
-  const clubIds = (clubs ?? []).map((club) => club.id);
+  const clubIds = clubRows.map((club) => club.id);
   const { data: memberships } = clubIds.length
     ? await timeServer("clubs.query.active-memberships", () =>
         supabase
@@ -217,7 +233,7 @@ export default async function ClubsPage({
         clearHref="/clubs"
         clearLabel={t("filters.clear")}
         resultCountLabel={tf("filters.showingResults", {
-          count: clubs?.length ?? 0,
+          count: clubRows.length,
         })}
         submitLabel={t("filters.filter")}
       >
@@ -266,9 +282,9 @@ export default async function ClubsPage({
             </p>
           ) : null}
         </div>
-        {clubs?.length ? (
+        {clubRows.length ? (
           <div className="grid gap-3 p-3 md:grid-cols-2">
-            {clubs.map((club) => {
+            {clubRows.map((club) => {
               const clubMemberships = membershipsByClub.get(club.id) ?? [];
               const isJoined = currentStudentMemberships.has(club.id);
               const isStudentView = profile.role === "student";
@@ -410,6 +426,24 @@ export default async function ClubsPage({
             />
           </div>
         )}
+        {!clubsError && (clubRows.length > 0 || page > 1) ? (
+          <PaginationControls
+            getHref={(nextPage) =>
+              clubsPageHref(nextPage, {
+                category: selectedCategory ?? "",
+                q: searchQuery,
+                status: selectedStatus,
+              })
+            }
+            hasNextPage={hasNextPage}
+            labels={{
+              next: t("common.next"),
+              page: tf("common.pageNumber", { number: page }),
+              previous: t("common.previous"),
+            }}
+            page={page}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -523,6 +557,33 @@ function categoryLabel(category: string, t: (key: string) => string) {
   const key = getActivityCategoryTranslationKey(category);
 
   return key ? t(key) : category;
+}
+
+function clubsPageHref(
+  page: number,
+  filters: { category: string; q: string; status: string },
+) {
+  const params = new URLSearchParams();
+
+  if (filters.q) {
+    params.set("q", filters.q);
+  }
+
+  if (filters.category) {
+    params.set("category", filters.category);
+  }
+
+  if (filters.status && filters.status !== "active") {
+    params.set("status", filters.status);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+
+  return query ? `/clubs?${query}` : "/clubs";
 }
 
 function statusLabel(status: string, t: (key: string) => string) {

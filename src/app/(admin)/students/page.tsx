@@ -7,7 +7,14 @@ import {
 } from "@/lib/i18n/dictionary";
 import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
-import { getSearchParam, matchesSearch } from "@/lib/list-filters";
+import {
+  getPageParam,
+  getSearchParam,
+  matchesSearch,
+  pageRange,
+  pageRows,
+  postgrestSearchPattern,
+} from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -17,6 +24,7 @@ import {
   FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
+  PaginationControls,
   PageHeader,
   SearchField,
   SelectFilter,
@@ -43,9 +51,12 @@ type Student = {
 };
 
 type StudentsSearchParams = {
+  page?: string | string[];
   q?: string | string[];
   status?: string | string[];
 };
+
+const STUDENTS_PAGE_SIZE = 50;
 
 export default async function StudentsPage({
   searchParams,
@@ -60,6 +71,8 @@ export default async function StudentsPage({
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
   const selectedStatus = parseRosterStatus(getSearchParam(params.status));
+  const page = getPageParam(params.page);
+  const range = pageRange(page, STUDENTS_PAGE_SIZE);
   const supabase = await createClient();
   const {
     data: { user },
@@ -83,19 +96,32 @@ export default async function StudentsPage({
     redirect("/dashboard");
   }
 
+  let studentsQuery = supabase
+    .from("student_rosters")
+    .select(
+      "id, first_name, last_name, grade_level, homeroom, student_number, status, created_at",
+    )
+    .eq("school_id", profile.school_id);
+
+  if (selectedStatus) {
+    studentsQuery = studentsQuery.eq("status", selectedStatus);
+  }
+
+  const searchFilter = studentSearchFilter(searchQuery);
+
+  if (searchFilter) {
+    studentsQuery = studentsQuery.or(searchFilter);
+  }
+
   const { data: students, error } = await timeServer(
     "students.query.roster-list",
     () =>
-      supabase
-        .from("student_rosters")
-        .select(
-          "id, first_name, last_name, grade_level, homeroom, student_number, status, created_at",
-        )
-        .eq("school_id", profile.school_id)
+      studentsQuery
         .order("created_at", { ascending: false })
+        .range(range.from, range.to)
         .returns<Student[]>(),
   );
-  const roster = students ?? [];
+  const { hasNextPage, rows: roster } = pageRows(students, STUDENTS_PAGE_SIZE);
   const filteredStudents = roster.filter(
     (student) =>
       (!selectedStatus || student.status === selectedStatus) &&
@@ -345,6 +371,20 @@ export default async function StudentsPage({
             />
           </div>
         )}
+        {!error && (filteredStudents.length > 0 || page > 1) ? (
+          <PaginationControls
+            getHref={(nextPage) =>
+              studentsPageHref(nextPage, searchQuery, selectedStatus)
+            }
+            hasNextPage={hasNextPage}
+            labels={{
+              next: t("common.next"),
+              page: tf("common.pageNumber", { number: page }),
+              previous: t("common.previous"),
+            }}
+            page={page}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -393,4 +433,43 @@ function statusLabel(status: string, t: (key: string) => string) {
 
 function parseRosterStatus(value: string) {
   return value === "active" || value === "inactive" ? value : "";
+}
+
+function studentSearchFilter(searchQuery: string) {
+  const filters = searchQuery
+    .split(/\s+/)
+    .map(postgrestSearchPattern)
+    .filter(Boolean)
+    .slice(0, 3)
+    .flatMap((pattern) => [
+      `first_name.ilike.${pattern}`,
+      `last_name.ilike.${pattern}`,
+      `student_number.ilike.${pattern}`,
+    ]);
+
+  return filters.length ? filters.join(",") : "";
+}
+
+function studentsPageHref(
+  page: number,
+  searchQuery: string,
+  selectedStatus: string,
+) {
+  const params = new URLSearchParams();
+
+  if (searchQuery) {
+    params.set("q", searchQuery);
+  }
+
+  if (selectedStatus) {
+    params.set("status", selectedStatus);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+
+  return query ? `/students?${query}` : "/students";
 }
