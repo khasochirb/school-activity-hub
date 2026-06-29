@@ -182,14 +182,14 @@ export default async function EventDetailPage({
   return (
     <div className="page-stack">
       <section className="section-card section-card-padded">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-4xl space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <HeaderActionLink href="/events" variant="secondary">
+              {t("common.backToEvents")}
+            </HeaderActionLink>
+            <span className="page-eyebrow">{t("events.detail.overview")}</span>
+          </div>
           <div className="min-w-0 space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <HeaderActionLink href="/events" variant="secondary">
-                {t("common.backToEvents")}
-              </HeaderActionLink>
-              <span className="page-eyebrow">{t("events.detail.overview")}</span>
-            </div>
             <div>
               <h1 className="text-2xl font-bold tracking-normal text-zinc-950 sm:text-3xl">
                 {event.title}
@@ -214,27 +214,26 @@ export default async function EventDetailPage({
               tf={tf}
             />
           </div>
-          <div className="w-full rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 lg:max-w-xs">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              {t("common.primaryAction")}
-            </p>
-            <div className="mt-2">
-              <PrimaryActionPanel
-                currentRegistration={currentRegistration}
-                currentStudent={currentStudent}
-                event={event}
-                isFull={isFull}
-                isOwnSchoolEvent={isOwnSchoolEvent}
-                isStaff={isStaff}
-                t={t}
-                userSchoolId={profile.school_id}
-              />
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+        <article className="section-card section-card-padded xl:col-start-2 xl:row-start-1">
+          <h2 className="section-title">{t("common.primaryAction")}</h2>
+          <div className="mt-3">
+            <PrimaryActionPanel
+              currentRegistration={currentRegistration}
+              currentStudent={currentStudent}
+              event={event}
+              isFull={isFull}
+              isOwnSchoolEvent={isOwnSchoolEvent}
+              isStaff={isStaff}
+              t={t}
+              userSchoolId={profile.school_id}
+            />
+          </div>
+        </article>
+
         <article className="section-card section-card-padded xl:col-start-1 xl:row-start-1">
           <h2 className="section-title">{t("events.detail.eventInformation")}</h2>
           <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
@@ -265,7 +264,7 @@ export default async function EventDetailPage({
           </dl>
         </article>
 
-        <article className="section-card section-card-padded xl:col-start-2 xl:row-start-1">
+        <article className="section-card section-card-padded xl:col-start-2 xl:row-start-2">
           <h2 className="section-title">{t("events.detail.registrationSummary")}</h2>
           <dl className="mt-3 grid gap-3 text-sm">
             <DetailItem label={t("events.card.registration")}>
@@ -326,14 +325,14 @@ export default async function EventDetailPage({
             </div>
           ) : null}
           {isStaff && isOwnSchoolEvent ? (
-            <div className="mt-4">
+            <div className="mt-4 border-t border-[var(--border)] pt-4">
               <SafetyForm event={event} t={t} />
             </div>
           ) : null}
         </article>
 
         {isStaff && isOwnSchoolEvent ? (
-          <article className="section-card section-card-padded xl:col-start-2 xl:row-start-2">
+          <article className="section-card section-card-padded xl:col-start-2 xl:row-start-3">
             <h2 className="section-title">{t("events.detail.management")}</h2>
             <p className="section-description">{t("events.detail.staffTools")}</p>
             <form action={cancelEvent} className="mt-3">
@@ -353,12 +352,12 @@ export default async function EventDetailPage({
         ) : null}
 
         {isStaff && isOwnSchoolEvent ? (
-          <article className="section-card section-card-padded xl:col-start-2 xl:row-start-3">
+          <article className="section-card section-card-padded xl:col-start-2 xl:row-start-4">
             <h2 className="section-title">{t("events.detail.sharing")}</h2>
             <p className="section-description">
               {sharingLabel(event, sharedSchoolIds, t, tf)}
             </p>
-            <div className="mt-4">
+            <div className="mt-4 border-t border-[var(--border)] pt-4">
               <SharingForm
                 connectedSchools={connectedSchools}
                 event={event}
@@ -371,7 +370,7 @@ export default async function EventDetailPage({
 
         <article
           className={`section-card section-card-padded xl:col-start-2 ${
-            isStaff && isOwnSchoolEvent ? "xl:row-start-4" : "xl:row-start-2"
+            isStaff && isOwnSchoolEvent ? "xl:row-start-5" : "xl:row-start-3"
           }`}
         >
           <h2 className="section-title">{t("events.detail.timeline")}</h2>
