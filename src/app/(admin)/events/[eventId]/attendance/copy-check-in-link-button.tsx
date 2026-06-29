@@ -22,7 +22,7 @@ export function CopyCheckInLinkButton({
 
   return (
     <button
-      className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+      className="btn btn-secondary min-h-11 w-full sm:w-auto"
       onClick={copyLink}
       type="button"
     >

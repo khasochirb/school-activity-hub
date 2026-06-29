@@ -86,12 +86,36 @@ type SchoolSummary = {
   name: string;
 };
 
+type AttendanceFilter = "all" | "checked-in" | "not-checked-in";
+
+type AttendancePageSearchParams = {
+  filter?: string | string[];
+};
+
+type AttendanceListRow = {
+  attendee: EventAttendee;
+  attendeeSchool: SchoolSummary | undefined;
+  checkedInAt: string | null;
+  checkin: AttendanceCheckin | undefined;
+  displayName: string;
+  isCheckedIn: boolean;
+  student: StudentRoster | undefined;
+};
+
 type Translate = (key: string) => string;
+
+const attendanceFilters: AttendanceFilter[] = [
+  "all",
+  "checked-in",
+  "not-checked-in",
+];
 
 export default async function EventAttendancePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ eventId: string }>;
+  searchParams?: Promise<AttendancePageSearchParams>;
 }) {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
@@ -99,6 +123,8 @@ export default async function EventAttendancePage({
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
   const { eventId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const activeFilter = parseAttendanceFilter(resolvedSearchParams.filter);
   const supabase = await createClient();
   const {
     data: { user },
@@ -188,6 +214,34 @@ export default async function EventAttendancePage({
   const qrCodeMatrix = createQrCodeMatrix(checkInUrl);
   const qrCodePath = createQrSvgPath(qrCodeMatrix);
   const qrCodeViewBox = getQrSvgViewBox(qrCodeMatrix);
+  const attendanceRows = (attendees ?? []).map((attendee) =>
+    buildAttendanceRow({
+      attendee,
+      checkinByAttendeeId,
+      checkinByStudentId,
+      fallbackName: t("attendance.fallback.registeredStudent"),
+      profileById,
+      rosterById,
+      schoolById,
+    }),
+  );
+  const registeredCount = attendanceRows.length;
+  const checkedInCount = attendanceRows.filter((row) => row.isCheckedIn).length;
+  const notCheckedInCount = registeredCount - checkedInCount;
+  const attendanceRate = registeredCount
+    ? Math.round((checkedInCount / registeredCount) * 100)
+    : 0;
+  const filteredRows = attendanceRows.filter((row) => {
+    if (activeFilter === "checked-in") {
+      return row.isCheckedIn;
+    }
+
+    if (activeFilter === "not-checked-in") {
+      return !row.isCheckedIn;
+    }
+
+    return true;
+  });
 
   return (
     <div className="page-stack">
@@ -225,240 +279,311 @@ export default async function EventAttendancePage({
         </div>
       </section>
 
-      <section className="section-card section-card-padded">
-        <h2 className="text-lg font-semibold text-zinc-950">
-          {t("attendance.checkInLink.title")}
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          {t("attendance.checkInLink.description")}
-        </p>
-        <div className="mt-3 grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:items-start">
-          <div
-            className="flex justify-center rounded-lg border p-4 shadow-sm"
-            style={{ backgroundColor: "#ffffff", borderColor: "#d1d5db" }}
-          >
-            <svg
-              aria-label={t("attendance.qr.ariaLabel")}
-              className="h-40 w-40"
-              role="img"
-              shapeRendering="crispEdges"
-              style={{ backgroundColor: "#ffffff" }}
-              viewBox={qrCodeViewBox}
-            >
-              <rect height="100%" width="100%" fill="#ffffff" />
-              <path d={qrCodePath} fill="#111827" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-zinc-800">
-              {t("attendance.checkInLink.fullUrl")}
-            </p>
-            <div className="mt-2 break-all rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800">
-              {checkInUrl}
-            </div>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <CopyCheckInLinkButton
-                labels={{
-                  copied: t("attendance.actions.copied"),
-                  copy: t("attendance.actions.copyLink"),
-                }}
-                url={checkInUrl}
-              />
-              <Link
-                className="btn btn-primary h-10"
-                href={checkInUrl}
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(20rem,1fr)]">
+        <div className="section-card section-card-padded">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="flex justify-center sm:block">
+              <div
+                className="rounded-xl border p-4 shadow-sm"
+                style={{ backgroundColor: "#ffffff", borderColor: "#d1d5db" }}
               >
-                {t("attendance.actions.openLink")}
-              </Link>
+                <svg
+                  aria-label={t("attendance.qr.ariaLabel")}
+                  className="h-52 w-52 sm:h-56 sm:w-56"
+                  role="img"
+                  shapeRendering="crispEdges"
+                  style={{ backgroundColor: "#ffffff" }}
+                  viewBox={qrCodeViewBox}
+                >
+                  <rect height="100%" width="100%" fill="#ffffff" />
+                  <path d={qrCodePath} fill="#111827" />
+                </svg>
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                {t("attendance.qr.title")}
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-zinc-950">
+                {t("attendance.checkInLink.title")}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-600">
+                {t("attendance.qr.instruction")}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-zinc-600">
+                {t("attendance.checkInLink.description")}
+              </p>
+              <div className="mt-4">
+                <p className="text-sm font-medium text-zinc-800">
+                  {t("attendance.checkInLink.fullUrl")}
+                </p>
+                <div
+                  className="mt-2 truncate rounded-md bg-zinc-50 p-3 font-mono text-sm text-zinc-800"
+                  title={checkInUrl}
+                >
+                  {checkInUrl}
+                </div>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <CopyCheckInLinkButton
+                    labels={{
+                      copied: t("attendance.actions.copied"),
+                      copy: t("attendance.actions.copyLink"),
+                    }}
+                    url={checkInUrl}
+                  />
+                  <Link
+                    className="btn btn-primary min-h-11 w-full sm:w-auto"
+                    href={checkInUrl}
+                  >
+                    {t("attendance.actions.openLink")}
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        <section className="section-card section-card-padded">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              {t("attendance.summary.title")}
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-zinc-950">
+              {t("attendance.title")}
+            </h2>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <AttendanceSummaryCard
+              label={t("attendance.summary.registeredStudents")}
+              value={registeredCount}
+            />
+            <AttendanceSummaryCard
+              label={t("attendance.summary.checkedIn")}
+              value={checkedInCount}
+            />
+            <AttendanceSummaryCard
+              label={t("attendance.summary.notCheckedIn")}
+              value={notCheckedInCount}
+            />
+            <AttendanceSummaryCard
+              label={t("attendance.summary.attendanceRate")}
+              value={`${attendanceRate}%`}
+            />
+          </div>
+          {registeredCount > 0 && checkedInCount === 0 ? (
+            <p className="mt-4 rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+              {t("attendance.empty.noCheckIns")}
+            </p>
+          ) : null}
+        </section>
       </section>
 
       <section className="section-card">
         <div className="section-header">
-          <h2 className="text-lg font-semibold text-zinc-950">
-            {t("attendance.list.title")}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-600">
-            {tf("attendance.list.registeredCount", {
-              count: attendees?.length ?? 0,
-            })}
-          </p>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-950">
+                {t("attendance.list.title")}
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                {tf("attendance.list.registeredCount", {
+                  count: registeredCount,
+                })}
+              </p>
+            </div>
+            {registeredCount > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {attendanceFilters.map((filter) => (
+                  <Link
+                    className={
+                      activeFilter === filter
+                        ? "inline-flex min-h-9 items-center rounded-full border border-[var(--primary)] bg-[var(--primary-soft)] px-3 text-sm font-medium text-zinc-950"
+                        : "inline-flex min-h-9 items-center rounded-full border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
+                    }
+                    href={attendanceFilterHref(event.id, filter)}
+                    key={filter}
+                  >
+                    {attendanceFilterLabel(filter, t)}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
-        {attendees?.length ? (
+        {registeredCount ? (
           <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">
-                      {t("attendance.table.student")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("attendance.table.school")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("attendance.table.grade")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("attendance.table.permission")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("attendance.table.status")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("attendance.table.checkedIn")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("attendance.table.method")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200">
-                  {attendees.map((attendee) => {
-                    const student = attendee.student_roster_id
-                      ? rosterById.get(attendee.student_roster_id)
-                      : undefined;
-                    const attendeeProfile = attendee.attendee_profile_id
-                      ? profileById.get(attendee.attendee_profile_id)
-                      : undefined;
-                    const attendeeSchool = schoolById.get(attendee.attendee_school_id);
-                    const checkin =
-                      checkinByAttendeeId.get(attendee.id) ??
-                      (attendee.student_roster_id
-                        ? checkinByStudentId.get(attendee.student_roster_id)
-                        : undefined);
-
-                    return (
-                      <tr key={attendee.id}>
-                        <td className="px-4 py-3 font-medium text-zinc-950">
-                          {attendeeName(
-                            student,
-                            attendeeProfile,
-                            t("attendance.fallback.registeredStudent"),
-                          )}
-                          {student?.student_number ? (
-                            <span className="block text-xs font-normal text-zinc-500">
-                              {student.student_number}
-                            </span>
-                          ) : null}
-                        </td>
-                        <td className="px-4 py-3 text-zinc-700">
-                          {attendeeSchool?.name ?? "-"}
-                        </td>
-                        <td className="px-4 py-3 text-zinc-700">
-                          {student?.grade_level || "-"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <PermissionCell
-                            attendee={attendee}
-                            event={event}
-                            t={t}
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={attendee.status} t={t} />
-                        </td>
-                        <td className="px-4 py-3 text-zinc-700">
-                          {checkin
-                            ? formatDateTime(checkin.checked_in_at, locale)
-                            : attendee.checked_in_at
-                              ? formatDateTime(attendee.checked_in_at, locale)
-                              : "-"}
-                        </td>
-                        <td className="px-4 py-3 text-zinc-700">
-                          {checkin
-                            ? checkInMethodLabel(checkin.method, t)
-                            : "-"}
-                        </td>
+            {filteredRows.length ? (
+              <>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.student")}
+                        </th>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.school")}
+                        </th>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.grade")}
+                        </th>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.permission")}
+                        </th>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.registrationStatus")}
+                        </th>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.checkInStatus")}
+                        </th>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.checkInTime")}
+                        </th>
+                        <th className="px-4 py-3 font-medium">
+                          {t("attendance.table.method")}
+                        </th>
                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200">
+                      {filteredRows.map((row) => {
+                        return (
+                          <tr key={row.attendee.id}>
+                            <td className="px-4 py-3 font-medium text-zinc-950">
+                              {row.displayName}
+                              {row.student?.student_number ? (
+                                <span className="block text-xs font-normal text-zinc-500">
+                                  {row.student.student_number}
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className="px-4 py-3 text-zinc-700">
+                              {row.attendeeSchool?.name ?? "-"}
+                            </td>
+                            <td className="px-4 py-3 text-zinc-700">
+                              {row.student?.grade_level || "-"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <PermissionCell
+                                attendee={row.attendee}
+                                event={event}
+                                t={t}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusBadge
+                                status={row.attendee.status}
+                                t={t}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <CheckInBadge
+                                isCheckedIn={row.isCheckedIn}
+                                t={t}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-zinc-700">
+                              {row.checkedInAt
+                                ? formatDateTime(row.checkedInAt, locale)
+                                : "-"}
+                            </td>
+                            <td className="px-4 py-3 text-zinc-700">
+                              {row.checkin
+                                ? checkInMethodLabel(row.checkin.method, t)
+                                : "-"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="divide-y divide-zinc-200 lg:hidden">
+                  {filteredRows.map((row) => {
+                    return (
+                      <article className="p-4" key={row.attendee.id}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-medium text-zinc-950">
+                              {row.displayName}
+                            </h3>
+                            <p className="mt-1 text-sm text-zinc-600">
+                              {row.attendeeSchool?.name ??
+                                t("attendance.table.school")}
+                              {" - "}
+                              {t("attendance.table.grade")}{" "}
+                              {row.student?.grade_level || "-"}
+                              {row.student?.homeroom
+                                ? `, ${row.student.homeroom}`
+                                : ""}
+                            </p>
+                          </div>
+                          <StatusBadge status={row.attendee.status} t={t} />
+                        </div>
+                        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <dt className="text-zinc-500">
+                              {t("attendance.table.permission")}
+                            </dt>
+                            <dd className="text-zinc-800">
+                              <PermissionCell
+                                attendee={row.attendee}
+                                event={event}
+                                t={t}
+                              />
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-zinc-500">
+                              {t("attendance.table.checkInStatus")}
+                            </dt>
+                            <dd className="text-zinc-800">
+                              <CheckInBadge
+                                isCheckedIn={row.isCheckedIn}
+                                t={t}
+                              />
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-zinc-500">
+                              {t("attendance.table.checkInTime")}
+                            </dt>
+                            <dd className="text-zinc-800">
+                              {row.checkedInAt
+                                ? formatDateTime(row.checkedInAt, locale)
+                                : "-"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-zinc-500">
+                              {t("attendance.table.method")}
+                            </dt>
+                            <dd className="text-zinc-800">
+                              {row.checkin
+                                ? checkInMethodLabel(row.checkin.method, t)
+                                : "-"}
+                            </dd>
+                          </div>
+                        </dl>
+                      </article>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-            <div className="divide-y divide-zinc-200 md:hidden">
-              {attendees.map((attendee) => {
-                const student = attendee.student_roster_id
-                  ? rosterById.get(attendee.student_roster_id)
-                  : undefined;
-                const attendeeProfile = attendee.attendee_profile_id
-                  ? profileById.get(attendee.attendee_profile_id)
-                  : undefined;
-                const attendeeSchool = schoolById.get(attendee.attendee_school_id);
-                const checkin =
-                  checkinByAttendeeId.get(attendee.id) ??
-                  (attendee.student_roster_id
-                    ? checkinByStudentId.get(attendee.student_roster_id)
-                    : undefined);
-
-                return (
-                  <article className="p-4" key={attendee.id}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-medium text-zinc-950">
-                          {attendeeName(
-                            student,
-                            attendeeProfile,
-                            t("attendance.fallback.registeredStudent"),
-                          )}
-                        </h3>
-                        <p className="mt-1 text-sm text-zinc-600">
-                          {attendeeSchool?.name ?? t("attendance.table.school")}
-                          {" - "}
-                          {t("attendance.table.grade")}{" "}
-                          {student?.grade_level || "-"}
-                          {student?.homeroom ? `, ${student.homeroom}` : ""}
-                        </p>
-                      </div>
-                      <StatusBadge status={attendee.status} t={t} />
-                    </div>
-                    <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("attendance.table.permission")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          <PermissionCell
-                            attendee={attendee}
-                            event={event}
-                            t={t}
-                          />
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("attendance.table.checkedIn")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          {checkin
-                            ? formatDateTime(checkin.checked_in_at, locale)
-                            : attendee.checked_in_at
-                              ? formatDateTime(attendee.checked_in_at, locale)
-                              : "-"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("attendance.table.method")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          {checkin
-                            ? checkInMethodLabel(checkin.method, t)
-                            : "-"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </article>
-                );
-              })}
-            </div>
+                </div>
+              </>
+            ) : (
+              <div className="p-4">
+                <p className="text-sm font-medium text-zinc-950">
+                  {t("filters.noResults")}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  {t("filters.noResultsDescription")}
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <div className="p-4">
             <p className="text-sm font-medium text-zinc-950">
-              {t("attendance.empty.title")}
+              {t("attendance.empty.noStudentsRegistered")}
             </p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">
               {t("attendance.empty.description")}
@@ -468,6 +593,116 @@ export default async function EventAttendancePage({
       </section>
     </div>
   );
+}
+
+function AttendanceSummaryCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+      <p className="text-xs font-medium text-zinc-500">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-zinc-950">{value}</p>
+    </div>
+  );
+}
+
+function CheckInBadge({
+  isCheckedIn,
+  t,
+}: {
+  isCheckedIn: boolean;
+  t: Translate;
+}) {
+  return (
+    <span
+      className={
+        isCheckedIn
+          ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+          : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
+      }
+    >
+      {isCheckedIn
+        ? t("attendance.summary.checkedIn")
+        : t("attendance.summary.notCheckedIn")}
+    </span>
+  );
+}
+
+function buildAttendanceRow({
+  attendee,
+  checkinByAttendeeId,
+  checkinByStudentId,
+  fallbackName,
+  profileById,
+  rosterById,
+  schoolById,
+}: {
+  attendee: EventAttendee;
+  checkinByAttendeeId: Map<string, AttendanceCheckin>;
+  checkinByStudentId: Map<string, AttendanceCheckin>;
+  fallbackName: string;
+  profileById: Map<string, AttendeeProfile>;
+  rosterById: Map<string, StudentRoster>;
+  schoolById: Map<string, SchoolSummary>;
+}): AttendanceListRow {
+  const student = attendee.student_roster_id
+    ? rosterById.get(attendee.student_roster_id)
+    : undefined;
+  const attendeeProfile = attendee.attendee_profile_id
+    ? profileById.get(attendee.attendee_profile_id)
+    : undefined;
+  const checkin =
+    checkinByAttendeeId.get(attendee.id) ??
+    (attendee.student_roster_id
+      ? checkinByStudentId.get(attendee.student_roster_id)
+      : undefined);
+  const checkedInAt = checkin?.checked_in_at ?? attendee.checked_in_at;
+
+  return {
+    attendee,
+    attendeeSchool: schoolById.get(attendee.attendee_school_id),
+    checkedInAt,
+    checkin,
+    displayName: attendeeName(student, attendeeProfile, fallbackName),
+    isCheckedIn: Boolean(checkedInAt),
+    student,
+  };
+}
+
+function parseAttendanceFilter(
+  filter: AttendancePageSearchParams["filter"],
+): AttendanceFilter {
+  const value = Array.isArray(filter) ? filter[0] : filter;
+
+  if (value === "checked-in" || value === "not-checked-in") {
+    return value;
+  }
+
+  return "all";
+}
+
+function attendanceFilterHref(eventId: string, filter: AttendanceFilter) {
+  if (filter === "all") {
+    return `/events/${eventId}/attendance`;
+  }
+
+  return `/events/${eventId}/attendance?filter=${filter}`;
+}
+
+function attendanceFilterLabel(filter: AttendanceFilter, t: Translate) {
+  if (filter === "checked-in") {
+    return t("attendance.filters.checkedIn");
+  }
+
+  if (filter === "not-checked-in") {
+    return t("attendance.filters.notCheckedIn");
+  }
+
+  return t("attendance.filters.allStudents");
 }
 
 async function getStudentRosters(

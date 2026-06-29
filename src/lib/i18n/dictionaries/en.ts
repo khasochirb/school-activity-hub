@@ -1007,6 +1007,8 @@ export const en = {
     empty: {
       description:
         "Students who join this event will appear here for permission tracking and check-in.",
+      noCheckIns: "No check-ins yet",
+      noStudentsRegistered: "No students registered yet",
       title: "No registered students yet",
     },
     errors: {
@@ -1014,6 +1016,11 @@ export const en = {
     },
     fallback: {
       registeredStudent: "Registered student",
+    },
+    filters: {
+      allStudents: "All students",
+      checkedIn: "Checked in",
+      notCheckedIn: "Not checked in",
     },
     list: {
       registeredCount: "{count} registered student(s)",
@@ -1041,12 +1048,24 @@ export const en = {
     },
     qr: {
       ariaLabel: "QR code for the event check-in link",
+      instruction: "Scan this code to check in",
+      title: "Check-in QR",
+    },
+    summary: {
+      attendanceRate: "Attendance rate",
+      checkedIn: "Checked in",
+      notCheckedIn: "Not checked in",
+      registeredStudents: "Registered students",
+      title: "Attendance summary",
     },
     table: {
+      checkInStatus: "Check-in status",
+      checkInTime: "Check-in time",
       checkedIn: "Checked in",
       grade: "Grade",
       method: "Method",
       permission: "Permission",
+      registrationStatus: "Registration status",
       school: "School",
       status: "Status",
       student: "Student",
@@ -1055,7 +1074,7 @@ export const en = {
       attended: "Attended",
       registered: "Registered",
     },
-    title: "Event attendance",
+    title: "Attendance and QR",
   },
   checkIn: {
     actions: {

@@ -536,6 +536,8 @@ export const mn = {
     empty: {
       description:
         "Энэ арга хэмжээнд нэгдсэн сурагчид зөвшөөрөл хянах болон check-in хийхэд энд харагдана.",
+      noCheckIns: "Одоогоор ирц бүртгэгдээгүй байна",
+      noStudentsRegistered: "Одоогоор сурагч бүртгүүлээгүй байна",
       title: "Бүртгүүлсэн сурагч одоогоор алга",
     },
     errors: {
@@ -543,6 +545,11 @@ export const mn = {
     },
     fallback: {
       registeredStudent: "Бүртгүүлсэн сурагч",
+    },
+    filters: {
+      allStudents: "Бүх сурагчид",
+      checkedIn: "Ирц бүртгүүлсэн",
+      notCheckedIn: "Ирц бүртгүүлээгүй",
     },
     list: {
       registeredCount: "{count} бүртгүүлсэн сурагч",
@@ -570,12 +577,24 @@ export const mn = {
     },
     qr: {
       ariaLabel: "Арга хэмжээний check-in холбоосын QR код",
+      instruction: "Ирц бүртгүүлэхийн тулд энэ кодыг уншуулна уу",
+      title: "Check-in QR",
+    },
+    summary: {
+      attendanceRate: "Ирцийн хувь",
+      checkedIn: "Ирц бүртгүүлсэн",
+      notCheckedIn: "Ирц бүртгүүлээгүй",
+      registeredStudents: "Бүртгүүлсэн сурагчид",
+      title: "Ирцийн товч мэдээлэл",
     },
     table: {
+      checkInStatus: "Check-in төлөв",
+      checkInTime: "Check-in цаг",
       checkedIn: "Check-in хийсэн",
       grade: "Анги",
       method: "Арга",
       permission: "Зөвшөөрөл",
+      registrationStatus: "Бүртгэлийн төлөв",
       school: "Сургууль",
       status: "Төлөв",
       student: "Сурагч",
@@ -584,7 +603,7 @@ export const mn = {
       attended: "Ирсэн",
       registered: "Бүртгүүлсэн",
     },
-    title: "Арга хэмжээний ирц",
+    title: "Ирц ба QR",
   },
   checkIn: {
     actions: {
