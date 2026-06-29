@@ -33,20 +33,58 @@ export default async function ReportsPage() {
     event: t("reports.fallback.event"),
     rosterStudent: t("reports.fallback.rosterStudent"),
   });
+  const summary = reports.summary;
+  const attendanceRate = formatAttendanceRate(
+    summary.attendanceRate,
+    t("common.notAvailableShort"),
+    locale,
+  );
   const hasReportData = [
-    reports.summary.activeStudents,
-    reports.summary.activeClubs,
-    reports.summary.approvedEvents,
-    reports.summary.eventRegistrations,
-    reports.summary.attendanceCheckins,
+    summary.totalStudents,
+    summary.activeStudents,
+    summary.activeClubs,
+    summary.totalEvents,
+    summary.approvedEvents,
+    summary.eventRegistrations,
+    summary.attendanceCheckins,
   ].some((value) => value > 0);
+  const overviewMetrics = [
+    {
+      label: t("reports.summary.totalStudents"),
+      value: formatNumber(summary.totalStudents, locale),
+    },
+    {
+      label: t("reports.summary.activeStudents"),
+      value: formatNumber(summary.activeStudents, locale),
+    },
+    {
+      label: t("reports.summary.totalEvents"),
+      value: formatNumber(summary.totalEvents, locale),
+    },
+    {
+      label: t("reports.summary.approvedEvents"),
+      value: formatNumber(summary.approvedEvents, locale),
+    },
+    {
+      label: t("reports.summary.eventRegistrations"),
+      value: formatNumber(summary.eventRegistrations, locale),
+    },
+    {
+      label: t("reports.summary.attendanceCheckins"),
+      value: formatNumber(summary.attendanceCheckins, locale),
+    },
+    {
+      label: t("reports.summary.attendanceRate"),
+      value: attendanceRate,
+    },
+  ];
 
   return (
     <div className="page-stack">
       <PageHeader
         actions={
-          <HeaderActionLink href="#csv-exports">
-            {t("reports.actions.exportCsv")}
+          <HeaderActionLink href="#export-reports">
+            {t("reports.sections.exportReports")}
           </HeaderActionLink>
         }
         description={t("reports.description")}
@@ -73,124 +111,197 @@ export default async function ReportsPage() {
         </section>
       ) : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <SummaryCard
-          label={t("reports.summary.activeStudents")}
-          value={formatNumber(reports.summary.activeStudents)}
-        />
-        <SummaryCard
-          label={t("reports.summary.activeClubs")}
-          value={formatNumber(reports.summary.activeClubs)}
-        />
-        <SummaryCard
-          label={t("reports.summary.approvedEvents")}
-          value={formatNumber(reports.summary.approvedEvents)}
-        />
-        <SummaryCard
-          label={t("reports.summary.eventRegistrations")}
-          value={formatNumber(reports.summary.eventRegistrations)}
-        />
-        <SummaryCard
-          label={t("reports.summary.attendanceCheckins")}
-          value={formatNumber(reports.summary.attendanceCheckins)}
-        />
-        <SummaryCard
-          label={t("reports.summary.attendanceRate")}
-          value={formatAttendanceRate(
-            reports.summary.attendanceRate,
-            t("common.notAvailableShort"),
-          )}
-        />
-      </section>
+      <ReportSection title={t("reports.sections.overview")}>
+        <MetricGrid metrics={overviewMetrics} />
+      </ReportSection>
 
-      <section
-        className="compact-action-card section-card section-card-padded"
-        id="csv-exports"
-      >
-        <h2 className="section-title">{t("reports.exports.title")}</h2>
-        <p className="section-description">
-          {t("reports.exports.description")}
-        </p>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <ExportLink href="/reports/exports/student-roster">
-            {t("reports.exports.studentRoster")}
-          </ExportLink>
-          <ExportLink href="/reports/exports/event-registrations">
-            {t("reports.exports.eventRegistrations")}
-          </ExportLink>
-          <ExportLink href="/reports/exports/attendance-checkins">
-            {t("reports.exports.attendanceCheckins")}
-          </ExportLink>
+      <ReportSection title={t("reports.sections.participationSummary")}>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <SummaryCard
+            label={t("reports.summary.totalStudents")}
+            value={formatNumber(summary.totalStudents, locale)}
+          />
+          <SummaryCard
+            label={t("reports.summary.activeStudents")}
+            value={formatNumber(summary.activeStudents, locale)}
+          />
+          <SummaryCard
+            label={t("reports.summary.activeClubs")}
+            value={formatNumber(summary.activeClubs, locale)}
+          />
         </div>
-      </section>
+        <div className="mt-3 grid gap-3 xl:grid-cols-2">
+          <SummaryTable
+            countLabel={t("reports.countLabels.registrations")}
+            emptyMessage={t(
+              "reports.tables.studentsWithMostRegistrations.emptyDescription",
+            )}
+            labels={{
+              detail: t("reports.table.detail"),
+              emptyTitle: t("reports.tables.emptyTitle"),
+              name: t("reports.table.name"),
+              resultCount: tf("filters.showingResults", {
+                count: reports.studentsWithMostRegistrations.length,
+              }),
+            }}
+            locale={locale}
+            rows={reports.studentsWithMostRegistrations}
+            title={t("reports.tables.studentsWithMostRegistrations.title")}
+          />
+          <SummaryTable
+            countLabel={t("reports.countLabels.checkins")}
+            emptyMessage={t(
+              "reports.tables.studentsWithMostCheckins.emptyDescription",
+            )}
+            labels={{
+              detail: t("reports.table.detail"),
+              emptyTitle: t("reports.tables.emptyTitle"),
+              name: t("reports.table.name"),
+              resultCount: tf("filters.showingResults", {
+                count: reports.studentsWithMostCheckins.length,
+              }),
+            }}
+            locale={locale}
+            rows={reports.studentsWithMostCheckins}
+            title={t("reports.tables.studentsWithMostCheckins.title")}
+          />
+        </div>
+      </ReportSection>
 
-      <section className="grid gap-3 lg:grid-cols-2">
-        <SummaryTable
-          countLabel={t("reports.countLabels.registrations")}
-          emptyMessage={t(
-            "reports.tables.studentsWithMostRegistrations.emptyDescription",
-          )}
-          labels={{
-            detail: t("reports.table.detail"),
-            emptyTitle: t("reports.tables.emptyTitle"),
-            name: t("reports.table.name"),
-            resultCount: tf("filters.showingResults", {
-              count: reports.studentsWithMostRegistrations.length,
-            }),
-          }}
-          rows={reports.studentsWithMostRegistrations}
-          title={t("reports.tables.studentsWithMostRegistrations.title")}
-        />
-        <SummaryTable
-          countLabel={t("reports.countLabels.checkins")}
-          emptyMessage={t(
-            "reports.tables.studentsWithMostCheckins.emptyDescription",
-          )}
-          labels={{
-            detail: t("reports.table.detail"),
-            emptyTitle: t("reports.tables.emptyTitle"),
-            name: t("reports.table.name"),
-            resultCount: tf("filters.showingResults", {
-              count: reports.studentsWithMostCheckins.length,
-            }),
-          }}
-          rows={reports.studentsWithMostCheckins}
-          title={t("reports.tables.studentsWithMostCheckins.title")}
-        />
-        <SummaryTable
-          countLabel={t("reports.countLabels.registrations")}
-          emptyMessage={t(
-            "reports.tables.eventsWithMostRegistrations.emptyDescription",
-          )}
-          labels={{
-            detail: t("reports.table.detail"),
-            emptyTitle: t("reports.tables.emptyTitle"),
-            name: t("reports.table.name"),
-            resultCount: tf("filters.showingResults", {
-              count: reports.eventsWithMostRegistrations.length,
-            }),
-          }}
-          rows={reports.eventsWithMostRegistrations}
-          title={t("reports.tables.eventsWithMostRegistrations.title")}
-        />
-        <SummaryTable
-          countLabel={t("reports.countLabels.checkins")}
-          emptyMessage={t(
-            "reports.tables.eventsWithMostCheckins.emptyDescription",
-          )}
-          labels={{
-            detail: t("reports.table.detail"),
-            emptyTitle: t("reports.tables.emptyTitle"),
-            name: t("reports.table.name"),
-            resultCount: tf("filters.showingResults", {
-              count: reports.eventsWithMostCheckins.length,
-            }),
-          }}
-          rows={reports.eventsWithMostCheckins}
-          title={t("reports.tables.eventsWithMostCheckins.title")}
-        />
-      </section>
+      <ReportSection title={t("reports.sections.eventActivity")}>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryCard
+            label={t("reports.summary.totalEvents")}
+            value={formatNumber(summary.totalEvents, locale)}
+          />
+          <SummaryCard
+            label={t("reports.summary.approvedEvents")}
+            value={formatNumber(summary.approvedEvents, locale)}
+          />
+          <SummaryCard
+            label={t("reports.summary.eventRegistrations")}
+            value={formatNumber(summary.eventRegistrations, locale)}
+          />
+          <SummaryCard
+            label={t("reports.summary.activeClubs")}
+            value={formatNumber(summary.activeClubs, locale)}
+          />
+        </div>
+        <div className="mt-3 grid gap-3 xl:grid-cols-2">
+          <SummaryTable
+            countLabel={t("reports.countLabels.registrations")}
+            emptyMessage={t(
+              "reports.tables.eventsWithMostRegistrations.emptyDescription",
+            )}
+            labels={{
+              detail: t("reports.table.detail"),
+              emptyTitle: t("reports.tables.emptyTitle"),
+              name: t("reports.table.name"),
+              resultCount: tf("filters.showingResults", {
+                count: reports.eventsWithMostRegistrations.length,
+              }),
+            }}
+            locale={locale}
+            rows={reports.eventsWithMostRegistrations}
+            title={t("reports.tables.eventsWithMostRegistrations.title")}
+          />
+          <SummaryTable
+            countLabel={t("reports.countLabels.checkins")}
+            emptyMessage={t(
+              "reports.tables.eventsWithMostCheckins.emptyDescription",
+            )}
+            labels={{
+              detail: t("reports.table.detail"),
+              emptyTitle: t("reports.tables.emptyTitle"),
+              name: t("reports.table.name"),
+              resultCount: tf("filters.showingResults", {
+                count: reports.eventsWithMostCheckins.length,
+              }),
+            }}
+            locale={locale}
+            rows={reports.eventsWithMostCheckins}
+            title={t("reports.tables.eventsWithMostCheckins.title")}
+          />
+        </div>
+      </ReportSection>
+
+      <ReportSection title={t("reports.sections.attendanceSummary")}>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <SummaryCard
+            label={t("reports.summary.eventRegistrations")}
+            value={formatNumber(summary.eventRegistrations, locale)}
+          />
+          <SummaryCard
+            label={t("reports.summary.attendanceCheckins")}
+            value={formatNumber(summary.attendanceCheckins, locale)}
+          />
+          <SummaryCard
+            label={t("reports.summary.attendanceRate")}
+            value={attendanceRate}
+          />
+        </div>
+      </ReportSection>
+
+      <ReportSection
+        id="export-reports"
+        title={t("reports.sections.exportReports")}
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          <ExportCard
+            downloadLabel={t("reports.exports.downloadCsv")}
+            href="/reports/exports/event-registrations"
+            title={t("reports.exports.eventRegistrations")}
+          />
+          <ExportCard
+            downloadLabel={t("reports.exports.downloadCsv")}
+            href="/reports/exports/attendance-checkins"
+            title={t("reports.exports.attendanceCheckins")}
+          />
+          <ExportCard
+            downloadLabel={t("reports.exports.downloadCsv")}
+            href="/reports/exports/student-roster"
+            title={t("reports.exports.studentRoster")}
+          />
+        </div>
+      </ReportSection>
     </div>
+  );
+}
+
+function ReportSection({
+  children,
+  id,
+  title,
+}: {
+  children: React.ReactNode;
+  id?: string;
+  title: string;
+}) {
+  return (
+    <section className="space-y-3" id={id}>
+      <div>
+        <h2 className="section-title">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function MetricGrid({
+  metrics,
+}: {
+  metrics: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-7">
+      {metrics.map((metric) => (
+        <SummaryCard
+          key={metric.label}
+          label={metric.label}
+          value={metric.value}
+        />
+      ))}
+    </section>
   );
 }
 
@@ -203,20 +314,22 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ExportLink({
-  children,
+function ExportCard({
+  downloadLabel,
   href,
+  title,
 }: {
-  children: React.ReactNode;
+  downloadLabel: string;
   href: string;
+  title: string;
 }) {
   return (
-    <a
-      className="btn btn-primary"
-      href={href}
-    >
-      {children}
-    </a>
+    <article className="section-card section-card-padded">
+      <h3 className="text-base font-semibold text-zinc-950">{title}</h3>
+      <a className="btn btn-primary mt-3 w-full" href={href}>
+        {downloadLabel}
+      </a>
+    </article>
   );
 }
 
@@ -224,6 +337,7 @@ function SummaryTable({
   countLabel,
   emptyMessage,
   labels,
+  locale,
   rows,
   title,
 }: {
@@ -235,6 +349,7 @@ function SummaryTable({
     name: string;
     resultCount: string;
   };
+  locale: string;
   rows: ReportTableRow[];
   title: string;
 }) {
@@ -265,7 +380,7 @@ function SummaryTable({
                       {row.detail || "-"}
                     </td>
                     <td className="px-4 py-3 text-zinc-700">
-                      {formatNumber(row.count)}
+                      {formatNumber(row.count, locale)}
                     </td>
                   </tr>
                 ))}
@@ -282,9 +397,7 @@ function SummaryTable({
                       {row.detail || "-"}
                     </p>
                   </div>
-                  <StatusBadge>
-                    {formatNumber(row.count)}
-                  </StatusBadge>
+                  <StatusBadge>{formatNumber(row.count, locale)}</StatusBadge>
                 </div>
               </article>
             ))}
@@ -299,14 +412,26 @@ function SummaryTable({
   );
 }
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en").format(value);
+function formatNumber(value: number, locale: string) {
+  return new Intl.NumberFormat(numberLocale(locale)).format(value);
 }
 
-function formatAttendanceRate(value: number | null, fallback: string) {
+function formatAttendanceRate(
+  value: number | null,
+  fallback: string,
+  locale: string,
+) {
   if (value === null) {
     return fallback;
   }
 
-  return `${Math.round(value * 1000) / 10}%`;
+  const rate = Math.round(value * 1000) / 10;
+
+  return `${new Intl.NumberFormat(numberLocale(locale), {
+    maximumFractionDigits: 1,
+  }).format(rate)}%`;
+}
+
+function numberLocale(locale: string) {
+  return locale === "mn" ? "mn-MN" : "en-CA";
 }

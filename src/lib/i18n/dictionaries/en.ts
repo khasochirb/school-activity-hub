@@ -1121,24 +1121,31 @@ export const en = {
     empty: {
       addStudents: "Add students",
       createEvent: "Create event",
-      description:
-        "Reports will fill in after students, clubs, events, registrations, and check-ins are created for this school.",
-      title: "No reports data yet",
+      description: "Run events and collect attendance to see reports here.",
+      title: "No report data yet",
     },
     exports: {
       attendanceCheckins: "Attendance check-ins",
       description:
         "Download school-scoped CSV files for a pilot review or admin handoff.",
+      downloadCsv: "Download CSV",
       eventRegistrations: "Event registrations",
       exportNotFound: "Export not found",
       notFound: "Not found",
       studentRoster: "Student roster",
-      title: "CSV exports",
+      title: "Export reports",
     },
     eyebrow: "Operations reporting",
     fallback: {
       event: "Event",
       rosterStudent: "Roster student",
+    },
+    sections: {
+      attendanceSummary: "Attendance summary",
+      eventActivity: "Event activity",
+      exportReports: "Export reports",
+      overview: "Reports overview",
+      participationSummary: "Participation summary",
     },
     summary: {
       activeClubs: "Active clubs",
@@ -1147,6 +1154,8 @@ export const en = {
       attendanceCheckins: "Attendance check-ins",
       attendanceRate: "Attendance rate",
       eventRegistrations: "Event registrations",
+      totalEvents: "Total events",
+      totalStudents: "Total students",
     },
     table: {
       detail: "Detail",

@@ -69,6 +69,8 @@ export type ReportSummary = {
   attendanceCheckins: number;
   attendanceRate: number | null;
   eventRegistrations: number;
+  totalEvents: number;
+  totalStudents: number;
 };
 
 export type ReportTableRow = {
@@ -269,14 +271,18 @@ async function getReportSummary(
   schoolId: string,
 ): Promise<ReportSummary> {
   const [
+    totalStudents,
     activeStudents,
     activeClubs,
+    totalEvents,
     approvedEvents,
     eventRegistrations,
     attendanceCheckins,
   ] = await Promise.all([
+    getTotalStudentCount(admin, schoolId),
     getActiveStudentCount(admin, schoolId),
     getActiveClubCount(admin, schoolId),
+    getTotalEventCount(admin, schoolId),
     getApprovedEventCount(admin, schoolId),
     getActiveRegistrationCount(admin, schoolId),
     getSuccessfulCheckinCount(admin, schoolId),
@@ -291,6 +297,8 @@ async function getReportSummary(
       ? attendanceCheckins / eventRegistrations
       : null,
     eventRegistrations,
+    totalEvents,
+    totalStudents,
   };
 }
 
@@ -339,6 +347,20 @@ async function getActiveStudentCount(
   return count ?? 0;
 }
 
+async function getTotalStudentCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await timeServer("reports.query.total-student-count", () =>
+    admin
+      .from("student_rosters")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", schoolId),
+  );
+
+  return count ?? 0;
+}
+
 async function getActiveClubCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
@@ -349,6 +371,20 @@ async function getActiveClubCount(
       .select("id", { count: "exact", head: true })
       .eq("school_id", schoolId)
       .eq("status", "active"),
+  );
+
+  return count ?? 0;
+}
+
+async function getTotalEventCount(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const { count } = await timeServer("reports.query.total-event-count", () =>
+    admin
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", schoolId),
   );
 
   return count ?? 0;

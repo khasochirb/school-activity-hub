@@ -651,23 +651,31 @@ export const mn = {
       addStudents: "Сурагч нэмэх",
       createEvent: "Арга хэмжээ үүсгэх",
       description:
-        "Энэ сургуульд сурагчид, клубууд, арга хэмжээнүүд, бүртгэлүүд болон check-in үүссэний дараа тайлангууд бөглөгдөнө.",
-      title: "Тайлангийн өгөгдөл одоогоор алга",
+        "Тайлан харахын тулд арга хэмжээ зохион байгуулж, ирц бүртгэнэ үү.",
+      title: "Одоогоор тайлангийн өгөгдөл алга",
     },
     exports: {
       attendanceCheckins: "Ирцийн check-in",
       description:
         "Туршилтын үнэлгээ эсвэл админы хүлээлгэн өгөхөд зориулж сургуулийн хүрээний CSV файлууд татна уу.",
+      downloadCsv: "CSV татах",
       eventRegistrations: "Арга хэмжээний бүртгэлүүд",
       exportNotFound: "Экспорт олдсонгүй",
       notFound: "Олдсонгүй",
       studentRoster: "Сурагчдын жагсаалт",
-      title: "CSV экспорт",
+      title: "Тайлан экспортлох",
     },
     eyebrow: "Үйл ажиллагааны тайлагнал",
     fallback: {
       event: "Арга хэмжээ",
       rosterStudent: "Жагсаалтын сурагч",
+    },
+    sections: {
+      attendanceSummary: "Ирцийн товч мэдээлэл",
+      eventActivity: "Арга хэмжээний үйл ажиллагаа",
+      exportReports: "Тайлан экспортлох",
+      overview: "Тайлангийн тойм",
+      participationSummary: "Оролцооны товч мэдээлэл",
     },
     summary: {
       activeClubs: "Идэвхтэй клубууд",
@@ -676,6 +684,8 @@ export const mn = {
       attendanceCheckins: "Ирцийн check-in",
       attendanceRate: "Ирцийн хувь",
       eventRegistrations: "Арга хэмжээний бүртгэлүүд",
+      totalEvents: "Нийт арга хэмжээ",
+      totalStudents: "Нийт сурагчид",
     },
     table: {
       detail: "Дэлгэрэнгүй",
