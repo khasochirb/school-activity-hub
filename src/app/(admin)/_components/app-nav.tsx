@@ -31,7 +31,7 @@ export function AppNav({
   return (
     <nav
       aria-label={navigationLabel}
-      className="flex flex-col gap-7"
+      className="flex min-w-0 max-w-full flex-col gap-7 overflow-hidden"
     >
       {sections.map((section) => {
         if (!section.items.length) {
@@ -39,11 +39,11 @@ export function AppNav({
         }
 
         return (
-          <section className="space-y-3" key={section.label}>
-            <h2 className="px-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-slate-400">
+          <section className="min-w-0 max-w-full space-y-3" key={section.label}>
+            <h2 className="max-w-full break-words px-3 text-[0.68rem] font-bold uppercase leading-snug tracking-[0.16em] text-slate-400">
               {section.label}
             </h2>
-            <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 max-w-full flex-col gap-2">
               {section.items.map((item) => {
                 const active = isActivePath(pathname, item.href);
 
@@ -55,8 +55,11 @@ export function AppNav({
                     }
                     href={item.href}
                     key={item.href}
+                    title={item.label}
                   >
-                    {item.label}
+                    <span className="min-w-0 max-w-full break-words leading-snug">
+                      {item.label}
+                    </span>
                   </Link>
                 );
               })}

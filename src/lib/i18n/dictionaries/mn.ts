@@ -1205,6 +1205,7 @@ export const mn = {
     menu: "Цэс",
     operations: "Үйл ажиллагаа",
     platform: "Платформ",
+    platformConnections: "Платформын холболтууд",
     profile: "Профайл",
     reports: "Тайлангууд",
     schoolConnections: "Сургуулийн холболтууд",

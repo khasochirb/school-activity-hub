@@ -51,11 +51,11 @@ export function ThemeToggle({
   }
 
   return (
-    <div className={showLabel ? "space-y-1.5" : ""}>
+    <div className={showLabel ? "min-w-0 max-w-full space-y-1.5" : "min-w-0 max-w-full"}>
       <p
         className={
           showLabel
-            ? "text-xs font-bold uppercase tracking-wide text-slate-500"
+            ? "max-w-full break-words text-xs font-bold uppercase leading-snug tracking-wide text-slate-500"
             : "sr-only"
         }
       >
@@ -63,7 +63,7 @@ export function ThemeToggle({
       </p>
       <div
         aria-label={switchLabel}
-        className="inline-flex rounded-md border border-slate-200 bg-white p-1 shadow-sm"
+        className="grid w-full max-w-full grid-cols-3 gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm"
       >
         {SUPPORTED_THEMES.map((option) => {
           const active = option === theme;
@@ -73,8 +73,8 @@ export function ThemeToggle({
               aria-pressed={active}
               className={
                 active
-                  ? "choice-pill-active min-h-8 cursor-pointer rounded px-3 text-sm font-bold"
-                  : "min-h-8 cursor-pointer rounded px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
+                  ? "choice-pill-active min-h-8 min-w-0 cursor-pointer rounded px-2 text-center text-sm font-bold leading-snug break-words whitespace-normal"
+                  : "min-h-8 min-w-0 cursor-pointer rounded px-2 text-center text-sm font-semibold leading-snug break-words whitespace-normal text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
               }
               key={option}
               onClick={() => selectTheme(option)}

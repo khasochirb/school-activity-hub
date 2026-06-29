@@ -88,7 +88,7 @@ const navSections: Array<{
       },
       {
         href: "/super-admin/connections",
-        labelKey: "nav.schoolConnections",
+        labelKey: "nav.platformConnections",
         platformAdminOnly: true,
       },
       {
@@ -143,8 +143,8 @@ export async function AppShell({
 
   return (
     <div className="app-surface min-h-screen lg:flex">
-      <aside className="hidden w-72 shrink-0 border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
-        <div className="border-b border-slate-200 px-5 py-6">
+      <aside className="hidden w-[19rem] min-w-0 shrink-0 overflow-hidden border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
+        <div className="min-w-0 border-b border-slate-200 px-5 py-6">
           <Brand
             dashboardLabel={t("nav.dashboard")}
             name={t("app.name")}
@@ -152,7 +152,7 @@ export async function AppShell({
             subtitle={t("app.subtitle")}
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div className="min-w-0 min-h-0 flex-1 overflow-y-auto px-4 py-6">
           <AppNav sections={visibleNavSections} />
         </div>
         <AccountPanel
@@ -170,9 +170,9 @@ export async function AppShell({
         />
       </aside>
 
-      <div className="min-w-0 flex-1 lg:pl-72">
+      <div className="min-w-0 flex-1 lg:pl-[19rem]">
         <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center justify-between gap-3">
             <Brand
               compact
               dashboardLabel={t("nav.dashboard")}
@@ -180,11 +180,11 @@ export async function AppShell({
               shortName={t("app.shortName")}
               subtitle={t("app.subtitle")}
             />
-            <details className="group relative">
+            <details className="group relative shrink-0">
               <summary className="btn btn-secondary list-none px-3 [&::-webkit-details-marker]:hidden">
                 {t("nav.menu")}
               </summary>
-              <div className="absolute right-0 z-30 mt-3 max-h-[calc(100vh-5.5rem)] w-[min(21rem,calc(100vw-2rem))] overflow-y-auto rounded-md border border-slate-200 bg-white p-3 shadow-xl">
+              <div className="absolute right-0 z-30 mt-3 max-h-[calc(100vh-5.5rem)] w-[min(21rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overflow-x-hidden rounded-md border border-slate-200 bg-white p-3 shadow-xl">
                 <AppNav sections={visibleNavSections} />
                 <div className="mt-4 border-t border-slate-200 pt-4">
                   <MobileAccount
@@ -228,7 +228,7 @@ function Brand({
   subtitle: string;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 max-w-full items-center gap-3">
       <Link
         aria-label={`${name} ${dashboardLabel}`}
         className={
@@ -240,9 +240,13 @@ function Brand({
       >
         {shortName}
       </Link>
-      <div className="min-w-0">
+      <div className="min-w-0 max-w-full">
         <Link
-          className="block w-fit cursor-pointer truncate text-base font-bold tracking-tight text-slate-950 transition hover:text-teal-800"
+          className={
+            compact
+              ? "block max-w-full cursor-pointer truncate text-base font-bold tracking-tight text-slate-950 transition hover:text-teal-800"
+              : "block max-w-full cursor-pointer break-words text-base font-bold leading-snug tracking-tight text-slate-950 transition hover:text-teal-800"
+          }
           href="/dashboard"
         >
           {name}
@@ -251,7 +255,7 @@ function Brand({
           className={
             compact
               ? "mt-0.5 max-w-44 truncate text-xs leading-4 text-slate-500"
-              : "mt-1 text-sm leading-5 text-slate-500"
+              : "mt-1 max-w-full break-words text-sm leading-5 text-slate-500"
           }
         >
           {subtitle}
@@ -287,8 +291,8 @@ function AccountPanel({
   themeLabels: Record<ThemePreference, string>;
 }) {
   return (
-    <div className="border-t border-slate-200 bg-slate-50/70 p-4">
-      <div className="mb-4 grid gap-3 rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="min-w-0 max-w-full overflow-hidden border-t border-slate-200 bg-slate-50/70 p-4">
+      <div className="mb-4 grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-white p-3 shadow-sm">
         <LanguageSwitcher
           currentLocale={locale}
           label={languageLabel}
@@ -301,9 +305,9 @@ function AccountPanel({
           switchLabel={switchThemeLabel}
         />
       </div>
-      <div className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 shadow-sm">
+      <div className="min-w-0 max-w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 shadow-sm">
         <p className="break-all">{email}</p>
-        <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>
+        <p className="mt-1 break-words font-semibold leading-snug text-slate-900">{roleLabel}</p>
       </div>
       <form action={logout} className="mt-3">
         <PendingSubmitButton
@@ -344,8 +348,8 @@ function MobileAccount({
   themeLabels: Record<ThemePreference, string>;
 }) {
   return (
-    <div className="space-y-3">
-      <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+    <div className="min-w-0 max-w-full space-y-3 overflow-hidden">
+      <div className="grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
         <LanguageSwitcher
           currentLocale={locale}
           label={languageLabel}
@@ -358,9 +362,9 @@ function MobileAccount({
           switchLabel={switchThemeLabel}
         />
       </div>
-      <div className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
+      <div className="min-w-0 rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
         <p className="break-all">{email}</p>
-        <p className="mt-1 font-semibold text-slate-900">{roleLabel}</p>
+        <p className="mt-1 break-words font-semibold leading-snug text-slate-900">{roleLabel}</p>
       </div>
       <form action={logout}>
         <PendingSubmitButton

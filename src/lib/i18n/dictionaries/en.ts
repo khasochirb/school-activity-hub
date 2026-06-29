@@ -533,6 +533,7 @@ export const en = {
     menu: "Menu",
     operations: "Operations",
     platform: "Platform",
+    platformConnections: "Platform connections",
     profile: "Profile",
     reports: "Reports",
     schoolConnections: "School Connections",
