@@ -233,16 +233,20 @@ export default async function EventAttendancePage({
           {t("attendance.checkInLink.description")}
         </p>
         <div className="mt-3 grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:items-start">
-          <div className="flex justify-center rounded-lg border border-zinc-200 bg-white p-3">
+          <div
+            className="flex justify-center rounded-lg border p-4 shadow-sm"
+            style={{ backgroundColor: "#ffffff", borderColor: "#d1d5db" }}
+          >
             <svg
               aria-label={t("attendance.qr.ariaLabel")}
-              className="h-40 w-40 text-zinc-950"
+              className="h-40 w-40"
               role="img"
               shapeRendering="crispEdges"
+              style={{ backgroundColor: "#ffffff" }}
               viewBox={qrCodeViewBox}
             >
-              <rect height="100%" width="100%" fill="white" />
-              <path d={qrCodePath} fill="currentColor" />
+              <rect height="100%" width="100%" fill="#ffffff" />
+              <path d={qrCodePath} fill="#111827" />
             </svg>
           </div>
           <div>
