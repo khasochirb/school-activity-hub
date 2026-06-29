@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
@@ -25,7 +24,6 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CategoryBadge,
   CollapsibleFormSection,
-  DetailsDisclosure,
   EmptyState,
   FilterPanel,
   FormSectionToggleButton,
@@ -37,11 +35,8 @@ import {
   StatusBadge,
 } from "../_components/page-ui";
 import {
-  cancelEvent,
   cancelEventRegistration,
   joinEvent,
-  updateEventSafety,
-  updateEventSharing,
 } from "./actions";
 import { CreateEventForm } from "./create-event-form";
 
@@ -231,12 +226,9 @@ export default async function EventsPage({
   });
 
   const eventIds = events.map((event) => event.id);
-  const [attendees, eventShares, connectedSchools] = await Promise.all([
+  const [attendees, eventShares] = await Promise.all([
     eventIds.length ? getEventAttendees(admin, eventIds) : Promise.resolve([]),
     eventIds.length ? getEventShares(admin, eventIds) : Promise.resolve([]),
-    isStaff && connectedSchoolIds.length
-      ? getSchoolsById(admin, connectedSchoolIds)
-      : Promise.resolve([]),
   ]);
   const attendeeCounts = countActiveAttendees(attendees);
   const currentStudentRegistrationByEventId = mapCurrentStudentRegistrations(
@@ -282,9 +274,9 @@ export default async function EventsPage({
       ? t("events.empty.noPastTitle")
       : t("events.empty.noUpcomingTitle");
   const renderEventCard = (event: Event) => {
-    const registeredCount = attendeeCounts.get(event.id) ?? 0;
     const isFull =
-      event.capacity !== null && registeredCount >= event.capacity;
+      event.capacity !== null &&
+      (attendeeCounts.get(event.id) ?? 0) >= event.capacity;
     const registrationStatus = currentStudentRegistrationByEventId.get(
       event.id,
     );
@@ -303,7 +295,6 @@ export default async function EventsPage({
             ? clubNameById.get(event.club_id) ?? t("events.fallback.clubEvent")
             : null
         }
-        connectedSchools={connectedSchools}
         currentStudent={currentStudent}
         event={event}
         isFull={isFull}
@@ -314,7 +305,6 @@ export default async function EventsPage({
           schoolNameById.get(event.school_id) ??
           t("events.fallback.connectedSchool")
         }
-        registeredCount={registeredCount}
         registrationStatus={registrationStatus?.status}
         permissionStatus={permissionStatus}
         sharedSchoolIds={sharedSchoolIds}
@@ -763,14 +753,12 @@ function scheduleGroupLabel(key: ScheduleGroupKey, t: Translate) {
 
 function EventCard({
   clubName,
-  connectedSchools,
   currentStudent,
   event,
   isFull,
   isStaff,
   locale,
   ownerSchoolName,
-  registeredCount,
   registrationStatus,
   permissionStatus,
   sharedSchoolIds,
@@ -779,7 +767,6 @@ function EventCard({
   userSchoolId,
 }: {
   clubName: string | null;
-  connectedSchools: SchoolOption[];
   currentStudent: StudentRoster | null;
   event: Event;
   isFull: boolean;
@@ -787,7 +774,6 @@ function EventCard({
   locale: Locale;
   ownerSchoolName: string;
   permissionStatus: EventPermissionStatus | undefined;
-  registeredCount: number;
   registrationStatus: string | undefined;
   sharedSchoolIds: string[];
   t: Translate;
@@ -820,15 +806,23 @@ function EventCard({
             {event.location || "-"}
           </p>
         </div>
-        <EventActions
-          currentStudent={currentStudent}
-          event={event}
-          isFull={isFull}
-          isStaff={isStaff}
-          registrationStatus={registrationStatus}
-          t={t}
-          userSchoolId={userSchoolId}
-        />
+        <div className="flex flex-col gap-2 sm:items-end">
+          <EventActions
+            currentStudent={currentStudent}
+            event={event}
+            isFull={isFull}
+            isStaff={isStaff}
+            registrationStatus={registrationStatus}
+            t={t}
+            userSchoolId={userSchoolId}
+          />
+          <Link
+            className="btn btn-secondary min-h-9 px-3"
+            href={`/events/${event.id}`}
+          >
+            {t("common.viewDetails")}
+          </Link>
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -869,91 +863,6 @@ function EventCard({
         ) : null}
       </div>
 
-      <DetailsDisclosure label={t("events.card.details")}>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-zinc-500">{t("events.card.registration")}</dt>
-            <dd className="text-zinc-800">
-              {tf("events.registration.count", { count: registeredCount })}
-              {event.capacity
-                ? ` ${tf("events.registration.maxSuffix", {
-                    count: event.capacity,
-                  })}`
-                : ""}
-            </dd>
-          </div>
-          {event.capacity ? (
-            <div>
-              <dt className="text-zinc-500">
-                {t("events.card.maxParticipants")}
-              </dt>
-              <dd className="text-zinc-800">{event.capacity}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt className="text-zinc-500">{t("events.card.eventType")}</dt>
-            <dd className="text-zinc-800">
-              {clubName
-                ? t("events.fallback.clubEvent")
-                : t("events.card.schoolEvent")}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500">{t("events.card.hostedBy")}</dt>
-            <dd className="text-zinc-800">
-              {isOwnSchoolEvent ? t("events.card.mySchool") : ownerSchoolName}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500">{t("events.card.safety")}</dt>
-            <dd className="text-zinc-800">{riskLabel(event.risk_level, t)}</dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500">{t("events.card.permission")}</dt>
-            <dd className="text-zinc-800">
-              {event.permission_required
-                ? t("events.permission.mayBeRequired")
-                : t("events.permission.notRequired")}
-            </dd>
-          </div>
-        </dl>
-
-        {event.permission_note ? (
-          <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-            <p className="font-medium text-zinc-900">
-              {t("events.permission.note")}
-            </p>
-            <p className="mt-1 leading-6">{event.permission_note}</p>
-          </div>
-        ) : null}
-
-        {event.description ? (
-          <p className="mt-3 text-sm leading-6 text-zinc-600">
-            {event.description}
-          </p>
-        ) : null}
-        {isStaff && isOwnSchoolEvent ? (
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            <div className="rounded-md border border-[var(--border)] bg-[var(--card)] p-3">
-              <h4 className="mb-2 text-sm font-semibold text-zinc-950">
-                {t("events.sharing.shareWith")}
-              </h4>
-              <SharingForm
-                connectedSchools={connectedSchools}
-                event={event}
-                sharedSchoolIds={sharedSchoolIds}
-                t={t}
-              />
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--card)] p-3">
-              <h4 className="mb-2 text-sm font-semibold text-zinc-950">
-                {t("events.formGroups.safetyPermissions")}
-              </h4>
-              <SafetyForm event={event} t={t} />
-            </div>
-          </div>
-        ) : null}
-      </DetailsDisclosure>
     </article>
   );
 }
@@ -986,19 +895,6 @@ function EventActions({
         >
           {t("events.actions.attendanceQr")}
         </Link>
-        <form action={cancelEvent}>
-          <input name="event_id" type="hidden" value={event.id} />
-          <ConfirmSubmitButton
-            cancelLabel={t("common.cancel")}
-            className="btn btn-secondary min-h-9 px-3"
-            confirmDescription={t("feedback.cannotBeUndone")}
-            confirmLabel={t("feedback.confirm")}
-            confirmTitle={t("feedback.cancelEvent")}
-            pendingLabel={t("events.actions.cancelling")}
-          >
-            {t("events.actions.cancel")}
-          </ConfirmSubmitButton>
-        </form>
       </div>
     );
   }
@@ -1065,117 +961,6 @@ function EventActions({
         </PendingSubmitButton>
       </form>
     </div>
-  );
-}
-
-function SafetyForm({ event, t }: { event: Event; t: Translate }) {
-  return (
-    <form action={updateEventSafety} className="flex flex-col gap-2">
-      <input name="event_id" type="hidden" value={event.id} />
-      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-        {t("events.form.riskLevel")}
-        <select
-          className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition focus:border-zinc-900"
-          defaultValue={event.risk_level}
-          name="risk_level"
-        >
-          <option value="low">{t("events.risk.low")}</option>
-          <option value="medium">{t("events.risk.medium")}</option>
-          <option value="high">{t("events.risk.high")}</option>
-        </select>
-      </label>
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input
-          className="h-4 w-4 cursor-pointer"
-          defaultChecked={event.permission_required}
-          name="permission_required"
-          type="checkbox"
-          value="true"
-        />
-        {t("events.form.permissionRequired")}
-      </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-        {t("events.form.permissionNote")}
-        <textarea
-          className="min-h-16 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none transition focus:border-zinc-900"
-          defaultValue={event.permission_note ?? ""}
-          name="permission_note"
-        />
-      </label>
-      <PendingSubmitButton
-        className="btn btn-secondary min-h-9 px-3"
-        pendingLabel={t("common.saving")}
-        toastMessage={t("common.saving")}
-      >
-        {t("events.actions.saveSafety")}
-      </PendingSubmitButton>
-    </form>
-  );
-}
-
-function SharingForm({
-  connectedSchools,
-  event,
-  sharedSchoolIds,
-  t,
-}: {
-  connectedSchools: SchoolOption[];
-  event: Event;
-  sharedSchoolIds: string[];
-  t: Translate;
-}) {
-  const sharedSchoolIdSet = new Set(sharedSchoolIds);
-
-  return (
-    <form action={updateEventSharing} className="flex flex-col gap-2">
-      <input name="event_id" type="hidden" value={event.id} />
-      {connectedSchools.length ? (
-        <fieldset className="rounded-md border border-zinc-200 p-3">
-          <legend className="px-1 text-xs font-medium text-zinc-600">
-            {t("events.sharing.shareWith")}
-          </legend>
-          <div className="flex flex-col gap-2">
-            {connectedSchools.map((school) => (
-              <label
-                className="flex items-center gap-2 text-sm text-zinc-700"
-                key={school.id}
-              >
-                <input
-                  className="h-4 w-4 cursor-pointer"
-                  defaultChecked={sharedSchoolIdSet.has(school.id)}
-                  name="share_school_ids"
-                  type="checkbox"
-                  value={school.id}
-                />
-                {school.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      ) : (
-        <p className="text-sm text-zinc-500">
-          {t("events.sharing.noConnections")}
-        </p>
-      )}
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input
-          className="h-4 w-4 cursor-pointer"
-          defaultChecked={event.allow_connected_school_registration}
-          name="allow_connected_registration"
-          type="checkbox"
-          value="true"
-        />
-        {t("events.sharing.allowConnectedRegistration")}
-      </label>
-      <PendingSubmitButton
-        className="btn btn-secondary min-h-9 px-3 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
-        disabled={!connectedSchools.length && !sharedSchoolIds.length}
-        pendingLabel={t("common.saving")}
-        toastMessage={t("common.saving")}
-      >
-        {t("events.actions.saveSharing")}
-      </PendingSubmitButton>
-    </form>
   );
 }
 

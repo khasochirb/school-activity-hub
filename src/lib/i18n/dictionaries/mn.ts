@@ -312,6 +312,17 @@ export const mn = {
     },
     description:
       "Батлагдсан үйл ажиллагаа үүсгэж, сурагчдын бүртгэлийг удирдаж, арга хэмжээ эхлэхэд ирцийн check-in нээнэ үү.",
+    detail: {
+      approvedAt: "Батлагдсан",
+      attendance: "Ирц",
+      createdAt: "Үүссэн",
+      eventInformation: "Арга хэмжээний мэдээлэл",
+      rejectionReason: "Татгалзсан шалтгаан",
+      sharing: "Хуваалцах",
+      statusInformation: "Төлөвийн мэдээлэл",
+      submittedAt: "Илгээсэн",
+      youHaveCheckedIn: "Таны ирц бүртгэгдсэн байна",
+    },
     empty: {
       noPastTitle: "Өнгөрсөн арга хэмжээ алга",
       noUpcomingTitle: "Удахгүй болох арга хэмжээ алга",

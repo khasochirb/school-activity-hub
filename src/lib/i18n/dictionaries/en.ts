@@ -785,6 +785,17 @@ export const en = {
     },
     description:
       "Create approved activities, manage student registrations, and open attendance check-in when an event begins.",
+    detail: {
+      approvedAt: "Approved",
+      attendance: "Attendance",
+      createdAt: "Created",
+      eventInformation: "Event information",
+      rejectionReason: "Rejection reason",
+      sharing: "Sharing",
+      statusInformation: "Status information",
+      submittedAt: "Submitted",
+      youHaveCheckedIn: "You have checked in",
+    },
     empty: {
       noPastTitle: "No past events",
       noUpcomingTitle: "No upcoming events",
