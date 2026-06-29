@@ -532,7 +532,7 @@ export const en = {
     profile: "Profile",
     reports: "Reports",
     schoolConnections: "School Connections",
-    settings: "Settings",
+    settings: "School Settings",
     staff: "Staff",
     students: "Students",
   },
@@ -1330,7 +1330,7 @@ export const en = {
     actions: {
       save: "Save school settings",
     },
-    description: "Manage basic school settings for your activity hub.",
+    description: "Update your school name, province, and school profile details.",
     empty: {
       noSchool: "No school record was found for your profile.",
     },
@@ -1355,7 +1355,7 @@ export const en = {
     success: {
       updated: "School settings updated.",
     },
-    title: "Settings",
+    title: "School Settings",
     update: {
       description:
         "You can update the school name and province. Slug, status, and school ownership are managed separately.",
