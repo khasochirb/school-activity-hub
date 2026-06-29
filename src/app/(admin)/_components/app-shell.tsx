@@ -92,6 +92,11 @@ const navSections: Array<{
         platformAdminOnly: true,
       },
       {
+        href: "/super-admin/platform-admins",
+        labelKey: "nav.platformAdmins",
+        platformAdminOnly: true,
+      },
+      {
         href: "/super-admin/audit-log",
         labelKey: "nav.auditLog",
         platformAdminOnly: true,

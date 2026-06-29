@@ -58,6 +58,12 @@ const actionLabelKeyByAction: Record<string, string> = {
     "superAdmin.auditLog.actionLabels.connectionRejected",
   "platform.connection.revoked":
     "superAdmin.auditLog.actionLabels.connectionRevoked",
+  "platform.platform_admin.added":
+    "superAdmin.auditLog.actionLabels.platformAdminAdded",
+  "platform.platform_admin.deactivated":
+    "superAdmin.auditLog.actionLabels.platformAdminDeactivated",
+  "platform.platform_admin.reactivated":
+    "superAdmin.auditLog.actionLabels.platformAdminReactivated",
   "platform.school.created": "superAdmin.auditLog.actionLabels.schoolCreated",
   "platform.school.updated": "superAdmin.auditLog.actionLabels.schoolUpdated",
   "platform.school_admin.created":

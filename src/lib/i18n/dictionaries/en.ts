@@ -534,6 +534,7 @@ export const en = {
     operations: "Operations",
     platform: "Platform",
     platformConnections: "Platform connections",
+    platformAdmins: "Platform admins",
     profile: "Profile",
     reports: "Reports",
     schoolConnections: "School Connections",
@@ -1449,6 +1450,9 @@ export const en = {
         connectionCreated: "Connection created",
         connectionRejected: "Connection rejected",
         connectionRevoked: "Connection revoked",
+        platformAdminAdded: "Platform admin added",
+        platformAdminDeactivated: "Platform admin deactivated",
+        platformAdminReactivated: "Platform admin reactivated",
         schoolAdminCreated: "School admin created",
         schoolAdminDeactivated: "School admin deactivated",
         schoolAdminReactivated: "School admin reactivated",
@@ -1590,6 +1594,63 @@ export const en = {
       title: "New school",
       warning:
         "Only platform admins can create schools. School admins can manage only their own school.",
+    },
+    platformAdmins: {
+      actions: {
+        add: "Add platform admin",
+        adding: "Adding...",
+        deactivate: "Deactivate platform admin",
+        deactivating: "Deactivating...",
+        reactivate: "Reactivate platform admin",
+        reactivating: "Reactivating...",
+      },
+      add: {
+        description:
+          "Add platform access for an existing user who already has a profile.",
+        title: "Add platform admin",
+      },
+      current: {
+        description:
+          "Platform admins can access platform-level pages and actions.",
+        title: "Current platform admins",
+      },
+      description:
+        "View, add, deactivate, and reactivate trusted platform admins.",
+      empty: {
+        description:
+          "Platform admins will appear here after the first account is bootstrapped.",
+        title: "No platform admins found",
+      },
+      errors: {
+        addFailed: "Platform admin could not be added: {error}",
+        alreadyPlatformAdmin: "This user is already a platform admin.",
+        cannotDeactivateSelf:
+          "You cannot deactivate your own platform access here",
+        emailRequired: "Admin email is required.",
+        invalidAction: "Choose a valid platform admin action.",
+        lookupFailed: "User lookup failed: {error}",
+        profileRequired:
+          "User must have an existing profile before becoming platform admin",
+        updateFailed: "Platform admin could not be updated: {error}",
+        userNotFound: "User not found",
+      },
+      fields: {
+        actions: "Actions",
+        adminEmail: "Admin email",
+        created: "Created date",
+        email: "Email",
+        fullName: "Full name",
+        schoolRole: "School role",
+        status: "Status",
+      },
+      safetyNote:
+        "Platform admins can manage schools and platform settings. Give this access only to trusted users.",
+      success: {
+        added: "Platform admin added",
+        deactivated: "Platform admin deactivated",
+        reactivated: "Platform admin reactivated",
+      },
+      title: "Manage platform admins",
     },
     schoolDetail: {
       actions: {
