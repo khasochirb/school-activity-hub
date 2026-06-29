@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -76,7 +76,7 @@ export default async function SuperAdminSchoolDetailPage({
   const { schoolId } = await params;
 
   if (!isUuid(schoolId)) {
-    redirect("/super-admin/schools");
+    notFound();
   }
 
   const [locale, queryParams] = await Promise.all([
@@ -128,12 +128,12 @@ export default async function SuperAdminSchoolDetailPage({
       .returns<SchoolConnection[]>(),
   ]);
 
-  if (schoolError || !school) {
-    redirect(
-      `/super-admin/schools?error=${encodeURIComponent(
-        t("superAdmin.schoolDetail.errors.schoolNotFound"),
-      )}`,
-    );
+  if (schoolError) {
+    throw new Error("Unable to load super admin school detail.");
+  }
+
+  if (!school) {
+    notFound();
   }
 
   const schoolAdmins = schoolAdminsResult.data ?? [];
@@ -666,7 +666,7 @@ function getSearchValue(value: string | string[] | undefined) {
 }
 
 function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     value,
   );
 }

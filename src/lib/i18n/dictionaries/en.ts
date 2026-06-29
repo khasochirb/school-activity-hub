@@ -1625,6 +1625,10 @@ export const en = {
       overview: {
         title: "School overview",
       },
+      notFound: {
+        description:
+          "This school could not be found. Return to the school directory and choose another school.",
+      },
       privacyNotice:
         "Platform admins cannot view private student data on this page.",
       success: {
