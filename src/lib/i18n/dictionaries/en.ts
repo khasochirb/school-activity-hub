@@ -287,6 +287,83 @@ export const en = {
     },
     title: "Clubs",
   },
+  clubRequests: {
+    actions: {
+      approve: "Approve and create club",
+      approving: "Approving...",
+      archive: "Archive request",
+      archiving: "Archiving...",
+      reject: "Reject request",
+      rejecting: "Rejecting...",
+      submit: "Submit club idea",
+      submitting: "Submitting...",
+      suggest: "Suggest a club",
+      support: "Support this club",
+      supported: "Supported",
+      supporting: "Supporting...",
+      unsupporting: "Removing support...",
+    },
+    create: {
+      description:
+        "Share a club idea with staff. Other students can support it before staff review.",
+    },
+    empty: {
+      staffDescription:
+        "Student club ideas waiting for staff review will appear here.",
+      staffTitle: "No requests waiting for review.",
+      studentDescription: "Be the first to suggest a club.",
+      studentTitle: "No club ideas yet.",
+    },
+    errors: {
+      createFailed: "Club idea could not be submitted. Try again.",
+      invalidCategory: "Choose a valid category.",
+      loadFailed: "Club requests could not be loaded. Refresh and try again.",
+      studentsOnlyCreate: "Only students can submit club ideas.",
+      titleRequired: "Club name is required.",
+      tooManyPending:
+        "You already have 3 pending club ideas. Wait for staff review before adding another.",
+    },
+    eyebrow: "Student demand",
+    fallback: {
+      student: "Student",
+    },
+    fields: {
+      category: "Category",
+      createdAt: "Created date",
+      createdBy: "Created by",
+      description: "Why should this club exist?",
+      rejectionReason: "Rejection reason",
+      reviewedAt: "Reviewed date",
+      supportRate: "Support rate",
+      supporters: "Supporters",
+      title: "Club name",
+    },
+    filters: {
+      searchPlaceholder: "Search club ideas",
+    },
+    list: {
+      staffTitle: "All club requests",
+      studentTitle: "Club ideas",
+    },
+    messages: {
+      approved: "This club has been approved",
+      becameClub: "This request became a club",
+    },
+    staffDecisionNotice:
+      "Students can support club ideas, but staff make the final decision.",
+    staffDescription:
+      "Review student club ideas, compare support, and approve requests when the school is ready to create the club.",
+    staffTitle: "Club Requests",
+    status: {
+      pendingReview: "Pending review",
+    },
+    studentDescription:
+      "Suggest new clubs and support ideas from other students in your school.",
+    studentTitle: "Club Ideas",
+    success: {
+      created: "Club idea submitted.",
+    },
+  },
   dashboard: {
     attention: {
       description: "Review items that may need a staff follow-up.",
@@ -563,6 +640,8 @@ export const en = {
     announcements: "Announcements",
     approvals: "Approvals",
     auditLog: "Audit log",
+    clubIdeas: "Club Ideas",
+    clubRequests: "Club Requests",
     clubs: "Clubs",
     dashboard: "Dashboard",
     events: "Events",

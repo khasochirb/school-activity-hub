@@ -34,6 +34,16 @@ const navSections: Array<{
       { href: "/dashboard", labelKey: "nav.dashboard" },
       { href: "/events", labelKey: "nav.events" },
       { href: "/clubs", labelKey: "nav.clubs" },
+      {
+        href: "/club-requests",
+        labelKey: "nav.clubIdeas",
+        roles: ["student"],
+      },
+      {
+        href: "/club-requests",
+        labelKey: "nav.clubRequests",
+        roles: ["school_admin", "teacher"],
+      },
       { href: "/announcements", labelKey: "nav.announcements" },
     ],
   },
