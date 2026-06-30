@@ -9,6 +9,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import type { ThemePreference } from "@/lib/theme";
 import { logout } from "../actions";
 import { AppNav, type NavItem, type NavSection } from "./app-nav";
+import { MobileMenuDrawer } from "./mobile-menu-drawer";
 
 type Role = "school_admin" | "teacher" | "student";
 
@@ -185,11 +186,8 @@ export async function AppShell({
               shortName={t("app.shortName")}
               subtitle={t("app.subtitle")}
             />
-            <details className="group relative shrink-0">
-              <summary className="btn btn-secondary list-none px-3 [&::-webkit-details-marker]:hidden">
-                {t("nav.menu")}
-              </summary>
-              <div className="absolute right-0 z-30 mt-3 max-h-[calc(100vh-5.5rem)] w-[min(21rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overflow-x-hidden rounded-md border border-slate-200 bg-white p-3 shadow-xl">
+            <MobileMenuDrawer closeLabel={t("common.close")} menuLabel={t("nav.menu")}>
+              <div className="min-w-0 max-w-full">
                 <AppNav sections={visibleNavSections} />
                 <div className="mt-4 border-t border-slate-200 pt-4">
                   <MobileAccount
@@ -207,7 +205,7 @@ export async function AppShell({
                   />
                 </div>
               </div>
-            </details>
+            </MobileMenuDrawer>
           </div>
         </header>
 
