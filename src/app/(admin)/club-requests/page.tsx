@@ -151,7 +151,7 @@ export default async function ClubRequestsPage({
           .eq("school_id", profile.school_id)
           .eq("status", "active"),
       )
-    : Promise.resolve({ count: null });
+    : Promise.resolve({ count: null, error: null });
   const [{ data: requests, error: requestsError }, activeStudentsResult] =
     await Promise.all([
       timeServer("club-requests.query.requests", () =>
@@ -162,13 +162,32 @@ export default async function ClubRequestsPage({
       ),
       activeStudentsCountPromise,
     ]);
+
+  if (requestsError) {
+    console.error("Club requests query failed", {
+      code: requestsError.code,
+      details: requestsError.details,
+      hint: requestsError.hint,
+      message: requestsError.message,
+    });
+  }
+
+  if (activeStudentsResult.error) {
+    console.error("Club requests active student count query failed", {
+      code: activeStudentsResult.error.code,
+      details: activeStudentsResult.error.details,
+      hint: activeStudentsResult.error.hint,
+      message: activeStudentsResult.error.message,
+    });
+  }
+
   const { hasNextPage, rows: requestRows } = pageRows(
     requests,
     CLUB_REQUESTS_PAGE_SIZE,
   );
   const activeStudentCount = activeStudentsResult.count ?? 0;
   const requestIds = requestRows.map((request) => request.id);
-  const { data: supports } = requestIds.length
+  const { data: supports, error: supportsError } = requestIds.length
     ? await timeServer("club-requests.query.supports", () =>
         supabase
           .from("club_request_supports")
@@ -176,7 +195,17 @@ export default async function ClubRequestsPage({
           .in("club_request_id", requestIds)
           .returns<ClubRequestSupport[]>(),
       )
-    : { data: [] };
+    : { data: [], error: null };
+
+  if (supportsError) {
+    console.error("Club request supports query failed", {
+      code: supportsError.code,
+      details: supportsError.details,
+      hint: supportsError.hint,
+      message: supportsError.message,
+    });
+  }
+
   const creatorNamesById = isStaff
     ? await getCreatorNamesById(
         supabase,
@@ -282,13 +311,14 @@ export default async function ClubRequestsPage({
               ? t("clubRequests.list.staffTitle")
               : t("clubRequests.list.studentTitle")}
           </h2>
-          {requestsError ? (
-            <p className="mt-2 text-sm text-red-600">
-              {t("clubRequests.errors.loadFailed")}
-            </p>
-          ) : null}
         </div>
-        {requestRows.length ? (
+        {requestsError ? (
+          <div className="p-4">
+            <div className="notice-box notice-danger" role="status">
+              {t("clubRequests.errors.loadFailed")}
+            </div>
+          </div>
+        ) : requestRows.length ? (
           <div className="grid gap-3 p-3 lg:grid-cols-2">
             {requestRows.map((request) => {
               const supportCount = supportCounts.get(request.id) ?? 0;
@@ -606,7 +636,7 @@ async function getCreatorNamesById(
     return new Map<string, string>();
   }
 
-  const { data: profiles } = await timeServer("club-requests.query.creators", () =>
+  const { data: profiles, error } = await timeServer("club-requests.query.creators", () =>
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -614,6 +644,15 @@ async function getCreatorNamesById(
       .in("id", uniqueIds)
       .returns<Array<{ id: string; full_name: string }>>(),
   );
+
+  if (error) {
+    console.error("Club request creator profile query failed", {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      message: error.message,
+    });
+  }
 
   return new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
 }
