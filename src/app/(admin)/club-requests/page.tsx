@@ -164,21 +164,14 @@ export default async function ClubRequestsPage({
     ]);
 
   if (requestsError) {
-    console.error("Club requests query failed", {
-      code: requestsError.code,
-      details: requestsError.details,
-      hint: requestsError.hint,
-      message: requestsError.message,
-    });
+    logSupabaseError("Club requests query failed", requestsError);
   }
 
   if (activeStudentsResult.error) {
-    console.error("Club requests active student count query failed", {
-      code: activeStudentsResult.error.code,
-      details: activeStudentsResult.error.details,
-      hint: activeStudentsResult.error.hint,
-      message: activeStudentsResult.error.message,
-    });
+    logSupabaseError(
+      "Club requests active student count query failed",
+      activeStudentsResult.error,
+    );
   }
 
   const { hasNextPage, rows: requestRows } = pageRows(
@@ -198,12 +191,7 @@ export default async function ClubRequestsPage({
     : { data: [], error: null };
 
   if (supportsError) {
-    console.error("Club request supports query failed", {
-      code: supportsError.code,
-      details: supportsError.details,
-      hint: supportsError.hint,
-      message: supportsError.message,
-    });
+    logSupabaseError("Club request supports query failed", supportsError);
   }
 
   const creatorNamesById = isStaff
@@ -646,15 +634,14 @@ async function getCreatorNamesById(
   );
 
   if (error) {
-    console.error("Club request creator profile query failed", {
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      message: error.message,
-    });
+    logSupabaseError("Club request creator profile query failed", error);
   }
 
   return new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
+}
+
+function logSupabaseError(label: string, error: unknown) {
+  console.error(label, error);
 }
 
 function countSupportsByRequest(supports: ClubRequestSupport[]) {
