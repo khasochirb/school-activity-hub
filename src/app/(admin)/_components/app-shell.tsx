@@ -55,16 +55,11 @@ const navSections: Array<{
         labelKey: "nav.students",
         roles: ["school_admin", "teacher"],
       },
+      { href: "/staff", labelKey: "nav.staff", roles: ["school_admin"] },
       {
         href: "/invite-codes",
         labelKey: "nav.inviteCodes",
         roles: ["school_admin", "teacher"],
-      },
-      { href: "/staff", labelKey: "nav.staff", roles: ["school_admin"] },
-      {
-        href: "/school-connections",
-        labelKey: "nav.schoolConnections",
-        roles: ["school_admin"],
       },
     ],
   },
@@ -81,7 +76,17 @@ const navSections: Array<{
         labelKey: "nav.reports",
         roles: ["school_admin", "teacher"],
       },
+    ],
+  },
+  {
+    labelKey: "nav.schoolManagement",
+    items: [
       { href: "/settings", labelKey: "nav.settings", roles: ["school_admin"] },
+      {
+        href: "/school-connections",
+        labelKey: "nav.schoolConnections",
+        roles: ["school_admin"],
+      },
     ],
   },
   {
