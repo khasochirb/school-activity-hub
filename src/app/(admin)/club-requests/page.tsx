@@ -285,8 +285,8 @@ export default async function ClubRequestsPage({
           options={[
             { label: t("filters.all"), value: "all" },
             { label: t("clubRequests.status.pendingReview"), value: "pending" },
-            { label: t("status.approved"), value: "approved" },
-            { label: t("status.rejected"), value: "rejected" },
+            { label: t("clubRequests.status.approved"), value: "approved" },
+            { label: t("clubRequests.status.rejected"), value: "rejected" },
             { label: t("status.archived"), value: "archived" },
           ]}
         />
@@ -672,11 +672,11 @@ function requestStatusLabel(
   }
 
   if (status === "approved") {
-    return t("status.approved");
+    return t("clubRequests.status.approved");
   }
 
   if (status === "rejected") {
-    return t("status.rejected");
+    return t("clubRequests.status.rejected");
   }
 
   return t("status.archived");

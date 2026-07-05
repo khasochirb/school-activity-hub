@@ -355,7 +355,9 @@ export const en = {
       "Review student club ideas, compare support, and approve requests when the school is ready to create the club.",
     staffTitle: "Club Requests",
     status: {
+      approved: "Approved",
       pendingReview: "Pending review",
+      rejected: "Rejected",
     },
     studentDescription:
       "Suggest new clubs and support ideas from other students in your school.",
