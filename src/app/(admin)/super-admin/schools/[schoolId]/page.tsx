@@ -399,6 +399,7 @@ export default async function SuperAdminSchoolDetailPage({
             <Link
               className="btn btn-secondary mt-4 h-10 w-full"
               href="/super-admin/connections"
+              prefetch={false}
             >
               {t("superAdmin.actions.viewConnections")}
             </Link>

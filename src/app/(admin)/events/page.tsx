@@ -848,6 +848,7 @@ function EventViewToggle({
         aria-label={t("events.view.viewList")}
         className={viewToggleClassName(selectedView === "list")}
         href={buildEventsViewHref(state, "list")}
+        prefetch={false}
       >
         {t("events.view.list")}
       </Link>
@@ -855,6 +856,7 @@ function EventViewToggle({
         aria-label={t("events.view.viewCalendar")}
         className={viewToggleClassName(selectedView === "month")}
         href={buildEventsViewHref(state, "month")}
+        prefetch={false}
       >
         {t("events.view.month")}
       </Link>
@@ -862,6 +864,7 @@ function EventViewToggle({
         aria-label={t("events.view.viewWeek")}
         className={viewToggleClassName(selectedView === "week")}
         href={buildEventsViewHref(state, "week")}
+        prefetch={false}
       >
         {t("events.view.week")}
       </Link>

@@ -365,6 +365,7 @@ function AuditFilterPanel({
           <Link
             className="btn btn-secondary min-h-11 md:min-h-10"
             href="/super-admin/audit-log"
+            prefetch={false}
           >
             {t("filters.clear")}
           </Link>

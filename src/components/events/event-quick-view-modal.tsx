@@ -297,6 +297,7 @@ export function EventQuickViewModal({
             <Link
               className="btn btn-secondary min-h-11 w-full sm:w-auto"
               href={`/events/${event.id}`}
+              prefetch={false}
             >
               {labels.viewFullDetails}
             </Link>
@@ -333,6 +334,7 @@ export function EventPrimaryAction({
       <Link
         className={`btn btn-primary min-h-11 ${widthClass}`}
         href={`/events/${item.id}/attendance`}
+        prefetch={false}
       >
         {labels.attendanceQr}
       </Link>

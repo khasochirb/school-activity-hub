@@ -389,6 +389,7 @@ export default async function ClubRequestsPage({
                         <Link
                           className="mt-2 inline-flex cursor-pointer text-sm font-bold text-teal-700 hover:text-teal-800"
                           href={`/clubs?q=${encodeURIComponent(request.title)}`}
+                          prefetch={false}
                         >
                           {t("clubRequests.messages.becameClub")}
                         </Link>

@@ -88,23 +88,6 @@ type RecentCheckin = {
   } | null;
 };
 
-const dashboardPrimaryPrefetchPaths = new Set([
-  "/approvals",
-  "/clubs",
-  "/events",
-  "/students",
-]);
-
-function shouldPrefetchDashboardHref(href: string) {
-  const route = href.split("#", 1)[0];
-
-  if (route.includes("?")) {
-    return false;
-  }
-
-  return dashboardPrimaryPrefetchPaths.has(route);
-}
-
 export default async function DashboardPage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
@@ -332,7 +315,7 @@ function DashboardHeaderActions({ t }: { t: (key: string) => string }) {
     <>
       <HeaderActionLink
         href="/students#add-student"
-        prefetch={shouldPrefetchDashboardHref("/students#add-student")}
+        prefetch={false}
         variant="secondary"
       >
         {t("dashboard.quickActions.addStudents.label")}
@@ -346,7 +329,7 @@ function DashboardHeaderActions({ t }: { t: (key: string) => string }) {
       </HeaderActionLink>
       <HeaderActionLink
         href="/events#create-event"
-        prefetch={shouldPrefetchDashboardHref("/events#create-event")}
+        prefetch={false}
       >
         {t("dashboard.quickActions.createEvent.label")}
       </HeaderActionLink>
@@ -491,7 +474,7 @@ function NextSteps({
             className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
             href={step.href}
             key={step.action}
-            prefetch={shouldPrefetchDashboardHref(step.href)}
+            prefetch={false}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -626,7 +609,7 @@ function NeedsAttention({
               className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
               href={item.href}
               key={item.title}
-              prefetch={shouldPrefetchDashboardHref(item.href)}
+              prefetch={false}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -675,14 +658,14 @@ function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
         <Link
           className="btn btn-primary min-h-12 w-full text-base sm:text-sm"
           href="/events"
-          prefetch
+          prefetch={false}
         >
           {t("dashboard.browseEvents")}
         </Link>
         <Link
           className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
           href="/clubs"
-          prefetch
+          prefetch={false}
         >
           {t("dashboard.joinClubs")}
         </Link>
@@ -738,7 +721,7 @@ function QuickActions({ t }: { t: (key: string) => string }) {
             className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
             href={action.href}
             key={action.href}
-            prefetch={shouldPrefetchDashboardHref(action.href)}
+            prefetch={false}
           >
             <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
               {action.label}
@@ -789,7 +772,7 @@ function MetricCard({
       aria-label={`${label}: ${formatNumber(value)}`}
       className="group block rounded-lg transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
       href={href}
-      prefetch={shouldPrefetchDashboardHref(href)}
+      prefetch={false}
     >
       {content}
     </Link>

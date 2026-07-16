@@ -527,6 +527,7 @@ function PrimaryActionPanel({
       <Link
         className="btn btn-primary min-h-10 w-full px-3"
         href={`/events/${event.id}/attendance`}
+        prefetch={false}
       >
         {t("events.actions.attendanceQr")}
       </Link>

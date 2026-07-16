@@ -120,7 +120,11 @@ export function EventsFilters({
               <button className="btn btn-primary min-h-11 md:min-h-10" type="submit">
                 {labels.filter}
               </button>
-              <Link className="btn btn-secondary min-h-11 md:min-h-10" href={clearHref}>
+              <Link
+                className="btn btn-secondary min-h-11 md:min-h-10"
+                href={clearHref}
+                prefetch={false}
+              >
                 {labels.clear}
               </Link>
             </div>
@@ -136,6 +140,7 @@ export function EventsFilters({
               className="inline-flex min-h-9 max-w-full items-center gap-1 rounded-full border border-[#f2af68]/60 bg-[var(--primary-soft)] px-3 py-1 text-sm font-bold text-[var(--primary-strong)] transition hover:border-[#f2af68] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]"
               href={filter.href}
               key={`${filter.label}-${filter.href}`}
+              prefetch={false}
             >
               <span className="min-w-0 break-words">{filter.label}</span>
               <span aria-hidden="true">&times;</span>

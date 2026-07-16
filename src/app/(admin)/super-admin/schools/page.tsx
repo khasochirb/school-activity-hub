@@ -233,6 +233,7 @@ export default async function SuperAdminSchoolsPage({
                         <Link
                           className="btn btn-secondary h-10 w-full sm:w-auto"
                           href={`/super-admin/schools/${school.id}`}
+                          prefetch={false}
                         >
                           {t("superAdmin.schoolDetail.actions.manageSchool")}
                         </Link>
@@ -272,6 +273,7 @@ export default async function SuperAdminSchoolsPage({
                   <Link
                     className="btn btn-secondary mt-4 h-10 w-full"
                     href={`/super-admin/schools/${school.id}`}
+                    prefetch={false}
                   >
                     {t("superAdmin.schoolDetail.actions.manageSchool")}
                   </Link>

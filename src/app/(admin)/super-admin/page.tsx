@@ -115,7 +115,7 @@ export default async function SuperAdminPage() {
       <PageHeader
         actions={
           <>
-            <HeaderActionLink href="/super-admin/schools" prefetch>
+            <HeaderActionLink href="/super-admin/schools" prefetch={false}>
               {t("superAdmin.actions.viewSchools")}
             </HeaderActionLink>
             <HeaderActionLink

@@ -273,6 +273,7 @@ export default async function EventAttendancePage({
           <Link
             className="btn btn-secondary h-10"
             href="/events"
+            prefetch={false}
           >
             {t("common.backToEvents")}
           </Link>
@@ -334,6 +335,7 @@ export default async function EventAttendancePage({
                   <Link
                     className="btn btn-primary min-h-11 w-full sm:w-auto"
                     href={checkInUrl}
+                    prefetch={false}
                   >
                     {t("attendance.actions.openLink")}
                   </Link>
@@ -402,6 +404,7 @@ export default async function EventAttendancePage({
                     }
                     href={attendanceFilterHref(event.id, filter)}
                     key={filter}
+                    prefetch={false}
                   >
                     {attendanceFilterLabel(filter, t)}
                   </Link>

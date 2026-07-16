@@ -37,20 +37,12 @@ const staffAttendanceHref =
   "/events?view=list&scope=school&status=approved&focus=attendance";
 
 const primaryPrefetchHrefs: Record<Role, ReadonlySet<string>> = {
-  school_admin: new Set(["/dashboard", "/events", "/students", "/approvals"]),
-  student: new Set(["/dashboard", "/events", "/clubs"]),
-  teacher: new Set([
-    "/dashboard",
-    "/events",
-    "/approvals",
-    staffAttendanceHref,
-  ]),
+  school_admin: new Set(["/events", "/students", "/approvals"]),
+  student: new Set(["/events", "/clubs"]),
+  teacher: new Set(["/events", "/approvals"]),
 };
 
-const platformPrimaryPrefetchHrefs = new Set([
-  "/super-admin",
-  "/super-admin/schools",
-]);
+const platformPrimaryPrefetchHrefs = new Set(["/super-admin/schools"]);
 
 const navSections: Array<{
   items: RoleAwareNavItem[];
@@ -698,17 +690,17 @@ function shouldPrefetchNavigationItem(
   profile: Profile,
   isPlatformAdmin: boolean,
 ) {
-  if (typeof item.prefetch === "boolean") {
-    return item.prefetch;
+  if (item.prefetch === false || item.href.includes("?")) {
+    return false;
   }
 
-  const isPrimaryForSchoolRole = profile
-    ? primaryPrefetchHrefs[profile.role].has(item.href)
-    : false;
-  const isPrimaryForPlatformAdmin =
-    isPlatformAdmin && platformPrimaryPrefetchHrefs.has(item.href);
+  if (isPlatformAdmin) {
+    return platformPrimaryPrefetchHrefs.has(item.href) ? null : false;
+  }
 
-  return isPrimaryForSchoolRole || isPrimaryForPlatformAdmin;
+  return profile && primaryPrefetchHrefs[profile.role].has(item.href)
+    ? null
+    : false;
 }
 
 function isVisibleForRole(

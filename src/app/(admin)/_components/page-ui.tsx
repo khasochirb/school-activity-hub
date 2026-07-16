@@ -63,12 +63,12 @@ export function EmptyState({
 export function HeaderActionLink({
   children,
   href,
-  prefetch,
+  prefetch = false,
   variant = "primary",
 }: {
   children: React.ReactNode;
   href: string;
-  prefetch?: boolean;
+  prefetch?: boolean | null;
   variant?: "primary" | "secondary";
 }) {
   return (
@@ -170,6 +170,7 @@ export function FilterPanel({
           <Link
             className="btn btn-secondary min-h-11 md:min-h-10"
             href={clearHref}
+            prefetch={false}
           >
             {clearLabel}
           </Link>
@@ -289,7 +290,11 @@ export function PaginationControls({
       </span>
       <div className="flex flex-wrap gap-2">
         {page > 1 ? (
-          <Link className="btn btn-secondary min-h-10" href={getHref(page - 1)}>
+          <Link
+            className="btn btn-secondary min-h-10"
+            href={getHref(page - 1)}
+            prefetch={false}
+          >
             {labels.previous}
           </Link>
         ) : (
@@ -298,7 +303,11 @@ export function PaginationControls({
           </span>
         )}
         {hasNextPage ? (
-          <Link className="btn btn-secondary min-h-10" href={getHref(page + 1)}>
+          <Link
+            className="btn btn-secondary min-h-10"
+            href={getHref(page + 1)}
+            prefetch={false}
+          >
             {labels.next}
           </Link>
         ) : (
