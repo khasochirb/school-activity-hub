@@ -245,6 +245,7 @@ export async function joinEvent(formData: FormData) {
   }
 
   revalidatePath("/events");
+  revalidatePath("/dashboard");
 }
 
 export async function cancelEventRegistration(formData: FormData) {
@@ -287,6 +288,7 @@ export async function cancelEventRegistration(formData: FormData) {
   );
 
   revalidatePath("/events");
+  revalidatePath("/dashboard");
 }
 
 export async function cancelEvent(formData: FormData) {

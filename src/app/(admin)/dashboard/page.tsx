@@ -12,6 +12,9 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
+import type { EventQuickViewItem } from "@/components/events/event-quick-view-modal";
+import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import {
   formatDateTime,
   formatTime,
@@ -21,6 +24,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { StudentUpcomingEvents } from "./student-upcoming-events";
 
 type Profile = {
   id: string;
@@ -34,11 +38,40 @@ type StudentRoster = {
 
 type UpcomingEvent = {
   id: string;
+  school_id: string;
+  club_id: string | null;
   title: string;
+  description: string | null;
+  category: string | null;
   location: string | null;
   starts_at: string;
   ends_at: string;
+  capacity: number | null;
+  status: string;
+  allow_connected_school_registration: boolean;
+  risk_level: "low" | "medium" | "high";
+  permission_required: boolean;
+  permission_note: string | null;
 };
+
+type DashboardEventAttendee = {
+  attendee_profile_id: string | null;
+  event_id: string;
+  permission_status: EventPermissionStatus;
+  status: string;
+  student_roster_id: string | null;
+};
+
+type DashboardClub = {
+  id: string;
+  name: string;
+};
+
+type EventPermissionStatus =
+  | "declined"
+  | "not_required"
+  | "pending"
+  | "received";
 
 type RecentCheckin = {
   id: string;
@@ -104,7 +137,14 @@ export default async function DashboardPage() {
 
   const analytics = await getStudentAnalytics(admin, profile);
 
-  return <StudentDashboard analytics={analytics} locale={locale} t={t} />;
+  return (
+    <StudentDashboard
+      analytics={analytics}
+      locale={locale}
+      profile={profile}
+      t={t}
+    />
+  );
 }
 
 function StaffDashboard({
@@ -176,12 +216,21 @@ function StaffDashboard({
 function StudentDashboard({
   analytics,
   locale,
+  profile,
   t,
 }: {
   analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
   locale: Locale;
+  profile: Profile;
   t: (key: string) => string;
 }) {
+  const quickViewEvents = buildStudentQuickViewEvents(
+    analytics,
+    profile,
+    locale,
+    t,
+  );
+
   return (
     <DashboardShell
       description={t("dashboard.studentDescription")}
@@ -213,11 +262,17 @@ function StudentDashboard({
         />
       </section>
 
-      <UpcomingEventsSection
-        events={analytics.upcomingEvents}
-        locale={locale}
-        t={t}
-      />
+      {quickViewEvents.length ? (
+        <StudentUpcomingEvents
+          description={t("dashboard.upcoming.description")}
+          events={quickViewEvents}
+          labels={getEventQuickViewLabels(t)}
+          locationNotSet={t("dashboard.upcoming.locationNotSet")}
+          title={t("dashboard.upcoming.title")}
+        />
+      ) : (
+        <UpcomingEventsSection events={[]} locale={locale} t={t} />
+      )}
     </DashboardShell>
   );
 }
@@ -832,17 +887,26 @@ async function getStudentAnalytics(
   profile: Profile,
 ) {
   const now = new Date().toISOString();
-  const currentStudentPromise = getCurrentStudent(admin, profile);
-  const upcomingEventsPromise = getUpcomingEvents(admin, profile.school_id, now);
-  const currentStudent = await currentStudentPromise;
+  const [currentStudent, upcomingEvents] = await Promise.all([
+    getCurrentStudent(admin, profile),
+    getUpcomingEvents(admin, profile.school_id, now),
+  ]);
+  const eventContextPromise = getStudentUpcomingEventContext(
+    admin,
+    profile.school_id,
+    upcomingEvents,
+  );
 
   if (!currentStudent) {
+    const eventContext = await eventContextPromise;
+
     return {
       attendedEvents: 0,
       currentStudent,
+      ...eventContext,
       joinedClubs: 0,
       registeredUpcomingEvents: 0,
-      upcomingEvents: await upcomingEventsPromise,
+      upcomingEvents,
     };
   }
 
@@ -850,7 +914,7 @@ async function getStudentAnalytics(
     joinedClubs,
     registeredUpcomingEvents,
     attendedEvents,
-    upcomingEvents,
+    eventContext,
   ] = await Promise.all([
     getJoinedClubCount(admin, profile.school_id, currentStudent.id),
     getRegisteredUpcomingEventCount(
@@ -860,15 +924,64 @@ async function getStudentAnalytics(
       now,
     ),
     getAttendedEventCount(admin, profile.school_id, currentStudent.id),
-    upcomingEventsPromise,
+    eventContextPromise,
   ]);
 
   return {
     attendedEvents,
     currentStudent,
+    ...eventContext,
     joinedClubs,
     registeredUpcomingEvents,
     upcomingEvents,
+  };
+}
+
+async function getStudentUpcomingEventContext(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+  events: UpcomingEvent[],
+) {
+  const eventIds = events.map((event) => event.id);
+  const clubIds = Array.from(
+    new Set(
+      events
+        .map((event) => event.club_id)
+        .filter((clubId): clubId is string => Boolean(clubId)),
+    ),
+  );
+
+  if (!eventIds.length) {
+    return { upcomingEventAttendees: [], upcomingEventClubs: [] };
+  }
+
+  const [attendeeResult, clubResult] = await Promise.all([
+    timeServer("dashboard.query.upcoming-event-attendees", () =>
+      admin
+        .from("event_attendees")
+        .select(
+          "event_id, student_roster_id, attendee_profile_id, permission_status, status",
+        )
+        .eq("school_id", schoolId)
+        .in("event_id", eventIds)
+        .in("status", ["registered", "attended"])
+        .returns<DashboardEventAttendee[]>(),
+    ),
+    clubIds.length
+      ? timeServer("dashboard.query.upcoming-event-clubs", () =>
+          admin
+            .from("clubs")
+            .select("id, name")
+            .eq("school_id", schoolId)
+            .in("id", clubIds)
+            .returns<DashboardClub[]>(),
+        )
+      : Promise.resolve({ data: [] as DashboardClub[], error: null }),
+  ]);
+
+  return {
+    upcomingEventAttendees: attendeeResult.data ?? [],
+    upcomingEventClubs: clubResult.data ?? [],
   };
 }
 
@@ -1081,7 +1194,9 @@ async function getUpcomingEvents(
     () =>
       admin
         .from("events")
-        .select("id, title, location, starts_at, ends_at")
+        .select(
+          "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note",
+        )
         .eq("school_id", schoolId)
         .eq("status", "approved")
         .gte("starts_at", now)
@@ -1091,6 +1206,113 @@ async function getUpcomingEvents(
   );
 
   return events ?? [];
+}
+
+function buildStudentQuickViewEvents(
+  analytics: Awaited<ReturnType<typeof getStudentAnalytics>>,
+  profile: Profile,
+  locale: Locale,
+  t: (key: string) => string,
+): EventQuickViewItem[] {
+  const clubNameById = new Map(
+    analytics.upcomingEventClubs.map((club) => [club.id, club.name]),
+  );
+
+  return analytics.upcomingEvents.map((event) => {
+    const attendees = analytics.upcomingEventAttendees.filter(
+      (attendee) => attendee.event_id === event.id,
+    );
+    const registration = attendees.find(
+      (attendee) =>
+        attendee.attendee_profile_id === profile.id ||
+        attendee.student_roster_id === analytics.currentStudent?.id,
+    );
+    const attendeeCount = attendees.length;
+    const isFull =
+      event.capacity !== null && attendeeCount >= event.capacity;
+    const canRegister = Boolean(analytics.currentStudent);
+    const categoryKey = event.category
+      ? getActivityCategoryTranslationKey(event.category)
+      : null;
+
+    return {
+      attendeeCount,
+      canRegister,
+      capacity: event.capacity,
+      categoryLabel: categoryKey ? t(categoryKey) : event.category,
+      dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
+        event.ends_at,
+        locale,
+      )}`,
+      description: event.description,
+      hasCurrentStudent: Boolean(analytics.currentStudent),
+      hostName:
+        (event.club_id && clubNameById.get(event.club_id)) ||
+        t("events.card.mySchool"),
+      id: event.id,
+      isFull,
+      isOwnSchoolEvent: event.school_id === profile.school_id,
+      isStaff: false,
+      location: event.location,
+      permissionNote: event.permission_note,
+      permissionRequired: event.permission_required,
+      permissionStatusLabel: event.permission_required
+        ? registration
+          ? eventPermissionLabel(registration.permission_status, t)
+          : t("events.permission.required")
+        : t("events.permission.notRequired"),
+      registrationStateLabel: registration
+        ? registration.status === "attended"
+          ? t("events.registration.checkedIn")
+          : t("events.registration.youAreRegistered")
+        : canRegister
+          ? t("events.registration.notJoined")
+          : t("events.registration.unavailable"),
+      registrationStatus: registration?.status ?? null,
+      remainingSpaces:
+        event.capacity === null
+          ? null
+          : Math.max(event.capacity - attendeeCount, 0),
+      riskLabel: eventRiskLabel(event.risk_level, t),
+      riskLevel: event.risk_level,
+      sharedLabel: t("events.sharing.internalOnly"),
+      status: event.status,
+      statusLabel: t("status.approved"),
+      title: event.title,
+    };
+  });
+}
+
+function eventRiskLabel(
+  riskLevel: UpcomingEvent["risk_level"],
+  t: (key: string) => string,
+) {
+  if (riskLevel === "high") {
+    return t("events.risk.high");
+  }
+
+  return riskLevel === "medium"
+    ? t("events.risk.medium")
+    : t("events.risk.low");
+}
+
+function eventPermissionLabel(
+  permissionStatus: EventPermissionStatus,
+  t: (key: string) => string,
+) {
+  if (permissionStatus === "received") {
+    return t("events.permission.status.received");
+  }
+
+  if (permissionStatus === "declined") {
+    return t("events.permission.status.declined");
+  }
+
+  if (permissionStatus === "pending") {
+    return t("events.permission.status.pending");
+  }
+
+  return t("events.permission.status.notRequired");
 }
 
 async function getRecentCheckins(
