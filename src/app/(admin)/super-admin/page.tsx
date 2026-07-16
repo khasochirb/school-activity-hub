@@ -115,10 +115,14 @@ export default async function SuperAdminPage() {
       <PageHeader
         actions={
           <>
-            <HeaderActionLink href="/super-admin/schools">
+            <HeaderActionLink href="/super-admin/schools" prefetch>
               {t("superAdmin.actions.viewSchools")}
             </HeaderActionLink>
-            <HeaderActionLink href="/super-admin/connections" variant="secondary">
+            <HeaderActionLink
+              href="/super-admin/connections"
+              prefetch={false}
+              variant="secondary"
+            >
               {t("superAdmin.actions.viewConnections")}
             </HeaderActionLink>
           </>
@@ -148,7 +152,11 @@ export default async function SuperAdminPage() {
               {t("superAdmin.auditLog.description")}
             </p>
           </div>
-          <HeaderActionLink href="/super-admin/audit-log" variant="secondary">
+          <HeaderActionLink
+            href="/super-admin/audit-log"
+            prefetch={false}
+            variant="secondary"
+          >
             {t("nav.auditLog")}
           </HeaderActionLink>
         </div>
@@ -239,7 +247,11 @@ function RecentAuditLogCard({
           {metadataSummary(log.metadata, t)}
         </p>
       </div>
-      <Link className="btn btn-secondary h-10 w-full sm:w-auto" href="/super-admin/audit-log">
+      <Link
+        className="btn btn-secondary h-10 w-full sm:w-auto"
+        href="/super-admin/audit-log"
+        prefetch={false}
+      >
         {t("common.viewDetails")}
       </Link>
     </article>

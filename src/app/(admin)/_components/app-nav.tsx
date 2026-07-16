@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 export type NavItem = {
   href: string;
   label: string;
+  prefetch: boolean;
 };
 
 export type NavSection = {
@@ -55,6 +56,7 @@ export function AppNav({
                     }
                     href={item.href}
                     key={item.href}
+                    prefetch={item.prefetch}
                     title={item.label}
                   >
                     <span className="min-w-0 max-w-full break-words leading-snug">

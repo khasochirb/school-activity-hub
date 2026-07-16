@@ -88,6 +88,23 @@ type RecentCheckin = {
   } | null;
 };
 
+const dashboardPrimaryPrefetchPaths = new Set([
+  "/approvals",
+  "/clubs",
+  "/events",
+  "/students",
+]);
+
+function shouldPrefetchDashboardHref(href: string) {
+  const route = href.split("#", 1)[0];
+
+  if (route.includes("?")) {
+    return false;
+  }
+
+  return dashboardPrimaryPrefetchPaths.has(route);
+}
+
 export default async function DashboardPage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
@@ -313,13 +330,24 @@ function DashboardShell({
 function DashboardHeaderActions({ t }: { t: (key: string) => string }) {
   return (
     <>
-      <HeaderActionLink href="/students#add-student" variant="secondary">
+      <HeaderActionLink
+        href="/students#add-student"
+        prefetch={shouldPrefetchDashboardHref("/students#add-student")}
+        variant="secondary"
+      >
         {t("dashboard.quickActions.addStudents.label")}
       </HeaderActionLink>
-      <HeaderActionLink href="/invite-codes#generate-invite" variant="secondary">
+      <HeaderActionLink
+        href="/invite-codes#generate-invite"
+        prefetch={false}
+        variant="secondary"
+      >
         {t("dashboard.quickActions.generateInviteCodes.label")}
       </HeaderActionLink>
-      <HeaderActionLink href="/events#create-event">
+      <HeaderActionLink
+        href="/events#create-event"
+        prefetch={shouldPrefetchDashboardHref("/events#create-event")}
+      >
         {t("dashboard.quickActions.createEvent.label")}
       </HeaderActionLink>
     </>
@@ -463,6 +491,7 @@ function NextSteps({
             className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
             href={step.href}
             key={step.action}
+            prefetch={shouldPrefetchDashboardHref(step.href)}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -581,7 +610,11 @@ function NeedsAttention({
               {t("dashboard.attention.description")}
             </p>
           </div>
-          <Link className="btn btn-secondary w-full sm:w-auto" href="/reports">
+          <Link
+            className="btn btn-secondary w-full sm:w-auto"
+            href="/reports"
+            prefetch={false}
+          >
             {t("common.viewAll")}
           </Link>
         </div>
@@ -593,6 +626,7 @@ function NeedsAttention({
               className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
               href={item.href}
               key={item.title}
+              prefetch={shouldPrefetchDashboardHref(item.href)}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -638,13 +672,25 @@ function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
         </p>
       </div>
       <div className="grid gap-3 border-t border-slate-200 p-4 sm:grid-cols-3">
-        <Link className="btn btn-primary min-h-12 w-full text-base sm:text-sm" href="/events">
+        <Link
+          className="btn btn-primary min-h-12 w-full text-base sm:text-sm"
+          href="/events"
+          prefetch
+        >
           {t("dashboard.browseEvents")}
         </Link>
-        <Link className="btn btn-secondary min-h-12 w-full text-base sm:text-sm" href="/clubs">
+        <Link
+          className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
+          href="/clubs"
+          prefetch
+        >
           {t("dashboard.joinClubs")}
         </Link>
-        <Link className="btn btn-secondary min-h-12 w-full text-base sm:text-sm" href="/events?filter=registered">
+        <Link
+          className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
+          href="/events?filter=registered"
+          prefetch={false}
+        >
           {t("dashboard.viewRegisteredEvents")}
         </Link>
       </div>
@@ -692,6 +738,7 @@ function QuickActions({ t }: { t: (key: string) => string }) {
             className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
             href={action.href}
             key={action.href}
+            prefetch={shouldPrefetchDashboardHref(action.href)}
           >
             <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
               {action.label}
@@ -742,6 +789,7 @@ function MetricCard({
       aria-label={`${label}: ${formatNumber(value)}`}
       className="group block rounded-lg transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
       href={href}
+      prefetch={shouldPrefetchDashboardHref(href)}
     >
       {content}
     </Link>

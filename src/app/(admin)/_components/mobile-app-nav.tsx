@@ -10,6 +10,7 @@ export type MobileNavItem = {
   href: string;
   label: string;
   match?: MobileNavMatch;
+  prefetch: boolean;
 };
 
 export type MobileNavGroup = {
@@ -124,6 +125,7 @@ function MobileNavLink({
           : "border-transparent font-bold text-slate-700 hover:border-[var(--border)] hover:bg-[var(--card-soft)] hover:text-slate-950",
       ].join(" ")}
       href={item.href}
+      prefetch={item.prefetch}
       title={item.label}
     >
       <span

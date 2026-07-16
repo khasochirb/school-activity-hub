@@ -29,8 +29,28 @@ type RoleAwareNavItem = {
   labelKey: string;
   match?: MobileNavMatch;
   platformAdminOnly?: boolean;
+  prefetch?: boolean;
   roles?: Role[];
 };
+
+const staffAttendanceHref =
+  "/events?view=list&scope=school&status=approved&focus=attendance";
+
+const primaryPrefetchHrefs: Record<Role, ReadonlySet<string>> = {
+  school_admin: new Set(["/dashboard", "/events", "/students", "/approvals"]),
+  student: new Set(["/dashboard", "/events", "/clubs"]),
+  teacher: new Set([
+    "/dashboard",
+    "/events",
+    "/approvals",
+    staffAttendanceHref,
+  ]),
+};
+
+const platformPrimaryPrefetchHrefs = new Set([
+  "/super-admin",
+  "/super-admin/schools",
+]);
 
 const navSections: Array<{
   items: RoleAwareNavItem[];
@@ -136,20 +156,30 @@ const navSections: Array<{
 const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
   student: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
-    { href: "/events?view=list", labelKey: "nav.activities", match: "events" },
-    { href: "/events?view=month", labelKey: "nav.calendar", match: "calendar" },
+    { href: "/events", labelKey: "nav.activities", match: "events" },
+    {
+      href: "/events?view=month",
+      labelKey: "nav.calendar",
+      match: "calendar",
+      prefetch: false,
+    },
     { href: "/clubs", labelKey: "nav.clubs" },
     { href: "/club-requests", labelKey: "nav.clubIdeas" },
     { href: "/announcements", labelKey: "nav.announcements" },
   ],
   teacher: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
-    { href: "/events?view=list", labelKey: "nav.activities", match: "events" },
-    { href: "/events?view=month", labelKey: "nav.calendar", match: "calendar" },
+    { href: "/events", labelKey: "nav.activities", match: "events" },
+    {
+      href: "/events?view=month",
+      labelKey: "nav.calendar",
+      match: "calendar",
+      prefetch: false,
+    },
     { href: "/clubs", labelKey: "nav.clubs" },
     { href: "/approvals", labelKey: "nav.approvals" },
     {
-      href: "/events?view=list&scope=school&status=approved&focus=attendance",
+      href: staffAttendanceHref,
       labelKey: "nav.attendance",
       match: "attendance",
     },
@@ -157,8 +187,13 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
   ],
   school_admin: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
-    { href: "/events?view=list", labelKey: "nav.activities", match: "events" },
-    { href: "/events?view=month", labelKey: "nav.calendar", match: "calendar" },
+    { href: "/events", labelKey: "nav.activities", match: "events" },
+    {
+      href: "/events?view=month",
+      labelKey: "nav.calendar",
+      match: "calendar",
+      prefetch: false,
+    },
     { href: "/students", labelKey: "nav.students" },
     { href: "/staff", labelKey: "nav.staff" },
     { href: "/approvals", labelKey: "nav.approvals" },
@@ -215,7 +250,7 @@ const mobileNavGroups: Array<{
         roles: ["school_admin", "teacher"],
       },
       {
-        href: "/events?view=list&scope=school&status=approved&focus=attendance",
+        href: staffAttendanceHref,
         labelKey: "nav.attendance",
         match: "attendance",
         roles: ["school_admin", "teacher"],
@@ -295,6 +330,11 @@ export async function AppShell({
         .map<NavItem>((item) => ({
           href: item.href,
           label: t(item.labelKey),
+          prefetch: shouldPrefetchNavigationItem(
+            item,
+            profile,
+            isPlatformAdmin,
+          ),
         })),
     }))
     .filter((section) => section.items.length) satisfies NavSection[];
@@ -423,6 +463,7 @@ function Brand({
             : "brand-mark flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-sm font-bold shadow-sm transition"
         }
         href="/dashboard"
+        prefetch={false}
       >
         {shortName}
       </Link>
@@ -434,6 +475,7 @@ function Brand({
               : "block max-w-full cursor-pointer break-words text-base font-bold leading-snug tracking-tight text-slate-950 transition hover:text-teal-800"
           }
           href="/dashboard"
+          prefetch={false}
         >
           {name}
         </Link>
@@ -540,6 +582,7 @@ function MobileAccount({
       <Link
         className="btn btn-secondary min-h-11 w-full justify-start"
         href="/profile"
+        prefetch={false}
       >
         {profileLabel}
       </Link>
@@ -613,7 +656,7 @@ function getMobileNavigation(
 ) {
   const primaryDefinitions = profile ? mobilePrimaryNav[profile.role] : [];
   const primaryItems = primaryDefinitions.map((item) =>
-    toMobileNavItem(item, t),
+    toMobileNavItem(item, profile, isPlatformAdmin, t),
   );
   const primaryHrefs = new Set(primaryDefinitions.map((item) => item.href));
   const groups = mobileNavGroups
@@ -623,7 +666,9 @@ function getMobileNavigation(
       items: group.items
         .filter((item) => isVisibleForRole(item, profile, isPlatformAdmin))
         .filter((item) => !primaryHrefs.has(item.href))
-        .map((item) => toMobileNavItem(item, t)),
+        .map((item) =>
+          toMobileNavItem(item, profile, isPlatformAdmin, t),
+        ),
     }))
     .filter((group) => group.items.length);
 
@@ -632,13 +677,38 @@ function getMobileNavigation(
 
 function toMobileNavItem(
   item: RoleAwareNavItem,
+  profile: Profile,
+  isPlatformAdmin: boolean,
   t: (key: string) => string,
 ): MobileNavItem {
   return {
     href: item.href,
     label: t(item.labelKey),
     match: item.match,
+    prefetch: shouldPrefetchNavigationItem(
+      item,
+      profile,
+      isPlatformAdmin,
+    ),
   };
+}
+
+function shouldPrefetchNavigationItem(
+  item: RoleAwareNavItem,
+  profile: Profile,
+  isPlatformAdmin: boolean,
+) {
+  if (typeof item.prefetch === "boolean") {
+    return item.prefetch;
+  }
+
+  const isPrimaryForSchoolRole = profile
+    ? primaryPrefetchHrefs[profile.role].has(item.href)
+    : false;
+  const isPrimaryForPlatformAdmin =
+    isPlatformAdmin && platformPrimaryPrefetchHrefs.has(item.href);
+
+  return isPrimaryForSchoolRole || isPrimaryForPlatformAdmin;
 }
 
 function isVisibleForRole(

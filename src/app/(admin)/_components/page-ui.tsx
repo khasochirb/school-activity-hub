@@ -63,16 +63,19 @@ export function EmptyState({
 export function HeaderActionLink({
   children,
   href,
+  prefetch,
   variant = "primary",
 }: {
   children: React.ReactNode;
   href: string;
+  prefetch?: boolean;
   variant?: "primary" | "secondary";
 }) {
   return (
     <Link
       className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"} w-full sm:w-auto`}
       href={href}
+      prefetch={prefetch}
     >
       {children}
     </Link>
