@@ -44,6 +44,10 @@ import {
   type EventBrowserItem,
   type EventBrowserLabels,
 } from "./event-browser";
+import {
+  EventCalendar,
+  type EventCalendarLabels,
+} from "./event-calendar";
 
 type Profile = {
   id: string;
@@ -110,7 +114,7 @@ type EventShare = {
 type EventFilter = "upcoming" | "registered" | "club";
 type EventScope = "mine" | "shared";
 type EventTimeFilter = "past" | "upcoming";
-type EventBrowseView = "list" | "schedule";
+type EventBrowseView = "calendar" | "list";
 type EventStatusFilter =
   | "all"
   | "approved"
@@ -122,6 +126,7 @@ type EventStatusFilter =
 type EventsSearchParams = {
   category?: string | string[];
   filter?: string | string[];
+  month?: string | string[];
   page?: string | string[];
   q?: string | string[];
   scope?: string | string[];
@@ -137,6 +142,7 @@ type FormatTranslate = (
 ) => string;
 
 const EVENTS_PAGE_SIZE = 40;
+const CALENDAR_EVENT_LIMIT = 200;
 
 export default async function EventsPage({
   searchParams,
@@ -155,6 +161,14 @@ export default async function EventsPage({
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const selectedTime = parseEventTime(getSearchParam(params.time));
   const selectedView = parseEventBrowseView(getSearchParam(params.view));
+  const selectedMonth = parseCalendarMonth(
+    getSearchParam(params.month),
+    new Date(),
+  );
+  const calendarRange =
+    selectedView === "calendar"
+      ? getCalendarQueryRange(selectedMonth)
+      : null;
   const page = getPageParam(params.page);
   const range = pageRange(page, EVENTS_PAGE_SIZE);
   const supabase = await createClient();
@@ -234,6 +248,7 @@ export default async function EventsPage({
     isStaff,
     now,
     range,
+    calendarRange,
   });
 
   const eventIds = events.map((event) => event.id);
@@ -329,6 +344,7 @@ export default async function EventsPage({
         locale,
       )}`,
       description: event.description,
+      endsAt: event.ends_at,
       hasCurrentStudent: Boolean(currentStudent),
       hostName: clubName ?? ownerSchoolName,
       id: event.id,
@@ -351,33 +367,43 @@ export default async function EventsPage({
           : Math.max(event.capacity - attendeeCount, 0),
       riskLabel: riskLabel(event.risk_level, t),
       riskLevel: event.risk_level,
-      scheduleGroup: scheduleGroupKey(event.starts_at, new Date(now)),
       sharedLabel: sharingLabel(event, sharedSchoolIds, t, tf),
+      startsAt: event.starts_at,
       status: event.status,
       statusLabel: eventStatusLabel(event.status, t),
       title: event.title,
       visualInitials: getInitials(clubName ?? ownerSchoolName ?? event.title),
     };
   });
-  const eventBrowserLabels: EventBrowserLabels = {
-    ...getEventQuickViewLabels(t),
-    schedule: {
-      later: t("events.schedule.later"),
-      past: t("events.schedule.past"),
-      thisWeek: t("events.schedule.thisWeek"),
-      today: t("events.schedule.today"),
-    },
+  const eventBrowserLabels: EventBrowserLabels = getEventQuickViewLabels(t);
+  const eventCalendarLabels: EventCalendarLabels = {
+    ...eventBrowserLabels,
+    calendar: t("events.calendar.title"),
+    moreCount: t("events.calendar.moreCount"),
+    nextMonth: t("events.calendar.nextMonth"),
+    noEventsOnDate: t("events.calendar.noEventsOnDate"),
+    previousMonth: t("events.calendar.previousMonth"),
+    schoolCalendar: t("events.calendar.schoolCalendar"),
+    selectedDate: t("events.calendar.selectedDate"),
+    today: t("events.calendar.today"),
   };
 
   return (
     <div className="page-stack">
       <PageHeader
         actions={
-          canCreate ? (
-            <FormSectionToggleButton targetId="create-event">
-              {t("events.actions.create")}
-            </FormSectionToggleButton>
-          ) : undefined
+          <>
+            <EventViewToggle
+              params={params}
+              selectedView={selectedView}
+              t={t}
+            />
+            {canCreate ? (
+              <FormSectionToggleButton targetId="create-event">
+                {t("events.actions.create")}
+              </FormSectionToggleButton>
+            ) : null}
+          </>
         }
         description={t("events.description")}
         eyebrow={t("events.eyebrow")}
@@ -460,21 +486,24 @@ export default async function EventsPage({
         selectedStatus={selectedStatus}
         selectedTime={selectedTime}
         selectedView={selectedView}
+        selectedMonth={selectedMonth}
         t={t}
         tf={tf}
       />
 
       <section className="section-card">
-        <div className="section-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="section-header">
           <div>
             <h2 className="section-title">
-              {eventListTitle(
-                selectedFilter,
-                selectedCategory,
-                selectedScope,
-                selectedTime,
-                t,
-              )}
+              {selectedView === "calendar"
+                ? t("events.calendar.schoolCalendar")
+                : eventListTitle(
+                    selectedFilter,
+                    selectedCategory,
+                    selectedScope,
+                    selectedTime,
+                    t,
+                  )}
             </h2>
             {eventsError ? (
               <p className="mt-2 text-sm text-red-600">
@@ -487,17 +516,34 @@ export default async function EventsPage({
               </p>
             ) : null}
           </div>
-          <EventViewToggle
-            params={params}
-            selectedView={selectedView}
-            t={t}
-          />
         </div>
-        {events.length ? (
+        {selectedView === "calendar" ? (
+          <EventCalendar
+            items={eventBrowserItems}
+            key={selectedMonth}
+            labels={eventCalendarLabels}
+            locale={locale}
+            month={selectedMonth}
+            navigation={{
+              nextHref: buildEventsMonthHref(
+                params,
+                offsetCalendarMonth(selectedMonth, 1),
+              ),
+              previousHref: buildEventsMonthHref(
+                params,
+                offsetCalendarMonth(selectedMonth, -1),
+              ),
+              todayHref: buildEventsMonthHref(
+                params,
+                currentCalendarMonth(new Date()),
+              ),
+              todayMonth: currentCalendarMonth(new Date()),
+            }}
+          />
+        ) : events.length ? (
           <EventBrowser
             items={eventBrowserItems}
             labels={eventBrowserLabels}
-            view={selectedView}
           />
         ) : hasResultFilters ? (
           <div className="p-4">
@@ -531,7 +577,9 @@ export default async function EventsPage({
             />
           </div>
         )}
-        {!eventsError && (events.length > 0 || page > 1) ? (
+        {selectedView === "list" &&
+        !eventsError &&
+        (events.length > 0 || page > 1) ? (
           <PaginationControls
             getHref={(nextPage) => eventsPageHref(nextPage, params)}
             hasNextPage={hasNextPage}
@@ -560,6 +608,7 @@ function EventFilters({
   selectedStatus,
   selectedTime,
   selectedView,
+  selectedMonth,
   t,
   tf,
 }: {
@@ -574,13 +623,18 @@ function EventFilters({
   selectedStatus: EventStatusFilter;
   selectedTime: EventTimeFilter;
   selectedView: EventBrowseView;
+  selectedMonth: string;
   t: Translate;
   tf: FormatTranslate;
 }) {
   return (
     <FilterPanel
       action="/events"
-      clearHref="/events"
+      clearHref={
+        selectedView === "calendar"
+          ? `/events?view=calendar&month=${selectedMonth}`
+          : "/events"
+      }
       clearLabel={t("filters.clear")}
       resultCountLabel={tf("filters.showingResults", { count: resultCount })}
       submitLabel={t("filters.filter")}
@@ -592,6 +646,9 @@ function EventFilters({
       />
       {selectedView !== "list" ? (
         <input name="view" type="hidden" value={selectedView} />
+      ) : null}
+      {selectedView === "calendar" ? (
+        <input name="month" type="hidden" value={selectedMonth} />
       ) : null}
       <SelectFilter
         defaultValue={selectedScope}
@@ -677,11 +734,11 @@ function EventViewToggle({
         {t("events.view.list")}
       </Link>
       <Link
-        aria-label={t("events.view.viewSchedule")}
-        className={viewToggleClassName(selectedView === "schedule")}
-        href={buildEventsViewHref(params, "schedule")}
+        aria-label={t("events.view.viewCalendar")}
+        className={viewToggleClassName(selectedView === "calendar")}
+        href={buildEventsViewHref(params, "calendar")}
       >
-        {t("events.view.schedule")}
+        {t("events.view.calendar")}
       </Link>
     </nav>
   );
@@ -714,8 +771,12 @@ function buildEventsViewHref(
     }
   });
 
-  if (view === "schedule") {
+  if (view === "calendar") {
     query.set("view", view);
+    query.set(
+      "month",
+      parseCalendarMonth(getSearchParam(params.month), new Date()),
+    );
   }
 
   const search = query.toString();
@@ -723,43 +784,28 @@ function buildEventsViewHref(
   return search ? `/events?${search}` : "/events";
 }
 
-type ScheduleGroupKey = "later" | "past" | "thisWeek" | "today";
+function buildEventsMonthHref(
+  params: EventsSearchParams,
+  month: string,
+) {
+  const query = new URLSearchParams();
+  const keys: Array<keyof Pick<
+    EventsSearchParams,
+    "category" | "filter" | "q" | "scope" | "status" | "time"
+  >> = ["category", "filter", "q", "scope", "status", "time"];
 
-function scheduleGroupKey(
-  startsAt: string,
-  currentDate: Date,
-): ScheduleGroupKey {
-  const eventDate = new Date(startsAt);
+  keys.forEach((key) => {
+    const value = getSearchParam(params[key]);
 
-  if (Number.isNaN(eventDate.getTime())) {
-    return "later";
-  }
+    if (value) {
+      query.set(key, value);
+    }
+  });
 
-  if (eventDate < currentDate) {
-    return "past";
-  }
+  query.set("view", "calendar");
+  query.set("month", month);
 
-  if (isSameCalendarDay(eventDate, currentDate)) {
-    return "today";
-  }
-
-  return eventDate <= endOfThisWeek(currentDate) ? "thisWeek" : "later";
-}
-
-function isSameCalendarDay(firstDate: Date, secondDate: Date) {
-  return (
-    firstDate.getFullYear() === secondDate.getFullYear() &&
-    firstDate.getMonth() === secondDate.getMonth() &&
-    firstDate.getDate() === secondDate.getDate()
-  );
-}
-
-function endOfThisWeek(date: Date) {
-  const end = new Date(date);
-  end.setDate(end.getDate() + (6 - end.getDay()));
-  end.setHours(23, 59, 59, 999);
-
-  return end;
+  return `/events?${query.toString()}`;
 }
 
 function riskLabel(riskLevel: Event["risk_level"], t: Translate) {
@@ -831,6 +877,7 @@ function sharingLabel(
 async function getFilteredEvents(
   admin: ReturnType<typeof createAdminClient>,
   {
+    calendarRange,
     connectedSchoolIds,
     filter,
     isStaff,
@@ -845,6 +892,7 @@ async function getFilteredEvents(
     scope,
     range,
   }: {
+    calendarRange: { from: string; to: string } | null;
     connectedSchoolIds: string[];
     filter: EventFilter;
     isStaff: boolean;
@@ -894,6 +942,12 @@ async function getFilteredEvents(
       ? query.lt("starts_at", now)
       : query.gte("starts_at", now);
 
+  if (calendarRange) {
+    query = query
+      .gte("starts_at", calendarRange.from)
+      .lt("starts_at", calendarRange.to);
+  }
+
   if (filter === "registered") {
     query = query.in("id", registeredEventIds);
   }
@@ -911,14 +965,22 @@ async function getFilteredEvents(
   }
 
   const { data: events, error } = await timeServer(
-    "events.query.filtered-events",
-    () =>
-      query
-        .order("starts_at", { ascending: selectedTime !== "past" })
-        .range(range.from, range.to)
-        .returns<Event[]>(),
+    calendarRange
+      ? "events.query.calendar-month-events"
+      : "events.query.filtered-events",
+    () => {
+      const orderedQuery = query.order("starts_at", {
+        ascending: selectedTime !== "past",
+      });
+
+      return calendarRange
+        ? orderedQuery.limit(CALENDAR_EVENT_LIMIT).returns<Event[]>()
+        : orderedQuery.range(range.from, range.to).returns<Event[]>();
+    },
   );
-  const page = pageRows(events, EVENTS_PAGE_SIZE);
+  const page = calendarRange
+    ? { hasNextPage: false, rows: events ?? [] }
+    : pageRows(events, EVENTS_PAGE_SIZE);
 
   return { error, events: page.rows, hasNextPage: page.hasNextPage };
 }
@@ -1218,7 +1280,59 @@ function parseEventTime(value: string): EventTimeFilter {
 }
 
 function parseEventBrowseView(value: string): EventBrowseView {
-  return value === "schedule" ? "schedule" : "list";
+  return value === "calendar" || value === "schedule" ? "calendar" : "list";
+}
+
+function parseCalendarMonth(value: string, fallbackDate: Date) {
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+
+  if (!match) {
+    return currentCalendarMonth(fallbackDate);
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+
+  return month >= 1 && month <= 12
+    ? `${year}-${String(month).padStart(2, "0")}`
+    : currentCalendarMonth(fallbackDate);
+}
+
+function currentCalendarMonth(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function offsetCalendarMonth(month: string, offset: number) {
+  const date = calendarMonthDate(month);
+  date.setMonth(date.getMonth() + offset);
+
+  return currentCalendarMonth(date);
+}
+
+function getCalendarQueryRange(month: string) {
+  const monthStart = calendarMonthDate(month);
+  const daysSinceMonday = (monthStart.getDay() + 6) % 7;
+  const gridStart = addCalendarDays(monthStart, -daysSinceMonday - 1);
+  const gridEnd = addCalendarDays(gridStart, 44);
+
+  return {
+    from: gridStart.toISOString(),
+    to: gridEnd.toISOString(),
+  };
+}
+
+function calendarMonthDate(month: string) {
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+
+  return match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, 1, 12)
+    : new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
+}
+
+function addCalendarDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
 }
 
 function parseEventStatus(value: string): EventStatusFilter {

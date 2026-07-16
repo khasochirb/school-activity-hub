@@ -896,6 +896,16 @@ export const en = {
     capacity: {
       noLimit: "No limit",
     },
+    calendar: {
+      moreCount: "+{count} more",
+      nextMonth: "Next month",
+      noEventsOnDate: "No events on this date.",
+      previousMonth: "Previous month",
+      schoolCalendar: "School calendar",
+      selectedDate: "Selected date",
+      title: "Calendar",
+      today: "Today",
+    },
     card: {
       details: "Event details",
       eventType: "Event type",
@@ -1089,8 +1099,10 @@ export const en = {
       timeOrder: "End time must be after start time.",
     },
     view: {
+      calendar: "Calendar view",
       list: "List view",
       schedule: "Schedule view",
+      viewCalendar: "View calendar",
       viewList: "View list",
       viewSchedule: "View schedule",
     },

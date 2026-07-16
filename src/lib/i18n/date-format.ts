@@ -38,6 +38,26 @@ export function formatTime(value: DateInput, locale: Locale) {
   });
 }
 
+export function formatLongDate(value: DateInput, locale: Locale) {
+  return formatWithLocale(value, locale, {
+    day: "numeric",
+    month: "long",
+    weekday: "long",
+    year: "numeric",
+  });
+}
+
+export function formatMonthYear(value: DateInput, locale: Locale) {
+  return formatWithLocale(value, locale, {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function formatWeekdayShort(value: DateInput, locale: Locale) {
+  return formatWithLocale(value, locale, { weekday: "short" });
+}
+
 export function formatSchedulePreview(
   startsAt: DateInput,
   endsAt: DateInput,

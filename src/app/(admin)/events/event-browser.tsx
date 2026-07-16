@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useMemo,
   useRef,
   useState,
   type MouseEvent,
@@ -15,42 +14,27 @@ import {
 } from "@/components/events/event-quick-view-modal";
 import { CategoryBadge, StatusBadge } from "../_components/page-ui";
 
-export type EventScheduleGroup = "later" | "past" | "thisWeek" | "today";
-
 export type EventBrowserItem = EventQuickViewItem & {
   categoryValue: string | null;
   dateBadgeLabel: string;
-  scheduleGroup: EventScheduleGroup;
+  endsAt: string;
+  startsAt: string;
   visualInitials: string;
 };
 
-export type EventBrowserLabels = EventQuickViewLabels & {
-  schedule: Record<EventScheduleGroup, string>;
-};
+export type EventBrowserLabels = EventQuickViewLabels;
 
 export function EventBrowser({
   items,
   labels,
-  view,
 }: {
   items: EventBrowserItem[];
   labels: EventBrowserLabels;
-  view: "list" | "schedule";
 }) {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const triggerRefs = useRef(new Map<string, HTMLButtonElement>());
   const selectedEvent = items.find((item) => item.id === selectedEventId) ?? null;
-  const scheduleGroups = useMemo(
-    () =>
-      (["today", "thisWeek", "later", "past"] as EventScheduleGroup[])
-        .map((key) => ({
-          items: items.filter((item) => item.scheduleGroup === key),
-          key,
-        }))
-        .filter((group) => group.items.length > 0),
-    [items],
-  );
   const closeModal = useCallback(() => setSelectedEventId(null), []);
 
   function openModal(eventId: string, trigger?: HTMLButtonElement | null) {
@@ -58,50 +42,25 @@ export function EventBrowser({
     setSelectedEventId(eventId);
   }
 
-  function renderCard(item: EventBrowserItem) {
-    return (
-      <EventCard
-        item={item}
-        key={item.id}
-        labels={labels}
-        onOpen={(trigger) => openModal(item.id, trigger)}
-        registerTrigger={(node) => {
-          if (node) {
-            triggerRefs.current.set(item.id, node);
-          } else {
-            triggerRefs.current.delete(item.id);
-          }
-        }}
-      />
-    );
-  }
-
   return (
     <>
-      {view === "schedule" ? (
-        <div className="space-y-3 p-3 sm:p-4">
-          {scheduleGroups.map((group) => (
-            <section
-              className="rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 sm:p-4"
-              key={group.key}
-            >
-              <div className="mb-3 flex min-w-0 items-center justify-between gap-3 border-b border-[var(--border)] pb-3">
-                <h3 className="min-w-0 break-words text-sm font-bold text-slate-950">
-                  {labels.schedule[group.key]}
-                </h3>
-                <span className="badge shrink-0">{group.items.length}</span>
-              </div>
-              <div className="grid gap-4 lg:grid-cols-2">
-                {group.items.map(renderCard)}
-              </div>
-            </section>
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-4 p-3 sm:p-4 lg:grid-cols-2">
-          {items.map(renderCard)}
-        </div>
-      )}
+      <div className="grid gap-4 p-3 sm:p-4 lg:grid-cols-2">
+        {items.map((item) => (
+          <EventCard
+            item={item}
+            key={item.id}
+            labels={labels}
+            onOpen={(trigger) => openModal(item.id, trigger)}
+            registerTrigger={(node) => {
+              if (node) {
+                triggerRefs.current.set(item.id, node);
+              } else {
+                triggerRefs.current.delete(item.id);
+              }
+            }}
+          />
+        ))}
+      </div>
 
       <EventQuickViewModal
         event={selectedEvent}

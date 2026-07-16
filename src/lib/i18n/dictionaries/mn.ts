@@ -376,6 +376,16 @@ export const mn = {
     capacity: {
       noLimit: "Хязгааргүй",
     },
+    calendar: {
+      moreCount: "+{count} бусад",
+      nextMonth: "Дараагийн сар",
+      noEventsOnDate: "Энэ өдөр үйл ажиллагаа байхгүй.",
+      previousMonth: "Өмнөх сар",
+      schoolCalendar: "Сургуулийн хуанли",
+      selectedDate: "Сонгосон өдөр",
+      title: "Хуанли",
+      today: "Өнөөдөр",
+    },
     card: {
       details: "Үйл ажиллагааны дэлгэрэнгүй",
       eventType: "Үйл ажиллагааны төрөл",
@@ -573,8 +583,10 @@ export const mn = {
       timeOrder: "Дуусах цаг нь эхлэх цагаас хойш байх ёстой.",
     },
     view: {
+      calendar: "Хуанлигаар харах",
       list: "Жагсаалтаар харах",
       schedule: "Хуваариар харах",
+      viewCalendar: "Хуанли харах",
       viewList: "Жагсаалт харах",
       viewSchedule: "Хуваарь харах",
     },
