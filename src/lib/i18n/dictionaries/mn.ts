@@ -519,6 +519,13 @@ export const mn = {
       studentNotice:
         "Энэ үйл ажиллагаанд сургууль/эцэг эхийн зөвшөөрөл шаардлагатай байж магадгүй.",
     },
+    quickView: {
+      registrationFull: "Бүртгэл дүүрсэн",
+      spacesRemaining: "Үлдсэн суудал",
+      title: "Үйл ажиллагааны товч мэдээлэл",
+      viewEvent: "Үйл ажиллагааг харах",
+      viewFullDetails: "Дэлгэрэнгүй мэдээлэл харах",
+    },
     registration: {
       checkedIn: "Ирц бүртгүүлсэн",
       count: "{count} бүртгүүлсэн",

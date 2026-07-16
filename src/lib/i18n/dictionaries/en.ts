@@ -1036,6 +1036,13 @@ export const en = {
       },
       studentNotice: "This event may require school/parent permission.",
     },
+    quickView: {
+      registrationFull: "Registration full",
+      spacesRemaining: "Spaces remaining",
+      title: "Event quick view",
+      viewEvent: "View event",
+      viewFullDetails: "View full details",
+    },
     registration: {
       checkedIn: "Checked in",
       count: "{count} joined",
