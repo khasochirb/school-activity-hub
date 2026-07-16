@@ -29,14 +29,11 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CollapsibleFormSection,
   EmptyState,
-  FilterPanel,
   FormSectionToggleButton,
   HeaderActionLink,
   NoResultsState,
   PaginationControls,
   PageHeader,
-  SearchField,
-  SelectFilter,
 } from "../_components/page-ui";
 import { CreateEventForm } from "./create-event-form";
 import {
@@ -48,6 +45,11 @@ import {
   EventCalendar,
   type EventCalendarLabels,
 } from "./event-calendar";
+import {
+  EventsFilters,
+  type EventsActiveFilter,
+  type EventsFilterOption,
+} from "./events-filters";
 
 type Profile = {
   id: string;
@@ -73,6 +75,7 @@ type Event = {
   id: string;
   school_id: string;
   club_id: string | null;
+  created_by_profile_id: string | null;
   title: string;
   description: string | null;
   category: string | null;
@@ -111,8 +114,13 @@ type EventShare = {
   school_id: string;
 };
 
-type EventFilter = "upcoming" | "registered" | "club";
-type EventScope = "mine" | "shared";
+type EventAudience =
+  | "all"
+  | "created"
+  | "my-clubs"
+  | "partners"
+  | "registered"
+  | "school";
 type EventTimeFilter = "past" | "upcoming";
 type EventBrowseView = "calendar" | "list";
 type EventStatusFilter =
@@ -133,6 +141,16 @@ type EventsSearchParams = {
   status?: string | string[];
   time?: string | string[];
   view?: string | string[];
+};
+
+type EventsUrlState = {
+  audience: EventAudience;
+  category: string | null;
+  month: string;
+  searchQuery: string;
+  status: EventStatusFilter;
+  time: EventTimeFilter;
+  view: EventBrowseView;
 };
 
 type Translate = (key: string) => string;
@@ -156,8 +174,6 @@ export default async function EventsPage({
     formatTranslation(dictionary, key, values);
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
-  const selectedFilter = parseEventFilter(getSearchValue(params.filter));
-  const selectedScope = parseEventScope(getSearchValue(params.scope));
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const selectedTime = parseEventTime(getSearchParam(params.time));
   const selectedView = parseEventBrowseView(getSearchParam(params.view));
@@ -196,16 +212,24 @@ export default async function EventsPage({
 
   const admin = createAdminClient();
   const isStaff = profile.role === "school_admin" || profile.role === "teacher";
+  const selectedAudience = parseEventAudience(
+    getSearchValue(params.scope),
+    getSearchValue(params.filter),
+    profile.role,
+  );
   const selectedStatus = isStaff
     ? parseEventStatus(getSearchParam(params.status))
     : "approved";
   const currentStudent = await getCurrentStudent(admin, profile);
   const now = new Date().toISOString();
-  const needsConnectedSchools = isStaff || selectedScope === "shared";
+  const needsPartnerEvents = ["all", "partners", "registered"].includes(
+    selectedAudience,
+  );
   const [
     clubOptions,
     leaderClubOptions,
     registeredEventIds,
+    currentStudentClubIds,
     connectedSchoolIds,
   ] = await Promise.all([
     isStaff
@@ -218,13 +242,13 @@ export default async function EventsPage({
       admin,
       profile,
       currentStudent,
-      now,
     ),
-    needsConnectedSchools
+    getCurrentStudentClubIds(admin, profile, currentStudent),
+    needsPartnerEvents
       ? getConnectedSchoolIds(admin, profile.school_id)
       : Promise.resolve([]),
   ]);
-  const sharedEventIds = selectedScope === "shared" && connectedSchoolIds.length
+  const sharedEventIds = needsPartnerEvents && connectedSchoolIds.length
     ? await getSharedEventIdsForSchool(admin, profile.school_id)
     : [];
   const categoryOptions = ACTIVITY_CATEGORIES;
@@ -235,8 +259,10 @@ export default async function EventsPage({
   const createClubOptions = isStaff ? clubOptions : leaderClubOptions;
   const canCreate = isStaff || leaderClubOptions.length > 0;
   const { error: eventsError, events, hasNextPage } = await getFilteredEvents(admin, {
+    audience: selectedAudience,
     connectedSchoolIds,
-    filter: selectedFilter,
+    currentStudentClubIds,
+    profileId: profile.id,
     registeredEventIds,
     searchQuery,
     schoolId: profile.school_id,
@@ -244,7 +270,6 @@ export default async function EventsPage({
     selectedStatus,
     selectedTime,
     sharedEventIds,
-    scope: selectedScope,
     isStaff,
     now,
     range,
@@ -288,12 +313,13 @@ export default async function EventsPage({
     ownerSchools.map((school) => [school.id, school.name]),
   );
   const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
+  const defaultAudience = defaultEventAudience(profile.role);
   const hasResultFilters = Boolean(
     searchQuery ||
       selectedCategory ||
-      selectedFilter !== "upcoming" ||
-      selectedScope !== "mine" ||
-      selectedStatus !== "approved",
+      selectedAudience !== defaultAudience ||
+      selectedStatus !== "approved" ||
+      selectedTime !== "upcoming",
   );
   const emptyTitle =
     selectedTime === "past"
@@ -309,6 +335,9 @@ export default async function EventsPage({
     );
     const permissionStatus = registrationStatus?.permission_status;
     const isOwnSchoolEvent = event.school_id === profile.school_id;
+    const isMyClubEvent = Boolean(
+      event.club_id && currentStudentClubIds.includes(event.club_id),
+    );
     const sharedSchoolIds =
       isOwnSchoolEvent
         ? sharedSchoolIdsByEventId.get(event.id) ?? []
@@ -349,7 +378,9 @@ export default async function EventsPage({
       hostName: clubName ?? ownerSchoolName,
       id: event.id,
       isFull,
+      isMyClubEvent,
       isOwnSchoolEvent,
+      isPartnerEvent: !isOwnSchoolEvent,
       isStaff,
       location: event.location,
       permissionNote: event.permission_note,
@@ -375,18 +406,42 @@ export default async function EventsPage({
       visualInitials: getInitials(clubName ?? ownerSchoolName ?? event.title),
     };
   });
-  const eventBrowserLabels: EventBrowserLabels = getEventQuickViewLabels(t);
+  const eventBrowserLabels: EventBrowserLabels = {
+    ...getEventQuickViewLabels(t),
+    myClub: t("events.filters.myClubEvents"),
+    partnerSchool: t("events.filters.partnerSchool"),
+    registered: t("events.filters.registered"),
+  };
   const eventCalendarLabels: EventCalendarLabels = {
     ...eventBrowserLabels,
     calendar: t("events.calendar.title"),
     moreCount: t("events.calendar.moreCount"),
     nextMonth: t("events.calendar.nextMonth"),
-    noEventsOnDate: t("events.calendar.noEventsOnDate"),
+    myClub: t("events.filters.myClubEvents"),
+    noEventsOnDate: hasResultFilters
+      ? t("events.calendar.noMatchingEventsOnDate")
+      : t("events.calendar.noEventsOnDate"),
+    partnerSchool: t("events.filters.partnerSchool"),
     previousMonth: t("events.calendar.previousMonth"),
     schoolCalendar: t("events.calendar.schoolCalendar"),
     selectedDate: t("events.calendar.selectedDate"),
     today: t("events.calendar.today"),
   };
+  const filterUrlState: EventsUrlState = {
+    audience: selectedAudience,
+    category: selectedCategory,
+    month: selectedMonth,
+    searchQuery,
+    status: selectedStatus,
+    time: selectedTime,
+    view: selectedView,
+  };
+  const activeFilters = getActiveEventFilters(
+    filterUrlState,
+    defaultAudience,
+    isStaff,
+    t,
+  );
 
   return (
     <div className="page-stack">
@@ -394,7 +449,7 @@ export default async function EventsPage({
         actions={
           <>
             <EventViewToggle
-              params={params}
+              state={filterUrlState}
               selectedView={selectedView}
               t={t}
             />
@@ -475,14 +530,13 @@ export default async function EventsPage({
       ) : null}
 
       <EventFilters
+        activeFilters={activeFilters}
         categoryOptions={categoryOptions}
-        currentStudent={currentStudent}
         resultCount={events.length}
         isStaff={isStaff}
         searchQuery={searchQuery}
+        selectedAudience={selectedAudience}
         selectedCategory={selectedCategory}
-        selectedFilter={selectedFilter}
-        selectedScope={selectedScope}
         selectedStatus={selectedStatus}
         selectedTime={selectedTime}
         selectedView={selectedView}
@@ -498,9 +552,8 @@ export default async function EventsPage({
               {selectedView === "calendar"
                 ? t("events.calendar.schoolCalendar")
                 : eventListTitle(
-                    selectedFilter,
+                    selectedAudience,
                     selectedCategory,
-                    selectedScope,
                     selectedTime,
                     t,
                   )}
@@ -524,18 +577,18 @@ export default async function EventsPage({
             labels={eventCalendarLabels}
             locale={locale}
             month={selectedMonth}
-            navigation={{
-              nextHref: buildEventsMonthHref(
-                params,
-                offsetCalendarMonth(selectedMonth, 1),
-              ),
-              previousHref: buildEventsMonthHref(
-                params,
-                offsetCalendarMonth(selectedMonth, -1),
-              ),
-              todayHref: buildEventsMonthHref(
-                params,
-                currentCalendarMonth(new Date()),
+              navigation={{
+                nextHref: buildEventsMonthHref(
+                  filterUrlState,
+                  offsetCalendarMonth(selectedMonth, 1),
+                ),
+                previousHref: buildEventsMonthHref(
+                  filterUrlState,
+                  offsetCalendarMonth(selectedMonth, -1),
+                ),
+                todayHref: buildEventsMonthHref(
+                  filterUrlState,
+                  currentCalendarMonth(new Date()),
               ),
               todayMonth: currentCalendarMonth(new Date()),
             }}
@@ -597,14 +650,13 @@ export default async function EventsPage({
 }
 
 function EventFilters({
+  activeFilters,
   categoryOptions,
-  currentStudent,
   resultCount,
   isStaff,
   searchQuery,
+  selectedAudience,
   selectedCategory,
-  selectedFilter,
-  selectedScope,
   selectedStatus,
   selectedTime,
   selectedView,
@@ -612,14 +664,13 @@ function EventFilters({
   t,
   tf,
 }: {
+  activeFilters: EventsActiveFilter[];
   categoryOptions: readonly string[];
-  currentStudent: StudentRoster | null;
   resultCount: number;
   isStaff: boolean;
   searchQuery: string;
+  selectedAudience: EventAudience;
   selectedCategory: string | null;
-  selectedFilter: EventFilter;
-  selectedScope: EventScope;
   selectedStatus: EventStatusFilter;
   selectedTime: EventTimeFilter;
   selectedView: EventBrowseView;
@@ -627,97 +678,88 @@ function EventFilters({
   t: Translate;
   tf: FormatTranslate;
 }) {
+  const audienceOptions: EventsFilterOption[] = isStaff
+    ? [
+        { label: t("events.filters.allEvents"), value: "all" },
+        { label: t("events.filters.createdByMe"), value: "created" },
+        { label: t("events.filters.schoolEvents"), value: "school" },
+        { label: t("events.filters.partnerEvents"), value: "partners" },
+      ]
+    : [
+        { label: t("events.filters.allEvents"), value: "all" },
+        { label: t("events.filters.myRegistered"), value: "registered" },
+        { label: t("events.filters.myClubEvents"), value: "my-clubs" },
+        { label: t("events.filters.schoolEvents"), value: "school" },
+        { label: t("events.filters.partnerEvents"), value: "partners" },
+      ];
+  const resultCountLabel = tf("events.filters.eventsFound", {
+    count: resultCount,
+  });
+
   return (
-    <FilterPanel
-      action="/events"
+    <EventsFilters
+      activeFilters={activeFilters}
+      audienceOptions={audienceOptions}
+      categoryOptions={[
+        { label: t("filters.all"), value: "" },
+        ...categoryOptions.map((category) => ({
+          label: categoryLabel(category, t),
+          value: category,
+        })),
+      ]}
       clearHref={
         selectedView === "calendar"
           ? `/events?view=calendar&month=${selectedMonth}`
           : "/events"
       }
-      clearLabel={t("filters.clear")}
-      resultCountLabel={tf("filters.showingResults", { count: resultCount })}
-      submitLabel={t("filters.filter")}
-    >
-      <SearchField
-        defaultValue={searchQuery}
-        label={t("filters.search")}
-        placeholder={t("filters.searchEvents")}
-      />
-      {selectedView !== "list" ? (
-        <input name="view" type="hidden" value={selectedView} />
-      ) : null}
-      {selectedView === "calendar" ? (
-        <input name="month" type="hidden" value={selectedMonth} />
-      ) : null}
-      <SelectFilter
-        defaultValue={selectedScope}
-        label={t("events.filters.viewLabel")}
-        name="scope"
-        options={[
-          { label: t("events.filters.mySchool"), value: "mine" },
-          { label: t("events.filters.shared"), value: "shared" },
-        ]}
-      />
-      <SelectFilter
-        defaultValue={selectedFilter}
-        label={t("filters.filter")}
-        name="filter"
-        options={[
-          { label: t("events.filters.upcoming"), value: "upcoming" },
-          ...(currentStudent
-            ? [{ label: t("events.filters.myRegistered"), value: "registered" }]
-            : []),
-          { label: t("events.filters.club"), value: "club" },
-        ]}
-      />
-      <SelectFilter
-        defaultValue={selectedTime}
-        label={t("filters.time")}
-        name="time"
-        options={[
-          { label: t("filters.upcoming"), value: "upcoming" },
-          { label: t("filters.past"), value: "past" },
-        ]}
-      />
-      {categoryOptions.length ? (
-        <SelectFilter
-          defaultValue={selectedCategory ?? ""}
-          label={t("filters.category")}
-          name="category"
-          options={[
-            { label: t("filters.all"), value: "" },
-            ...categoryOptions.map((category) => ({
-              label: categoryLabel(category, t),
-              value: category,
-            })),
-          ]}
-        />
-      ) : null}
-      {isStaff ? (
-        <SelectFilter
-          defaultValue={selectedStatus}
-          label={t("filters.status")}
-          name="status"
-          options={[
-            { label: t("status.approved"), value: "approved" },
-            { label: t("status.canceled"), value: "canceled" },
-            { label: t("status.pendingApproval"), value: "pending_approval" },
-            { label: t("status.rejected"), value: "rejected" },
-            { label: t("filters.all"), value: "all" },
-          ]}
-        />
-      ) : null}
-    </FilterPanel>
+      labels={{
+        audience: t("filters.filter"),
+        category: t("filters.category"),
+        clear: t("filters.clear"),
+        filter: t("filters.filter"),
+        hideFilters: t("filters.filter"),
+        search: t("filters.search"),
+        searchEvents: t("filters.searchEvents"),
+        showFilters: t("filters.filter"),
+        status: t("filters.status"),
+        time: t("filters.time"),
+      }}
+      month={selectedMonth}
+      resultCountLabel={resultCountLabel}
+      searchQuery={searchQuery}
+      selectedAudience={selectedAudience}
+      selectedCategory={selectedCategory ?? ""}
+      selectedStatus={selectedStatus}
+      selectedTime={selectedTime}
+      statusOptions={
+        isStaff
+          ? [
+              { label: t("status.approved"), value: "approved" },
+              {
+                label: t("events.filters.pendingReview"),
+                value: "pending_approval",
+              },
+              { label: t("status.canceled"), value: "canceled" },
+              { label: t("status.rejected"), value: "rejected" },
+              { label: t("filters.all"), value: "all" },
+            ]
+          : []
+      }
+      timeOptions={[
+        { label: t("filters.upcoming"), value: "upcoming" },
+        { label: t("filters.past"), value: "past" },
+      ]}
+      view={selectedView}
+    />
   );
 }
 
 function EventViewToggle({
-  params,
+  state,
   selectedView,
   t,
 }: {
-  params: EventsSearchParams;
+  state: EventsUrlState;
   selectedView: EventBrowseView;
   t: Translate;
 }) {
@@ -729,14 +771,14 @@ function EventViewToggle({
       <Link
         aria-label={t("events.view.viewList")}
         className={viewToggleClassName(selectedView === "list")}
-        href={buildEventsViewHref(params, "list")}
+        href={buildEventsViewHref(state, "list")}
       >
         {t("events.view.list")}
       </Link>
       <Link
         aria-label={t("events.view.viewCalendar")}
         className={viewToggleClassName(selectedView === "calendar")}
-        href={buildEventsViewHref(params, "calendar")}
+        href={buildEventsViewHref(state, "calendar")}
       >
         {t("events.view.calendar")}
       </Link>
@@ -754,58 +796,17 @@ function viewToggleClassName(isActive: boolean) {
 }
 
 function buildEventsViewHref(
-  params: EventsSearchParams,
+  state: EventsUrlState,
   view: EventBrowseView,
 ) {
-  const query = new URLSearchParams();
-  const keys: Array<keyof Pick<
-    EventsSearchParams,
-    "category" | "filter" | "q" | "scope" | "status" | "time"
-  >> = ["category", "filter", "q", "scope", "status", "time"];
-
-  keys.forEach((key) => {
-    const value = getSearchParam(params[key]);
-
-    if (value) {
-      query.set(key, value);
-    }
-  });
-
-  if (view === "calendar") {
-    query.set("view", view);
-    query.set(
-      "month",
-      parseCalendarMonth(getSearchParam(params.month), new Date()),
-    );
-  }
-
-  const search = query.toString();
-
-  return search ? `/events?${search}` : "/events";
+  return buildEventsHref({ ...state, view });
 }
 
 function buildEventsMonthHref(
-  params: EventsSearchParams,
+  state: EventsUrlState,
   month: string,
 ) {
-  const query = new URLSearchParams();
-  const keys: Array<keyof Pick<
-    EventsSearchParams,
-    "category" | "filter" | "q" | "scope" | "status" | "time"
-  >> = ["category", "filter", "q", "scope", "status", "time"];
-
-  keys.forEach((key) => {
-    const value = getSearchParam(params[key]);
-
-    if (value) {
-      query.set(key, value);
-    }
-  });
-
-  query.set("view", "calendar");
-  query.set("month", month);
-
-  return `/events?${query.toString()}`;
+  return buildEventsHref({ ...state, month, view: "calendar" });
 }
 
 function riskLabel(riskLevel: Event["risk_level"], t: Translate) {
@@ -819,6 +820,10 @@ function riskLabel(riskLevel: Event["risk_level"], t: Translate) {
 }
 
 function eventStatusLabel(status: string, t: Translate) {
+  if (status === "all") {
+    return t("filters.all");
+  }
+
   if (status === "approved") {
     return t("status.approved");
   }
@@ -877,11 +882,13 @@ function sharingLabel(
 async function getFilteredEvents(
   admin: ReturnType<typeof createAdminClient>,
   {
+    audience,
     calendarRange,
     connectedSchoolIds,
-    filter,
+    currentStudentClubIds,
     isStaff,
     now,
+    profileId,
     registeredEventIds,
     searchQuery,
     schoolId,
@@ -889,14 +896,15 @@ async function getFilteredEvents(
     selectedStatus,
     selectedTime,
     sharedEventIds,
-    scope,
     range,
   }: {
+    audience: EventAudience;
     calendarRange: { from: string; to: string } | null;
     connectedSchoolIds: string[];
-    filter: EventFilter;
+    currentStudentClubIds: string[];
     isStaff: boolean;
     now: string;
+    profileId: string;
     registeredEventIds: string[];
     searchQuery: string;
     schoolId: string;
@@ -904,34 +912,43 @@ async function getFilteredEvents(
     selectedStatus: EventStatusFilter;
     selectedTime: EventTimeFilter;
     sharedEventIds: string[];
-    scope: EventScope;
     range: { from: number; to: number };
   },
 ) {
-  if (filter === "registered" && registeredEventIds.length === 0) {
+  if (audience === "registered" && registeredEventIds.length === 0) {
     return { error: null, events: [], hasNextPage: false };
   }
 
-  if (
-    scope === "shared" &&
-    (connectedSchoolIds.length === 0 || sharedEventIds.length === 0)
-  ) {
+  if (audience === "my-clubs" && currentStudentClubIds.length === 0) {
+    return { error: null, events: [], hasNextPage: false };
+  }
+
+  if (audience === "partners" && !hasPartnerEvents(connectedSchoolIds, sharedEventIds)) {
     return { error: null, events: [], hasNextPage: false };
   }
 
   let query = admin
     .from("events")
     .select(
-      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note",
+      "id, school_id, club_id, created_by_profile_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note",
     );
 
-  if (scope === "shared") {
+  if (audience === "partners") {
     query = query.in("id", sharedEventIds).in("school_id", connectedSchoolIds);
+  } else if (audience === "all" || audience === "registered") {
+    query = hasPartnerEvents(connectedSchoolIds, sharedEventIds)
+      ? query.or(
+          [
+            `school_id.eq.${schoolId}`,
+            `and(school_id.in.(${connectedSchoolIds.join(",")}),id.in.(${sharedEventIds.join(",")}),status.eq.approved)`,
+          ].join(","),
+        )
+      : query.eq("school_id", schoolId);
   } else {
     query = query.eq("school_id", schoolId);
   }
 
-  if (!isStaff || scope === "shared") {
+  if (!isStaff || audience === "partners") {
     query = query.eq("status", "approved");
   } else if (selectedStatus !== "all") {
     query = query.eq("status", selectedStatus);
@@ -948,12 +965,16 @@ async function getFilteredEvents(
       .lt("starts_at", calendarRange.to);
   }
 
-  if (filter === "registered") {
+  if (audience === "registered") {
     query = query.in("id", registeredEventIds);
   }
 
-  if (filter === "club") {
-    query = query.not("club_id", "is", null);
+  if (audience === "my-clubs") {
+    query = query.in("club_id", currentStudentClubIds);
+  }
+
+  if (audience === "created") {
+    query = query.eq("created_by_profile_id", profileId);
   }
 
   if (selectedCategory) {
@@ -1152,7 +1173,6 @@ async function getCurrentStudentRegisteredEventIds(
   admin: ReturnType<typeof createAdminClient>,
   profile: Profile,
   currentStudent: StudentRoster | null,
-  now: string,
 ) {
   if (!currentStudent) {
     return [];
@@ -1163,17 +1183,39 @@ async function getCurrentStudentRegisteredEventIds(
     () =>
       admin
         .from("event_attendees")
-        .select("event_id, events!inner(id)")
+        .select("event_id")
         .or(
           `attendee_profile_id.eq.${profile.id},student_roster_id.eq.${currentStudent.id}`,
         )
         .in("status", ["registered", "attended"])
-        .eq("events.status", "approved")
-        .gte("events.starts_at", now)
         .returns<Array<{ event_id: string }>>(),
   );
 
   return (attendees ?? []).map((attendee) => attendee.event_id);
+}
+
+async function getCurrentStudentClubIds(
+  admin: ReturnType<typeof createAdminClient>,
+  profile: Profile,
+  currentStudent: StudentRoster | null,
+) {
+  if (!currentStudent) {
+    return [];
+  }
+
+  const { data: memberships } = await timeServer(
+    "events.query.current-student-club-ids",
+    () =>
+      admin
+        .from("club_memberships")
+        .select("club_id")
+        .eq("school_id", profile.school_id)
+        .eq("student_roster_id", currentStudent.id)
+        .eq("status", "active")
+        .returns<Array<{ club_id: string }>>(),
+  );
+
+  return (memberships ?? []).map((membership) => membership.club_id);
 }
 
 async function getEventAttendees(
@@ -1263,16 +1305,50 @@ function permissionLabel(
   return t("events.permission.status.notRequired");
 }
 
-function parseEventFilter(value: string | undefined): EventFilter {
-  if (value === "registered" || value === "club") {
-    return value;
+function parseEventAudience(
+  value: string | undefined,
+  legacyFilter: string | undefined,
+  role: Profile["role"],
+): EventAudience {
+  const studentAudiences: EventAudience[] = [
+    "all",
+    "my-clubs",
+    "partners",
+    "registered",
+    "school",
+  ];
+  const staffAudiences: EventAudience[] = [
+    "all",
+    "created",
+    "partners",
+    "school",
+  ];
+
+  if (value === "shared") {
+    return "partners";
   }
 
-  return "upcoming";
+  if (role === "student") {
+    if (studentAudiences.includes(value as EventAudience)) {
+      return value as EventAudience;
+    }
+
+    if (legacyFilter === "registered") {
+      return "registered";
+    }
+
+    if (legacyFilter === "club") {
+      return "my-clubs";
+    }
+  } else if (staffAudiences.includes(value as EventAudience)) {
+    return value as EventAudience;
+  }
+
+  return defaultEventAudience(role);
 }
 
-function parseEventScope(value: string | undefined): EventScope {
-  return value === "shared" ? "shared" : "mine";
+function defaultEventAudience(role: Profile["role"]): EventAudience {
+  return role === "student" ? "all" : "school";
 }
 
 function parseEventTime(value: string): EventTimeFilter {
@@ -1377,31 +1453,146 @@ function eventsPageHref(page: number, params: EventsSearchParams) {
 }
 
 function eventListTitle(
-  filter: EventFilter,
+  audience: EventAudience,
   category: string | null,
-  scope: EventScope,
   time: EventTimeFilter,
   t: Translate,
 ) {
-  const baseTitleKey =
-    time === "past" && filter === "upcoming"
-      ? "events.listTitles.past"
-      : filter === "registered"
-      ? "events.listTitles.registered"
-      : filter === "club"
-        ? "events.listTitles.club"
-        : "events.listTitles.upcoming";
-  const sharedTitleKey =
-    time === "past" && filter === "upcoming"
-      ? "events.listTitles.sharedPast"
-      : filter === "registered"
-      ? "events.listTitles.sharedRegistered"
-      : filter === "club"
-        ? "events.listTitles.sharedClub"
-        : "events.listTitles.sharedUpcoming";
-  const scopedTitle = t(scope === "shared" ? sharedTitleKey : baseTitleKey);
+  const titleKey =
+    audience === "registered"
+      ? "events.filters.myRegistered"
+      : audience === "my-clubs"
+        ? "events.filters.myClubEvents"
+        : audience === "partners"
+          ? "events.filters.partnerEvents"
+          : audience === "school"
+            ? "events.filters.schoolEvents"
+            : audience === "created"
+              ? "events.filters.createdByMe"
+              : time === "past"
+                ? "events.listTitles.past"
+                : "events.filters.allEvents";
+  const scopedTitle = t(titleKey);
 
   return category ? `${scopedTitle}: ${categoryLabel(category, t)}` : scopedTitle;
+}
+
+function hasPartnerEvents(
+  connectedSchoolIds: string[],
+  sharedEventIds: string[],
+) {
+  return connectedSchoolIds.length > 0 && sharedEventIds.length > 0;
+}
+
+function buildEventsHref(
+  state: EventsUrlState,
+  omitted: Array<"category" | "q" | "scope" | "status" | "time"> = [],
+) {
+  const query = new URLSearchParams();
+
+  if (!omitted.includes("q") && state.searchQuery) {
+    query.set("q", state.searchQuery);
+  }
+
+  if (!omitted.includes("scope")) {
+    query.set("scope", state.audience);
+  }
+
+  if (!omitted.includes("category") && state.category) {
+    query.set("category", state.category);
+  }
+
+  if (!omitted.includes("status")) {
+    query.set("status", state.status);
+  }
+
+  if (!omitted.includes("time")) {
+    query.set("time", state.time);
+  }
+
+  if (state.view === "calendar") {
+    query.set("view", "calendar");
+    query.set("month", state.month);
+  }
+
+  const search = query.toString();
+  return search ? `/events?${search}` : "/events";
+}
+
+function getActiveEventFilters(
+  state: EventsUrlState,
+  defaultAudience: EventAudience,
+  isStaff: boolean,
+  t: Translate,
+): EventsActiveFilter[] {
+  const filters: EventsActiveFilter[] = [];
+
+  if (state.audience !== defaultAudience) {
+    filters.push({
+      href: buildEventsHref(state, ["scope"]),
+      label: eventAudienceLabel(state.audience, isStaff, t),
+    });
+  }
+
+  if (state.searchQuery) {
+    filters.push({
+      href: buildEventsHref(state, ["q"]),
+      label: `${t("filters.search")}: ${state.searchQuery}`,
+    });
+  }
+
+  if (state.category) {
+    filters.push({
+      href: buildEventsHref(state, ["category"]),
+      label: categoryLabel(state.category, t),
+    });
+  }
+
+  if (state.time !== "upcoming") {
+    filters.push({
+      href: buildEventsHref(state, ["time"]),
+      label: t("filters.past"),
+    });
+  }
+
+  if (isStaff && state.status !== "approved") {
+    filters.push({
+      href: buildEventsHref(state, ["status"]),
+      label: eventStatusLabel(state.status, t),
+    });
+  }
+
+  return filters;
+}
+
+function eventAudienceLabel(
+  audience: EventAudience,
+  isStaff: boolean,
+  t: Translate,
+) {
+  if (audience === "created") {
+    return t("events.filters.createdByMe");
+  }
+
+  if (audience === "my-clubs") {
+    return t("events.filters.myClubEvents");
+  }
+
+  if (audience === "partners") {
+    return t("events.filters.partnerEvents");
+  }
+
+  if (audience === "registered") {
+    return t("events.filters.myRegistered");
+  }
+
+  if (audience === "school") {
+    return t("events.filters.schoolEvents");
+  }
+
+  return isStaff
+    ? t("events.filters.allEvents")
+    : t("events.filters.allEvents");
 }
 
 function categoryLabel(category: string, t: Translate) {

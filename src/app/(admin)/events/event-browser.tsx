@@ -18,11 +18,17 @@ export type EventBrowserItem = EventQuickViewItem & {
   categoryValue: string | null;
   dateBadgeLabel: string;
   endsAt: string;
+  isMyClubEvent: boolean;
+  isPartnerEvent: boolean;
   startsAt: string;
   visualInitials: string;
 };
 
-export type EventBrowserLabels = EventQuickViewLabels;
+export type EventBrowserLabels = EventQuickViewLabels & {
+  myClub: string;
+  partnerSchool: string;
+  registered: string;
+};
 
 export function EventBrowser({
   items,
@@ -142,6 +148,16 @@ function EventCard({
             <CategoryBadge>{item.categoryLabel}</CategoryBadge>
           ) : null}
           <StatusBadge status={item.status}>{item.statusLabel}</StatusBadge>
+          {item.registrationStatus === "registered" ||
+          item.registrationStatus === "attended" ? (
+            <StatusBadge variant="success">{labels.registered}</StatusBadge>
+          ) : null}
+          {item.isMyClubEvent ? (
+            <StatusBadge variant="info">{labels.myClub}</StatusBadge>
+          ) : null}
+          {item.isPartnerEvent ? (
+            <StatusBadge variant="info">{labels.partnerSchool}</StatusBadge>
+          ) : null}
           {item.permissionRequired ? (
             <StatusBadge variant="warning">
               {labels.permissionRequired}
@@ -152,6 +168,11 @@ function EventCard({
         <div className="mt-3 space-y-1.5 text-sm text-slate-600">
           <p className="font-semibold text-slate-800">{item.dateTimeLabel}</p>
           <p className="min-w-0 break-words">{item.location || "-"}</p>
+          {item.isPartnerEvent ? (
+            <p className="min-w-0 break-words">
+              {labels.hostedBy}: {item.hostName}
+            </p>
+          ) : null}
         </div>
 
         <p className="mt-3 line-clamp-3 min-h-[3.75rem] break-words text-sm leading-5 text-slate-600">

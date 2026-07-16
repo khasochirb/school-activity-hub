@@ -11,7 +11,6 @@ import {
 } from "react";
 import {
   EventQuickViewModal,
-  type EventQuickViewLabels,
 } from "@/components/events/event-quick-view-modal";
 import {
   formatLongDate,
@@ -21,11 +20,11 @@ import {
 } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
 import { CategoryBadge, StatusBadge } from "../_components/page-ui";
-import type { EventBrowserItem } from "./event-browser";
+import type { EventBrowserItem, EventBrowserLabels } from "./event-browser";
 
 const MAX_EVENTS_PER_DAY = 2;
 
-export type EventCalendarLabels = EventQuickViewLabels & {
+export type EventCalendarLabels = EventBrowserLabels & {
   calendar: string;
   moreCount: string;
   nextMonth: string;
@@ -369,7 +368,7 @@ function CalendarEventChip({
     >
       <span className="block truncate text-[11px] font-bold text-slate-600">
         {formatTime(event.startsAt, locale)} ·{" "}
-        {event.registrationStateLabel || event.statusLabel}
+        {calendarIndicatorLabel(event, labels)}
       </span>
       <span className="mt-0.5 block truncate text-xs font-bold text-slate-950">
         {event.title}
@@ -419,6 +418,16 @@ function CalendarAgenda({
                 <StatusBadge status={event.status}>
                   {event.statusLabel}
                 </StatusBadge>
+                {event.registrationStatus === "registered" ||
+                event.registrationStatus === "attended" ? (
+                  <StatusBadge variant="success">{labels.registered}</StatusBadge>
+                ) : null}
+                {event.isMyClubEvent ? (
+                  <StatusBadge variant="info">{labels.myClub}</StatusBadge>
+                ) : null}
+                {event.isPartnerEvent ? (
+                  <StatusBadge variant="info">{labels.partnerSchool}</StatusBadge>
+                ) : null}
               </span>
               <span className="mt-3 block break-words text-base font-bold text-slate-950">
                 {event.title}
@@ -429,6 +438,11 @@ function CalendarAgenda({
               <span className="mt-1 block break-words text-sm text-slate-600">
                 {event.location || "-"}
               </span>
+              {event.isPartnerEvent ? (
+                <span className="mt-1 block break-words text-sm text-slate-600">
+                  {labels.hostedBy}: {event.hostName}
+                </span>
+              ) : null}
               {event.registrationStateLabel ? (
                 <span className="mt-2 block text-sm font-bold text-[var(--primary-strong)]">
                   {event.registrationStateLabel}
@@ -549,4 +563,26 @@ function isSameMonth(first: Date, second: Date) {
 
 function formatCount(template: string, count: number) {
   return template.replace("{count}", String(count));
+}
+
+function calendarIndicatorLabel(
+  event: EventBrowserItem,
+  labels: EventCalendarLabels,
+) {
+  if (event.status === "pending_approval") {
+    return event.statusLabel;
+  }
+
+  if (
+    event.registrationStatus === "registered" ||
+    event.registrationStatus === "attended"
+  ) {
+    return labels.registered;
+  }
+
+  if (event.isMyClubEvent) {
+    return labels.myClub;
+  }
+
+  return event.isPartnerEvent ? labels.partnerSchool : event.statusLabel;
 }
