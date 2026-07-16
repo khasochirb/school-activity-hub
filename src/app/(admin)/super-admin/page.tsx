@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  loadPlatformAuditLogs,
+  type PlatformAuditLog,
+} from "@/lib/audit/platform-audit-query";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
@@ -13,15 +17,6 @@ import {
 
 type CountResult = {
   count: number | null;
-};
-
-type AuditLog = {
-  action: string;
-  created_at: string;
-  id: string;
-  metadata: Record<string, unknown>;
-  target_school_id: string | null;
-  target_type: string;
 };
 
 type School = {
@@ -71,7 +66,7 @@ export default async function SuperAdminPage() {
     activeSchoolsResult,
     platformAdminsResult,
     schoolConnectionsResult,
-    auditLogsResult,
+    auditLogResult,
   ] = await Promise.all([
     admin.from("schools").select("id", { count: "exact", head: true }),
     admin
@@ -85,22 +80,13 @@ export default async function SuperAdminPage() {
     admin
       .from("school_connections")
       .select("id", { count: "exact", head: true }),
-    admin
-      .from("platform_audit_logs")
-      .select("id, action, target_type, target_school_id, metadata, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5)
-      .returns<AuditLog[]>(),
+    loadPlatformAuditLogs({
+      admin,
+      context: "Super Admin dashboard audit log query",
+      limit: 5,
+    }),
   ]);
-
-  if (auditLogsResult.error) {
-    console.error("Super Admin dashboard audit logs query failed", {
-      code: auditLogsResult.error.code,
-      message: auditLogsResult.error.message,
-    });
-  }
-
-  const recentAuditLogs = auditLogsResult.error ? [] : auditLogsResult.data ?? [];
+  const recentAuditLogs = auditLogResult.logs;
   const schoolIds = uniqueStrings(
     recentAuditLogs.map((log) => log.target_school_id),
   );
@@ -167,19 +153,27 @@ export default async function SuperAdminPage() {
           </HeaderActionLink>
         </div>
 
-        {auditLogsResult.error ? (
+        {auditLogResult.state === "unavailable" ? (
           <div className="p-4">
             <EmptyState
               description={t("superAdmin.auditLog.unavailableDescription")}
               title={t("superAdmin.auditLog.unavailableTitle")}
             />
           </div>
-        ) : recentAuditLogs.length === 0 ? (
+        ) : auditLogResult.state === "error" ? (
           <div className="p-4">
             <EmptyState
-              description={t("superAdmin.auditLog.emptyDescription")}
-              title={t("superAdmin.auditLog.noRecentActions")}
+              description={t("superAdmin.auditLog.loadFailedDescription")}
+              title={t("common.somethingWentWrong")}
             />
+          </div>
+        ) : recentAuditLogs.length === 0 ? (
+          <div className="p-4">
+            <div className="empty-state">
+              <p className="text-sm font-bold text-slate-950">
+                {t("superAdmin.auditLog.noRecentActions")}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="divide-y divide-zinc-200">
@@ -221,7 +215,7 @@ function RecentAuditLogCard({
   t,
 }: {
   locale: Locale;
-  log: AuditLog;
+  log: PlatformAuditLog;
   schoolById: Map<string, School>;
   t: Translator;
 }) {

@@ -1612,12 +1612,14 @@ export const en = {
         targetSchool: "Target school",
       },
       platformSafety: "Platform safety",
+      loadFailedDescription:
+        "Audit logs could not be loaded. Refresh the page and try again.",
       noRecentActions: "No recent platform actions yet.",
       recentActions: "Recent platform actions",
       searchPlaceholder: "Search audit logs",
       title: "Platform audit log",
       unavailableDescription:
-        "Run the platform audit log migration, then refresh this page.",
+        "Confirm the platform audit log migration has run, reload the Supabase schema cache, then refresh this page.",
       unavailableTitle: "Audit logs are not available yet.",
     },
     connections: {

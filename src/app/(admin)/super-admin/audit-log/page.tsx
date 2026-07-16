@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import {
+  loadPlatformAuditLogs,
+  type PlatformAuditLog,
+} from "@/lib/audit/platform-audit-query";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import {
@@ -16,17 +20,6 @@ import {
   PageHeader,
   StatusBadge,
 } from "../../_components/page-ui";
-
-type AuditLog = {
-  action: string;
-  actor_profile_id: string | null;
-  created_at: string;
-  id: string;
-  metadata: Record<string, unknown>;
-  target_id: string | null;
-  target_school_id: string | null;
-  target_type: string;
-};
 
 type ActorProfile = {
   full_name: string;
@@ -92,23 +85,12 @@ export default async function SuperAdminAuditLogPage({
   const selectedSchool = getSearchParam(params.school);
   const selectedDate = getSearchParam(params.date);
   const admin = createAdminClient();
-  const { data: logs, error } = await admin
-    .from("platform_audit_logs")
-    .select(
-      "id, actor_profile_id, action, target_type, target_id, target_school_id, metadata, created_at",
-    )
-    .order("created_at", { ascending: false })
-    .limit(200)
-    .returns<AuditLog[]>();
-
-  if (error) {
-    console.error("Super Admin audit log query failed", {
-      code: error.code,
-      message: error.message,
-    });
-  }
-
-  const auditLogs = error ? [] : logs ?? [];
+  const auditLogResult = await loadPlatformAuditLogs({
+    admin,
+    context: "Super Admin audit log query",
+    limit: 200,
+  });
+  const auditLogs = auditLogResult.logs;
   const actorIds = uniqueStrings(
     auditLogs.map((log) => log.actor_profile_id).filter(Boolean),
   );
@@ -182,31 +164,28 @@ export default async function SuperAdminAuditLogPage({
         title={t("superAdmin.auditLog.title")}
       />
 
-      <AuditFilterPanel
-        actionOptions={actionOptions}
-        date={selectedDate}
-        resultCount={filteredLogs.length}
-        schoolOptions={schoolOptions}
-        selectedAction={selectedAction}
-        selectedSchool={selectedSchool}
-        searchQuery={searchQuery}
-        t={t}
-        tf={tf}
-      />
+      {auditLogResult.state === "ready" ? (
+        <AuditFilterPanel
+          actionOptions={actionOptions}
+          date={selectedDate}
+          resultCount={filteredLogs.length}
+          schoolOptions={schoolOptions}
+          selectedAction={selectedAction}
+          selectedSchool={selectedSchool}
+          searchQuery={searchQuery}
+          t={t}
+          tf={tf}
+        />
+      ) : null}
 
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">
             {t("superAdmin.auditLog.recentActions")}
           </h2>
-          {error ? (
-            <p className="mt-2 text-sm text-amber-700">
-              {t("superAdmin.auditLog.unavailableDescription")}
-            </p>
-          ) : null}
         </div>
 
-        {error ? (
+        {auditLogResult.state === "unavailable" ? (
           <div className="p-4">
             <EmptyState
               description={t("superAdmin.auditLog.unavailableDescription")}
@@ -215,16 +194,22 @@ export default async function SuperAdminAuditLogPage({
           </div>
         ) : null}
 
-        {!error && auditLogs.length === 0 ? (
+        {auditLogResult.state === "error" ? (
           <div className="p-4">
             <EmptyState
-              description={t("superAdmin.auditLog.emptyDescription")}
-              title={t("superAdmin.auditLog.emptyTitle")}
+              description={t("superAdmin.auditLog.loadFailedDescription")}
+              title={t("common.somethingWentWrong")}
             />
           </div>
         ) : null}
 
-        {!error && auditLogs.length > 0 && filteredLogs.length === 0 ? (
+        {auditLogResult.state === "ready" && auditLogs.length === 0 ? (
+          <AuditLogEmptyState message={t("superAdmin.auditLog.noRecentActions")} />
+        ) : null}
+
+        {auditLogResult.state === "ready" &&
+        auditLogs.length > 0 &&
+        filteredLogs.length === 0 ? (
           <div className="p-4">
             <EmptyState
               action={
@@ -238,7 +223,7 @@ export default async function SuperAdminAuditLogPage({
           </div>
         ) : null}
 
-        {filteredLogs.length ? (
+        {auditLogResult.state === "ready" && filteredLogs.length ? (
           <>
             <div className="hidden overflow-x-auto lg:block">
               <table className="w-full text-left text-sm">
@@ -403,7 +388,7 @@ function AuditLogRow({
   actorById: Map<string, ActorProfile>;
   actorEmailById: Map<string, string | null>;
   locale: Locale;
-  log: AuditLog;
+  log: PlatformAuditLog;
   schoolById: Map<string, School>;
   t: Translator;
 }) {
@@ -453,7 +438,7 @@ function AuditLogCard({
   actorById: Map<string, ActorProfile>;
   actorEmailById: Map<string, string | null>;
   locale: Locale;
-  log: AuditLog;
+  log: PlatformAuditLog;
   schoolById: Map<string, School>;
   t: Translator;
 }) {
@@ -615,7 +600,7 @@ function isScalarMetadataValue(value: unknown) {
   );
 }
 
-function targetLabel(log: AuditLog) {
+function targetLabel(log: PlatformAuditLog) {
   return `${log.target_type}${log.target_id ? ` #${shortId(log.target_id)}` : ""}`;
 }
 
@@ -631,4 +616,14 @@ function auditActionLabel(action: string, t: Translator) {
 
 function uniqueStrings(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter(Boolean))) as string[];
+}
+
+function AuditLogEmptyState({ message }: { message: string }) {
+  return (
+    <div className="p-4">
+      <div className="empty-state">
+        <p className="text-sm font-bold text-slate-950">{message}</p>
+      </div>
+    </div>
+  );
 }
