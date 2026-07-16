@@ -58,6 +58,32 @@ export function formatWeekdayShort(value: DateInput, locale: Locale) {
   return formatWithLocale(value, locale, { weekday: "short" });
 }
 
+export function formatDateRange(
+  startsAt: DateInput,
+  endsAt: DateInput,
+  locale: Locale,
+) {
+  const startDate = new Date(startsAt);
+  const endDate = new Date(endsAt);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return "";
+  }
+
+  const formatter = new Intl.DateTimeFormat(resolveIntlLocale(locale), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const rangeFormatter = formatter as Intl.DateTimeFormat & {
+    formatRange?: (start: Date, end: Date) => string;
+  };
+
+  return rangeFormatter.formatRange
+    ? rangeFormatter.formatRange(startDate, endDate)
+    : `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+}
+
 export function formatSchedulePreview(
   startsAt: DateInput,
   endsAt: DateInput,

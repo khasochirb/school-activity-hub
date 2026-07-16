@@ -40,6 +40,7 @@ export function EventsFilters({
   statusOptions,
   timeOptions,
   view,
+  week,
 }: {
   activeFilters: EventsActiveFilter[];
   audienceOptions: EventsFilterOption[];
@@ -55,7 +56,8 @@ export function EventsFilters({
   selectedTime: string;
   statusOptions: EventsFilterOption[];
   timeOptions: EventsFilterOption[];
-  view: "calendar" | "list";
+  view: "list" | "month" | "week";
+  week: string;
 }) {
   return (
     <section className="section-card section-card-padded min-w-0">
@@ -103,10 +105,15 @@ export function EventsFilters({
                 options={statusOptions}
               />
             ) : null}
-            {view === "calendar" ? (
+            {view === "month" ? (
               <>
-                <input name="view" type="hidden" value="calendar" />
+                <input name="view" type="hidden" value="month" />
                 <input name="month" type="hidden" value={month} />
+              </>
+            ) : view === "week" ? (
+              <>
+                <input name="view" type="hidden" value="week" />
+                <input name="week" type="hidden" value={week} />
               </>
             ) : null}
             <div className="compact-filter-actions">

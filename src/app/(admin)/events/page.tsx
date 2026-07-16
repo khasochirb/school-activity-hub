@@ -17,6 +17,7 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
+import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import {
   getPageParam,
   getSearchParam,
@@ -24,6 +25,7 @@ import {
   pageRows,
 } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
+import { getServerBaseUrl } from "@/lib/server-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -45,6 +47,10 @@ import {
   EventCalendar,
   type EventCalendarLabels,
 } from "./event-calendar";
+import {
+  EventWeekCalendar,
+  type EventWeekLabels,
+} from "./event-week-calendar";
 import {
   EventsFilters,
   type EventsActiveFilter,
@@ -90,10 +96,12 @@ type Event = {
   permission_note: string | null;
 };
 
-type EventAttendee = {
+type EventAttendeeCountRow = {
   event_id: string;
-  student_roster_id: string | null;
-  attendee_profile_id: string | null;
+};
+
+type CurrentStudentEventAttendee = {
+  event_id: string;
   permission_status: EventPermissionStatus;
   status: string;
 };
@@ -122,7 +130,7 @@ type EventAudience =
   | "registered"
   | "school";
 type EventTimeFilter = "past" | "upcoming";
-type EventBrowseView = "calendar" | "list";
+type EventBrowseView = "list" | "month" | "week";
 type EventStatusFilter =
   | "all"
   | "approved"
@@ -141,6 +149,7 @@ type EventsSearchParams = {
   status?: string | string[];
   time?: string | string[];
   view?: string | string[];
+  week?: string | string[];
 };
 
 type EventsUrlState = {
@@ -151,6 +160,7 @@ type EventsUrlState = {
   status: EventStatusFilter;
   time: EventTimeFilter;
   view: EventBrowseView;
+  week: string;
 };
 
 type Translate = (key: string) => string;
@@ -181,10 +191,13 @@ export default async function EventsPage({
     getSearchParam(params.month),
     new Date(),
   );
+  const selectedWeek = parseWeekStart(getSearchParam(params.week), new Date());
   const calendarRange =
-    selectedView === "calendar"
+    selectedView === "month"
       ? getCalendarQueryRange(selectedMonth)
-      : null;
+      : selectedView === "week"
+        ? getWeekQueryRange(selectedWeek)
+        : null;
   const page = getPageParam(params.page);
   const range = pageRange(page, EVENTS_PAGE_SIZE);
   const supabase = await createClient();
@@ -211,6 +224,7 @@ export default async function EventsPage({
   }
 
   const admin = createAdminClient();
+  const baseUrl = await getServerBaseUrl();
   const isStaff = profile.role === "school_admin" || profile.role === "teacher";
   const selectedAudience = parseEventAudience(
     getSearchValue(params.scope),
@@ -277,15 +291,23 @@ export default async function EventsPage({
   });
 
   const eventIds = events.map((event) => event.id);
-  const [attendees, eventShares] = await Promise.all([
-    eventIds.length ? getEventAttendees(admin, eventIds) : Promise.resolve([]),
+  const [attendeeRows, currentStudentAttendees, eventShares] = await Promise.all([
+    eventIds.length
+      ? getEventAttendeeCountRows(admin, eventIds)
+      : Promise.resolve([]),
+    eventIds.length
+      ? getCurrentStudentEventAttendees(
+          admin,
+          eventIds,
+          profile,
+          currentStudent,
+        )
+      : Promise.resolve([]),
     eventIds.length ? getEventShares(admin, eventIds) : Promise.resolve([]),
   ]);
-  const attendeeCounts = countActiveAttendees(attendees);
+  const attendeeCounts = countActiveAttendees(attendeeRows);
   const currentStudentRegistrationByEventId = mapCurrentStudentRegistrations(
-    attendees,
-    profile,
-    currentStudent,
+    currentStudentAttendees,
   );
   const linkedClubIds = Array.from(
     new Set(
@@ -360,10 +382,22 @@ export default async function EventsPage({
             ? t("events.registration.notJoined")
             : t("events.registration.unavailable")
       : null;
+    const calendarLinks = getEventCalendarLinks(
+      {
+        description: event.description,
+        endsAt: event.ends_at,
+        id: event.id,
+        location: event.location,
+        startsAt: event.starts_at,
+        title: event.title,
+      },
+      baseUrl,
+    );
 
     return {
       attendeeCount,
       canRegister: canCurrentStudentRegister(event, profile.school_id),
+      calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
       capacity: event.capacity,
       categoryLabel: event.category ? categoryLabel(event.category, t) : null,
       categoryValue: event.category,
@@ -376,6 +410,7 @@ export default async function EventsPage({
       endsAt: event.ends_at,
       hasCurrentStudent: Boolean(currentStudent),
       hostName: clubName ?? ownerSchoolName,
+      googleCalendarUrl: calendarLinks.googleCalendarUrl,
       id: event.id,
       isFull,
       isMyClubEvent,
@@ -427,6 +462,15 @@ export default async function EventsPage({
     selectedDate: t("events.calendar.selectedDate"),
     today: t("events.calendar.today"),
   };
+  const eventWeekLabels: EventWeekLabels = {
+    ...eventBrowserLabels,
+    nextWeek: t("events.week.nextWeek"),
+    noEventsOnDay: t("events.week.noEventsOnDay"),
+    noEventsThisWeek: t("events.week.noEventsThisWeek"),
+    previousWeek: t("events.week.previousWeek"),
+    today: t("events.calendar.today"),
+    weekView: t("events.week.title"),
+  };
   const filterUrlState: EventsUrlState = {
     audience: selectedAudience,
     category: selectedCategory,
@@ -435,6 +479,7 @@ export default async function EventsPage({
     status: selectedStatus,
     time: selectedTime,
     view: selectedView,
+    week: selectedWeek,
   };
   const activeFilters = getActiveEventFilters(
     filterUrlState,
@@ -541,6 +586,7 @@ export default async function EventsPage({
         selectedTime={selectedTime}
         selectedView={selectedView}
         selectedMonth={selectedMonth}
+        selectedWeek={selectedWeek}
         t={t}
         tf={tf}
       />
@@ -549,8 +595,10 @@ export default async function EventsPage({
         <div className="section-header">
           <div>
             <h2 className="section-title">
-              {selectedView === "calendar"
+              {selectedView === "month"
                 ? t("events.calendar.schoolCalendar")
+                : selectedView === "week"
+                  ? t("events.week.title")
                 : eventListTitle(
                     selectedAudience,
                     selectedCategory,
@@ -570,28 +618,51 @@ export default async function EventsPage({
             ) : null}
           </div>
         </div>
-        {selectedView === "calendar" ? (
+        {selectedView === "month" ? (
           <EventCalendar
             items={eventBrowserItems}
             key={selectedMonth}
             labels={eventCalendarLabels}
             locale={locale}
             month={selectedMonth}
-              navigation={{
-                nextHref: buildEventsMonthHref(
-                  filterUrlState,
-                  offsetCalendarMonth(selectedMonth, 1),
-                ),
-                previousHref: buildEventsMonthHref(
-                  filterUrlState,
-                  offsetCalendarMonth(selectedMonth, -1),
-                ),
-                todayHref: buildEventsMonthHref(
-                  filterUrlState,
-                  currentCalendarMonth(new Date()),
+            navigation={{
+              nextHref: buildEventsMonthHref(
+                filterUrlState,
+                offsetCalendarMonth(selectedMonth, 1),
+              ),
+              previousHref: buildEventsMonthHref(
+                filterUrlState,
+                offsetCalendarMonth(selectedMonth, -1),
+              ),
+              todayHref: buildEventsMonthHref(
+                filterUrlState,
+                currentCalendarMonth(new Date()),
               ),
               todayMonth: currentCalendarMonth(new Date()),
             }}
+          />
+        ) : selectedView === "week" ? (
+          <EventWeekCalendar
+            items={eventBrowserItems}
+            key={selectedWeek}
+            labels={eventWeekLabels}
+            locale={locale}
+            navigation={{
+              nextHref: buildEventsWeekHref(
+                filterUrlState,
+                offsetWeek(selectedWeek, 7),
+              ),
+              previousHref: buildEventsWeekHref(
+                filterUrlState,
+                offsetWeek(selectedWeek, -7),
+              ),
+              todayHref: buildEventsWeekHref(
+                filterUrlState,
+                currentWeekStart(new Date()),
+              ),
+              todayWeek: currentWeekStart(new Date()),
+            }}
+            weekStart={selectedWeek}
           />
         ) : events.length ? (
           <EventBrowser
@@ -661,6 +732,7 @@ function EventFilters({
   selectedTime,
   selectedView,
   selectedMonth,
+  selectedWeek,
   t,
   tf,
 }: {
@@ -675,6 +747,7 @@ function EventFilters({
   selectedTime: EventTimeFilter;
   selectedView: EventBrowseView;
   selectedMonth: string;
+  selectedWeek: string;
   t: Translate;
   tf: FormatTranslate;
 }) {
@@ -708,9 +781,11 @@ function EventFilters({
         })),
       ]}
       clearHref={
-        selectedView === "calendar"
-          ? `/events?view=calendar&month=${selectedMonth}`
-          : "/events"
+        selectedView === "month"
+          ? `/events?view=month&month=${selectedMonth}`
+          : selectedView === "week"
+            ? `/events?view=week&week=${selectedWeek}`
+            : "/events"
       }
       labels={{
         audience: t("filters.filter"),
@@ -750,6 +825,7 @@ function EventFilters({
         { label: t("filters.past"), value: "past" },
       ]}
       view={selectedView}
+      week={selectedWeek}
     />
   );
 }
@@ -777,10 +853,17 @@ function EventViewToggle({
       </Link>
       <Link
         aria-label={t("events.view.viewCalendar")}
-        className={viewToggleClassName(selectedView === "calendar")}
-        href={buildEventsViewHref(state, "calendar")}
+        className={viewToggleClassName(selectedView === "month")}
+        href={buildEventsViewHref(state, "month")}
       >
-        {t("events.view.calendar")}
+        {t("events.view.month")}
+      </Link>
+      <Link
+        aria-label={t("events.view.viewWeek")}
+        className={viewToggleClassName(selectedView === "week")}
+        href={buildEventsViewHref(state, "week")}
+      >
+        {t("events.view.week")}
       </Link>
     </nav>
   );
@@ -806,7 +889,11 @@ function buildEventsMonthHref(
   state: EventsUrlState,
   month: string,
 ) {
-  return buildEventsHref({ ...state, month, view: "calendar" });
+  return buildEventsHref({ ...state, month, view: "month" });
+}
+
+function buildEventsWeekHref(state: EventsUrlState, week: string) {
+  return buildEventsHref({ ...state, view: "week", week });
 }
 
 function riskLabel(riskLevel: Event["risk_level"], t: Translate) {
@@ -987,7 +1074,7 @@ async function getFilteredEvents(
 
   const { data: events, error } = await timeServer(
     calendarRange
-      ? "events.query.calendar-month-events"
+      ? "events.query.calendar-range-events"
       : "events.query.filtered-events",
     () => {
       const orderedQuery = query.order("starts_at", {
@@ -1218,27 +1305,52 @@ async function getCurrentStudentClubIds(
   return (memberships ?? []).map((membership) => membership.club_id);
 }
 
-async function getEventAttendees(
+async function getEventAttendeeCountRows(
   admin: ReturnType<typeof createAdminClient>,
   eventIds: string[],
 ) {
   const { data: attendees } = await timeServer(
-    "events.query.event-attendees",
+    "events.query.event-attendee-count-rows",
     () =>
       admin
         .from("event_attendees")
-        .select(
-          "event_id, student_roster_id, attendee_profile_id, permission_status, status",
-        )
+        .select("event_id")
         .in("event_id", eventIds)
         .in("status", ["registered", "attended"])
-        .returns<EventAttendee[]>(),
+        .returns<EventAttendeeCountRow[]>(),
   );
 
   return attendees ?? [];
 }
 
-function countActiveAttendees(attendees: EventAttendee[]) {
+async function getCurrentStudentEventAttendees(
+  admin: ReturnType<typeof createAdminClient>,
+  eventIds: string[],
+  profile: Profile,
+  currentStudent: StudentRoster | null,
+) {
+  if (!currentStudent) {
+    return [];
+  }
+
+  const { data: attendees } = await timeServer(
+    "events.query.current-student-event-attendees",
+    () =>
+      admin
+        .from("event_attendees")
+        .select("event_id, permission_status, status")
+        .in("event_id", eventIds)
+        .or(
+          `attendee_profile_id.eq.${profile.id},student_roster_id.eq.${currentStudent.id}`,
+        )
+        .in("status", ["registered", "attended"])
+        .returns<CurrentStudentEventAttendee[]>(),
+  );
+
+  return attendees ?? [];
+}
+
+function countActiveAttendees(attendees: EventAttendeeCountRow[]) {
   const counts = new Map<string, number>();
 
   attendees.forEach((attendee) => {
@@ -1261,26 +1373,15 @@ function mapSharedSchoolIds(shares: EventShare[]) {
 }
 
 function mapCurrentStudentRegistrations(
-  attendees: EventAttendee[],
-  profile: Profile,
-  currentStudent: StudentRoster | null,
+  attendees: CurrentStudentEventAttendee[],
 ) {
   const registrations = new Map<string, CurrentStudentRegistration>();
 
-  if (!currentStudent) {
-    return registrations;
-  }
-
   attendees.forEach((attendee) => {
-    if (
-      attendee.attendee_profile_id === profile.id ||
-      attendee.student_roster_id === currentStudent.id
-    ) {
-      registrations.set(attendee.event_id, {
-        permission_status: attendee.permission_status,
-        status: attendee.status,
-      });
-    }
+    registrations.set(attendee.event_id, {
+      permission_status: attendee.permission_status,
+      status: attendee.status,
+    });
   });
 
   return registrations;
@@ -1356,7 +1457,13 @@ function parseEventTime(value: string): EventTimeFilter {
 }
 
 function parseEventBrowseView(value: string): EventBrowseView {
-  return value === "calendar" || value === "schedule" ? "calendar" : "list";
+  if (value === "week") {
+    return "week";
+  }
+
+  return value === "calendar" || value === "month" || value === "schedule"
+    ? "month"
+    : "list";
 }
 
 function parseCalendarMonth(value: string, fallbackDate: Date) {
@@ -1395,6 +1502,54 @@ function getCalendarQueryRange(month: string) {
     from: gridStart.toISOString(),
     to: gridEnd.toISOString(),
   };
+}
+
+function parseWeekStart(value: string, fallbackDate: Date) {
+  const parsedDate = dateFromDayKey(value);
+  return parsedDate ? currentWeekStart(parsedDate) : currentWeekStart(fallbackDate);
+}
+
+function currentWeekStart(value: Date) {
+  const date = new Date(
+    value.getFullYear(),
+    value.getMonth(),
+    value.getDate(),
+    12,
+  );
+  const daysSinceMonday = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - daysSinceMonday);
+
+  return dayKey(date);
+}
+
+function offsetWeek(week: string, days: number) {
+  const date = dateFromDayKey(week) ?? new Date();
+  date.setDate(date.getDate() + days);
+  return currentWeekStart(date);
+}
+
+function getWeekQueryRange(week: string) {
+  const weekStart = dateFromDayKey(week) ?? new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  const to = addCalendarDays(weekStart, 7);
+
+  return { from: weekStart.toISOString(), to: to.toISOString() };
+}
+
+function dateFromDayKey(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  if (!match) {
+    return null;
+  }
+
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dayKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function calendarMonthDate(month: string) {
@@ -1510,9 +1665,12 @@ function buildEventsHref(
     query.set("time", state.time);
   }
 
-  if (state.view === "calendar") {
-    query.set("view", "calendar");
+  if (state.view === "month") {
+    query.set("view", "month");
     query.set("month", state.month);
+  } else if (state.view === "week") {
+    query.set("view", "week");
+    query.set("week", state.week);
   }
 
   const search = query.toString();

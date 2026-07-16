@@ -4,6 +4,7 @@ type Translate = (key: string) => string;
 
 export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
   return {
+    addToCalendar: t("events.calendarActions.add"),
     attendanceQr: t("events.actions.attendanceQr"),
     cancelRegistration: t("events.actions.cancelMyRegistration"),
     cancelling: t("events.actions.cancelling"),
@@ -12,8 +13,10 @@ export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
     close: t("common.close"),
     dateTime: t("events.formGroups.dateTime"),
     description: t("events.form.description"),
+    downloadCalendarFile: t("events.calendarActions.download"),
     eventQuickView: t("events.quickView.title"),
     hostedBy: t("events.card.hostedBy"),
+    googleCalendar: t("events.calendarActions.google"),
     joinEvent: t("events.actions.join"),
     joining: t("events.actions.joining"),
     location: t("events.card.location"),
@@ -24,6 +27,7 @@ export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
     permissionRequired: t("events.permission.required"),
     registration: t("events.card.registration"),
     registrationFull: t("events.quickView.registrationFull"),
+    registeredSuggestion: t("events.calendarActions.registeredSuggestion"),
     riskLevel: t("events.form.riskLevel"),
     safety: t("events.card.safety"),
     sharedEvent: t("events.sharing.sharedEvent"),

@@ -14,6 +14,7 @@ import {
 } from "@/lib/i18n/dictionary";
 import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
 import type { EventQuickViewItem } from "@/components/events/event-quick-view-modal";
+import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import {
   formatDateTime,
@@ -22,6 +23,7 @@ import {
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
 import { timeServer } from "@/lib/server-timing";
+import { getServerBaseUrl } from "@/lib/server-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { StudentUpcomingEvents } from "./student-upcoming-events";
@@ -136,10 +138,12 @@ export default async function DashboardPage() {
   }
 
   const analytics = await getStudentAnalytics(admin, profile);
+  const baseUrl = await getServerBaseUrl();
 
   return (
     <StudentDashboard
       analytics={analytics}
+      baseUrl={baseUrl}
       locale={locale}
       profile={profile}
       t={t}
@@ -215,11 +219,13 @@ function StaffDashboard({
 
 function StudentDashboard({
   analytics,
+  baseUrl,
   locale,
   profile,
   t,
 }: {
   analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
+  baseUrl: string;
   locale: Locale;
   profile: Profile;
   t: (key: string) => string;
@@ -229,6 +235,7 @@ function StudentDashboard({
     profile,
     locale,
     t,
+    baseUrl,
   );
 
   return (
@@ -1213,6 +1220,7 @@ function buildStudentQuickViewEvents(
   profile: Profile,
   locale: Locale,
   t: (key: string) => string,
+  baseUrl: string,
 ): EventQuickViewItem[] {
   const clubNameById = new Map(
     analytics.upcomingEventClubs.map((club) => [club.id, club.name]),
@@ -1234,10 +1242,22 @@ function buildStudentQuickViewEvents(
     const categoryKey = event.category
       ? getActivityCategoryTranslationKey(event.category)
       : null;
+    const calendarLinks = getEventCalendarLinks(
+      {
+        description: event.description,
+        endsAt: event.ends_at,
+        id: event.id,
+        location: event.location,
+        startsAt: event.starts_at,
+        title: event.title,
+      },
+      baseUrl,
+    );
 
     return {
       attendeeCount,
       canRegister,
+      calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
       capacity: event.capacity,
       categoryLabel: categoryKey ? t(categoryKey) : event.category,
       dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
@@ -1249,6 +1269,7 @@ function buildStudentQuickViewEvents(
       hostName:
         (event.club_id && clubNameById.get(event.club_id)) ||
         t("events.card.mySchool"),
+      googleCalendarUrl: calendarLinks.googleCalendarUrl,
       id: event.id,
       isFull,
       isOwnSchoolEvent: event.school_id === profile.school_id,

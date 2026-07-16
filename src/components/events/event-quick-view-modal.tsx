@@ -11,16 +11,22 @@ import {
 import { createPortal } from "react-dom";
 import { CategoryBadge, StatusBadge } from "@/app/(admin)/_components/page-ui";
 import { cancelEventRegistration, joinEvent } from "@/app/(admin)/events/actions";
+import {
+  EventCalendarActions,
+  type EventCalendarActionLabels,
+} from "@/components/events/event-calendar-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 
 export type EventQuickViewItem = {
   attendeeCount: number;
   canRegister: boolean;
+  calendarDownloadUrl: string;
   capacity: number | null;
   categoryLabel: string | null;
   dateTimeLabel: string;
   description: string | null;
   hasCurrentStudent: boolean;
+  googleCalendarUrl: string;
   hostName: string;
   id: string;
   isFull: boolean;
@@ -41,7 +47,7 @@ export type EventQuickViewItem = {
   title: string;
 };
 
-export type EventQuickViewLabels = {
+export type EventQuickViewLabels = EventCalendarActionLabels & {
   attendanceQr: string;
   cancelRegistration: string;
   cancelling: string;
@@ -236,6 +242,18 @@ export function EventQuickViewModal({
                 event.remainingSpaces === null
                   ? labels.noLimit
                   : String(event.remainingSpaces)
+              }
+            />
+          </div>
+
+          <div className="mt-4">
+            <EventCalendarActions
+              calendarDownloadUrl={event.calendarDownloadUrl}
+              googleCalendarUrl={event.googleCalendarUrl}
+              labels={labels}
+              showRegisteredSuggestion={
+                event.registrationStatus === "registered" ||
+                event.registrationStatus === "attended"
               }
             />
           </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { EventCalendarActions } from "@/components/events/event-calendar-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   getActivityCategoryTranslationKey,
@@ -16,6 +17,9 @@ import {
   formatTime,
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import { canViewEvent } from "@/lib/events/event-visibility";
+import { getServerBaseUrl } from "@/lib/server-url";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -148,7 +152,6 @@ export default async function EventDetailPage({
   const canView = canViewEvent({
     connectedSchoolIds,
     event,
-    isOwnSchoolEvent,
     profile,
     sharedSchoolIds,
   });
@@ -178,6 +181,17 @@ export default async function EventDetailPage({
   const ownerSchoolName = isOwnSchoolEvent
     ? t("events.card.mySchool")
     : ownerSchool?.name ?? t("events.fallback.connectedSchool");
+  const calendarLinks = getEventCalendarLinks(
+    {
+      description: event.description,
+      endsAt: event.ends_at,
+      id: event.id,
+      location: event.location,
+      startsAt: event.starts_at,
+      title: event.title,
+    },
+    await getServerBaseUrl(),
+  );
 
   return (
     <div className="page-stack">
@@ -300,6 +314,24 @@ export default async function EventDetailPage({
                 t={t}
                 userSchoolId={profile.school_id}
               />
+              <div className="mt-3 border-t border-[var(--border)] pt-3">
+                <EventCalendarActions
+                  calendarDownloadUrl={calendarLinks.calendarDownloadUrl}
+                  googleCalendarUrl={calendarLinks.googleCalendarUrl}
+                  labels={{
+                    addToCalendar: t("events.calendarActions.add"),
+                    downloadCalendarFile: t("events.calendarActions.download"),
+                    googleCalendar: t("events.calendarActions.google"),
+                    registeredSuggestion: t(
+                      "events.calendarActions.registeredSuggestion",
+                    ),
+                  }}
+                  showRegisteredSuggestion={
+                    currentRegistration?.status === "registered" ||
+                    currentRegistration?.status === "attended"
+                  }
+                />
+              </div>
             </div>
           </article>
 
@@ -693,32 +725,6 @@ function SharingForm({
         {t("events.actions.saveSharing")}
       </PendingSubmitButton>
     </form>
-  );
-}
-
-function canViewEvent({
-  connectedSchoolIds,
-  event,
-  isOwnSchoolEvent,
-  profile,
-  sharedSchoolIds,
-}: {
-  connectedSchoolIds: string[];
-  event: EventRecord;
-  isOwnSchoolEvent: boolean;
-  profile: Profile;
-  sharedSchoolIds: string[];
-}) {
-  const isStaff = profile.role === "school_admin" || profile.role === "teacher";
-
-  if (isOwnSchoolEvent) {
-    return isStaff || event.status === "approved";
-  }
-
-  return (
-    event.status === "approved" &&
-    sharedSchoolIds.includes(profile.school_id) &&
-    connectedSchoolIds.includes(event.school_id)
   );
 }
 
