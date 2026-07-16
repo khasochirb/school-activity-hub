@@ -1,125 +1,207 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { type MouseEvent, type ReactNode, useEffect, useId, useState } from "react";
+import {
+  type MouseEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
 
 export function MobileMenuDrawer({
   children,
   closeLabel,
+  header,
   menuLabel,
 }: {
   children: ReactNode;
   closeLabel: string;
+  header: ReactNode;
   menuLabel: string;
 }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const pathname = usePathname();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
+  const closeDrawer = useCallback(() => {
     setOpen(false);
-  }, [pathname]);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  }, []);
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    const scrollY = window.scrollY;
     const body = document.body;
     const html = document.documentElement;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyPosition = body.style.position;
-    const previousBodyTop = body.style.top;
-    const previousBodyWidth = body.style.width;
-    const previousHtmlOverflow = html.style.overflow;
+    const scrollY = window.scrollY;
+    const previousStyles = {
+      bodyLeft: body.style.left,
+      bodyOverflow: body.style.overflow,
+      bodyPaddingRight: body.style.paddingRight,
+      bodyPosition: body.style.position,
+      bodyRight: body.style.right,
+      bodyTop: body.style.top,
+      bodyWidth: body.style.width,
+      htmlOverflow: html.style.overflow,
+      htmlOverscrollBehavior: html.style.overscrollBehavior,
+    };
+    const scrollbarWidth = window.innerWidth - html.clientWidth;
 
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
     body.style.overflow = "hidden";
     body.style.position = "fixed";
     body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
     body.style.width = "100%";
-    html.style.overflow = "hidden";
-
-    return () => {
-      body.style.overflow = previousBodyOverflow;
-      body.style.position = previousBodyPosition;
-      body.style.top = previousBodyTop;
-      body.style.width = previousBodyWidth;
-      html.style.overflow = previousHtmlOverflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
     }
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setOpen(false);
+        event.preventDefault();
+        closeDrawer();
+        return;
+      }
+
+      if (event.key !== "Tab" || !panelRef.current) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      ).filter((element) => !element.hasAttribute("hidden"));
+
+      if (!focusableElements.length) {
+        event.preventDefault();
+        panelRef.current.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements.at(-1) ?? firstElement;
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("popstate", closeDrawer);
 
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("popstate", closeDrawer);
+      body.style.left = previousStyles.bodyLeft;
+      body.style.overflow = previousStyles.bodyOverflow;
+      body.style.paddingRight = previousStyles.bodyPaddingRight;
+      body.style.position = previousStyles.bodyPosition;
+      body.style.right = previousStyles.bodyRight;
+      body.style.top = previousStyles.bodyTop;
+      body.style.width = previousStyles.bodyWidth;
+      html.style.overflow = previousStyles.htmlOverflow;
+      html.style.overscrollBehavior = previousStyles.htmlOverscrollBehavior;
+      window.scrollTo(0, scrollY);
+    };
+  }, [closeDrawer, open]);
 
   function handleContentClick(event: MouseEvent<HTMLDivElement>) {
     if (event.target instanceof Element && event.target.closest("a[href]")) {
-      setOpen(false);
+      closeDrawer();
     }
   }
+
+  const drawer =
+    open && typeof document !== "undefined"
+      ? createPortal(
+          <div className="fixed inset-0 z-[80] lg:hidden">
+            <button
+              aria-label={closeLabel}
+              className="mobile-drawer-backdrop absolute inset-0 cursor-pointer bg-slate-950/55"
+              onClick={closeDrawer}
+              type="button"
+            />
+            <aside
+              aria-label={menuLabel}
+              aria-modal="true"
+              className="mobile-drawer-panel fixed inset-y-0 right-0 z-[90] flex h-dvh max-h-dvh w-[min(22rem,92vw)] max-w-full min-w-0 touch-pan-y flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl"
+              id={panelId}
+              ref={panelRef}
+              role="dialog"
+              tabIndex={-1}
+            >
+              <div className="flex min-w-0 shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+                <div className="min-w-0 flex-1">{header}</div>
+                <button
+                  aria-label={closeLabel}
+                  className="btn btn-secondary flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 text-xl leading-none"
+                  onClick={closeDrawer}
+                  ref={closeButtonRef}
+                  type="button"
+                >
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div
+                className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 [-webkit-overflow-scrolling:touch]"
+                onClick={handleContentClick}
+              >
+                {children}
+              </div>
+            </aside>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="shrink-0 lg:hidden">
       <button
         aria-controls={panelId}
         aria-expanded={open}
-        className="btn btn-secondary px-3"
+        aria-label={menuLabel}
+        className="btn btn-secondary min-h-11 gap-2 px-3"
         onClick={() => setOpen(true)}
+        ref={triggerRef}
         type="button"
       >
-        {menuLabel}
+        <span aria-hidden="true" className="grid w-4 gap-1">
+          <span className="h-0.5 rounded-full bg-current" />
+          <span className="h-0.5 rounded-full bg-current" />
+          <span className="h-0.5 rounded-full bg-current" />
+        </span>
+        <span className="hidden text-sm font-bold min-[360px]:inline">
+          {menuLabel}
+        </span>
       </button>
-
-      {open ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            aria-label={closeLabel}
-            className="absolute inset-0 cursor-pointer bg-slate-950/45 backdrop-blur-[1px]"
-            onClick={() => setOpen(false)}
-            type="button"
-          />
-          <aside
-            aria-label={menuLabel}
-            aria-modal="true"
-            className="fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(20rem,90vw)] max-w-full min-w-0 flex-col overflow-hidden border-r border-slate-200 bg-white shadow-2xl"
-            id={panelId}
-            role="dialog"
-          >
-            <div className="flex min-w-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-              <p className="min-w-0 break-words text-sm font-bold leading-snug text-slate-950">
-                {menuLabel}
-              </p>
-              <button
-                className="btn btn-secondary min-h-9 shrink-0 px-3 py-1.5"
-                onClick={() => setOpen(false)}
-                type="button"
-              >
-                {closeLabel}
-              </button>
-            </div>
-            <div
-              className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-4 [-webkit-overflow-scrolling:touch]"
-              onClick={handleContentClick}
-            >
-              {children}
-            </div>
-          </aside>
-        </div>
-      ) : null}
+      {drawer}
     </div>
   );
 }

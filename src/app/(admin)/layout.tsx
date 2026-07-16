@@ -4,6 +4,12 @@ import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "./_components/app-shell";
 
+type AppShellProfile = {
+  role: "school_admin" | "student" | "teacher";
+  school_id: string;
+  schools: { name: string } | null;
+};
+
 export default async function AdminLayout({
   children,
 }: {
@@ -24,16 +30,20 @@ export default async function AdminLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, school_id, schools(name)")
     .eq("id", user.id)
-    .maybeSingle();
+    .maybeSingle<AppShellProfile>();
   const platformAdminProfile = await getCurrentPlatformAdminProfile();
 
   return (
     <AppShell
       email={user.email ?? null}
       isPlatformAdmin={Boolean(platformAdminProfile)}
-      profile={profile}
+      profile={
+        profile
+          ? { role: profile.role, schoolName: profile.schools?.name ?? null }
+          : null
+      }
     >
       {children}
     </AppShell>

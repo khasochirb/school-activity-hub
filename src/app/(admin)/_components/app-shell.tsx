@@ -9,17 +9,25 @@ import type { Locale } from "@/lib/i18n/locales";
 import type { ThemePreference } from "@/lib/theme";
 import { logout } from "../actions";
 import { AppNav, type NavItem, type NavSection } from "./app-nav";
+import {
+  MobileAppNav,
+  type MobileNavGroup,
+  type MobileNavItem,
+  type MobileNavMatch,
+} from "./mobile-app-nav";
 import { MobileMenuDrawer } from "./mobile-menu-drawer";
 
 type Role = "school_admin" | "teacher" | "student";
 
 type Profile = {
   role: Role;
+  schoolName: string | null;
 } | null;
 
 type RoleAwareNavItem = {
   href: string;
   labelKey: string;
+  match?: MobileNavMatch;
   platformAdminOnly?: boolean;
   roles?: Role[];
 };
@@ -125,6 +133,145 @@ const navSections: Array<{
   },
 ];
 
+const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
+  student: [
+    { href: "/dashboard", labelKey: "nav.dashboard" },
+    { href: "/events?view=list", labelKey: "nav.activities", match: "events" },
+    { href: "/events?view=month", labelKey: "nav.calendar", match: "calendar" },
+    { href: "/clubs", labelKey: "nav.clubs" },
+    { href: "/club-requests", labelKey: "nav.clubIdeas" },
+    { href: "/announcements", labelKey: "nav.announcements" },
+  ],
+  teacher: [
+    { href: "/dashboard", labelKey: "nav.dashboard" },
+    { href: "/events?view=list", labelKey: "nav.activities", match: "events" },
+    { href: "/events?view=month", labelKey: "nav.calendar", match: "calendar" },
+    { href: "/clubs", labelKey: "nav.clubs" },
+    { href: "/approvals", labelKey: "nav.approvals" },
+    {
+      href: "/events?view=list&scope=school&status=approved&focus=attendance",
+      labelKey: "nav.attendance",
+      match: "attendance",
+    },
+    { href: "/reports", labelKey: "nav.reports" },
+  ],
+  school_admin: [
+    { href: "/dashboard", labelKey: "nav.dashboard" },
+    { href: "/events?view=list", labelKey: "nav.activities", match: "events" },
+    { href: "/events?view=month", labelKey: "nav.calendar", match: "calendar" },
+    { href: "/students", labelKey: "nav.students" },
+    { href: "/staff", labelKey: "nav.staff" },
+    { href: "/approvals", labelKey: "nav.approvals" },
+    { href: "/reports", labelKey: "nav.reports" },
+  ],
+};
+
+const mobileNavGroups: Array<{
+  id: string;
+  items: RoleAwareNavItem[];
+  labelKey: string;
+}> = [
+  {
+    id: "more",
+    labelKey: "nav.more",
+    items: [
+      { href: "/clubs", labelKey: "nav.clubs", roles: ["school_admin"] },
+      {
+        href: "/club-requests",
+        labelKey: "nav.clubRequests",
+        roles: ["school_admin", "teacher"],
+      },
+      {
+        href: "/announcements",
+        labelKey: "nav.announcements",
+        roles: ["school_admin", "teacher"],
+      },
+    ],
+  },
+  {
+    id: "people-access",
+    labelKey: "nav.manage",
+    items: [
+      {
+        href: "/students",
+        labelKey: "nav.students",
+        roles: ["school_admin", "teacher"],
+      },
+      { href: "/staff", labelKey: "nav.staff", roles: ["school_admin"] },
+      {
+        href: "/invite-codes",
+        labelKey: "nav.inviteCodes",
+        roles: ["school_admin", "teacher"],
+      },
+    ],
+  },
+  {
+    id: "reviews-tracking",
+    labelKey: "nav.operations",
+    items: [
+      {
+        href: "/approvals",
+        labelKey: "nav.approvals",
+        roles: ["school_admin", "teacher"],
+      },
+      {
+        href: "/events?view=list&scope=school&status=approved&focus=attendance",
+        labelKey: "nav.attendance",
+        match: "attendance",
+        roles: ["school_admin", "teacher"],
+      },
+      {
+        href: "/reports",
+        labelKey: "nav.reports",
+        roles: ["school_admin", "teacher"],
+      },
+    ],
+  },
+  {
+    id: "school-management",
+    labelKey: "nav.schoolManagement",
+    items: [
+      { href: "/settings", labelKey: "nav.settings", roles: ["school_admin"] },
+      {
+        href: "/school-connections",
+        labelKey: "nav.partnerSchools",
+        roles: ["school_admin"],
+      },
+    ],
+  },
+  {
+    id: "platform",
+    labelKey: "nav.platform",
+    items: [
+      {
+        href: "/super-admin",
+        labelKey: "nav.platformDashboard",
+        platformAdminOnly: true,
+      },
+      {
+        href: "/super-admin/schools",
+        labelKey: "nav.schools",
+        platformAdminOnly: true,
+      },
+      {
+        href: "/super-admin/connections",
+        labelKey: "nav.platformConnections",
+        platformAdminOnly: true,
+      },
+      {
+        href: "/super-admin/audit-log",
+        labelKey: "nav.auditLog",
+        platformAdminOnly: true,
+      },
+      {
+        href: "/super-admin/platform-admins",
+        labelKey: "nav.platformAdmins",
+        platformAdminOnly: true,
+      },
+    ],
+  },
+];
+
 export async function AppShell({
   children,
   email,
@@ -151,6 +298,11 @@ export async function AppShell({
         })),
     }))
     .filter((section) => section.items.length) satisfies NavSection[];
+  const mobileNavigation = getMobileNavigation(
+    profile,
+    isPlatformAdmin,
+    t,
+  );
   const formattedRole = profile ? formatRole(profile.role, t) : t("roles.noProfile");
   const languageLabels = {
     en: t("language.en"),
@@ -201,10 +353,25 @@ export async function AppShell({
               shortName={t("app.shortName")}
               subtitle={t("app.subtitle")}
             />
-            <MobileMenuDrawer closeLabel={t("common.close")} menuLabel={t("nav.menu")}>
-              <div className="min-w-0 max-w-full">
-                <AppNav sections={visibleNavSections} />
-                <div className="mt-4 border-t border-slate-200 pt-4">
+            <MobileMenuDrawer
+              closeLabel={t("common.close")}
+              header={
+                <MobileDrawerBrand
+                  appName={t("app.name")}
+                  roleLabel={formattedRole}
+                  schoolName={profile?.schoolName ?? null}
+                  shortName={t("app.shortName")}
+                />
+              }
+              menuLabel={t("nav.menu")}
+            >
+              <div className="flex min-h-full min-w-0 max-w-full flex-col">
+                <MobileAppNav
+                  groups={mobileNavigation.groups}
+                  label={t("nav.menu")}
+                  primaryItems={mobileNavigation.primaryItems}
+                />
+                <div className="mt-auto border-t border-slate-200 pt-5">
                   <MobileAccount
                     email={email}
                     languageLabels={languageLabels}
@@ -212,6 +379,7 @@ export async function AppShell({
                     locale={locale}
                     logoutLabel={t("nav.logout")}
                     logoutPendingLabel={t("nav.loggingOut")}
+                    profileLabel={t("nav.profile")}
                     roleLabel={formattedRole}
                     switchThemeLabel={t("theme.switch")}
                     theme={theme}
@@ -347,6 +515,7 @@ function MobileAccount({
   locale,
   logoutLabel,
   logoutPendingLabel,
+  profileLabel,
   roleLabel,
   switchThemeLabel,
   theme,
@@ -359,6 +528,7 @@ function MobileAccount({
   locale: Locale;
   logoutLabel: string;
   logoutPendingLabel: string;
+  profileLabel: string;
   roleLabel: string;
   switchThemeLabel: string;
   theme: ThemePreference;
@@ -367,6 +537,12 @@ function MobileAccount({
 }) {
   return (
     <div className="min-w-0 max-w-full space-y-3 overflow-hidden">
+      <Link
+        className="btn btn-secondary min-h-11 w-full justify-start"
+        href="/profile"
+      >
+        {profileLabel}
+      </Link>
       <div className="grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
         <LanguageSwitcher
           currentLocale={locale}
@@ -395,6 +571,74 @@ function MobileAccount({
       </form>
     </div>
   );
+}
+
+function MobileDrawerBrand({
+  appName,
+  roleLabel,
+  schoolName,
+  shortName,
+}: {
+  appName: string;
+  roleLabel: string;
+  schoolName: string | null;
+  shortName: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-xs font-black shadow-sm">
+        {shortName}
+      </span>
+      <div className="min-w-0">
+        <p className="break-words text-sm font-extrabold leading-snug text-slate-950">
+          {appName}
+        </p>
+        <p className="mt-0.5 break-words text-xs font-semibold leading-snug text-slate-600">
+          {schoolName ?? roleLabel}
+        </p>
+        {schoolName ? (
+          <p className="mt-0.5 break-words text-[0.68rem] leading-snug text-slate-500">
+            {roleLabel}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function getMobileNavigation(
+  profile: Profile,
+  isPlatformAdmin: boolean,
+  t: (key: string) => string,
+) {
+  const primaryDefinitions = profile ? mobilePrimaryNav[profile.role] : [];
+  const primaryItems = primaryDefinitions.map((item) =>
+    toMobileNavItem(item, t),
+  );
+  const primaryHrefs = new Set(primaryDefinitions.map((item) => item.href));
+  const groups = mobileNavGroups
+    .map<MobileNavGroup>((group) => ({
+      id: group.id,
+      label: t(group.labelKey),
+      items: group.items
+        .filter((item) => isVisibleForRole(item, profile, isPlatformAdmin))
+        .filter((item) => !primaryHrefs.has(item.href))
+        .map((item) => toMobileNavItem(item, t)),
+    }))
+    .filter((group) => group.items.length);
+
+  return { groups, primaryItems };
+}
+
+function toMobileNavItem(
+  item: RoleAwareNavItem,
+  t: (key: string) => string,
+): MobileNavItem {
+  return {
+    href: item.href,
+    label: t(item.labelKey),
+    match: item.match,
+  };
 }
 
 function isVisibleForRole(
