@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
+import { ProtectedAppLink } from "./protected-app-link";
 
 export type MobileNavMatch = "attendance" | "calendar" | "default" | "events";
 
 export type MobileNavItem = {
   href: string;
+  intentPrefetch: boolean;
   label: string;
   match?: MobileNavMatch;
-  prefetch: boolean | null;
 };
 
 export type MobileNavGroup = {
@@ -115,7 +115,7 @@ function MobileNavLink({
   secondary?: boolean;
 }) {
   return (
-    <Link
+    <ProtectedAppLink
       aria-current={active ? "page" : undefined}
       className={[
         "flex min-h-12 min-w-0 items-center gap-3 rounded-lg border px-3 py-2.5 text-sm leading-snug transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]",
@@ -125,7 +125,7 @@ function MobileNavLink({
           : "border-transparent font-bold text-slate-700 hover:border-[var(--border)] hover:bg-[var(--card-soft)] hover:text-slate-950",
       ].join(" ")}
       href={item.href}
-      prefetch={active ? false : item.prefetch}
+      intentPrefetch={!active && item.intentPrefetch}
       title={item.label}
     >
       <span
@@ -138,7 +138,7 @@ function MobileNavLink({
         ].join(" ")}
       />
       <span className="min-w-0 max-w-full break-words">{item.label}</span>
-    </Link>
+    </ProtectedAppLink>
   );
 }
 

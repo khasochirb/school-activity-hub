@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { getCurrentPlatformAdminProfile } from "@/lib/auth/platform-admin";
+import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "./_components/app-shell";
@@ -16,24 +18,29 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  if (!(await hasAnySchool())) {
+  const [schoolExists, profileResult, platformAdminProfile] = await Promise.all([
+    timeServer("admin-layout.school-setup", () => hasAnySchool()),
+    timeServer("admin-layout.profile", () =>
+      supabase
+        .from("profiles")
+        .select("role, school_id, schools(name)")
+        .eq("id", user.id)
+        .maybeSingle<AppShellProfile>(),
+    ),
+    getCurrentPlatformAdminProfile(),
+  ]);
+
+  if (!schoolExists) {
     redirect("/setup");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, school_id, schools(name)")
-    .eq("id", user.id)
-    .maybeSingle<AppShellProfile>();
-  const platformAdminProfile = await getCurrentPlatformAdminProfile();
+  const { data: profile } = profileResult;
 
   return (
     <AppShell

@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ProtectedAppLink } from "./protected-app-link";
 
 export type NavItem = {
   href: string;
+  intentPrefetch: boolean;
   label: string;
-  prefetch: boolean | null;
 };
 
 export type NavSection = {
@@ -49,20 +49,20 @@ export function AppNav({
                 const active = isActivePath(pathname, item.href);
 
                 return (
-                  <Link
+                  <ProtectedAppLink
                     aria-current={active ? "page" : undefined}
                     className={
                       active ? "nav-link nav-link-active" : "nav-link nav-link-muted"
                     }
                     href={item.href}
+                    intentPrefetch={!active && item.intentPrefetch}
                     key={item.href}
-                    prefetch={active ? false : item.prefetch}
                     title={item.label}
                   >
                     <span className="min-w-0 max-w-full break-words leading-snug">
                       {item.label}
                     </span>
-                  </Link>
+                  </ProtectedAppLink>
                 );
               })}
             </div>

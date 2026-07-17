@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ActionToast } from "@/components/toast-provider";
 import {
@@ -81,9 +82,7 @@ export default async function SchoolConnectionsPage({
     getSearchValue(params.direction),
   );
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");

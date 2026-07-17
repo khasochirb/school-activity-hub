@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   ACTIVITY_CATEGORIES,
   getActivityCategoryTranslationKey,
@@ -201,10 +202,8 @@ export default async function EventsPage({
   const page = getPageParam(params.page);
   const range = pageRange(page, EVENTS_PAGE_SIZE);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await timeServer("events.query.auth-get-user", () =>
-    supabase.auth.getUser(),
+  const user = await timeServer("events.query.auth-get-user", () =>
+    getCurrentUser(),
   );
 
   if (!user) {

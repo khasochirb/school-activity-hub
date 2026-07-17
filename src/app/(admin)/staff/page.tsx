@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   formatTranslation,
@@ -63,9 +64,7 @@ export default async function StaffPage({
   const selectedRole = parseStaffRole(getSearchParam(params.role));
   const selectedStatus = parseProfileStatus(getSearchParam(params.status));
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");

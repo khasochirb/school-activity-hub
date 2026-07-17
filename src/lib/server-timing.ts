@@ -21,7 +21,10 @@ function logServerTiming(
   startedAt: number,
   status: TimingStatus,
 ) {
-  if (process.env.ENABLE_SERVER_TIMING_LOGS !== "true") {
+  if (
+    process.env.PERF_LOGGING !== "1" &&
+    process.env.ENABLE_SERVER_TIMING_LOGS !== "true"
+  ) {
     return;
   }
 

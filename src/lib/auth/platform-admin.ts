@@ -1,6 +1,8 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { cache } from "react";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 type PlatformAdminRow = {
@@ -22,11 +24,9 @@ export type PlatformAdminProfile = CurrentProfile & {
   platform_admin_created_at: string;
 };
 
-export async function getCurrentPlatformAdminProfile() {
+export const getCurrentPlatformAdminProfile = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return null;
@@ -58,7 +58,7 @@ export async function getCurrentPlatformAdminProfile() {
     email: user.email ?? null,
     platform_admin_created_at: platformAdmin.created_at,
   } satisfies PlatformAdminProfile;
-}
+});
 
 export async function requirePlatformAdmin() {
   const platformAdmin = await getCurrentPlatformAdminProfile();

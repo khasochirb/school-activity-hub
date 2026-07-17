@@ -1,4 +1,5 @@
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
@@ -96,10 +97,8 @@ type ReportFallbackLabels = {
 
 export async function getCurrentStaffProfile() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await timeServer("reports.query.auth-get-user", () =>
-    supabase.auth.getUser(),
+  const user = await timeServer("reports.query.auth-get-user", () =>
+    getCurrentUser(),
   );
 
   if (!user) {

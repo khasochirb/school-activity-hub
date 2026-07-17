@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   formatTranslation,
   getDictionary,
@@ -71,10 +72,8 @@ export default async function AnnouncementsPage({
   const page = getPageParam(params.page);
   const range = pageRange(page, ANNOUNCEMENTS_PAGE_SIZE);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await timeServer("announcements.query.auth-get-user", () =>
-    supabase.auth.getUser(),
+  const user = await timeServer("announcements.query.auth-get-user", () =>
+    getCurrentUser(),
   );
 
   if (!user) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
@@ -93,10 +94,8 @@ export default async function ClubRequestsPage({
   const page = getPageParam(params.page);
   const range = pageRange(page, CLUB_REQUESTS_PAGE_SIZE);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await timeServer("club-requests.query.auth-get-user", () =>
-    supabase.auth.getUser(),
+  const user = await timeServer("club-requests.query.auth-get-user", () =>
+    getCurrentUser(),
   );
 
   if (!user) {

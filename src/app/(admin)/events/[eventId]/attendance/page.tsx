@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   createQrCodeMatrix,
@@ -126,9 +127,7 @@ export default async function EventAttendancePage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const activeFilter = parseAttendanceFilter(resolvedSearchParams.filter);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");

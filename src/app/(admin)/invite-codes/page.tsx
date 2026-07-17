@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   formatTranslation,
   getDictionary,
@@ -79,10 +80,8 @@ export default async function InviteCodesPage({
   const range = pageRange(page, INVITE_CODES_PAGE_SIZE);
   const now = new Date().toISOString();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await timeServer("invite-codes.query.auth-get-user", () =>
-    supabase.auth.getUser(),
+  const user = await timeServer("invite-codes.query.auth-get-user", () =>
+    getCurrentUser(),
   );
 
   if (!user) {

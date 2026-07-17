@@ -26,23 +26,23 @@ type Profile = {
 
 type RoleAwareNavItem = {
   href: string;
+  intentPrefetch?: boolean;
   labelKey: string;
   match?: MobileNavMatch;
   platformAdminOnly?: boolean;
-  prefetch?: boolean;
   roles?: Role[];
 };
 
 const staffAttendanceHref =
   "/events?view=list&scope=school&status=approved&focus=attendance";
 
-const primaryPrefetchHrefs: Record<Role, ReadonlySet<string>> = {
+const primaryIntentHrefs: Record<Role, ReadonlySet<string>> = {
   school_admin: new Set(["/events", "/students", "/approvals"]),
   student: new Set(["/events", "/clubs"]),
   teacher: new Set(["/events", "/approvals"]),
 };
 
-const platformPrimaryPrefetchHrefs = new Set(["/super-admin/schools"]);
+const platformPrimaryIntentHrefs = new Set(["/super-admin/schools"]);
 
 const navSections: Array<{
   items: RoleAwareNavItem[];
@@ -153,7 +153,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
       href: "/events?view=month",
       labelKey: "nav.calendar",
       match: "calendar",
-      prefetch: false,
+      intentPrefetch: false,
     },
     { href: "/clubs", labelKey: "nav.clubs" },
     { href: "/club-requests", labelKey: "nav.clubIdeas" },
@@ -166,7 +166,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
       href: "/events?view=month",
       labelKey: "nav.calendar",
       match: "calendar",
-      prefetch: false,
+      intentPrefetch: false,
     },
     { href: "/clubs", labelKey: "nav.clubs" },
     { href: "/approvals", labelKey: "nav.approvals" },
@@ -184,7 +184,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
       href: "/events?view=month",
       labelKey: "nav.calendar",
       match: "calendar",
-      prefetch: false,
+      intentPrefetch: false,
     },
     { href: "/students", labelKey: "nav.students" },
     { href: "/staff", labelKey: "nav.staff" },
@@ -321,12 +321,12 @@ export async function AppShell({
         .filter((item) => isVisibleForRole(item, profile, isPlatformAdmin))
         .map<NavItem>((item) => ({
           href: item.href,
-          label: t(item.labelKey),
-          prefetch: shouldPrefetchNavigationItem(
+          intentPrefetch: shouldIntentPrefetchNavigationItem(
             item,
             profile,
             isPlatformAdmin,
           ),
+          label: t(item.labelKey),
         })),
     }))
     .filter((section) => section.items.length) satisfies NavSection[];
@@ -675,32 +675,30 @@ function toMobileNavItem(
 ): MobileNavItem {
   return {
     href: item.href,
-    label: t(item.labelKey),
-    match: item.match,
-    prefetch: shouldPrefetchNavigationItem(
+    intentPrefetch: shouldIntentPrefetchNavigationItem(
       item,
       profile,
       isPlatformAdmin,
     ),
+    label: t(item.labelKey),
+    match: item.match,
   };
 }
 
-function shouldPrefetchNavigationItem(
+function shouldIntentPrefetchNavigationItem(
   item: RoleAwareNavItem,
   profile: Profile,
   isPlatformAdmin: boolean,
 ) {
-  if (item.prefetch === false || item.href.includes("?")) {
+  if (item.intentPrefetch === false || item.href.includes("?")) {
     return false;
   }
 
   if (isPlatformAdmin) {
-    return platformPrimaryPrefetchHrefs.has(item.href) ? null : false;
+    return platformPrimaryIntentHrefs.has(item.href);
   }
 
-  return profile && primaryPrefetchHrefs[profile.role].has(item.href)
-    ? null
-    : false;
+  return profile ? primaryIntentHrefs[profile.role].has(item.href) : false;
 }
 
 function isVisibleForRole(

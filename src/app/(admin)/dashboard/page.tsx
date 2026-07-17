@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   DetailsDisclosure,
   EmptyState,
@@ -95,10 +96,8 @@ export default async function DashboardPage() {
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await timeServer("dashboard.query.auth-get-user", () =>
-    supabase.auth.getUser(),
+  const user = await timeServer("dashboard.query.auth-get-user", () =>
+    getCurrentUser(),
   );
 
   if (!user) {

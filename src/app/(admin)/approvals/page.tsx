@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
 import {
@@ -70,9 +71,7 @@ export default async function ApprovalsPage({
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");

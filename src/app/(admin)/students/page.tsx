@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   formatTranslation,
   getDictionary,
@@ -74,10 +75,8 @@ export default async function StudentsPage({
   const page = getPageParam(params.page);
   const range = pageRange(page, STUDENTS_PAGE_SIZE);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await timeServer("students.query.auth-get-user", () =>
-    supabase.auth.getUser(),
+  const user = await timeServer("students.query.auth-get-user", () =>
+    getCurrentUser(),
   );
 
   if (!user) {
