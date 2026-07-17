@@ -83,7 +83,7 @@ export async function createFirstSchool(
 
     return {
       message: i18n.tf("setup.errors.adminProfileSaveFailed", {
-        error: profileError.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
     };
   }

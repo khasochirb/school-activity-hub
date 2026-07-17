@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export type LoginFormLabels = {
   email: string;
+  failed: string;
   forgotPassword: string;
   password: string;
   signingIn: string;
@@ -38,9 +39,9 @@ export function LoginForm({ labels }: { labels: LoginFormLabels }) {
     setIsSubmitting(false);
 
     if (signInError) {
-      setError(signInError.message);
+      setError(labels.failed);
       toast.notify({
-        message: signInError.message,
+        message: labels.failed,
         title: toast.labels.error,
         variant: "error",
       });

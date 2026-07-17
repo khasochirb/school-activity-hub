@@ -160,7 +160,9 @@ export async function createEvent(
 
   if (error) {
     return {
-      message: i18n.tf("events.errors.createFailed", { error: error.message }),
+      message: i18n.tf("events.errors.createFailed", {
+        error: i18n.t("common.somethingWentWrong"),
+      }),
       success: false,
     };
   }

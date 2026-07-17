@@ -31,6 +31,7 @@ type RoleAwareNavItem = {
   match?: MobileNavMatch;
   platformAdminOnly?: boolean;
   roles?: Role[];
+  safeguardingOnly?: boolean;
 };
 
 const staffAttendanceHref =
@@ -65,6 +66,11 @@ const navSections: Array<{
         roles: ["school_admin", "teacher"],
       },
       { href: "/announcements", labelKey: "nav.announcements" },
+      {
+        href: "/safety",
+        intentPrefetch: false,
+        labelKey: "nav.safety",
+      },
     ],
   },
   {
@@ -95,6 +101,12 @@ const navSections: Array<{
         href: "/reports",
         labelKey: "nav.reports",
         roles: ["school_admin", "teacher"],
+      },
+      {
+        href: "/safety/reports",
+        intentPrefetch: false,
+        labelKey: "nav.safeguardingInbox",
+        safeguardingOnly: true,
       },
     ],
   },
@@ -141,7 +153,10 @@ const navSections: Array<{
   },
   {
     labelKey: "nav.account",
-    items: [{ href: "/profile", labelKey: "nav.profile" }],
+    items: [
+      { href: "/profile", labelKey: "nav.profile" },
+      { href: "/privacy", intentPrefetch: false, labelKey: "nav.privacy" },
+    ],
   },
 ];
 
@@ -158,6 +173,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
     { href: "/clubs", labelKey: "nav.clubs" },
     { href: "/club-requests", labelKey: "nav.clubIdeas" },
     { href: "/announcements", labelKey: "nav.announcements" },
+    { href: "/safety", intentPrefetch: false, labelKey: "nav.safety" },
   ],
   teacher: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
@@ -252,6 +268,20 @@ const mobileNavGroups: Array<{
         labelKey: "nav.reports",
         roles: ["school_admin", "teacher"],
       },
+      {
+        href: "/safety/reports",
+        intentPrefetch: false,
+        labelKey: "nav.safeguardingInbox",
+        safeguardingOnly: true,
+      },
+    ],
+  },
+  {
+    id: "safety-privacy",
+    labelKey: "nav.safetyAndPrivacy",
+    items: [
+      { href: "/safety", intentPrefetch: false, labelKey: "nav.safety" },
+      { href: "/privacy", intentPrefetch: false, labelKey: "nav.privacy" },
     ],
   },
   {
@@ -303,11 +333,13 @@ export async function AppShell({
   children,
   email,
   isPlatformAdmin,
+  isSafeguardingStaff,
   profile,
 }: {
   children: React.ReactNode;
   email: string | null;
   isPlatformAdmin: boolean;
+  isSafeguardingStaff: boolean;
   profile: Profile;
 }) {
   const locale = await getCurrentLocale();
@@ -318,7 +350,14 @@ export async function AppShell({
     .map((section) => ({
       label: t(section.labelKey),
       items: section.items
-        .filter((item) => isVisibleForRole(item, profile, isPlatformAdmin))
+        .filter((item) =>
+          isVisibleForRole(
+            item,
+            profile,
+            isPlatformAdmin,
+            isSafeguardingStaff,
+          ),
+        )
         .map<NavItem>((item) => ({
           href: item.href,
           intentPrefetch: shouldIntentPrefetchNavigationItem(
@@ -333,6 +372,7 @@ export async function AppShell({
   const mobileNavigation = getMobileNavigation(
     profile,
     isPlatformAdmin,
+    isSafeguardingStaff,
     t,
   );
   const formattedRole = profile ? formatRole(profile.role, t) : t("roles.noProfile");
@@ -644,6 +684,7 @@ function MobileDrawerBrand({
 function getMobileNavigation(
   profile: Profile,
   isPlatformAdmin: boolean,
+  isSafeguardingStaff: boolean,
   t: (key: string) => string,
 ) {
   const primaryDefinitions = profile ? mobilePrimaryNav[profile.role] : [];
@@ -656,7 +697,14 @@ function getMobileNavigation(
       id: group.id,
       label: t(group.labelKey),
       items: group.items
-        .filter((item) => isVisibleForRole(item, profile, isPlatformAdmin))
+        .filter((item) =>
+          isVisibleForRole(
+            item,
+            profile,
+            isPlatformAdmin,
+            isSafeguardingStaff,
+          ),
+        )
         .filter((item) => !primaryHrefs.has(item.href))
         .map((item) =>
           toMobileNavItem(item, profile, isPlatformAdmin, t),
@@ -705,9 +753,14 @@ function isVisibleForRole(
   item: RoleAwareNavItem,
   profile: Profile,
   isPlatformAdmin: boolean,
+  isSafeguardingStaff: boolean,
 ) {
   if (item.platformAdminOnly) {
     return isPlatformAdmin;
+  }
+
+  if (item.safeguardingOnly && !isSafeguardingStaff) {
+    return false;
   }
 
   return !item.roles || (profile?.role && item.roles.includes(profile.role));

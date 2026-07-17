@@ -67,7 +67,9 @@ export default async function SettingsPage() {
         <h2 className="section-title">{t("settings.schoolInfo.title")}</h2>
         {schoolError ? (
           <p className="mt-2 text-sm text-red-600">
-            {tf("settings.errors.loadFailed", { error: schoolError.message })}
+            {tf("settings.errors.loadFailed", {
+              error: t("common.somethingWentWrong"),
+            })}
           </p>
         ) : null}
         {school ? (

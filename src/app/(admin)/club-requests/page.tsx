@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { logServerError } from "@/lib/errors/server-error";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   ACTIVITY_CATEGORIES,
@@ -641,7 +642,7 @@ async function getCreatorNamesById(
 }
 
 function logSupabaseError(label: string, error: unknown) {
-  console.error(label, error);
+  logServerError(label, error);
 }
 
 function countSupportsByRequest(supports: ClubRequestSupport[]) {

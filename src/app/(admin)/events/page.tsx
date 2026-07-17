@@ -607,7 +607,9 @@ export default async function EventsPage({
             </h2>
             {eventsError ? (
               <p className="mt-2 text-sm text-red-600">
-                {tf("events.errors.loadFailed", { error: eventsError.message })}
+                {tf("events.errors.loadFailed", {
+                  error: t("common.somethingWentWrong"),
+                })}
               </p>
             ) : null}
             {profile.role === "student" && !currentStudent ? (

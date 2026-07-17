@@ -101,7 +101,9 @@ export async function createStudent(
       message:
         error.code === "23505"
           ? t("students.errors.duplicateStudentNumber")
-          : tf("students.errors.addFailed", { error: error.message }),
+          : tf("students.errors.addFailed", {
+              error: t("common.somethingWentWrong"),
+            }),
       success: false,
     };
   }
@@ -246,7 +248,9 @@ export async function importStudentsFromCsv(
       message:
         error.code === "23505"
           ? t("students.import.errors.duplicatesExist")
-          : tf("students.import.errors.importFailed", { error: error.message }),
+          : tf("students.import.errors.importFailed", {
+              error: t("common.somethingWentWrong"),
+            }),
       success: false,
     };
   }

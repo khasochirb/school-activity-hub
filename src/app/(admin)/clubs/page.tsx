@@ -272,7 +272,9 @@ export default async function ClubsPage({
           <h2 className="section-title">{t("clubs.active.title")}</h2>
           {clubsError ? (
             <p className="mt-2 text-sm text-red-600">
-              {tf("clubs.errors.loadFailed", { error: clubsError.message })}
+              {tf("clubs.errors.loadFailed", {
+                error: t("common.somethingWentWrong"),
+              })}
             </p>
           ) : null}
           {profile.role === "student" && !currentStudent ? (

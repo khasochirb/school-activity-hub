@@ -1,3 +1,5 @@
+import "server-only";
+
 type TimingStatus = "error" | "ok";
 
 export async function timeServer<T>(

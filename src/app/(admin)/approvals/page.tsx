@@ -147,7 +147,7 @@ export default async function ApprovalsPage({
           {eventsError ? (
             <p className="mt-2 text-sm text-red-600">
               {tf("approvals.errors.loadFailed", {
-                error: eventsError.message,
+                error: t("common.somethingWentWrong"),
               })}
             </p>
           ) : null}

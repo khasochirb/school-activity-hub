@@ -203,7 +203,7 @@ export default async function AnnouncementsPage({
           {error ? (
             <p className="mt-2 text-sm text-red-600">
               {tf("announcements.errors.loadFailed", {
-                error: error.message,
+                error: t("common.somethingWentWrong"),
               })}
             </p>
           ) : null}

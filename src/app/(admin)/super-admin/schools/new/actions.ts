@@ -168,7 +168,7 @@ export async function createPlatformSchool(
 
       return {
         message: i18n.tf("superAdmin.newSchool.errors.adminProfileFailed", {
-          error: profileError.message,
+          error: i18n.t("common.somethingWentWrong"),
         }),
         success: false,
       };

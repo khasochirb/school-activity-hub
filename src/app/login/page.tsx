@@ -76,6 +76,7 @@ export default async function LoginPage() {
           <LoginForm
             labels={{
               email: t("auth.login.email"),
+              failed: t("auth.login.failed"),
               forgotPassword: t("auth.login.forgotPassword"),
               password: t("auth.login.password"),
               signingIn: t("auth.login.signingIn"),

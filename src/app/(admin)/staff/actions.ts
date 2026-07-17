@@ -97,7 +97,7 @@ export async function createTeacher(
         profileError.code === "23505"
           ? i18n.t("staff.errors.duplicateProfile")
           : i18n.tf("staff.errors.profileCreateFailed", {
-              error: profileError.message,
+              error: i18n.t("common.somethingWentWrong"),
             }),
       success: false,
     };

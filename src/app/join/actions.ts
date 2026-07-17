@@ -140,7 +140,7 @@ export async function redeemInviteCode(
     await cleanupCreatedStudentAccount(userId, invite.school_id);
     return {
       message: tf("auth.join.errors.profileSaveFailed", {
-        error: profileError.message,
+        error: t("common.somethingWentWrong"),
       }),
       success: false,
     };

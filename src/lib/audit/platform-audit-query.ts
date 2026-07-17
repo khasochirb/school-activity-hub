@@ -1,5 +1,6 @@
 import "server-only";
 
+import { logServerError } from "@/lib/errors/server-error";
 import type { createAdminClient } from "@/lib/supabase/admin";
 
 export type PlatformAuditLog = {
@@ -34,12 +35,8 @@ export async function loadPlatformAuditLogs({
     .returns<PlatformAuditLog[]>();
 
   if (result.error) {
-    console.error(`${context} failed`, {
-      code: result.error.code,
-      details: result.error.details,
-      hint: result.error.hint,
+    logServerError(`${context} failed`, result.error, {
       httpStatus: result.status,
-      message: result.error.message,
       statusText: result.statusText,
       table: "public.platform_audit_logs",
     });

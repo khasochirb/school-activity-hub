@@ -53,7 +53,7 @@ export async function updateProfile(
   if (error) {
     return {
       message: i18n.tf("profile.errors.updateFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
       success: false,
     };

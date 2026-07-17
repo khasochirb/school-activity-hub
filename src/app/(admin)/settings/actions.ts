@@ -56,7 +56,7 @@ export async function updateSchoolSettings(
   if (error) {
     return {
       message: i18n.tf("settings.errors.updateFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
       success: false,
     };
