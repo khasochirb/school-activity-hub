@@ -8,6 +8,10 @@ import {
   type EventDecisionInfoError,
 } from "@/lib/events/event-decision-info";
 import {
+  parseEventPracticalDetails,
+  type EventPracticalDetailsError,
+} from "@/lib/events/event-practical-details";
+import {
   formatTranslation,
   getDictionary,
   translate,
@@ -86,6 +90,7 @@ export async function createEvent(
     String(formData.get("permission_required") ?? "") === "true";
   const permissionNote = String(formData.get("permission_note") ?? "").trim();
   const decisionInfoResult = parseEventDecisionInfo(formData);
+  const practicalDetailsResult = parseEventPracticalDetails(formData);
   const isStaff = isSchoolStaff(profile);
   const isLeaderEvent = !isStaff;
 
@@ -101,6 +106,18 @@ export async function createEvent(
   }
 
   const decisionInfo = decisionInfoResult.data;
+
+  if (practicalDetailsResult.error) {
+    return {
+      message: eventPracticalDetailsErrorMessage(
+        practicalDetailsResult.error,
+        i18n,
+      ),
+      success: false,
+    };
+  }
+
+  const practicalDetails = practicalDetailsResult.data;
 
   if (!location) {
     return { message: i18n.t("events.errors.locationRequired"), success: false };
@@ -190,6 +207,12 @@ export async function createEvent(
       eligibility_notes: decisionInfo.eligibilityNotes,
       experience_level: decisionInfo.experienceLevel,
       accessibility_notes: decisionInfo.accessibilityNotes,
+      cost_type: practicalDetails.costType,
+      cost_amount: practicalDetails.costAmount,
+      cost_currency: practicalDetails.costCurrency,
+      cost_notes: practicalDetails.costNotes,
+      required_materials: practicalDetails.requiredMaterials,
+      expected_commitment: practicalDetails.expectedCommitment,
       status,
       submitted_at: now,
       approved_at: isStaff ? now : null,
@@ -448,6 +471,41 @@ export async function updateEventDecisionInfo(formData: FormData) {
 
   revalidatePath("/events");
   revalidatePath(`/events/${event.id}`);
+  revalidatePath("/approvals");
+}
+
+export async function updateEventPracticalDetails(formData: FormData) {
+  const profile = await getCurrentProfile();
+
+  if (!profile || !isSchoolStaff(profile)) {
+    redirect("/events");
+  }
+
+  const eventId = String(formData.get("event_id") ?? "").trim();
+  const practicalDetailsResult = parseEventPracticalDetails(formData);
+
+  if (!eventId || practicalDetailsResult.error) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await timeServer("events.action.update-practical-details", () =>
+    supabase
+      .from("events")
+      .update({
+        cost_amount: practicalDetailsResult.data.costAmount,
+        cost_currency: practicalDetailsResult.data.costCurrency,
+        cost_notes: practicalDetailsResult.data.costNotes,
+        cost_type: practicalDetailsResult.data.costType,
+        expected_commitment: practicalDetailsResult.data.expectedCommitment,
+        required_materials: practicalDetailsResult.data.requiredMaterials,
+      })
+      .eq("id", eventId)
+      .eq("school_id", profile.school_id),
+  );
+
+  revalidatePath("/events");
+  revalidatePath(`/events/${eventId}`);
   revalidatePath("/approvals");
 }
 
@@ -854,6 +912,25 @@ function eventDecisionInfoErrorMessage(
   }
 
   return i18n.t("events.errors.invalidExperienceLevel");
+}
+
+function eventPracticalDetailsErrorMessage(
+  error: EventPracticalDetailsError,
+  i18n: ServerI18n,
+) {
+  const keyByError: Record<EventPracticalDetailsError, string> = {
+    commitment_too_long: "events.errors.commitmentTooLong",
+    cost_notes_too_long: "events.errors.costNotesTooLong",
+    invalid_cost_amount: "events.errors.invalidCostAmount",
+    invalid_cost_currency: "events.errors.invalidCostCurrency",
+    invalid_cost_type: "events.errors.invalidCostType",
+    materials_too_long: "events.errors.materialsTooLong",
+    paid_cost_required: "events.errors.paidCostRequired",
+    unexpected_cost_details: "events.errors.unexpectedCostDetails",
+    variable_cost_notes_required: "events.errors.variableCostNotesRequired",
+  };
+
+  return i18n.t(keyByError[error]);
 }
 
 function parseRiskLevel(value: FormDataEntryValue | null): EventRiskLevel | null {

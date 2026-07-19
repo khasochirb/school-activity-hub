@@ -14,6 +14,10 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
+import {
+  formatEventCost,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
 import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -48,6 +52,12 @@ type PendingEvent = {
   eligibility_notes: string | null;
   experience_level: EventExperienceLevel | null;
   accessibility_notes: string | null;
+  cost_type: EventCostType | null;
+  cost_amount: number | string | null;
+  cost_currency: string | null;
+  cost_notes: string | null;
+  required_materials: string | null;
+  expected_commitment: string | null;
   submitted_at: string | null;
   created_at: string;
 };
@@ -102,7 +112,7 @@ export default async function ApprovalsPage({
   const { data: pendingEvents, error: eventsError } = await supabase
     .from("events")
     .select(
-      "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, submitted_at, created_at",
+      "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment, submitted_at, created_at",
     )
     .eq("school_id", profile.school_id)
     .eq("status", "pending_approval")
@@ -235,6 +245,23 @@ export default async function ApprovalsPage({
                   {event.experience_level ? (
                     <Badge>{experienceLevelLabel(event.experience_level, t)}</Badge>
                   ) : null}
+                  <Badge>
+                    {formatEventCost(
+                      {
+                        costAmount: event.cost_amount,
+                        costCurrency: event.cost_currency,
+                        costType: event.cost_type,
+                      },
+                      locale,
+                      {
+                        free: t("events.practicalDetails.free"),
+                        notSpecified: t(
+                          "events.practicalDetails.costNotSpecified",
+                        ),
+                        variable: t("events.practicalDetails.variableCost"),
+                      },
+                    )}
+                  </Badge>
                 </div>
                 <DetailsDisclosure label={t("common.viewDetails")}>
                   <dl className="grid gap-3 text-sm sm:grid-cols-3">
@@ -319,6 +346,34 @@ export default async function ApprovalsPage({
                           t("events.decisionInfo.accessibilityNotProvided")}
                       </dd>
                     </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.practicalDetails.requiredMaterials")}
+                      </dt>
+                      <dd className="whitespace-pre-wrap text-zinc-800">
+                        {event.required_materials ??
+                          t("events.practicalDetails.materialsNotSpecified")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.practicalDetails.expectedCommitment")}
+                      </dt>
+                      <dd className="whitespace-pre-wrap text-zinc-800">
+                        {event.expected_commitment ??
+                          t("events.practicalDetails.commitmentNotSpecified")}
+                      </dd>
+                    </div>
+                    {event.cost_notes ? (
+                      <div>
+                        <dt className="text-zinc-500">
+                          {t("events.practicalDetails.costNotes")}
+                        </dt>
+                        <dd className="whitespace-pre-wrap text-zinc-800">
+                          {event.cost_notes}
+                        </dd>
+                      </div>
+                    ) : null}
                   </dl>
                   {event.permission_note ? (
                     <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">

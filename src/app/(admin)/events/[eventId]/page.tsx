@@ -24,6 +24,10 @@ import {
   EVENT_ELIGIBILITY_MAX_LENGTH,
   type EventExperienceLevel,
 } from "@/lib/events/event-decision-info";
+import {
+  formatEventCost,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
 import { canViewEvent } from "@/lib/events/event-visibility";
 import { getServerBaseUrl } from "@/lib/server-url";
 import { timeServer } from "@/lib/server-timing";
@@ -42,6 +46,7 @@ import {
   updateEventSafety,
   updateEventSharing,
 } from "../actions";
+import { EventPracticalDetailsForm } from "../event-practical-details-form";
 
 type Profile = {
   id: string;
@@ -74,6 +79,12 @@ type EventRecord = {
   eligibility_notes: string | null;
   experience_level: EventExperienceLevel | null;
   accessibility_notes: string | null;
+  cost_type: EventCostType | null;
+  cost_amount: number | string | null;
+  cost_currency: string | null;
+  cost_notes: string | null;
+  required_materials: string | null;
+  expected_commitment: string | null;
 };
 
 type StudentRoster = {
@@ -221,6 +232,19 @@ export default async function EventDetailPage({
     },
     await getServerBaseUrl(),
   );
+  const costLabel = formatEventCost(
+    {
+      costAmount: event.cost_amount,
+      costCurrency: event.cost_currency,
+      costType: event.cost_type,
+    },
+    locale,
+    {
+      free: t("events.practicalDetails.free"),
+      notSpecified: t("events.practicalDetails.costNotSpecified"),
+      variable: t("events.practicalDetails.variableCost"),
+    },
+  );
 
   return (
     <div className="page-stack">
@@ -338,6 +362,73 @@ export default async function EventDetailPage({
           </article>
 
           <article className="section-card section-card-padded order-6 lg:order-none">
+            <h2 className="section-title">
+              {t("events.formGroups.practicalDetails")}
+            </h2>
+            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+              <DetailItem label={t("events.practicalDetails.cost")}>
+                {costLabel}
+              </DetailItem>
+              <DetailItem
+                label={t("events.practicalDetails.requiredMaterials")}
+              >
+                {event.required_materials ??
+                  t("events.practicalDetails.materialsNotSpecified")}
+              </DetailItem>
+              <DetailItem
+                label={t("events.practicalDetails.expectedCommitment")}
+              >
+                {event.expected_commitment ??
+                  t("events.practicalDetails.commitmentNotSpecified")}
+              </DetailItem>
+              {event.cost_notes ? (
+                <DetailItem label={t("events.practicalDetails.costNotes")}>
+                  {event.cost_notes}
+                </DetailItem>
+              ) : null}
+            </dl>
+            {isStaff && isOwnSchoolEvent ? (
+              <div className="mt-4 border-t border-[var(--border)] pt-4">
+                <p className="mb-3 max-w-2xl text-xs leading-5 text-zinc-500">
+                  {t("events.practicalDetails.privacyGuidance")}
+                </p>
+                <EventPracticalDetailsForm
+                  event={event}
+                  labels={{
+                    amount: t("events.practicalDetails.amount"),
+                    cost: t("events.practicalDetails.cost"),
+                    costNotes: t("events.practicalDetails.costNotes"),
+                    costNotesPlaceholder: t(
+                      "events.practicalDetails.costNotesPlaceholder",
+                    ),
+                    currency: t("events.practicalDetails.currency"),
+                    expectedCommitment: t(
+                      "events.practicalDetails.expectedCommitment",
+                    ),
+                    expectedCommitmentPlaceholder: t(
+                      "events.practicalDetails.commitmentPlaceholder",
+                    ),
+                    free: t("events.practicalDetails.free"),
+                    notSpecified: t(
+                      "events.practicalDetails.costNotSpecified",
+                    ),
+                    paid: t("events.practicalDetails.paid"),
+                    requiredMaterials: t(
+                      "events.practicalDetails.requiredMaterials",
+                    ),
+                    requiredMaterialsPlaceholder: t(
+                      "events.practicalDetails.materialsPlaceholder",
+                    ),
+                    save: t("events.actions.savePracticalDetails"),
+                    saving: t("common.saving"),
+                    variable: t("events.practicalDetails.variableCost"),
+                  }}
+                />
+              </div>
+            ) : null}
+          </article>
+
+          <article className="section-card section-card-padded order-7 lg:order-none">
             <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
             <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
               <DetailItem label={t("events.card.safety")}>
@@ -910,7 +1001,7 @@ async function getEventById(
     admin
       .from("events")
       .select(
-        "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, submitted_at, approved_at, rejection_reason, created_at, updated_at, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes",
+        "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, submitted_at, approved_at, rejection_reason, created_at, updated_at, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
       )
       .eq("id", eventId)
       .maybeSingle<EventRecord>(),

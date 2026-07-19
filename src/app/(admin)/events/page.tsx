@@ -21,6 +21,10 @@ import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
 import {
+  formatEventCost,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
+import {
   getPageParam,
   getSearchParam,
   pageRange,
@@ -107,6 +111,12 @@ type Event = {
   eligibility_notes: string | null;
   experience_level: EventExperienceLevel | null;
   accessibility_notes: string | null;
+  cost_type: EventCostType | null;
+  cost_amount: number | string | null;
+  cost_currency: string | null;
+  cost_notes: string | null;
+  required_materials: string | null;
+  expected_commitment: string | null;
 };
 
 type EventAttendeeCountRow = {
@@ -433,6 +443,17 @@ export default async function EventsPage({
       capacity: event.capacity,
       categoryLabel: event.category ? categoryLabel(event.category, t) : null,
       categoryValue: event.category,
+      costLabel: formatEventCost({
+        costAmount: event.cost_amount,
+        costCurrency: event.cost_currency,
+        costType: event.cost_type,
+      }, locale, {
+        free: t("events.practicalDetails.free"),
+        notSpecified: t("events.practicalDetails.costNotSpecified"),
+        variable: t("events.practicalDetails.variableCost"),
+      }),
+      costNotes: event.cost_notes,
+      costType: event.cost_type,
       dateBadgeLabel: formatDate(event.starts_at, locale),
       dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
         event.ends_at,
@@ -441,6 +462,9 @@ export default async function EventsPage({
       description: event.description,
       eligibilityLabel:
         event.eligibility_notes ?? t("events.decisionInfo.eligibilityNotSpecified"),
+      expectedCommitmentLabel:
+        event.expected_commitment ??
+        t("events.practicalDetails.commitmentNotSpecified"),
       endsAt: event.ends_at,
       hasCurrentStudent: Boolean(currentStudent),
       hasEligibilityInfo: Boolean(event.eligibility_notes),
@@ -473,6 +497,9 @@ export default async function EventsPage({
       responsibleAdultLabel: responsibleStaff?.status === "active"
         ? `${responsibleStaff.full_name} (${staffRoleLabel(responsibleStaff.role, t)})`
         : t("events.decisionInfo.responsibleNotSpecified"),
+      requiredMaterialsLabel:
+        event.required_materials ??
+        t("events.practicalDetails.materialsNotSpecified"),
       sharedLabel: sharingLabel(event, sharedSchoolIds, t, tf),
       startsAt: event.starts_at,
       status: event.status,
@@ -581,6 +608,23 @@ export default async function EventsPage({
                 "events.decisionInfo.accessibilityPlaceholder",
               ),
               beginnerFriendly: t("events.experience.beginnerFriendly"),
+              commitment: t("events.practicalDetails.expectedCommitment"),
+              commitmentPlaceholder: t(
+                "events.practicalDetails.commitmentPlaceholder",
+              ),
+              cost: t("events.practicalDetails.cost"),
+              costAmount: t("events.practicalDetails.amount"),
+              costCurrency: t("events.practicalDetails.currency"),
+              costFree: t("events.practicalDetails.free"),
+              costNotes: t("events.practicalDetails.costNotes"),
+              costNotesPlaceholder: t(
+                "events.practicalDetails.costNotesPlaceholder",
+              ),
+              costNotSpecified: t(
+                "events.practicalDetails.costNotSpecified",
+              ),
+              costPaid: t("events.practicalDetails.paid"),
+              costVariable: t("events.practicalDetails.variableCost"),
               category: t("events.form.category"),
               club: t("events.form.club"),
               createApproved: t("events.actions.createApproved"),
@@ -604,6 +648,10 @@ export default async function EventsPage({
               leaderNeedsClub: t("events.create.leaderNeedsClub"),
               location: t("events.form.location"),
               maxParticipants: t("events.form.maxParticipants"),
+              materials: t("events.practicalDetails.requiredMaterials"),
+              materialsPlaceholder: t(
+                "events.practicalDetails.materialsPlaceholder",
+              ),
               noCategory: t("events.form.noCategory"),
               notSpecified: t("common.notSpecified"),
               permissionNote: t("events.form.permissionNote"),
@@ -611,6 +659,10 @@ export default async function EventsPage({
                 "events.form.permissionNotePlaceholder",
               ),
               permissionRequired: t("events.form.permissionRequired"),
+              practicalDetails: t("events.formGroups.practicalDetails"),
+              practicalGuidance: t(
+                "events.practicalDetails.privacyGuidance",
+              ),
               riskHigh: t("events.risk.high"),
               riskLevel: t("events.form.riskLevel"),
               riskLow: t("events.risk.low"),
@@ -1094,7 +1146,7 @@ async function getFilteredEvents(
   let query = admin
     .from("events")
     .select(
-      "id, school_id, club_id, created_by_profile_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes",
+      "id, school_id, club_id, created_by_profile_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
     );
 
   if (audience === "partners") {

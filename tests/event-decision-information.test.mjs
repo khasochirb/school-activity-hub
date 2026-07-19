@@ -12,8 +12,11 @@ function read(path) {
 
 test("Phase 4A is one append-only migration after Phase 3A", () => {
   const migrations = readdirSync(join(root, "supabase/migrations")).sort();
+  const phase3aIndex = migrations.indexOf(
+    "202607170001_add_safeguarding_privacy_foundations.sql",
+  );
 
-  assert.equal(migrations.at(-1), migrationName);
+  assert.equal(migrations[phase3aIndex + 1], migrationName);
   assert.match(read(`supabase/migrations/${migrationName}`), /alter table public\.events/);
 });
 

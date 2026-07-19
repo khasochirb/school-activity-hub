@@ -384,6 +384,7 @@ export const mn = {
       resetFilters: "Шүүлтүүрийг дахин тохируулах",
       saveSafety: "Аюулгүй байдлын мэдээлэл хадгалах",
       saveDecisionInfo: "Оролцох мэдээллийг хадгалах",
+      savePracticalDetails: "Практик мэдээллийг хадгалах",
       saveSharing: "Хуваалцах тохиргоо хадгалах",
       submitForApproval: "Зөвшөөрөл хүсэх",
       submitting: "Илгээж байна...",
@@ -459,11 +460,16 @@ export const mn = {
     },
     errors: {
       accessibilityTooLong: "Хүртээмжийн мэдээлэл хэт урт байна.",
+      commitmentTooLong: "Оролцох хугацааны мэдээлэл хэт урт байна.",
+      costNotesTooLong: "Төлбөрийн тайлбар хэт урт байна.",
       createFailed:
         "Үйл ажиллагааг үүсгэж чадсангүй. Мэдээллээ шалгаад дахин оролдоно уу.",
       eligibilityTooLong: "Оролцох шаардлагын мэдээлэл хэт урт байна.",
       invalidCategory: "Зөв ангилал сонгоно уу.",
       invalidClub: "Зөв клуб сонгоно уу.",
+      invalidCostAmount: "Төлбөрийн зөв эерэг дүн оруулна уу.",
+      invalidCostCurrency: "Дэмжигдсэн валют сонгоно уу.",
+      invalidCostType: "Төлбөрийн зөв төрлийг сонгоно уу.",
       invalidExperienceLevel: "Туршлагын зөв түвшнийг сонгоно уу.",
       invalidResponsibleStaff:
         "Танай сургуулийн идэвхтэй багш эсвэл сургуулийн админыг сонгоно уу.",
@@ -473,14 +479,21 @@ export const mn = {
       loadFailed:
         "Үйл ажиллагааг ачаалж чадсангүй. Дахин ачаалаад оролдоно уу.",
       locationRequired: "Байршил шаардлагатай.",
+      materialsTooLong: "Шаардлагатай хэрэгслийн мэдээлэл хэт урт байна.",
       maxParticipantsPositive:
         "Багтаамж эерэг тоо байх ёстой.",
       staffOrLeaderOnly:
         "Зөвхөн сургуулийн ажилтан эсвэл клубын удирдагч үйл ажиллагаа үүсгэх боломжтой.",
+      paidCostRequired:
+        "Төлбөртэй үйл ажиллагаанд төлбөрийн эерэг дүн шаардлагатай.",
       timeRequired: "Эхлэх болон дуусах цаг шаардлагатай.",
       titleRequired: "Үйл ажиллагааны нэр шаардлагатай.",
       unauthenticated: "Та нэвтэрсэн байх ёстой.",
+      unexpectedCostDetails:
+        "Төлбөрийн дүн эсвэл валют нь сонгосон төлбөрийн төрөлтэй тохирохгүй байна.",
       validTimeOrder: "Дуусах цаг эхлэх цагаас хойш байх ёстой.",
+      variableCostNotesRequired:
+        "Нөхцөлөөс хамаарах төлбөртэй үйл ажиллагаанд товч тайлбар шаардлагатай.",
     },
     eyebrow: "Үйл ажиллагааны календарь",
     fallback: {
@@ -511,6 +524,7 @@ export const mn = {
     formGroups: {
       basicDetails: "Үндсэн мэдээлэл",
       dateTime: "Огноо ба цаг",
+      practicalDetails: "Практик мэдээлэл",
       safetyPermissions: "Аюулгүй байдал, зөвшөөрөл",
       whoCanAttend: "Хэн оролцож болох, юу хүлээх вэ",
     },
@@ -565,6 +579,28 @@ export const mn = {
     experience: {
       beginnerFriendly: "Анхлан оролцогчдод тохиромжтой",
       priorExperienceRecommended: "Өмнөх туршлагатай байхыг зөвлөж байна",
+    },
+    practicalDetails: {
+      amount: "Дүн",
+      commitmentNotSpecified: "Оролцох хугацааг тодорхойлоогүй",
+      commitmentPlaceholder:
+        "Жишээ: Нэг удаагийн 90 минутын уулзалт эсвэл долоо хоногт хоёр бэлтгэл",
+      cost: "Төлбөр",
+      costNotes: "Төлбөрийн тайлбар",
+      costNotesPlaceholder:
+        "Жишээ: хэрэгслийн түрээс багтсан эсвэл төлбөрийн эцсийн хугацаа",
+      costNotSpecified: "Төлбөрийн мэдээлэл тодорхойгүй",
+      currency: "Валют",
+      expectedCommitment: "Оролцох хугацаа, давтамж",
+      free: "Үнэгүй",
+      materialsNotSpecified: "Шаардлагатай хэрэгслийг тодорхойлоогүй",
+      materialsPlaceholder:
+        "Оролцогчид юу авчрах шаардлагатайг тайлбарлана уу",
+      paid: "Төлбөртэй",
+      privacyGuidance:
+        "Төлбөр болон хэрэгслийн мэдээлэл нь үйл ажиллагааг тайлбарлана. Сурагчид санхүүгийн нөхцөл байдал, хөгжлийн бэрхшээл эсвэл шаардлагатай хэрэгсэлтэй эсэхээ олон нийтэд мэдэгдэх шаардлагагүй.",
+      requiredMaterials: "Шаардлагатай хэрэгсэл",
+      variableCost: "Нөхцөлөөс хамаарах төлбөр",
     },
     listTitles: {
       club: "Клубын үйл ажиллагаа",

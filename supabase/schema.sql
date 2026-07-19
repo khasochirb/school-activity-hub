@@ -106,6 +106,17 @@ end $$;
 
 do $$
 begin
+  create type public.event_cost_type as enum (
+    'free',
+    'paid',
+    'variable'
+  );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
   create type public.event_attendee_status as enum (
     'registered',
     'attended',
@@ -412,6 +423,12 @@ create table if not exists public.events (
   eligibility_notes text,
   experience_level public.event_experience_level,
   accessibility_notes text,
+  cost_type public.event_cost_type,
+  cost_amount numeric(12, 2),
+  cost_currency text,
+  cost_notes text,
+  required_materials text,
+  expected_commitment text,
   constraint events_id_school_unique unique (id, school_id),
   constraint events_title_not_blank check (length(btrim(title)) > 0),
   constraint events_time_order check (ends_at > starts_at),
@@ -421,6 +438,51 @@ create table if not exists public.events (
   ),
   constraint events_accessibility_notes_length check (
     accessibility_notes is null or length(accessibility_notes) <= 2000
+  ),
+  constraint events_cost_details_valid check (
+    (
+      cost_type is null
+      and cost_amount is null
+      and cost_currency is null
+      and cost_notes is null
+    )
+    or (
+      cost_type = 'free'
+      and cost_amount is null
+      and cost_currency is null
+    )
+    or (
+      cost_type = 'paid'
+      and cost_amount > 0
+      and cost_currency = 'MNT'
+    )
+    or (
+      cost_type = 'variable'
+      and cost_amount is null
+      and cost_currency is null
+      and cost_notes is not null
+    )
+  ),
+  constraint events_cost_notes_valid check (
+    cost_notes is null
+    or (
+      length(cost_notes) between 1 and 500
+      and cost_notes = btrim(cost_notes)
+    )
+  ),
+  constraint events_required_materials_valid check (
+    required_materials is null
+    or (
+      length(required_materials) between 1 and 1000
+      and required_materials = btrim(required_materials)
+    )
+  ),
+  constraint events_expected_commitment_valid check (
+    expected_commitment is null
+    or (
+      length(expected_commitment) between 1 and 500
+      and expected_commitment = btrim(expected_commitment)
+    )
   ),
   constraint events_club_school_fk foreign key (club_id, school_id)
     references public.clubs(id, school_id)
@@ -458,6 +520,24 @@ alter table public.events
 alter table public.events
   add column if not exists accessibility_notes text;
 
+alter table public.events
+  add column if not exists cost_type public.event_cost_type;
+
+alter table public.events
+  add column if not exists cost_amount numeric(12, 2);
+
+alter table public.events
+  add column if not exists cost_currency text;
+
+alter table public.events
+  add column if not exists cost_notes text;
+
+alter table public.events
+  add column if not exists required_materials text;
+
+alter table public.events
+  add column if not exists expected_commitment text;
+
 do $$
 begin
   alter table public.events
@@ -465,6 +545,79 @@ begin
     foreign key (responsible_staff_id, school_id)
     references public.profiles(id, school_id)
     on delete restrict;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.events
+    add constraint events_cost_details_valid check (
+      (
+        cost_type is null
+        and cost_amount is null
+        and cost_currency is null
+        and cost_notes is null
+      )
+      or (
+        cost_type = 'free'
+        and cost_amount is null
+        and cost_currency is null
+      )
+      or (
+        cost_type = 'paid'
+        and cost_amount > 0
+        and cost_currency = 'MNT'
+      )
+      or (
+        cost_type = 'variable'
+        and cost_amount is null
+        and cost_currency is null
+        and cost_notes is not null
+      )
+    );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.events
+    add constraint events_cost_notes_valid check (
+      cost_notes is null
+      or (
+        length(cost_notes) between 1 and 500
+        and cost_notes = btrim(cost_notes)
+      )
+    );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.events
+    add constraint events_required_materials_valid check (
+      required_materials is null
+      or (
+        length(required_materials) between 1 and 1000
+        and required_materials = btrim(required_materials)
+      )
+    );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.events
+    add constraint events_expected_commitment_valid check (
+      expected_commitment is null
+      or (
+        length(expected_commitment) between 1 and 500
+        and expected_commitment = btrim(expected_commitment)
+      )
+    );
 exception
   when duplicate_object then null;
 end $$;

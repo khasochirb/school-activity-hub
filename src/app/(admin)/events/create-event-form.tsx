@@ -12,6 +12,13 @@ import {
   EVENT_ACCESSIBILITY_MAX_LENGTH,
   EVENT_ELIGIBILITY_MAX_LENGTH,
 } from "@/lib/events/event-decision-info";
+import {
+  EVENT_COST_CURRENCY,
+  EVENT_COST_NOTES_MAX_LENGTH,
+  EVENT_EXPECTED_COMMITMENT_MAX_LENGTH,
+  EVENT_REQUIRED_MATERIALS_MAX_LENGTH,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
 import { formatSchedulePreview } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
 import { createEvent, type CreateEventState } from "./actions";
@@ -37,6 +44,17 @@ type CreateEventFormLabels = {
   accessibilityPlaceholder: string;
   basicDetails: string;
   beginnerFriendly: string;
+  commitment: string;
+  commitmentPlaceholder: string;
+  cost: string;
+  costAmount: string;
+  costCurrency: string;
+  costFree: string;
+  costNotes: string;
+  costNotesPlaceholder: string;
+  costNotSpecified: string;
+  costPaid: string;
+  costVariable: string;
   category: string;
   club: string;
   createApproved: string;
@@ -58,11 +76,15 @@ type CreateEventFormLabels = {
   leaderNeedsClub: string;
   location: string;
   maxParticipants: string;
+  materials: string;
+  materialsPlaceholder: string;
   noCategory: string;
   notSpecified: string;
   permissionNote: string;
   permissionNotePlaceholder: string;
   permissionRequired: string;
+  practicalDetails: string;
+  practicalGuidance: string;
   riskHigh: string;
   riskLevel: string;
   riskLow: string;
@@ -113,6 +135,7 @@ export function CreateEventForm({
   const [eventDate, setEventDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [costType, setCostType] = useState<EventCostType | "">("");
   const [clientError, setClientError] = useState("");
   const startsAtValue = eventDate && startTime ? `${eventDate}T${startTime}` : "";
   const endsAtValue = eventDate && endTime ? `${eventDate}T${endTime}` : "";
@@ -337,6 +360,88 @@ export function CreateEventForm({
           <p className="mt-2 text-xs text-slate-600" id="event-time-helper">
             {labels.timezoneHelper}
           </p>
+        </div>
+      </fieldset>
+      <fieldset className="form-group">
+        <legend className="form-group-title">{labels.practicalDetails}</legend>
+        <p className="mt-2 max-w-2xl break-words text-xs leading-5 text-slate-600">
+          {labels.practicalGuidance}
+        </p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800 md:max-w-sm">
+            <span className="break-words">{labels.cost}</span>
+            <select
+              className="h-11 max-w-full cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
+              name="cost_type"
+              onChange={(event) =>
+                setCostType(event.target.value as EventCostType | "")
+              }
+              value={costType}
+            >
+              <option value="">{labels.costNotSpecified}</option>
+              <option value="free">{labels.costFree}</option>
+              <option value="paid">{labels.costPaid}</option>
+              <option value="variable">{labels.costVariable}</option>
+            </select>
+          </label>
+          {costType === "paid" ? (
+            <div className="grid gap-3 sm:grid-cols-[minmax(10rem,1fr)_8rem] md:col-span-1">
+              <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
+                <span className="break-words">{labels.costAmount}</span>
+                <input
+                  className="h-11 rounded-md border px-3 text-base outline-none transition"
+                  inputMode="decimal"
+                  min="0.01"
+                  name="cost_amount"
+                  required
+                  step="0.01"
+                  type="number"
+                />
+              </label>
+              <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
+                <span className="break-words">{labels.costCurrency}</span>
+                <select
+                  className="h-11 cursor-pointer rounded-md border bg-white px-3 text-base outline-none transition"
+                  defaultValue={EVENT_COST_CURRENCY}
+                  name="cost_currency"
+                >
+                  <option value={EVENT_COST_CURRENCY}>
+                    {EVENT_COST_CURRENCY}
+                  </option>
+                </select>
+              </label>
+            </div>
+          ) : null}
+          {costType ? (
+            <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-2">
+              <span className="break-words">{labels.costNotes}</span>
+              <textarea
+                className="min-h-20 rounded-md border px-3 py-2 text-base outline-none transition"
+                maxLength={EVENT_COST_NOTES_MAX_LENGTH}
+                name="cost_notes"
+                placeholder={labels.costNotesPlaceholder}
+                required={costType === "variable"}
+              />
+            </label>
+          ) : null}
+          <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
+            <span className="break-words">{labels.materials}</span>
+            <textarea
+              className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
+              maxLength={EVENT_REQUIRED_MATERIALS_MAX_LENGTH}
+              name="required_materials"
+              placeholder={labels.materialsPlaceholder}
+            />
+          </label>
+          <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
+            <span className="break-words">{labels.commitment}</span>
+            <textarea
+              className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
+              maxLength={EVENT_EXPECTED_COMMITMENT_MAX_LENGTH}
+              name="expected_commitment"
+              placeholder={labels.commitmentPlaceholder}
+            />
+          </label>
         </div>
       </fieldset>
       <fieldset className="form-group">

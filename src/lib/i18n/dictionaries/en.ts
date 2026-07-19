@@ -911,6 +911,7 @@ export const en = {
       resetFilters: "Reset filters",
       saveSafety: "Save safety details",
       saveDecisionInfo: "Save participation information",
+      savePracticalDetails: "Save practical details",
       saveSharing: "Save sharing settings",
       submitForApproval: "Submit for approval",
       submitting: "Submitting...",
@@ -986,10 +987,15 @@ export const en = {
     },
     errors: {
       accessibilityTooLong: "Accessibility information is too long.",
+      commitmentTooLong: "Expected commitment information is too long.",
+      costNotesTooLong: "Cost notes are too long.",
       createFailed: "Event could not be created. Check the details and try again.",
       eligibilityTooLong: "Eligibility information is too long.",
       invalidCategory: "Choose a valid category.",
       invalidClub: "Choose a valid club.",
+      invalidCostAmount: "Enter a valid positive cost amount.",
+      invalidCostCurrency: "Choose a supported currency.",
+      invalidCostType: "Choose a valid cost type.",
       invalidExperienceLevel: "Choose a valid experience level.",
       invalidResponsibleStaff:
         "Choose an active teacher or school admin from your school.",
@@ -998,14 +1004,20 @@ export const en = {
         "Club leaders must choose one of their clubs.",
       loadFailed: "Events could not be loaded. Refresh and try again.",
       locationRequired: "Location is required.",
+      materialsTooLong: "Required materials information is too long.",
       maxParticipantsPositive:
         "Max participants must be a positive number.",
       staffOrLeaderOnly:
         "Only school staff or club leaders can create events.",
+      paidCostRequired: "Paid events require a positive cost amount.",
       timeRequired: "Start and end times are required.",
       titleRequired: "Event title is required.",
       unauthenticated: "You must be logged in.",
+      unexpectedCostDetails:
+        "The cost amount or currency does not match the selected cost type.",
       validTimeOrder: "End time must be after start time.",
+      variableCostNotesRequired:
+        "Variable-cost events require a short cost explanation.",
     },
     eyebrow: "Activities calendar",
     fallback: {
@@ -1036,6 +1048,7 @@ export const en = {
     formGroups: {
       basicDetails: "Basic details",
       dateTime: "Date and time",
+      practicalDetails: "Practical details",
       safetyPermissions: "Safety and permissions",
       whoCanAttend: "Who can attend and what to expect",
     },
@@ -1090,6 +1103,28 @@ export const en = {
     experience: {
       beginnerFriendly: "Beginner-friendly",
       priorExperienceRecommended: "Prior experience recommended",
+    },
+    practicalDetails: {
+      amount: "Amount",
+      commitmentNotSpecified: "Expected commitment not specified",
+      commitmentPlaceholder:
+        "For example: One 90-minute session or two practices per week",
+      cost: "Cost",
+      costNotes: "Cost notes",
+      costNotesPlaceholder:
+        "For example: equipment rental included or payment deadline",
+      costNotSpecified: "Cost not specified",
+      currency: "Currency",
+      expectedCommitment: "Expected commitment",
+      free: "Free",
+      materialsNotSpecified: "Required materials not specified",
+      materialsPlaceholder:
+        "Describe what participants should bring, if anything",
+      paid: "Paid",
+      privacyGuidance:
+        "Cost and materials describe the activity. Students are not required to publicly disclose their financial circumstances, disability, or whether they own the required materials.",
+      requiredMaterials: "Required materials",
+      variableCost: "Variable cost",
     },
     listTitles: {
       club: "Club events",

@@ -17,6 +17,10 @@ import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
 import type { EventQuickViewItem } from "@/components/events/event-quick-view-modal";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
+import {
+  formatEventCost,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import {
   formatDateTime,
@@ -60,6 +64,12 @@ type UpcomingEvent = {
   eligibility_notes: string | null;
   experience_level: EventExperienceLevel | null;
   accessibility_notes: string | null;
+  cost_type: EventCostType | null;
+  cost_amount: number | string | null;
+  cost_currency: string | null;
+  cost_notes: string | null;
+  required_materials: string | null;
+  expected_commitment: string | null;
 };
 
 type DashboardEventAttendee = {
@@ -1269,7 +1279,7 @@ async function getUpcomingEvents(
       admin
         .from("events")
         .select(
-          "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes",
+          "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
         )
         .eq("school_id", schoolId)
         .eq("status", "approved")
@@ -1336,6 +1346,21 @@ function buildStudentQuickViewEvents(
       calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
       capacity: event.capacity,
       categoryLabel: categoryKey ? t(categoryKey) : event.category,
+      costLabel: formatEventCost(
+        {
+          costAmount: event.cost_amount,
+          costCurrency: event.cost_currency,
+          costType: event.cost_type,
+        },
+        locale,
+        {
+          free: t("events.practicalDetails.free"),
+          notSpecified: t("events.practicalDetails.costNotSpecified"),
+          variable: t("events.practicalDetails.variableCost"),
+        },
+      ),
+      costNotes: event.cost_notes,
+      costType: event.cost_type,
       dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
         event.ends_at,
         locale,
@@ -1345,6 +1370,9 @@ function buildStudentQuickViewEvents(
         event.eligibility_notes ?? t("events.decisionInfo.eligibilityNotSpecified"),
       experienceLabel: dashboardExperienceLevelLabel(event.experience_level, t),
       experienceLevel: event.experience_level,
+      expectedCommitmentLabel:
+        event.expected_commitment ??
+        t("events.practicalDetails.commitmentNotSpecified"),
       hasCurrentStudent: Boolean(analytics.currentStudent),
       hasEligibilityInfo: Boolean(event.eligibility_notes),
       hostName:
@@ -1383,6 +1411,9 @@ function buildStudentQuickViewEvents(
             t,
           )})`
         : t("events.decisionInfo.responsibleNotSpecified"),
+      requiredMaterialsLabel:
+        event.required_materials ??
+        t("events.practicalDetails.materialsNotSpecified"),
       sharedLabel: t("events.sharing.internalOnly"),
       status: event.status,
       statusLabel: t("status.approved"),

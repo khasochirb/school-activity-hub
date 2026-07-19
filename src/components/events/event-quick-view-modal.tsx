@@ -24,6 +24,9 @@ export type EventQuickViewItem = {
   calendarDownloadUrl: string;
   capacity: number | null;
   categoryLabel: string | null;
+  costLabel: string;
+  costNotes: string | null;
+  costType: "free" | "paid" | "variable" | null;
   dateTimeLabel: string;
   description: string | null;
   eligibilityLabel: string;
@@ -32,6 +35,7 @@ export type EventQuickViewItem = {
     | "beginner_friendly"
     | "prior_experience_recommended"
     | null;
+  expectedCommitmentLabel: string;
   hasCurrentStudent: boolean;
   hasEligibilityInfo: boolean;
   googleCalendarUrl: string;
@@ -50,6 +54,7 @@ export type EventQuickViewItem = {
   riskLabel: string;
   riskLevel: "high" | "low" | "medium";
   responsibleAdultLabel: string;
+  requiredMaterialsLabel: string;
   sharedLabel: string;
   status: string;
   statusLabel: string;
@@ -66,6 +71,8 @@ export type EventQuickViewLabels = EventCalendarActionLabels & {
   close: string;
   dateTime: string;
   description: string;
+  cost: string;
+  costNotes: string;
   eventQuickView: string;
   eligibility: string;
   experienceLevel: string;
@@ -78,10 +85,13 @@ export type EventQuickViewLabels = EventCalendarActionLabels & {
   permission: string;
   permissionNote: string;
   permissionRequired: string;
+  practicalDetails: string;
   participationInformation: string;
   registration: string;
   registrationFull: string;
+  requiredMaterials: string;
   riskLevel: string;
+  expectedCommitment: string;
   responsibleAdult: string;
   safety: string;
   sharedEvent: string;
@@ -282,6 +292,26 @@ export function EventQuickViewModal({
             <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">
               {event.description || labels.noDescription}
             </p>
+          </section>
+
+          <section className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-4">
+            <h3 className="text-sm font-bold text-slate-950">
+              {labels.practicalDetails}
+            </h3>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+              <ModalDetail label={labels.cost} value={event.costLabel} />
+              <ModalDetail
+                label={labels.requiredMaterials}
+                value={event.requiredMaterialsLabel}
+              />
+              <ModalDetail
+                label={labels.expectedCommitment}
+                value={event.expectedCommitmentLabel}
+              />
+              {event.costNotes ? (
+                <ModalDetail label={labels.costNotes} value={event.costNotes} />
+              ) : null}
+            </dl>
           </section>
 
           <section className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-4">

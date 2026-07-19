@@ -13,8 +13,10 @@ $fixturePath = Join-Path $PSScriptRoot "fixtures/pre_phase_3a_schema.sql"
 $fixtureGrantsPath = Join-Path $PSScriptRoot "fixtures/pre_phase_3a_runtime_grants.sql"
 $migrationPath = Join-Path $repositoryRoot "supabase/migrations/202607170001_add_safeguarding_privacy_foundations.sql"
 $phase4aMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180001_add_event_decision_information.sql"
+$phase4b1MigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180002_add_event_practical_details.sql"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
+$phase4b1TestPath = Join-Path $PSScriptRoot "phase4b1-event-practical-details.sql"
 $catalogPath = Join-Path $PSScriptRoot "catalog-snapshot.sql"
 $expectedAuthPath = Join-Path $PSScriptRoot "bootstrap-expected-auth.sql"
 $currentSchemaPath = Join-Path $repositoryRoot "supabase/schema.sql"
@@ -121,8 +123,8 @@ try {
   if ($config -notmatch 'project_id\s*=\s*"phase3c-safeguarding-validation"') {
     throw "Unexpected isolated project ID."
   }
-  if ($config -notmatch '(?ms)^\[db\]\s*.*?^port\s*=\s*55322\s*$') {
-    throw "The isolated database port is not the approved localhost port 55322."
+  if ($config -notmatch '(?ms)^\[db\]\s*.*?^port\s*=\s*47022\s*$') {
+    throw "The isolated database port is not the approved localhost port 47022."
   }
   if ($config -notmatch 'site_url\s*=\s*"http://127\.0\.0\.1:3000"') {
     throw "The isolated Auth site URL is not loopback-only."
@@ -217,13 +219,13 @@ try {
 
   $publishedPorts = @(& docker port $dbContainer 5432/tcp 2>&1)
   Assert-LastExitCode "Local database port inspection"
-  if (-not ($publishedPorts -match ':55322$')) {
-    throw "The isolated database container is not published on the approved local port 55322."
+  if (-not ($publishedPorts -match ':47022$')) {
+    throw "The isolated database container is not published on the approved local port 47022."
   }
 
   $postgresVersion = (Invoke-PsqlText -database "postgres" -sql "show server_version;" -Capture | Select-Object -First 1).ToString().Trim()
   Write-Output "local_database_host=127.0.0.1"
-  Write-Output "local_database_port=55322"
+  Write-Output "local_database_port=47022"
   Write-Output "docker_database_container=$dbContainer"
   Write-Output "supabase_cli_version=$supabaseVersion"
   Write-Output "postgres_version=$postgresVersion"
@@ -248,6 +250,9 @@ grant all on schema public to postgres, service_role;
   Invoke-PsqlFile -database "postgres" -path $phase4aMigrationPath
   Write-Output "Applied only 202607180001_add_event_decision_information.sql."
 
+  Invoke-PsqlFile -database "postgres" -path $phase4b1MigrationPath
+  Write-Output "Applied only 202607180002_add_event_practical_details.sql."
+
   $testOutput = Invoke-PsqlFile -database "postgres" -path $testPath -Capture
   $testText = $testOutput -join "`n"
   if ($testText -notmatch 'PHASE3C_DATABASE_TESTS_PASSED') {
@@ -262,6 +267,15 @@ grant all on schema public to postgres, service_role;
   }
   $phase4aTestOutput |
     Where-Object { $_ -match 'ok - |PHASE4A_EVENT_INFO_TESTS_PASSED' } |
+    Write-Output
+
+  $phase4b1TestOutput = Invoke-PsqlFile -database "postgres" -path $phase4b1TestPath -Capture
+  $phase4b1TestText = $phase4b1TestOutput -join "`n"
+  if ($phase4b1TestText -notmatch 'PHASE4B1_EVENT_PRACTICAL_DETAILS_TESTS_PASSED') {
+    throw "Phase 4B1 database test suite did not emit its success marker."
+  }
+  $phase4b1TestOutput |
+    Where-Object { $_ -match 'ok - |PHASE4B1_EVENT_PRACTICAL_DETAILS_TESTS_PASSED' } |
     Write-Output
 
   Invoke-PsqlText -database "postgres" -sql "drop database if exists $expectedDatabase with (force); create database $expectedDatabase;"
