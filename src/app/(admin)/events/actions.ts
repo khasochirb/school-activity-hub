@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -17,6 +18,12 @@ import {
   parseEventPracticalDetails,
   type EventPracticalDetailsError,
 } from "@/lib/events/event-practical-details";
+import { classifyEventServiceError } from "@/lib/events/event-errors";
+import { EVENT_CREATE_RESULT_SELECT } from "@/lib/events/event-selects";
+import {
+  createServerErrorReference,
+  logServerError,
+} from "@/lib/errors/server-error";
 import {
   formatTranslation,
   getDictionary,
@@ -63,8 +70,10 @@ type ResponsibleStaffProfile = {
 
 export type CreateEventState = {
   category?: EventActionErrorCategory;
+  eventId?: string;
   fieldErrors?: Record<string, string>;
   message: string;
+  referenceId?: string;
   success: boolean;
 };
 
@@ -113,6 +122,8 @@ export async function createEvent(
   const isStaff = isEventStaffActor(actor);
   const isLeaderEvent = !isStaff;
   const requestedSchoolId = String(formData.get("school_id") ?? "").trim();
+  const submissionId = parseSubmissionId(formData.get("submission_id"));
+  const eventId = submissionId ?? randomUUID();
   const targetSchoolId = actor.isPlatformAdmin
     ? requestedSchoolId
     : profile?.school_id ?? "";
@@ -241,8 +252,9 @@ export async function createEvent(
   const now = new Date().toISOString();
   const status = isStaff ? "approved" : "pending_approval";
   const supabase = await createClient();
-  const { data: createdEvent, error } = await timeServer("events.action.create.insert", () =>
+  const { error: insertError } = await timeServer("events.action.create.insert", () =>
     supabase.from("events").insert({
+      id: eventId,
       school_id: targetSchoolId,
       club_id: clubId || null,
       created_by_profile_id: actor.isPlatformAdmin ? null : profile?.id ?? null,
@@ -273,30 +285,69 @@ export async function createEvent(
       status,
       submitted_at: now,
       approved_at: isStaff ? now : null,
-    }).select("id").single<{ id: string }>(),
+    }),
   );
 
-  if (error) {
-    console.error("events.action.create failed", {
-      code: error.code,
+  if (insertError) {
+    const referenceId = createServerErrorReference("EVT-CREATE");
+    const category = classifyEventServiceError(insertError.code);
+    logServerError("events.action.create.insert failed", insertError, {
+      operation: "event_create",
       platformAdmin: actor.isPlatformAdmin,
+      referenceId,
       schoolId: targetSchoolId,
+      stage: "insert",
     });
-    const category = error.code === "42P01" || error.code === "42703"
-      ? "schema_update_required"
-      : error.code === "23505"
-        ? "conflict_error"
-        : "service_unavailable";
-    return actionError(category, i18n.t(`events.errors.${category}`));
+    return actionError(
+      category,
+      withErrorReference(i18n.t(`events.errors.${category}`), referenceId, i18n),
+      undefined,
+      referenceId,
+    );
   }
 
-  if (actor.isPlatformAdmin && createdEvent) {
-    await createPlatformEventAudit(actor, "platform.event.created", createdEvent.id, targetSchoolId);
+  const { data: createdEvent, error: readbackError } = await timeServer(
+    "events.action.create.readback",
+    () =>
+      supabase
+        .from("events")
+        .select(EVENT_CREATE_RESULT_SELECT)
+        .eq("id", eventId)
+        .eq("school_id", targetSchoolId)
+        .maybeSingle<{ id: string; school_id: string }>(),
+  );
+
+  if (readbackError || !createdEvent) {
+    const referenceId = createServerErrorReference("EVT-READ");
+    logServerError("events.action.create.readback failed", readbackError, {
+      eventId,
+      operation: "event_create",
+      platformAdmin: actor.isPlatformAdmin,
+      referenceId,
+      schoolId: targetSchoolId,
+      stage: "readback",
+    });
   }
 
-  revalidatePath("/events");
+  if (actor.isPlatformAdmin) {
+    await createPlatformEventAudit(actor, "platform.event.created", eventId, targetSchoolId);
+  }
+
+  try {
+    revalidatePath("/events");
+  } catch (error) {
+    const referenceId = createServerErrorReference("EVT-REFRESH");
+    logServerError("events.action.create.revalidation failed", error, {
+      eventId,
+      operation: "event_create",
+      referenceId,
+      schoolId: targetSchoolId,
+      stage: "revalidation",
+    });
+  }
 
   return {
+    eventId,
     message: isStaff
       ? i18n.t("events.success.createdApproved")
       : i18n.t("events.success.submittedForApproval"),
@@ -1061,8 +1112,26 @@ function actionError(
   category: EventActionErrorCategory,
   message: string,
   fieldErrors?: Record<string, string>,
+  referenceId?: string,
 ): CreateEventState {
-  return { category, fieldErrors, message, success: false };
+  return { category, fieldErrors, message, referenceId, success: false };
+}
+
+function parseSubmissionId(value: FormDataEntryValue | null) {
+  const submissionId = String(value ?? "").trim();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    submissionId,
+  )
+    ? submissionId
+    : null;
+}
+
+function withErrorReference(
+  message: string,
+  referenceId: string,
+  i18n: ServerI18n,
+) {
+  return `${message} ${i18n.tf("events.errors.reference", { reference: referenceId })}`;
 }
 
 function eventDecisionInfoField(error: EventDecisionInfoError) {

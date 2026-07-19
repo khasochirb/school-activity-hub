@@ -1004,6 +1004,8 @@ export const en = {
         "Club leaders must choose one of their clubs.",
       loadFailed: "Events could not be loaded. Refresh and try again.",
       loadUnavailable: "Events are not available right now. Refresh and try again.",
+      loadUnavailableWithReference:
+        "Events are not available right now. Refresh and try again. Reference: {reference}",
       locationRequired: "Location is required.",
       materialsTooLong: "Required materials information is too long.",
       maxParticipantsPositive:
@@ -1023,6 +1025,7 @@ export const en = {
       conflict_error: "This event conflicts with an existing record.",
       schema_update_required: "The Events database update must be applied before this action is available.",
       service_unavailable: "The event service is temporarily unavailable. Try again shortly.",
+      reference: "Reference: {reference}",
       unexpected_error: "The event could not be created. Try again.",
       validation_error: "Check the highlighted event details.",
     },

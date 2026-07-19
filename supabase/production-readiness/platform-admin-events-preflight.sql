@@ -24,6 +24,18 @@ with required_relations(name, present) as (
     ('event_attendees', 'Platform admins can update event attendees'),
     ('attendance_checkins', 'Platform admins can view attendance checkins'),
     ('attendance_checkins', 'Platform admins can create attendance checkins')
+), required_event_columns(column_name, present) as (
+  values
+    ('responsible_staff_id', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'responsible_staff_id')),
+    ('eligibility_notes', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'eligibility_notes')),
+    ('experience_level', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'experience_level')),
+    ('accessibility_notes', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'accessibility_notes')),
+    ('cost_type', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'cost_type')),
+    ('cost_amount', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'cost_amount')),
+    ('cost_currency', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'cost_currency')),
+    ('cost_notes', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'cost_notes')),
+    ('required_materials', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'required_materials')),
+    ('expected_commitment', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'expected_commitment'))
 ), phase_objects as (
   select count(pg_policies.policyname)::integer as policy_count
   from expected_policies
@@ -48,6 +60,20 @@ with required_relations(name, present) as (
   select 'platform-admin helper',
     case when to_regprocedure('public.current_user_is_platform_admin()') is not null then 'PASS' else 'FAIL' end,
     coalesce(to_regprocedure('public.current_user_is_platform_admin()')::text, 'missing')
+  union all
+  select 'required event column: ' || column_name,
+    case when present then 'PASS' else 'FAIL' end,
+    case when present then 'present' else 'missing; apply Phase 4A/4B1 before platform Events' end
+  from required_event_columns
+  union all
+  select 'responsible-staff relationship',
+    case when exists (
+      select 1
+      from pg_constraint
+      where conrelid = 'public.events'::regclass
+        and conname = 'events_responsible_staff_school_fk'
+    ) then 'PASS' else 'FAIL' end,
+    'events_responsible_staff_school_fk'
   union all
   select 'Phase Events policies',
     case when policy_count = 0 then 'PASS' when policy_count = 12 then 'ALREADY PRESENT' else 'FAIL' end,

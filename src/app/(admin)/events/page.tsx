@@ -21,10 +21,16 @@ import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
+import { isEventSchemaError } from "@/lib/events/event-errors";
 import {
   formatEventCost,
   type EventCostType,
 } from "@/lib/events/event-practical-details";
+import { EVENT_QUICK_VIEW_SELECT } from "@/lib/events/event-selects";
+import {
+  createServerErrorReference,
+  logServerError,
+} from "@/lib/errors/server-error";
 import {
   getPageParam,
   getSearchParam,
@@ -245,7 +251,11 @@ export default async function EventsPage({
   const baseUrl = await getServerBaseUrl();
   const platformSchoolResult = actor.isPlatformAdmin
     ? await getPlatformEventSchools(supabase)
-    : { errorCode: null, schools: [] as PlatformSchoolOption[] };
+    : {
+        errorCode: null,
+        errorReference: null,
+        schools: [] as PlatformSchoolOption[],
+      };
   const platformSchools = platformSchoolResult.schools;
   const requestedSchoolId = getSearchParam(params.school);
   const selectedPlatformSchool = actor.isPlatformAdmin
@@ -339,10 +349,15 @@ export default async function EventsPage({
     platformSchoolId: selectedPlatformSchool?.id ?? null,
     },
   );
+  const eventsErrorReference = eventsError
+    ? createServerErrorReference("EVT-LIST")
+    : null;
   if (eventsError) {
-    console.error("events.query.filtered-events failed", {
-      code: eventsError.code,
+    logServerError("events.query.filtered-events failed", eventsError, {
+      operation: "event_list",
       platformAdmin: isPlatformAdmin,
+      referenceId: eventsErrorReference,
+      schemaError: isEventSchemaError(eventsError.code),
       schoolId: selectedPlatformSchool?.id ?? null,
     });
   }
@@ -652,7 +667,10 @@ export default async function EventsPage({
           </p>
           {platformSchoolResult.errorCode ? (
             <div className="error-box mt-3" role="alert">
-              {t("events.errors.loadUnavailable")}
+              {tf("events.errors.loadUnavailableWithReference", {
+                reference:
+                  platformSchoolResult.errorReference ?? "EVT-SCHOOLS",
+              })}
             </div>
           ) : null}
         </section>
@@ -827,7 +845,9 @@ export default async function EventsPage({
         {eventsError ? (
           <div className="p-4">
             <div className="error-box" role="alert">
-              {t("events.errors.loadUnavailable")}
+              {tf("events.errors.loadUnavailableWithReference", {
+                reference: eventsErrorReference ?? "EVT-LIST",
+              })}
             </div>
           </div>
         ) : selectedView === "month" ? (
@@ -1258,9 +1278,7 @@ async function getFilteredEvents(
 
   let query = client
     .from("events")
-    .select(
-      "id, school_id, club_id, created_by_profile_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
-    );
+    .select(EVENT_QUICK_VIEW_SELECT);
 
   if (isPlatformAdmin) {
     if (platformSchoolId) {
@@ -1452,12 +1470,22 @@ async function getPlatformEventSchools(supabase: Awaited<ReturnType<typeof creat
   );
 
   if (error) {
-    console.error("events.query.platform-schools failed", { code: error.code });
-    return { errorCode: error.code, schools: [] as PlatformSchoolOption[] };
+    const errorReference = createServerErrorReference("EVT-SCHOOLS");
+    logServerError("events.query.platform-schools failed", error, {
+      operation: "platform_event_schools",
+      referenceId: errorReference,
+      schemaError: isEventSchemaError(error.code),
+    });
+    return {
+      errorCode: error.code,
+      errorReference,
+      schools: [] as PlatformSchoolOption[],
+    };
   }
 
   return {
     errorCode: null,
+    errorReference: null,
     schools: (data ?? []) as PlatformSchoolOption[],
   };
 }
@@ -1578,7 +1606,7 @@ async function getLeaderClubOptions(
     () =>
       admin
         .from("club_memberships")
-        .select("clubs(id, name)")
+        .select("clubs!club_memberships_club_school_fk(id, name)")
         .eq("school_id", profile.school_id)
         .eq("student_roster_id", currentStudent.id)
         .eq("role", "leader")

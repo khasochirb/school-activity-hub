@@ -21,6 +21,7 @@ import {
   formatEventCost,
   type EventCostType,
 } from "@/lib/events/event-practical-details";
+import { EVENT_QUICK_VIEW_SELECT } from "@/lib/events/event-selects";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import {
   formatDateTime,
@@ -1219,7 +1220,10 @@ async function getJoinedClubCount(
   const { count } = await timeServer("dashboard.query.joined-club-count", () =>
     admin
       .from("club_memberships")
-      .select("id, clubs!inner(id)", { count: "exact", head: true })
+      .select("id, clubs!club_memberships_club_school_fk!inner(id)", {
+        count: "exact",
+        head: true,
+      })
       .eq("school_id", schoolId)
       .eq("student_roster_id", studentRosterId)
       .eq("status", "active")
@@ -1240,7 +1244,10 @@ async function getRegisteredUpcomingEventCount(
     () =>
       admin
         .from("event_attendees")
-        .select("id, events!inner(id)", { count: "exact", head: true })
+        .select("id, events!event_attendees_event_school_fk!inner(id)", {
+          count: "exact",
+          head: true,
+        })
         .eq("school_id", schoolId)
         .eq("student_roster_id", studentRosterId)
         .eq("status", "registered")
@@ -1278,9 +1285,7 @@ async function getUpcomingEvents(
     () =>
       admin
         .from("events")
-        .select(
-          "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
-        )
+        .select(EVENT_QUICK_VIEW_SELECT)
         .eq("school_id", schoolId)
         .eq("status", "approved")
         .gte("starts_at", now)
@@ -1490,7 +1495,7 @@ async function getRecentCheckins(
       admin
         .from("attendance_checkins")
         .select(
-          "id, checked_in_at, method, events(title), student_rosters(first_name, last_name)",
+          "id, checked_in_at, method, events!attendance_checkins_event_school_fk(title), student_rosters!attendance_checkins_student_school_fk(first_name, last_name)",
         )
         .eq("school_id", schoolId)
         .eq("result", "success")

@@ -2,7 +2,9 @@
 
 import {
   useActionState,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -141,6 +143,7 @@ export function CreateEventForm({
   const [endTime, setEndTime] = useState("");
   const [costType, setCostType] = useState<EventCostType | "">("");
   const [clientError, setClientError] = useState("");
+  const submissionIdRef = useRef<HTMLInputElement>(null);
   const startsAtValue = eventDate && startTime ? `${eventDate}T${startTime}` : "";
   const endsAtValue = eventDate && endTime ? `${eventDate}T${endTime}` : "";
   const schedulePreview = useMemo(() => {
@@ -157,6 +160,13 @@ export function CreateEventForm({
 
     return formatSchedulePreview(startsAt, endsAt, locale);
   }, [endTime, eventDate, locale, startTime]);
+
+  useEffect(() => {
+    const input = submissionIdRef.current;
+    if (input && (!input.value || state.eventId)) {
+      input.value = crypto.randomUUID();
+    }
+  }, [state.eventId]);
 
   if (!canCreate) {
     return (
@@ -210,6 +220,7 @@ export function CreateEventForm({
       className="compact-form-xl flex flex-col gap-3"
       onSubmit={handleSubmit}
     >
+      <input ref={submissionIdRef} name="submission_id" type="hidden" />
       <ActionToast message={clientError} success={false} />
       <ActionToast message={state.message} success={state.success} />
       {platformSchool ? (

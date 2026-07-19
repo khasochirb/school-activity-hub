@@ -27,6 +27,29 @@ with expected_policies(table_name, policy_name) as (
     case when to_regprocedure('public.current_platform_admin_can_use_event_school(uuid)') is not null then 'PASS' else 'FAIL' end,
     coalesce(to_regprocedure('public.current_platform_admin_can_use_event_school(uuid)')::text, 'missing')
   union all
+  select 'Phase 4A/4B1 event columns',
+    case when (
+      select count(*)
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'events'
+        and column_name in (
+          'responsible_staff_id', 'eligibility_notes', 'experience_level',
+          'accessibility_notes', 'cost_type', 'cost_amount', 'cost_currency',
+          'cost_notes', 'required_materials', 'expected_commitment'
+        )
+    ) = 10 then 'PASS' else 'FAIL' end,
+    '10 required event columns'
+  union all
+  select 'responsible-staff relationship',
+    case when exists (
+      select 1
+      from pg_constraint
+      where conrelid = 'public.events'::regclass
+        and conname = 'events_responsible_staff_school_fk'
+    ) then 'PASS' else 'FAIL' end,
+    'events_responsible_staff_school_fk'
+  union all
   select 'platform event school RPC',
     case when to_regprocedure('public.get_platform_event_school_options()') is not null then 'PASS' else 'FAIL' end,
     coalesce(to_regprocedure('public.get_platform_event_school_options()')::text, 'missing')

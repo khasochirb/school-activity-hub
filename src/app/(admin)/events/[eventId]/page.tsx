@@ -29,6 +29,7 @@ import {
   formatEventCost,
   type EventCostType,
 } from "@/lib/events/event-practical-details";
+import { EVENT_DETAIL_SELECT } from "@/lib/events/event-selects";
 import { canViewEvent } from "@/lib/events/event-visibility";
 import { getServerBaseUrl } from "@/lib/server-url";
 import { timeServer } from "@/lib/server-timing";
@@ -1009,9 +1010,7 @@ async function getEventById(
   const { data: event } = await timeServer("events.detail.query.event", () =>
     admin
       .from("events")
-      .select(
-        "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, submitted_at, approved_at, rejection_reason, created_at, updated_at, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
-      )
+      .select(EVENT_DETAIL_SELECT)
       .eq("id", eventId)
       .maybeSingle<EventRecord>(),
   );

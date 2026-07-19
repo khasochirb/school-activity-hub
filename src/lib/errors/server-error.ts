@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomBytes } from "node:crypto";
+
 type SafeLogValue = boolean | null | number | string | undefined;
 
 export function logServerError(
@@ -23,6 +25,16 @@ export function logServerError(
     ...sanitizeMetadata(metadata),
     ...safeDetails,
   });
+}
+
+export function createServerErrorReference(prefix: string) {
+  const normalizedPrefix = prefix
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, "")
+    .slice(0, 16);
+  const suffix = randomBytes(4).toString("hex").toUpperCase();
+
+  return `${normalizedPrefix || "ERR"}-${suffix}`;
 }
 
 function sanitizeMetadata(metadata: Record<string, SafeLogValue>) {

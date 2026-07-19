@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentEventActor, isEventStaffActor } from "@/lib/auth/event-access";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { EVENT_ATTENDANCE_SELECT } from "@/lib/events/event-selects";
 import {
   createQrCodeMatrix,
   createQrSvgPath,
@@ -134,7 +135,7 @@ export default async function EventAttendancePage({
   const admin = createAdminClient();
   let eventQuery = supabase
     .from("events")
-    .select("id, school_id, title, location, starts_at, ends_at, risk_level, permission_required, permission_note, status")
+    .select(EVENT_ATTENDANCE_SELECT)
     .eq("id", eventId)
     .eq("status", "approved");
 

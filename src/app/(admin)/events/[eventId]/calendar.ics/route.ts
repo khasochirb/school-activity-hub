@@ -4,6 +4,7 @@ import {
   type CalendarEvent,
 } from "@/lib/events/event-calendar";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
+import { EVENT_CALENDAR_EXPORT_SELECT } from "@/lib/events/event-selects";
 import { canViewEvent } from "@/lib/events/event-visibility";
 import { absoluteServerUrl, getServerBaseUrl } from "@/lib/server-url";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -46,9 +47,7 @@ export async function GET(
   const admin = createAdminClient();
   const { data: rawEvent } = await supabase
     .from("events")
-    .select(
-      "id, school_id, title, description, location, starts_at, ends_at, status, created_at",
-    )
+    .select(EVENT_CALENDAR_EXPORT_SELECT)
     .eq("id", eventId)
     .maybeSingle<{
       created_at: string;

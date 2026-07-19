@@ -21,6 +21,7 @@ $platformEventsPreflightPath = Join-Path $repositoryRoot "supabase/production-re
 $platformEventsMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180004_add_global_platform_admin_event_access.sql"
 $platformEventsPostflightPath = Join-Path $repositoryRoot "supabase/production-readiness/platform-admin-events-postflight.sql"
 $platformEventsTestPath = Join-Path $PSScriptRoot "platform-admin-events.sql"
+$postgrestEventTestPath = Join-Path $PSScriptRoot "postgrest-event-regression.mjs"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
 $phase4b1TestPath = Join-Path $PSScriptRoot "phase4b1-event-practical-details.sql"
@@ -328,6 +329,53 @@ grant all on schema public to postgres, service_role;
   $platformEventsTestOutput |
     Where-Object { $_ -match 'ok - |PLATFORM_ADMIN_EVENTS_TESTS_PASSED' } |
     Write-Output
+
+  $previousPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $localStatus = @(
+      & npm.cmd exec supabase -- --workdir $localProjectRoot status -o env 2>&1 |
+        ForEach-Object { $_.ToString() }
+    )
+    $statusExitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  if ($statusExitCode -ne 0) {
+    throw "Disposable Supabase API status failed with exit code $statusExitCode."
+  }
+
+  function Get-LocalStatusValue([string]$name) {
+    $prefix = "$name="
+    $line = $localStatus | Where-Object { $_.StartsWith($prefix) } | Select-Object -First 1
+    if (-not $line) {
+      throw "The disposable local status did not provide $name."
+    }
+    $value = $line.Substring($prefix.Length).Trim().Trim('"')
+    if (-not $value) {
+      throw "The disposable local status provided an empty $name."
+    }
+    return $value
+  }
+
+  $previousLocalApiUrl = $env:LOCAL_SUPABASE_URL
+  $previousLocalAnonKey = $env:LOCAL_SUPABASE_ANON_KEY
+  $previousLocalJwtSecret = $env:LOCAL_SUPABASE_JWT_SECRET
+  try {
+    $env:LOCAL_SUPABASE_URL = Get-LocalStatusValue "API_URL"
+    $env:LOCAL_SUPABASE_ANON_KEY = Get-LocalStatusValue "ANON_KEY"
+    $env:LOCAL_SUPABASE_JWT_SECRET = Get-LocalStatusValue "JWT_SECRET"
+    $postgrestOutput = @(& node $postgrestEventTestPath 2>&1 | ForEach-Object { $_.ToString() })
+    Assert-LastExitCode "PostgREST Events regression tests"
+  } finally {
+    $env:LOCAL_SUPABASE_URL = $previousLocalApiUrl
+    $env:LOCAL_SUPABASE_ANON_KEY = $previousLocalAnonKey
+    $env:LOCAL_SUPABASE_JWT_SECRET = $previousLocalJwtSecret
+  }
+  if (($postgrestOutput -join "`n") -notmatch 'POSTGREST_EVENT_REGRESSION_TESTS_PASSED') {
+    throw "PostgREST Events regression tests did not emit their success marker."
+  }
+  Write-Output "POSTGREST_EVENT_REGRESSION_TESTS_PASSED"
 
   Invoke-PsqlText -database "postgres" -sql "drop database if exists $expectedDatabase with (force); create database $expectedDatabase;"
   Invoke-PsqlFile -database $expectedDatabase -path $expectedAuthPath

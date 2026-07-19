@@ -18,6 +18,7 @@ import {
   formatEventCost,
   type EventCostType,
 } from "@/lib/events/event-practical-details";
+import { EVENT_APPROVAL_SELECT } from "@/lib/events/event-selects";
 import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -106,9 +107,7 @@ export default async function ApprovalsPage({
 
   let eventsQuery = supabase
     .from("events")
-    .select(
-      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment, submitted_at, created_at",
-    )
+    .select(EVENT_APPROVAL_SELECT)
     .eq("status", "pending_approval");
   if (!actor.isPlatformAdmin && actor.profile) {
     eventsQuery = eventsQuery.eq("school_id", actor.profile.school_id);
