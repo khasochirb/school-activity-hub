@@ -149,7 +149,6 @@ test("sensitive server actions perform their own identity or platform check", ()
     "src/app/(admin)/events/[eventId]/attendance/actions.ts",
     "src/app/(admin)/invite-codes/actions.ts",
     "src/app/(admin)/profile/actions.ts",
-    "src/app/(admin)/privacy/requests/actions.ts",
     "src/app/(admin)/school-connections/actions.ts",
     "src/app/(admin)/settings/actions.ts",
     "src/app/(admin)/staff/actions.ts",

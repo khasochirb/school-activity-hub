@@ -14,6 +14,9 @@ $fixtureGrantsPath = Join-Path $PSScriptRoot "fixtures/pre_phase_3a_runtime_gran
 $migrationPath = Join-Path $repositoryRoot "supabase/migrations/202607170001_add_safeguarding_privacy_foundations.sql"
 $phase4aMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180001_add_event_decision_information.sql"
 $phase4b1MigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180002_add_event_practical_details.sql"
+$simplificationPreflightPath = Join-Path $repositoryRoot "supabase/production-readiness/phase3-safety-simplification-preflight.sql"
+$simplificationMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180003_simplify_safety_reporting.sql"
+$simplificationPostflightPath = Join-Path $repositoryRoot "supabase/production-readiness/phase3-safety-simplification-postflight.sql"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
 $phase4b1TestPath = Join-Path $PSScriptRoot "phase4b1-event-practical-details.sql"
@@ -252,6 +255,27 @@ grant all on schema public to postgres, service_role;
 
   Invoke-PsqlFile -database "postgres" -path $phase4b1MigrationPath
   Write-Output "Applied only 202607180002_add_event_practical_details.sql."
+
+  $preflightOutput = Invoke-PsqlFile -database "postgres" -path $simplificationPreflightPath -Capture
+  $preflightText = $preflightOutput -join "`n"
+  if ($preflightText -notmatch 'Phase 3 safety simplification preflight decision\|PASS\|') {
+    throw "Phase 3 safety simplification preflight did not return PASS."
+  }
+  $preflightOutput |
+    Where-Object { $_ -match 'Phase 3 safety simplification preflight decision|migration history' } |
+    Write-Output
+
+  Invoke-PsqlFile -database "postgres" -path $simplificationMigrationPath
+  Write-Output "Applied only 202607180003_simplify_safety_reporting.sql."
+
+  $postflightOutput = Invoke-PsqlFile -database "postgres" -path $simplificationPostflightPath -Capture
+  $postflightText = $postflightOutput -join "`n"
+  if ($postflightText -notmatch 'Phase 3 safety simplification postflight decision\|PASS\|') {
+    throw "Phase 3 safety simplification postflight did not return PASS."
+  }
+  $postflightOutput |
+    Where-Object { $_ -match 'Phase 3 safety simplification postflight decision|migration history' } |
+    Write-Output
 
   $testOutput = Invoke-PsqlFile -database "postgres" -path $testPath -Capture
   $testText = $testOutput -join "`n"

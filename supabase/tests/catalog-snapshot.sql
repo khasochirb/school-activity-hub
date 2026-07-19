@@ -12,7 +12,9 @@ from (
   union all
 
   select
-    'column|' || c.relname || '|' || a.attnum::text || '|' || a.attname
+    'column|' || c.relname || '|'
+      || row_number() over (partition by c.oid order by a.attnum)::text
+      || '|' || a.attname
       || '|type=' || pg_catalog.format_type(a.atttypid, a.atttypmod)
       || '|notnull=' || a.attnotnull::text
       || '|default=' || coalesce(pg_get_expr(d.adbin, d.adrelid), '')

@@ -70,7 +70,7 @@ export default async function MySafetyReportsPage() {
                 />
                 {report.acknowledged_at ? (
                   <ReceiptItem
-                    label={t("safety.myReports.acknowledgedAt")}
+                    label={t("safety.myReports.reviewStartedAt")}
                     value={formatDateTime(report.acknowledged_at, locale)}
                   />
                 ) : null}
@@ -126,10 +126,10 @@ function categoryLabel(value: string, t: (key: string) => string) {
 
 function statusLabel(value: string, t: (key: string) => string) {
   const keyByStatus: Record<string, string> = {
-    acknowledged: "acknowledged",
+    acknowledged: "beingReviewed",
     closed: "closed",
-    external_referral: "externalReferral",
-    in_review: "inReview",
+    external_referral: "beingReviewed",
+    in_review: "beingReviewed",
     submitted: "submitted",
   };
 

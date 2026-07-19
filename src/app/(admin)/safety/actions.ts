@@ -25,11 +25,11 @@ const concernCategories = new Set([
 ]);
 
 const reportStatuses = new Set([
-  "acknowledged",
   "in_review",
-  "external_referral",
   "closed",
 ]);
+
+const safetyResponseTeamMaximum = 3;
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -189,22 +189,61 @@ export async function updateSafeguardingDesignation(
   }
 
   if (desiredStatus === "active") {
-    const { data: targetProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("id", targetProfileId)
-      .eq("school_id", adminProfile.school_id)
-      .eq("status", "active")
-      .in("role", ["school_admin", "teacher"])
-      .maybeSingle<{ id: string }>();
+    const [targetProfileResult, activeDesignationResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", targetProfileId)
+        .eq("school_id", adminProfile.school_id)
+        .eq("status", "active")
+        .in("role", ["school_admin", "teacher"])
+        .maybeSingle<{ id: string }>(),
+      supabase
+        .from("safeguarding_staff_designations")
+        .select("profile_id")
+        .eq("school_id", adminProfile.school_id)
+        .eq("status", "active")
+        .returns<{ profile_id: string }[]>(),
+    ]);
 
-    if (profileError) {
-      logServerError("Safeguarding designation profile lookup failed", profileError);
+    if (targetProfileResult.error || activeDesignationResult.error) {
+      logServerError(
+        "Safety response team eligibility lookup failed",
+        targetProfileResult.error ?? activeDesignationResult.error,
+      );
       return fail(t("safety.designations.errors.updateFailed"));
     }
 
-    if (!targetProfile) {
+    if (!targetProfileResult.data) {
       return fail(t("safety.designations.errors.ineligibleProfile"));
+    }
+
+    if (existing?.status !== "active") {
+      const activeProfileIds = (activeDesignationResult.data ?? []).map(
+        (designation) => designation.profile_id,
+      );
+
+      if (activeProfileIds.length > 0) {
+        const { count, error: activeProfileError } = await supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("school_id", adminProfile.school_id)
+          .eq("status", "active")
+          .in("role", ["school_admin", "teacher"])
+          .in("id", activeProfileIds);
+
+        if (activeProfileError) {
+          logServerError(
+            "Safety response team active-profile count failed",
+            activeProfileError,
+          );
+          return fail(t("safety.designations.errors.updateFailed"));
+        }
+
+        if ((count ?? 0) >= safetyResponseTeamMaximum) {
+          return fail(t("safety.designations.errors.limitReached"));
+        }
+      }
     }
   }
 
@@ -232,7 +271,12 @@ export async function updateSafeguardingDesignation(
       });
 
   if (result.error) {
-    logServerError("Safeguarding designation update failed", result.error);
+    logServerError("Safety response team designation update failed", result.error);
+
+    if (result.error.code === "P0001") {
+      return fail(t("safety.designations.errors.limitReached"));
+    }
+
     return fail(t("safety.designations.errors.updateFailed"));
   }
 
@@ -269,15 +313,15 @@ function parseRelatedContext(value: string) {
 
 function isAllowedReportTransition(current: string, next: string) {
   if (current === "submitted") {
-    return next === "acknowledged";
+    return next === "in_review";
   }
 
   if (current === "acknowledged") {
-    return ["in_review", "external_referral", "closed"].includes(next);
+    return ["in_review", "closed"].includes(next);
   }
 
   if (current === "in_review") {
-    return ["external_referral", "closed"].includes(next);
+    return next === "closed";
   }
 
   return current === "external_referral" && next === "closed";

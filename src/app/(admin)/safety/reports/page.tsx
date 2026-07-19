@@ -19,7 +19,6 @@ type SafetyReport = {
   concern_category: string;
   created_at: string;
   description: string;
-  external_referral_at: string | null;
   id: string;
   immediate_contact_requested: boolean;
   related_club_id: string | null;
@@ -41,7 +40,7 @@ export default async function SafeguardingInboxPage() {
   const reportResult = await supabase
     .from("safety_reports")
     .select(
-      "id, reporter_profile_id, related_event_id, related_club_id, concern_category, description, immediate_contact_requested, status, acknowledged_at, external_referral_at, closed_at, created_at",
+      "id, reporter_profile_id, related_event_id, related_club_id, concern_category, description, immediate_contact_requested, status, acknowledged_at, closed_at, created_at",
     )
     .eq("school_id", profile.school_id)
     .order("created_at", { ascending: false })
@@ -170,14 +169,8 @@ export default async function SafeguardingInboxPage() {
                 <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                   {report.acknowledged_at ? (
                     <TimelineItem
-                      label={t("safety.myReports.acknowledgedAt")}
+                      label={t("safety.myReports.reviewStartedAt")}
                       value={formatDateTime(report.acknowledged_at, locale)}
-                    />
-                  ) : null}
-                  {report.external_referral_at ? (
-                    <TimelineItem
-                      label={t("safety.inbox.externalReferralAt")}
-                      value={formatDateTime(report.external_referral_at, locale)}
                     />
                   ) : null}
                   {report.closed_at ? (
@@ -238,10 +231,10 @@ function categoryLabel(value: string, t: (key: string) => string) {
 
 function statusLabel(value: string, t: (key: string) => string) {
   const keys: Record<string, string> = {
-    acknowledged: "acknowledged",
+    acknowledged: "beingReviewed",
     closed: "closed",
-    external_referral: "externalReferral",
-    in_review: "inReview",
+    external_referral: "beingReviewed",
+    in_review: "beingReviewed",
     submitted: "submitted",
   };
 
@@ -250,10 +243,10 @@ function statusLabel(value: string, t: (key: string) => string) {
 
 function getWorkflowOptions(status: string, t: (key: string) => string) {
   const nextByStatus: Record<string, string[]> = {
-    acknowledged: ["in_review", "external_referral", "closed"],
+    acknowledged: ["closed"],
     external_referral: ["closed"],
-    in_review: ["external_referral", "closed"],
-    submitted: ["acknowledged"],
+    in_review: ["closed"],
+    submitted: ["in_review"],
   };
 
   return (nextByStatus[status] ?? []).map((value) => ({

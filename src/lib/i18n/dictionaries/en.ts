@@ -675,7 +675,7 @@ export const en = {
     platformConnections: "Platform Connections",
     platformAdmins: "Platform Admins",
     profile: "Profile",
-    privacy: "Privacy and data rights",
+    privacy: "Privacy",
     reports: "Activity Reports",
     safeguardingInbox: "Safeguarding inbox",
     schoolConnections: "School Network",
@@ -2029,14 +2029,14 @@ export const en = {
       back: "Back to safety and support",
     },
     cards: {
-      designationsAction: "Manage designations",
+      designationsAction: "Manage response team",
       designationsDescription:
-        "Choose the trusted school staff who may open and respond to confidential reports.",
-      designationsTitle: "Safeguarding staff",
+        "Choose up to three trusted staff who may open and respond to confidential reports.",
+      designationsTitle: "Safety response team",
       inboxAction: "Open restricted inbox",
       inboxDescription:
         "Review confidential same-school reports and record minimal workflow updates.",
-      inboxTitle: "Restricted safeguarding inbox",
+      inboxTitle: "Safety response inbox",
       myReportsAction: "View my report status",
       myReportsDescription:
         "See the safe status and response timestamps for reports you submitted.",
@@ -2065,10 +2065,13 @@ export const en = {
     description:
       "Find clear safety information, submit a confidential concern, or review the safe status of your own report.",
     designations: {
+      activeCount: "{count} of {maximum} responders",
+      activeCountHelp:
+        "The response team can include at most three active teachers or school admins.",
       actions: {
-        activate: "Designate staff member",
-        activating: "Designating...",
-        deactivate: "Remove designation",
+        activate: "Add to response team",
+        activating: "Adding...",
+        deactivate: "Remove from response team",
         deactivating: "Removing...",
       },
       assignedAt: "Originally assigned",
@@ -2079,18 +2082,19 @@ export const en = {
       errors: {
         ineligibleProfile: "Choose an active teacher or school admin from your school.",
         invalidSelection: "Choose a valid staff member and designation status.",
-        loadFailed: "Safeguarding staff could not be loaded. Refresh and try again.",
+        limitReached: "The safety response team already has three active responders.",
+        loadFailed: "The safety response team could not be loaded. Refresh and try again.",
         noChange: "This safeguarding designation already has that status.",
-        updateFailed: "The safeguarding designation could not be updated.",
+        updateFailed: "The safety response team could not be updated.",
       },
       success: {
-        activated: "Safeguarding staff member designated.",
-        deactivated: "Safeguarding designation removed.",
+        activated: "Staff member added to the safety response team.",
+        deactivated: "Staff member removed from the safety response team.",
       },
-      title: "Safeguarding staff designations",
+      title: "Safety response team",
       unassigned: "Not designated",
       warningDescription:
-        "Give this access only to trained, approved staff. The safeguarding lead, backup, monitored hours, and response process still require formal school approval.",
+        "Give this access only to trained, approved staff. A school psychologist uses an existing teacher or school-admin account; no separate role is created.",
       warningTitle: "Restricted responsibility",
     },
     errors: {
@@ -2107,7 +2111,7 @@ export const en = {
     inbox: {
       contactRequested: "Contact requested",
       description:
-        "A restricted operational inbox for designated same-school safeguarding staff.",
+        "A restricted inbox for the designated same-school safety response team.",
       emptyDescription: "No confidential reports are waiting in this school inbox.",
       emptyTitle: "No safety reports",
       externalReferralAt: "External or offline referral recorded",
@@ -2121,7 +2125,6 @@ export const en = {
       viewConfidentialDescription: "View confidential description",
     },
     myReports: {
-      acknowledgedAt: "Acknowledged",
       closedAt: "Closed",
       description:
         "Only reporter-safe status information is shown here. Report descriptions are not returned to this page.",
@@ -2129,6 +2132,7 @@ export const en = {
       emptyTitle: "No safety reports submitted",
       safeSubset:
         "For confidentiality, this page shows only category, status, your contact request, and response timestamps.",
+      reviewStartedAt: "Review started",
       submittedAt: "Submitted",
       title: "My safety reports",
     },
@@ -2157,10 +2161,8 @@ export const en = {
       title: "Report a safety concern",
     },
     status: {
-      acknowledged: "Acknowledged",
+      beingReviewed: "Being reviewed",
       closed: "Closed",
-      externalReferral: "External/offline referral",
-      inReview: "In review",
       submitted: "Submitted",
     },
     success: {
@@ -2170,133 +2172,45 @@ export const en = {
     },
     title: "Safety and support",
     urgent: {
-      immediateDanger:
-        "If there is immediate danger, contact a trusted adult, the school office, or the school's verified local emergency process now.",
-      notEmergency:
-        "This platform is not continuously monitored and is not an emergency or counselling service.",
-      title: "For urgent or immediate danger",
+      designatedOnly:
+        "Only the designated school safety response team can review the report.",
+      notEmergency: "This is not an emergency service.",
+      title: "Important safety notice",
+      urgentProcess:
+        "Urgent concerns should be reported directly to school staff or the appropriate local emergency process.",
     },
   },
   privacy: {
     access: {
       items: {
         platform:
-          "Platform-admin status does not automatically grant access to safeguarding narratives or school privacy requests.",
+          "Platform-admin status does not automatically grant access to safeguarding narratives or private school records.",
         school:
           "Authorized same-school staff receive only the access needed for their operational responsibility.",
-        self: "You can view your own profile and the requests you submit.",
+        self: "You can view your own profile and the school information made available to your account.",
       },
       title: "Who can access operational data",
     },
-    actions: {
-      back: "Back to privacy information",
-      makeRequest: "Make a data-rights request",
-    },
     commitments: {
-      noAutomaticDeletion:
-        "A request does not automatically delete records. Safeguarding, legal, attendance, audit, or backup exceptions require authorized review.",
       noSale: "The platform does not sell student data or use it for advertising.",
-      retention:
-        "Records are kept only for approved operational, safeguarding, legal, audit, and continuity needs. The exact schedule is [DECISION REQUIRED].",
       safeguardingLimits:
         "Safeguarding confidentiality may be limited when approved staff must follow the school's safety or legal process.",
       title: "Privacy commitments and limits",
     },
-    contact: {
-      dataController: "Data controller",
-      privacyContact: "Privacy contact",
-      title: "Approved contacts",
-    },
     description:
-      "Understand how operational data is used, who can access it, and how to request access, correction, export, or deletion review.",
-    manage: {
-      action: "Manage data-rights requests",
-      actions: {
-        save: "Update request",
-      },
+      "Understand what operational information the platform uses and how access is limited.",
+    manual: {
       description:
-        "School admins may process requests for their own school. The responsible privacy owner and response procedure still require formal approval.",
-      emptyDescription: "Submitted same-school requests will appear here for authorized review.",
-      emptyTitle: "No data-rights requests",
-      fields: {
-        response: "Safe response summary (optional)",
-        responseHelp:
-          "Keep this concise. Do not paste exports, safeguarding narratives, passwords, or other sensitive records here.",
-        status: "Next request status",
-      },
-      noDetails: "No additional details provided.",
-      requesterUnavailable: "Requester name unavailable",
-      reviewDescription:
-        "Verify identity and authority outside this screen before releasing, correcting, or deleting data. Use an approved secure delivery method.",
-      reviewTitle: "Authorized review required",
-      title: "Manage data-rights requests",
+        "Privacy requests are handled manually through the participating school. Contact the school directly through its approved process.",
+      title: "Manual privacy requests",
     },
     operational: {
       items: {
         account: "Verified account, school, role, profile, roster, and access information.",
         activities: "Club, activity, registration, permission, attendance, and announcement records needed to operate the service.",
-        safety: "Restricted safeguarding and rights-request records only when a user chooses those workflows.",
+        safety: "Restricted safety reports only when a user chooses that workflow.",
       },
       title: "Operational data used by the platform",
-    },
-    requests: {
-      actions: {
-        submit: "Submit request",
-        submitting: "Submitting...",
-        withdraw: "Withdraw request",
-        withdrawing: "Withdrawing...",
-      },
-      currentTitle: "My requests",
-      description:
-        "Submit and track a request about your operational data. This does not automatically change or delete records.",
-      emptyDescription: "Requests you submit will appear here with their current status.",
-      emptyTitle: "No data-rights requests submitted",
-      errors: {
-        denialReasonRequired: "Add a concise reason before denying this request.",
-        detailsTooLong: "Keep request details to 2,000 characters or fewer.",
-        invalidRequest: "This request cannot be changed.",
-        invalidUpdate: "Choose a valid next request status.",
-        loadFailed: "Data-rights requests could not be loaded. Refresh and try again.",
-        responseTooLong: "Keep the response summary to 1,000 characters or fewer.",
-        submitFailed: "The data-rights request could not be submitted.",
-        typeRequired: "Choose a request type.",
-        updateFailed: "The data-rights request could not be updated.",
-      },
-      fields: {
-        details: "Request details (optional)",
-        detailsHelp:
-          "Explain what you need without adding passwords, invite codes, or unrelated information.",
-        type: "Request type",
-      },
-      newDescription:
-        "Choose the closest request type. An authorized person will review identity, scope, retention, and any exceptions.",
-      newTitle: "Submit a request",
-      response: "Response summary",
-      reviewNotice:
-        "No legal response deadline is promised here until the school and data controller approve one.",
-      status: {
-        acknowledged: "Acknowledged",
-        actionRequired: "Action required",
-        completed: "Completed",
-        deniedWithReason: "Denied with reason",
-        submitted: "Submitted",
-        underReview: "Under review",
-        withdrawn: "Withdrawn",
-      },
-      submittedAt: "Submitted",
-      success: {
-        submitted: "Data-rights request submitted.",
-        updated: "Data-rights request updated.",
-        withdrawn: "Data-rights request withdrawn.",
-      },
-      title: "Data-rights requests",
-      types: {
-        access: "Access my operational data",
-        correction: "Correct my operational data",
-        deletionOrDeactivation: "Request deletion or deactivation review",
-        export: "Request a secure export",
-        researchWithdrawal: "Withdraw from future optional research linkage",
-      },
     },
     research: {
       items: {
@@ -2309,15 +2223,7 @@ export const en = {
       },
       title: "Operational use and research are separate",
     },
-    rights: {
-      items: {
-        access: "Request access, correction, secure export, or deletion/deactivation review.",
-        delivery: "Sensitive exports are not stored in an ordinary field or emailed automatically.",
-        review: "Authorized staff review identity, scope, retention exceptions, and a secure response method.",
-      },
-      title: "Your data-rights process",
-    },
-    title: "Privacy and data rights",
+    title: "Privacy",
   },
   workflow: {
     addStudents: "Add students",

@@ -68,7 +68,8 @@ export default async function SafetyReportPage() {
       <section className="notice-box notice-warning">
         <p className="font-bold">{t("safety.urgent.title")}</p>
         <p className="mt-2 text-sm leading-6">{t("safety.urgent.notEmergency")}</p>
-        <p className="mt-2 text-sm leading-6">{t("safety.urgent.immediateDanger")}</p>
+        <p className="mt-2 text-sm leading-6">{t("safety.urgent.urgentProcess")}</p>
+        <p className="mt-2 text-sm leading-6">{t("safety.urgent.designatedOnly")}</p>
       </section>
 
       <section className="section-card section-card-padded max-w-3xl">

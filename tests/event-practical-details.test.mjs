@@ -16,7 +16,10 @@ test("Phase 4B1 is one append-only migration immediately after Phase 4A", () => 
   const phase4aIndex = migrations.indexOf(phase4aMigration);
 
   assert.equal(migrations[phase4aIndex + 1], migrationName);
-  assert.equal(migrations.at(-1), migrationName);
+  assert.equal(
+    migrations[phase4aIndex + 2],
+    "202607180003_simplify_safety_reporting.sql",
+  );
 });
 
 test("cost uses nullable explicit type and exact decimal MNT storage", () => {

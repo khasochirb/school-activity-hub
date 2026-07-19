@@ -11,10 +11,12 @@ import {
 const initialState: SensitiveActionState = { message: "", success: false };
 
 export function DesignationForm({
+  activationDisabled,
   labels,
   profileId,
   status,
 }: {
+  activationDisabled: boolean;
   labels: { activate: string; activating: string; deactivate: string; deactivating: string };
   profileId: string;
   status: "active" | "inactive" | "unassigned";
@@ -31,6 +33,7 @@ export function DesignationForm({
       <input name="profile_id" type="hidden" value={profileId} />
       <input name="status" type="hidden" value={desiredStatus} />
       <DesignationSubmitButton
+        activationDisabled={activationDisabled}
         labels={labels}
         desiredStatus={desiredStatus}
       />
@@ -44,9 +47,11 @@ export function DesignationForm({
 }
 
 function DesignationSubmitButton({
+  activationDisabled,
   desiredStatus,
   labels,
 }: {
+  activationDisabled: boolean;
   desiredStatus: "active" | "inactive";
   labels: { activate: string; activating: string; deactivate: string; deactivating: string };
 }) {
@@ -56,7 +61,7 @@ function DesignationSubmitButton({
   return (
     <button
       className={`btn min-h-10 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${active ? "btn-primary" : "btn-danger"}`}
-      disabled={pending}
+      disabled={pending || (active && activationDisabled)}
       type="submit"
     >
       {pending

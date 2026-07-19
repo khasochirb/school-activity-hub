@@ -20,7 +20,8 @@ export default async function SafetyPage() {
       <section className="notice-box notice-warning">
         <h2 className="font-bold">{t("safety.urgent.title")}</h2>
         <p className="mt-2 text-sm leading-6">{t("safety.urgent.notEmergency")}</p>
-        <p className="mt-2 text-sm leading-6">{t("safety.urgent.immediateDanger")}</p>
+        <p className="mt-2 text-sm leading-6">{t("safety.urgent.urgentProcess")}</p>
+        <p className="mt-2 text-sm leading-6">{t("safety.urgent.designatedOnly")}</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">

@@ -1,199 +1,108 @@
-# Phase 3A Production Migration Runbook
+# Phase 3 Safety Simplification Deployment Runbook
 
-## Status and scope
+## Status
 
-- Package status: prepared for independent human governance and technical review.
-- Production execution status: **not authorized and not performed**.
-- Migration: `supabase/migrations/202607170001_add_safeguarding_privacy_foundations.sql`.
-- Preflight: `supabase/production-readiness/phase3a-preflight.sql`.
-- Postflight: `supabase/production-readiness/phase3a-postflight.sql`.
-- Application revision/deployment: `[DECISION REQUIRED]`.
-- Production operator and independent verifier: `[DECISION REQUIRED]`.
+- Local implementation only; no production execution is authorized by this document.
+- The original Phase 3A migration was previously applied manually to the shared test database.
+- Phase 4A and Phase 4B1 are locally implemented and must be present before this correction.
+- Production has no confirmed Supabase CLI migration-history relation. Missing history is informational, not proof of migration state.
+- The repository still lacks its original production baseline migration. Do not use `supabase db push`, migration repair, or manually created history rows.
 
-This runbook contains no project URL, credential, emergency number, or real student data. The original production baseline migration is not in this repository. The Phase 3C evidence therefore proves the recovered pre-Phase-3A fixture plus this one migration, not a reproducible historical migration chain.
+## Reviewed artifacts
 
-Owner-reported production observation: `supabase_migrations.schema_migrations` is absent. Production must therefore be treated as not currently managed through Supabase CLI migration history. Introducing CLI migration tracking is separate migration-governance work and is outside Phase 3A deployment.
-
-## Reviewed change
-
-The migration is additive. It creates four school-scoped tables, seven explicit indexes, eight restricted functions, workflow triggers, and 14 RLS policies. It does not alter existing profile roles or grant platform administrators access to sensitive records.
-
-Reviewed authenticated table privileges:
-
-| Table | Authenticated privileges | Final row boundary |
-|---|---|---|
-| `safeguarding_staff_designations` | `SELECT`, `INSERT`, `UPDATE` | School-admin and own-designation RLS policies |
-| `safety_reports` | `SELECT`, `INSERT`, `UPDATE` | Own submission plus active same-school safeguarding designation policies |
-| `data_rights_requests` | `SELECT`, `INSERT`, `UPDATE` | Own request and same-school school-admin processing policies |
-| `restricted_workflow_audit_events` | `SELECT` only | Target-specific safeguarding/admin read policies |
-
-`anon` and `PUBLIC` receive no table privileges. Authenticated users receive no `DELETE` privilege. Authenticated users cannot directly insert, update, or delete restricted audit events. All eight `SECURITY DEFINER` functions set `search_path = public`; `PUBLIC` execution is revoked, and authenticated execution is limited to the designation predicate and narrative-free receipt RPC.
-
-Composite foreign keys from profile, event, and club identifiers to the matching `school_id` enforce tenant consistency in addition to RLS. Platform-admin membership is not referenced by the new policies.
-
-## Compatibility and operational review
-
-| Review item | Phase 3D result |
+| Purpose | File |
 |---|---|
-| Existing application after additive migration | Compatible: no existing table, enum, policy, grant, or role is changed by this migration. |
-| New application before required objects exist | Fails safely at the affected workflow: server pages/actions log only safe error categories and return localized load/action errors. This is contingency behavior, not an approved deployment order. |
-| Sensitive navigation disclosure | Links expose no confidential count, report, request, or status payload. Inbox visibility is designation-gated and designation management is school-admin-gated. |
-| Sensitive prefetch | `/safety`, `/privacy`, and safeguarding-inbox navigation retain disabled intent prefetch; sensitive page links use `prefetch={false}`. |
-| Logging and error disclosure | The shared server logger records context plus safe code/name/status only. New actions do not send narratives/details to browser logs, Vercel logs, platform audit logs, or user-facing raw errors. |
-| English and Mongolian foundation | Both dictionaries contain the safety/privacy workflows. Full browser comprehension, wrapping, and accessibility review remains T-48/T-56 and is not claimed complete. |
-| Direct URL and action authorization | Sensitive pages call active-profile, school-admin, or designated-staff server guards; each mutation repeats its server-side guard and school scoping. |
-| Privileged client use | No service-role client was introduced. The new workflows use the request-bound server Supabase client and RLS. |
+| Safety-only read-only preflight | `supabase/production-readiness/phase3-safety-simplification-preflight.sql` |
+| Append-only correction | `supabase/migrations/202607180003_simplify_safety_reporting.sql` |
+| Safety-only read-only postflight | `supabase/production-readiness/phase3-safety-simplification-postflight.sql` |
+| Canonical design | `docs/pilot-readiness/SIMPLIFIED_SAFETY_REPORT_WORKFLOW.md` |
 
-No verified critical or high-severity defect remained after the authenticated table-grant correction made during Phase 3C. Existing broader pilot blockers and unrun browser/production checks remain open.
+The correction removes only the unused digital data-rights workflow after proving that its table and audit branch contain zero rows. It preserves `safeguarding_staff_designations`, `safety_reports`, `restricted_workflow_audit_events`, and all Phase 4A/4B1 event columns. It does not use broad schema drops or uncontrolled `CASCADE`.
 
-## Local validation evidence
+## Required approvals
 
-On 2026-07-17 the disposable localhost-only harness used PostgreSQL 17.6 at `127.0.0.1:55322`, applied only the recovered pre-Phase-3A fixture plus migration `202607170001`, and passed 63 PostgreSQL RLS/RPC assertions and semantic catalog comparison. The Phase 3D preflight and postflight scripts were also executed read-only against that disposable catalog. Actual table, constraint, index, RLS, policy, grant, and function checks passed independently of migration-history availability. The stack and test volumes were then removed.
+Before any shared-test execution, record:
 
-## Required approvals and evidence
+1. approved target project/environment identity;
+2. named approver, operator, and independent verifier;
+3. execution date/window and stop authority;
+4. SHA-256 checksum of all three reviewed SQL files;
+5. confirmation that Phase 3A, Phase 4A, and Phase 4B1 are the intended preceding state;
+6. current backup/PITR evidence for the shared test environment;
+7. confirmation that no real student or confidential safety data exists in the prototype environment.
 
-Do not schedule production execution until all of the following are recorded:
+Production requires a separate named production approval, fresh backup evidence, staging/shared-test evidence, and pilot governance sign-off. Passing shared-test SQL is not production authorization.
 
-1. Every applicable item in `GOVERNANCE_APPROVAL_REGISTER.md` has a named decision, approver, date, and evidence.
-2. The production deployment approver and pilot go-live approver are named separately.
-3. Any credential visible in an earlier screenshot has been rotated, with category, owner, date, and verification recorded but no value copied into evidence.
-4. A current Supabase backup or point-in-time recovery capability is verified by an authorized owner.
-5. The approved application revision and known-good rollback deployment are identified.
-6. A staging rehearsal has used the same migration and read-only checks through the controlled SQL procedure.
-7. A maintenance/change window, operator, verifier, monitoring owner, and stop authority are named.
+## Exact shared-test SQL procedure
 
-## Controlled deployment order
+Use the Supabase SQL Editor for the approved shared **test** project. Do not combine these files or run selected fragments.
 
-The order is mandatory:
+1. Manually verify the visible Supabase project is the approved shared test environment.
+2. Run the complete contents of `phase3-safety-simplification-preflight.sql`.
+3. Continue only when `Phase 3 safety simplification preflight decision` is `PASS`.
+4. Confirm `data-rights table is empty` and `data-rights audit branch is empty` are both `PASS`.
+5. Treat migration-history `NOT AVAILABLE` or `VERSION NOT RECORDED` as informational only. Do not create or repair history.
+6. Stop on any `FAIL`, SQL error, nonzero row count, unexpected dependency, uncertain project identity, or `ALREADY PRESENT` result.
+7. Independently verify the checksum of `202607180003_simplify_safety_reporting.sql`.
+8. Run the complete corrective migration exactly once.
+9. Run the complete contents of `phase3-safety-simplification-postflight.sql` immediately afterward.
+10. Continue only when `Phase 3 safety simplification postflight decision` and every actual-object check are `PASS`.
+11. Record checksums, execution date/time, approver, operator, verifier, project identity, preflight result, migration result, and postflight result. Do not record credentials or confidential row data.
 
-1. Obtain named safeguarding and privacy approvals.
-2. Confirm exposed credentials from earlier screenshots were rotated.
-3. Confirm a current Supabase backup or point-in-time recovery capability.
-4. Announce a controlled maintenance/change window.
-5. Run the read-only production preflight.
-6. Stop if any preflight expectation fails.
-7. Apply only the reviewed Phase 3A migration.
-8. Run the read-only postflight.
-9. Stop if any postflight expectation fails.
-10. Perform synthetic-account database and RPC smoke tests.
-11. Deploy the compatible application build.
-12. Perform route, authorization, bilingual, mobile, and accessibility smoke tests.
-13. Monitor errors and audit behavior.
-14. Record the deployment result.
+If preflight returns `ALREADY PRESENT`, do not reapply the correction. Run postflight and reconcile the result with the deployment record.
 
-The database migration must precede the application deployment because the new safety and privacy routes query the four new tables and two callable RPCs. The existing application remains compatible with the additive objects, while deploying the new application first would create an avoidable interval in which required relations are unavailable. Current new routes handle unavailable relations with localized safe errors, but that fallback is not a deployment strategy.
+## Preflight interpretation
 
-## Preflight procedure
+The preflight is read-only and authoritative from actual schema state. It checks:
 
-1. Open the SQL editor from the intended production Supabase project, using an authorized operator account.
-2. Match the visible provider project identity to the approved change record. The SQL cannot safely infer a Supabase project reference from portable PostgreSQL catalog metadata, so this is a mandatory human check.
-3. Run only `phase3a-preflight.sql`.
-4. Have the independent verifier review the `database_identity` row and every automated row.
-5. Save the result with operator, verifier, date/time, approved project identifier, and change record. Do not include credentials or record data.
-6. Continue only when `Phase 3A preflight decision` is `PASS` and every prerequisite is `PASS`. If it is `ALREADY PRESENT`, do not apply the migration; run postflight and investigate the existing deployment record. A `FAIL`, SQL error, partial object inventory, or uncertain project identity is a stop condition.
+- all three retained safety tables and six safety functions exist;
+- all ten Phase 4A and Phase 4B1 event columns already exist;
+- the old request table, its two functions, three triggers, and five policies exist in the expected shape;
+- the request table has zero rows;
+- the restricted audit table has zero data-rights rows;
+- the only foreign-key dependency is the reviewed restricted-audit reference;
+- migration history, when available, is reported separately.
 
-The preflight checks existing columns and constraints, helper functions, required extension and roles/enums, and the actual Phase 3A table/function/policy/index inventory. Migration history is informational only: if the optional relation is absent, the script reports `MIGRATION HISTORY: NOT AVAILABLE` and decides readiness from actual objects. Missing history is not proof that the migration is unapplied.
+The correction must not run if any data-rights row exists. That stop condition protects data instead of silently deleting it.
 
-## Migration application
+## Postflight interpretation
 
-1. Do **not** run `supabase db push`: the repository lacks its original baseline, so earlier migrations may be treated as unapplied.
-2. Do **not** create or repair `supabase_migrations` history and do not insert migration-history rows manually.
-3. Calculate and independently verify the SHA-256 checksum of `202607170001_add_safeguarding_privacy_foundations.sql`.
-4. In the intended production SQL Editor, use the approved controlled SQL procedure rehearsed in staging to execute the complete reviewed file atomically. Do not copy selected statements or mix unrelated SQL.
-5. Record the checksum, execution date/time, named approver, named operator, independent verifier, SQL Editor project identity, and result. Do not capture connection strings or tokens.
-6. If execution reports an error, stop and follow the matching rollback scenario below.
+The postflight is read-only and validates actual objects even when migration history is absent. It requires:
 
-## Postflight and synthetic smoke tests
+- the digital request table, functions, policies, triggers, and audit column are absent;
+- all three safety tables remain with RLS enabled;
+- anonymous and PUBLIC table/function access is absent;
+- authenticated users have no safety-table delete or direct audit-write access;
+- authenticated users can execute only `current_user_is_designated_safeguarding_staff(uuid)` and `get_my_safety_report_receipts()`;
+- all four trigger functions remain non-callable by authenticated users while internal triggers remain enabled;
+- the three-responder eligibility/concurrency guard exists;
+- platform-admin status is not part of narrative authorization;
+- audit metadata remains status-only;
+- all ten Phase 4A/4B1 event columns remain.
 
-1. Run only `phase3a-postflight.sql` immediately after migration.
-2. Continue only when `Phase 3A postflight decision` and every actual-object check are `PASS`. `NOT TRACKED` or `NOT RECORDED` on the informational migration-history row is permitted only when the manual deployment record is complete.
-3. Using synthetic accounts in the intended school boundary, verify:
-   - an active student can submit an own-school safety report but cannot read a narrative;
-   - the receipt RPC exposes only its seven reviewed fields;
-   - an ordinary teacher and non-designated admin cannot read narratives;
-   - active designated staff can read/update own-school reports and cannot access another school;
-   - a user can submit/read/withdraw only their own data-rights request;
-   - a same-school school admin can process a request;
-   - platform-admin membership alone grants no safety/privacy access;
-   - anonymous, direct delete, and direct restricted-audit writes fail;
-   - restricted audit metadata contains statuses only, never narratives or request details.
-4. Store only redacted IDs/statuses as evidence. Never copy report narratives, request details, exports, tokens, or student data into logs or tickets.
+## Synthetic smoke tests
 
-## Application smoke tests
+After a passing postflight, use synthetic accounts only:
 
-After deploying the approved application revision, use synthetic accounts to verify:
+1. An active student submits an own-school report and receives only the seven-field safe receipt.
+2. The reporter, another student, ordinary teacher, and non-designated school admin cannot select narratives.
+3. An active designated same-school responder can read and move a report from Submitted to Being reviewed to Closed.
+4. A designated responder cannot read another school's report.
+5. Platform-admin membership alone grants no report or audit access.
+6. Three eligible responders can be active; a fourth activation fails; deactivation permits a replacement.
+7. Inactive and role-changed designated profiles receive no access.
+8. Anonymous access, direct deletes, and direct audit writes fail.
+9. Trigger-created audit metadata contains statuses only and no narrative.
+10. Registration, attendance, Phase 4A, and Phase 4B1 event behavior still works.
 
-- logged-out and direct-URL denial;
-- student, teacher, school-admin, designated-staff, and platform-only boundaries;
-- `/safety`, `/safety/report`, `/safety/my-reports`, `/safety/reports`, `/safety/designations`, `/privacy`, `/privacy/requests`, and `/privacy/requests/manage`;
-- English and Mongolian copy, wrapping, and safe error states;
-- mobile navigation, keyboard focus, form errors, dark/light themes, and disabled sensitive prefetch;
-- server logs contain error categories/codes only and no payloads;
-- audit rows are created by triggers and contain no narrative fields.
+Do not paste report narratives, student details, tokens, invite codes, or credentials into evidence.
 
-## Monitoring and stop conditions
+## Stop and rollback
 
-Monitor application/server errors, failed Supabase requests, RLS denials outside expected negative tests, trigger/audit failures, and route availability. Stop affected use and notify the named incident, privacy, and safeguarding owners for any cross-school exposure, unauthorized narrative access, missing audit event, secret exposure, destructive mutation, or misleading emergency/reporting behavior.
+- **Before migration:** stop; no rollback is needed.
+- **Migration SQL error:** do not retry. Confirm transaction behavior, preserve catalog-only evidence, and obtain database review.
+- **Postflight failure:** stop application deployment and restrict the affected safety routes. Do not improvise drops.
+- **Application failure:** restore the known-good application deployment; do not remove retained safety tables or erase evidence.
+- **Unexpected request rows:** stop. Do not delete or export them through this runbook; escalate to the privacy/data owner for a separate reviewed plan.
 
-Monitoring owner, duration, alert route, and response target: `[DECISION REQUIRED]`.
-
-## Conservative rollback strategy
-
-No destructive rollback SQL is provided. Prefer application rollback and access restriction over schema deletion.
-
-### Failure before migration
-
-- Stop the change; no database rollback is needed.
-- Correct the approval, identity, backup, preflight, or scheduling failure through a new review.
-- Do not deploy the dependent application.
-
-### Migration failure inside its transaction
-
-- Confirm the approved migration mechanism rolled back the transaction.
-- Do not retry until the exact database error and catalog state have been reviewed.
-- Re-run the read-only preflight only after confirming no partial objects remain. Do not create, delete, or repair migration-history records.
-- If partial state exists, escalate to the database owner; do not improvise drops.
-
-### Postflight failure before application deployment
-
-- Do not deploy the new application.
-- Keep the prior application live because the migration is additive.
-- Restrict or disable access to new workflows if any route is already reachable.
-- Preserve catalog evidence and obtain database, safeguarding, and privacy review before corrective SQL.
-
-### Application deployment failure
-
-- Restore the prior known-good Vercel deployment.
-- Leave the additive database objects intact.
-- Verify prior login and core school workflows, then record the failure and rollback result.
-- Do not drop tables merely to match the prior application.
-
-### Security defect after real records exist
-
-- Immediately stop or restrict the affected route/account access and begin the approved incident process.
-- Preserve safeguarding narratives, privacy requests, and restricted audit evidence under authorized access.
-- Roll back the application or deploy a reviewed access-control fix as directed by incident leadership.
-- Never routinely delete or export sensitive rows during rollback.
-- Any destructive operation requires named safeguarding/privacy authorization, legal/retention review, a scoped backup, two-person execution, and a recorded verification plan.
-
-## Deployment record
-
-- Change record: `[DECISION REQUIRED]`
-- Approved revision and Phase 3A SQL SHA-256 checksum: `[DECISION REQUIRED]`
-- Production project confirmation: `[DECISION REQUIRED]`
-- Named approver / operator / independent verifier: `[DECISION REQUIRED]`
-- Backup/PITR evidence: `[DECISION REQUIRED]`
-- Preflight result: `[DECISION REQUIRED]`
-- Controlled SQL execution date/time and result: `[DECISION REQUIRED]`
-- Migration-history status (`NOT TRACKED`, `NOT RECORDED`, or `RECORDED`): `[DECISION REQUIRED]`
-- Postflight result: `[DECISION REQUIRED]`
-- Synthetic smoke result: `[DECISION REQUIRED]`
-- Application deployment and rollback target: `[DECISION REQUIRED]`
-- Post-deploy smoke and monitoring result: `[DECISION REQUIRED]`
-- Final outcome and approver: `[DECISION REQUIRED]`
-
-## Known technical debt
-
-The repository does not contain its original baseline production migration. The local Phase 3C fixture was historically recovered from `supabase/schema.sql`, and a test-only legacy `profiles` grant was reconstructed. This is not proof of production catalog state and must not be represented as a fully reproducible migration chain. Reconstructing, reviewing, and validating a canonical baseline remains separate technical debt.
-
-Supabase CLI migration-history adoption is also separate technical debt. It requires a reviewed baseline reconciliation and governance plan; it must not be bootstrapped by `db push`, migration repair, or manual history rows during the Phase 3A change.
+No destructive rollback SQL is provided. Any future production action requires its own reviewed deployment record.

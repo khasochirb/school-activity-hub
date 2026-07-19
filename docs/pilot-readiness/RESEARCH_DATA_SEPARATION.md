@@ -46,7 +46,7 @@ Any approved future research workflow must use logical and procedural separation
 
 ## Phase 3A workflow boundary
 
-The `research_withdrawal` data-rights request type is an intake signal only. It does not prove that research exists, does not alter operational access, and does not automatically delete a future linkage. An authorized privacy owner must verify whether any approved research system/linkage exists and route the request to the approved research custodian.
+The application does not provide a digital research-withdrawal or privacy-request workflow. Any question about optional future research linkage must be handled manually by the participating school and the approved research custodian. It does not alter operational access or automatically delete a future linkage.
 
 The UI explicitly explains the operational/research separation. It contains no research opt-in toggle because a toggle without an approved protocol, notice, comprehension process, age rules, custodian, and storage boundary would create false consent.
 

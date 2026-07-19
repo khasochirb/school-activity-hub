@@ -121,12 +121,12 @@ Urgent deactivation target and after-hours authority: `[DECISION REQUIRED]`.
 
 ## Incident escalation
 
-The platform is not an emergency or counselling service. The school safeguarding lead, backup, local referral path, and emergency wording remain Phase 3 decisions.
+The safety-report route is not an emergency or counselling service. Urgent concerns must be reported directly to school staff or the appropriate local emergency process. Only the designated same-school safety response team may review reports.
 
-Until that workflow is approved:
-
-- Do not invite students to submit confidential safeguarding disclosures through ordinary forms, announcements, support tickets, or logs.
-- Escalate any discovered child-safety concern immediately through the school's existing authorized safeguarding/emergency process.
+- Do not put safety narratives in ordinary forms, announcements, support tickets, analytics, platform audit logs, or general incident logs.
+- Escalate urgent child-safety concerns through the school's existing authorized safeguarding/emergency process rather than waiting for the platform workflow.
+- The response team has at most three active eligible staff accounts. A school psychologist uses an existing teacher or school-admin account; no special role exists.
+- Platform administrators do not receive report access unless they also hold a separately eligible and designated same-school staff profile.
 - Restrict technical incident access to people who need it.
 - Preserve evidence without copying full student records into general incident channels.
 - If the safe local route is unknown or unavailable, pause affected pilot operation and escalate to the accountable school/NDYP owner.

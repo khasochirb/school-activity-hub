@@ -86,34 +86,35 @@ Evidence required for review: saved command output, commit/revision identifier, 
 | T-32 | Restoration test | Approved isolated restore target and authorized operator | Restore a selected backup, validate integrity/authorization, then securely remove test copy | Restore completes within approved RTO; expected records/constraints/RLS/auth dependencies are validated; test copy is deleted | Backups are not useful until restore is proven | Not run | Dated run log, timings, validation, deletion proof, and sign-off |
 | T-33 | Deployment rollback | Protected preview and known-good deployment | Deploy a reversible test change, verify, then roll back | Service returns to known-good deployment within target; env values and data remain intact | Reduces school-day outage risk | Not run | Vercel deployment IDs, timings, checks, owner, and incident notes |
 
-## Safeguarding and data-rights authorization tests
+## Simplified safety-report authorization tests
 
-Local database evidence recorded 2026-07-17:
+Local database evidence recorded 2026-07-18:
 
 - Command: `powershell -ExecutionPolicy Bypass -File supabase/tests/run-phase3c-local.ps1`
-- Runtime: Docker Engine `29.6.1`, Supabase CLI `2.109.1`, PostgreSQL `17.6`, database host `127.0.0.1:55322`.
+- Runtime: Docker Engine `29.6.1`, Supabase CLI `2.109.1`, PostgreSQL `17.6`, database host `127.0.0.1:47022`.
 - Baseline: schema DDL was historically recovered from committed `HEAD:supabase/schema.sql` before Phase 3A and stripped before the fake-seed marker. The historical snapshot did not record legacy Data API grants, so the test harness separately reconstructs the existing authenticated `profiles` read grant required by profile RLS/designation checks. That grant is test-only and is not evidence of live production grants.
 - Isolation: the fixture and nested Supabase project live under `supabase/tests/`, automatic migrations/seeding are disabled, project-reference markers are rejected, and the disposable stack is removed after the run. No production migration, linked project, remote database, real user, or real student data was used.
-- Result: Phase 3A applied without SQL errors; 63 PostgreSQL assertions passed using `authenticated`/`anon` role and JWT-sub impersonation across two synthetic schools; the migrated catalog matched current `supabase/schema.sql` for application tables, columns, defaults, keys, constraints, indexes, routines, triggers, RLS, policies, and grants after excluding extension-owned routines and non-semantic function whitespace.
-- Correction: the first run found that the four Phase 3A tables had RLS policies but no authenticated table grants. The migration and canonical schema now grant only required RLS-governed operations; anonymous access, deletes, and direct restricted-audit writes remain revoked.
-- Limitation: this validates only the recovered pre-Phase-3A snapshot plus `202607170001_add_safeguarding_privacy_foundations.sql`. The full historical migration chain still lacks its original baseline and has not been proven clean-reset reproducible.
+- Current suite: the harness applies the historical Phase 3A foundation, Phase 4A, Phase 4B1, the read-only simplification preflight, and corrective migration `202607180003`; then it runs the safety-only postflight, RLS/RPC assertions, both event-phase suites, and semantic catalog comparison.
+- Result: safety preflight `PASS`, safety postflight `PASS`, 44 PostgreSQL safety assertions passed, both event-phase database suites passed, and the migrated catalog matched `supabase/schema.sql` for tables, logical columns, constraints, indexes, functions, triggers, RLS, policies, and grants.
+- Correction: the final model contains three retained safety tables and no digital data-rights table/functions/policies. Anonymous access, authenticated deletes, direct restricted-audit writes, and platform-admin automatic access remain denied.
+- Limitation: the full historical migration chain still lacks its original baseline and has not been proven clean-reset reproducible. Browser journeys and shared-test execution remain separate evidence.
 
 | ID | Scenario | Action | Expected result | Status |
 |---|---|---|---|---|
-| T-34 | Student submits own-school report | Submit through `/safety/report` and direct authenticated insert | Row is created for verified profile/school in `submitted`; no client-supplied foreign school is accepted | In progress: direct authenticated insert and forced-status reset passed locally; browser/server-action path not run |
+| T-34 | Student submits own-school report | Submit through `/safety/report` and direct authenticated insert | Row is created for verified profile/school in `submitted`; no client-supplied foreign school is accepted | In progress: direct authenticated insert and forced-status reset passed locally 2026-07-18; browser/server-action path not run |
 | T-35 | Student reads another report | Use a known same-school and cross-school report ID through table select and receipt RPC | No narrative or other report is returned; receipt RPC returns only caller's safe projection | Passed locally 2026-07-17 |
 | T-36 | Student changes report workflow | Directly update own/another report status | RLS rejects; row and audit history remain unchanged | Passed locally 2026-07-17 |
 | T-37 | Ordinary teacher browses reports | Open `/safety/reports` and query `safety_reports` before designation | Route redirects to `/safety`; direct select returns no rows | In progress: direct RLS denial passed; route behavior not run |
 | T-38 | Non-designated school admin browses reports | Open inbox/query known report before designation | No narrative access; designation-management access alone does not expose reports | In progress: direct narrative/audit denial passed; page path not run |
 | T-39 | Designated staff reads own school | Activate designation, keep session, open inbox/query own-school reports | Same-school narratives and allowed workflow updates work | In progress: designation, read, update, deactivation, inactive-profile, and role-change database paths passed; browser path not run |
 | T-40 | Designated staff reads another school | Query known School B report from designated School A profile | No row or audit event is returned; no mutation occurs | Passed locally 2026-07-17 |
-| T-41 | Platform admin without designation | Add active `platform_admins` row but no safeguarding designation | No narrative, report audit, or inbox access is gained | In progress: direct report and rights access denial passed; page path not run |
+| T-41 | Platform admin without designation | Add active `platform_admins` row but no safety response-team designation | No narrative, report audit, or inbox access is gained | In progress: direct report access denial is covered locally; page path not run |
 | T-42 | Logged-out report submission | Invoke authenticated report action/insert without session | Redirect/reject before mutation; no report/audit row appears | In progress: `anon` table/RPC denial passed; server-action redirect not run |
 | T-43 | Reporter safe receipt | Submit then call `get_my_safety_report_receipts()` | Only ID/category/status/contact flag/timestamps return; no description/staff identity/audit | Passed locally 2026-07-17; exact seven output fields verified |
-| T-44 | Own data-rights request | Submit request with a forged school ID attempt | Server ignores client school input; RLS ties row to authenticated profile/school | In progress: own-school insert, forced-state reset, and forged-school rejection passed; server-action path not run |
-| T-45 | Read another rights request | Query known same-school/School B request IDs as student/teacher | Only caller's own rows return | Passed locally 2026-07-17 |
-| T-46 | Client-supplied cross-school IDs | Submit related School B event/club or update School B request/report | Validation/RLS/FK rejects; School B remains unchanged | Passed locally 2026-07-17 for report school/event/club and rights read/update boundaries |
-| T-47 | Restricted audit metadata | Exercise designation, report, and rights transitions | Audit rows contain only safe action/target/status metadata; no narrative/details/response/export | Passed locally 2026-07-17; target-scoped reads and direct insert/update/delete denial verified |
+| T-44 | Response-team maximum | Activate three eligible same-school responders, then attempt a fourth | Three are accepted; fourth is rejected by the database and server boundary | Passed locally 2026-07-18; shared-test/browser confirmation pending |
+| T-45 | Response-team replacement | Deactivate one responder and activate another | Inactive designation no longer grants access or consumes an eligible active slot; replacement succeeds | Passed locally 2026-07-18; browser confirmation pending |
+| T-46 | Client-supplied cross-school IDs | Submit a related School B event or mutate a School B report/designation | Validation, RLS, and composite FKs reject; School B remains unchanged | Passed locally 2026-07-18 for report school/event and designation boundaries |
+| T-47 | Restricted audit metadata | Exercise designation and report transitions | Audit rows contain only action/target/status metadata; no narrative, details, password, invite code, or export | Passed locally 2026-07-18; target-scoped reads and direct writes are denied |
 | T-48 | English and Mongolian | Run safety/privacy submission, receipt, inbox, and error journeys | Copy is complete, accurate, wraps safely, and does not promise anonymity/emergency monitoring/deadline | Not run |
 | T-49 | Mobile navigation and themes | Use student/staff mobile drawer, forms, and restricted pages in light/dark/system | Links are reachable, body/drawer behave, no overflow, focus remains visible | Not run |
 | T-50 | Existing workflow regression | Re-run T-03 through T-18 and build checks | Student, teacher, admin, platform, cross-school, invite, event, attendance, export behavior is unchanged | Not run |
@@ -142,11 +143,6 @@ select id, school_id, reporter_profile_id, description, status
 from public.safety_reports
 order by created_at desc;
 
--- Direct rights test: ordinary users see own rows; same-school school_admin sees school rows.
-select id, school_id, requester_profile_id, request_type, status
-from public.data_rights_requests
-order by created_at desc;
-
 -- Restricted audit test: access depends on target_type and designation/school-admin rule.
 select action, target_type, metadata, created_at
 from public.restricted_workflow_audit_events
@@ -155,13 +151,13 @@ order by created_at desc;
 rollback;
 ```
 
-For mutation tests, capture target rows before/after, execute the action through the browser and a direct Supabase client using the same synthetic JWT, and preserve only redacted IDs/statuses in evidence. Do not paste report narratives or request details into test records, screenshots, tickets, or logs.
+For mutation tests, capture target rows before/after, execute the action through the browser and a direct Supabase client using the same synthetic JWT, and preserve only redacted IDs/statuses in evidence. Do not paste report narratives into test records, screenshots, tickets, or logs.
 
 ## Test completion rule
 
 Phase 2 technical evidence is not complete until all blocker tests have **Passed** or an accountable owner has recorded an approved safer alternative. T-30, T-31, and T-32 cannot be converted to Passed through source inspection alone.
 
-Phase 3A is not complete for pilot launch until T-34 through T-50 pass, safeguarding/privacy owners approve the operating procedures, and the migration is independently reviewed and applied to the intended non-production/production environments through change control.
+The simplified Phase 3 workflow is not complete for pilot launch until T-34 through T-50 pass, safeguarding/privacy owners approve the operating procedures, and the corrective migration is independently reviewed and applied to the intended environments through change control.
 
 ## Phase 3D production migration verification
 

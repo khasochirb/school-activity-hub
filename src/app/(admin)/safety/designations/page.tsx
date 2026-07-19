@@ -2,7 +2,11 @@ import Link from "next/link";
 import { requireSchoolAdminForSensitiveWorkflow } from "@/lib/auth/sensitive-workflows";
 import { logServerError } from "@/lib/errors/server-error";
 import { formatDateTime } from "@/lib/i18n/date-format";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyState, PageHeader, StatusBadge } from "../../_components/page-ui";
@@ -25,6 +29,8 @@ export default async function SafeguardingDesignationsPage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const profile = await requireSchoolAdminForSensitiveWorkflow();
   const supabase = await createClient();
   const [staffResult, designationResult] = await Promise.all([
@@ -57,6 +63,11 @@ export default async function SafeguardingDesignationsPage() {
   );
   const staff = staffResult.data ?? [];
   const hasLoadError = Boolean(staffResult.error || designationResult.error);
+  const activeResponderCount = staff.filter(
+    (staffMember) =>
+      staffMember.status === "active" &&
+      designations.get(staffMember.id)?.status === "active",
+  ).length;
 
   return (
     <div className="page-stack">
@@ -73,6 +84,18 @@ export default async function SafeguardingDesignationsPage() {
       <section className="notice-box notice-warning">
         <p className="font-bold">{t("safety.designations.warningTitle")}</p>
         <p className="mt-2 text-sm leading-6">{t("safety.designations.warningDescription")}</p>
+      </section>
+
+      <section className="section-card section-card-padded">
+        <p className="text-sm font-bold text-slate-900">
+          {tf("safety.designations.activeCount", {
+            count: activeResponderCount,
+            maximum: 3,
+          })}
+        </p>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          {t("safety.designations.activeCountHelp")}
+        </p>
       </section>
 
       {hasLoadError ? (
@@ -117,6 +140,9 @@ export default async function SafeguardingDesignationsPage() {
                   </div>
                   {staffMember.status === "active" || designationStatus === "active" ? (
                     <DesignationForm
+                      activationDisabled={
+                        designationStatus !== "active" && activeResponderCount >= 3
+                      }
                       labels={{
                         activate: t("safety.designations.actions.activate"),
                         activating: t("safety.designations.actions.activating"),

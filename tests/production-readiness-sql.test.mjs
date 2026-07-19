@@ -6,6 +6,12 @@ import test from "node:test";
 const root = process.cwd();
 const preflight = read("supabase/production-readiness/phase3a-preflight.sql");
 const postflight = read("supabase/production-readiness/phase3a-postflight.sql");
+const safetySimplificationPreflight = read(
+  "supabase/production-readiness/phase3-safety-simplification-preflight.sql",
+);
+const safetySimplificationPostflight = read(
+  "supabase/production-readiness/phase3-safety-simplification-postflight.sql",
+);
 
 function read(path) {
   return readFileSync(join(root, path), "utf8");
@@ -160,4 +166,67 @@ test("postflight decision depends on actual object checks, not migration history
   assert.match(postflight, /exact reviewed policy set/);
   assert.match(postflight, /exact authenticated table grants/);
   assert.match(postflight, /function definitions are hardened/);
+});
+
+test("safety simplification scripts safely tolerate absent migration history", () => {
+  for (const sql of [safetySimplificationPreflight, safetySimplificationPostflight]) {
+    assert.match(sql, /to_regclass\('supabase_migrations\.schema_migrations'\)/);
+    assert.doesNotMatch(
+      withoutHistoryQuery(sql),
+      /from\s+supabase_migrations\.schema_migrations/i,
+    );
+    assert.match(historyQuery(sql), /where\s+version\s*=\s*'202607180003'/i);
+  }
+
+  assert.match(safetySimplificationPreflight, /when not table_exists then 'NOT AVAILABLE'/);
+  assert.match(safetySimplificationPostflight, /when not table_exists then 'NOT TRACKED'/);
+});
+
+test("safety simplification preflight checks zero rows and exact dependencies", () => {
+  assert.match(
+    safetySimplificationPreflight,
+    /select count\(\*\) as request_count from public\.data_rights_requests/,
+  );
+  assert.match(safetySimplificationPreflight, /data-rights audit branch is empty/);
+  assert.match(safetySimplificationPreflight, /expected data-rights triggers exist/);
+  assert.match(safetySimplificationPreflight, /expected data-rights policies exist/);
+  assert.match(safetySimplificationPreflight, /no unexpected foreign-key dependency exists/);
+  assert.match(safetySimplificationPreflight, /Phase 4A and Phase 4B1 event columns exist/);
+  assert.match(safetySimplificationPreflight, /then 'ALREADY PRESENT'/);
+  assert.match(safetySimplificationPreflight, /when bool_and\(c\.passed\) then 'PASS'/);
+});
+
+test("safety simplification postflight is authoritative and safety-only", () => {
+  const decision = safetySimplificationPostflight.match(
+    /decision as \(([\s\S]*?)\),\s*result_rows/,
+  )?.[1];
+
+  assert.ok(decision);
+  assert.match(decision, /bool_and\(passed\)/);
+  assert.doesNotMatch(decision, /migration_history|version_recorded|table_exists/);
+  assert.match(safetySimplificationPostflight, /data-rights database objects are absent/);
+  assert.match(safetySimplificationPostflight, /function execution grants are exact/);
+  assert.match(safetySimplificationPostflight, /three-responder database guard is installed/);
+  assert.match(safetySimplificationPostflight, /platform admin receives no automatic narrative access/);
+  assert.match(safetySimplificationPostflight, /audit metadata remains status-only/);
+  assert.match(safetySimplificationPostflight, /Phase 4A and Phase 4B1 event columns remain/);
+});
+
+test("safety simplification readiness scripts contain only read-only executable statements", () => {
+  for (const sql of [safetySimplificationPreflight, safetySimplificationPostflight]) {
+    const history = historyQuery(sql);
+    assert.match(history, /^\s*select\s+exists\s*\(/i);
+    assert.doesNotMatch(
+      history,
+      /\b(insert|update|delete|merge|create|alter|drop|truncate|grant|revoke|copy|call|do)\b/i,
+    );
+
+    const executable = withoutHistoryQuery(sql)
+      .replace(/--.*$/gm, "")
+      .replace(/'(?:''|[^'])*'/g, "''");
+    assert.doesNotMatch(
+      executable,
+      /\b(insert|update|delete|merge|create|alter|drop|truncate|grant|revoke|copy|call|do)\b/i,
+    );
+  }
 });

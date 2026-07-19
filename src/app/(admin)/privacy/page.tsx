@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireActiveSchoolProfile } from "@/lib/auth/sensitive-workflows";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
@@ -8,16 +7,11 @@ export default async function PrivacyPage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
-  const profile = await requireActiveSchoolProfile();
+  await requireActiveSchoolProfile();
 
   return (
     <div className="page-stack">
       <PageHeader
-        actions={
-          <Link className="btn btn-primary" href="/privacy/requests" prefetch={false}>
-            {t("privacy.actions.makeRequest")}
-          </Link>
-        }
         description={t("privacy.description")}
         title={t("privacy.title")}
       />
@@ -41,14 +35,6 @@ export default async function PrivacyPage() {
         />
         <InformationCard
           items={[
-            t("privacy.rights.items.access"),
-            t("privacy.rights.items.review"),
-            t("privacy.rights.items.delivery"),
-          ]}
-          title={t("privacy.rights.title")}
-        />
-        <InformationCard
-          items={[
             t("privacy.research.items.separate"),
             t("privacy.research.items.noDisadvantage"),
             t("privacy.research.items.noInference"),
@@ -61,37 +47,14 @@ export default async function PrivacyPage() {
         <h2 className="section-title">{t("privacy.commitments.title")}</h2>
         <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-700 md:grid-cols-2">
           <p>{t("privacy.commitments.noSale")}</p>
-          <p>{t("privacy.commitments.retention")}</p>
           <p>{t("privacy.commitments.safeguardingLimits")}</p>
-          <p>{t("privacy.commitments.noAutomaticDeletion")}</p>
         </div>
       </section>
 
       <section className="notice-box">
-        <h2 className="font-bold">{t("privacy.contact.title")}</h2>
-        <p className="mt-2 text-sm leading-6">
-          {t("privacy.contact.privacyContact")}: [DECISION REQUIRED]
-        </p>
-        <p className="mt-1 text-sm leading-6">
-          {t("privacy.contact.dataController")}: [DECISION REQUIRED]
-        </p>
+        <h2 className="font-bold">{t("privacy.manual.title")}</h2>
+        <p className="mt-2 text-sm leading-6">{t("privacy.manual.description")}</p>
       </section>
-
-      {profile.role === "school_admin" ? (
-        <section className="section-card section-card-padded">
-          <h2 className="section-title">{t("privacy.manage.title")}</h2>
-          <p className="section-description">{t("privacy.manage.description")}</p>
-          <div className="mt-4">
-            <Link
-              className="btn btn-secondary w-full sm:w-auto"
-              href="/privacy/requests/manage"
-              prefetch={false}
-            >
-              {t("privacy.manage.action")}
-            </Link>
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }
