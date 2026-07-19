@@ -144,7 +144,9 @@ export async function generateInviteCode(
   if (error) {
     return {
       code: null,
-      message: tf("invites.errors.createFailed", { error: error.message }),
+      message: tf("invites.errors.createFailed", {
+        error: t("common.somethingWentWrong"),
+      }),
       success: false,
     };
   }
@@ -261,7 +263,9 @@ export async function bulkGenerateInviteCodes(
 
   if (error) {
     return createBulkState({
-      message: tf("invites.errors.generateFailed", { error: error.message }),
+      message: tf("invites.errors.generateFailed", {
+        error: t("common.somethingWentWrong"),
+      }),
       success: false,
     });
   }

@@ -290,7 +290,7 @@ export default async function SchoolConnectionsPage({
           {connectionsError ? (
             <p className="mt-2 text-sm text-red-600">
               {tf("schoolConnections.errors.connectionsLoadFailed", {
-                error: connectionsError.message,
+                error: t("common.somethingWentWrong"),
               })}
             </p>
           ) : null}
@@ -369,7 +369,7 @@ export default async function SchoolConnectionsPage({
           {schoolsError ? (
             <p className="mt-2 text-sm text-red-600">
               {tf("schoolConnections.errors.schoolsLoadFailed", {
-                error: schoolsError.message,
+                error: t("common.somethingWentWrong"),
               })}
             </p>
           ) : null}

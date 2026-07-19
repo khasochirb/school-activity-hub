@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseActivityCategory } from "@/lib/activity-categories";
+import { logServerError } from "@/lib/errors/server-error";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
@@ -99,7 +100,7 @@ export async function createClubRequest(
   );
 
   if (error || !request) {
-    console.error("Club request creation failed", error);
+    logServerError("Club request creation failed", error);
     return {
       message: i18n.t("clubRequests.errors.createFailed"),
       success: false,
@@ -247,7 +248,7 @@ export async function approveClubRequest(formData: FormData) {
   );
 
   if (clubError || !club) {
-    console.error("Club request approval club insert failed", clubError);
+    logServerError("Club request approval club insert failed", clubError);
     return;
   }
 
@@ -268,7 +269,7 @@ export async function approveClubRequest(formData: FormData) {
   );
 
   if (updateError) {
-    console.error("Club request approval update failed", updateError);
+    logServerError("Club request approval update failed", updateError);
   }
 
   revalidateClubRequestPaths();

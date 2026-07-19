@@ -89,7 +89,7 @@ export async function updatePlatformSchool(formData: FormData) {
       schoolId,
       "error",
       i18n.tf("superAdmin.schoolDetail.errors.updateFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
     );
   }
@@ -210,7 +210,7 @@ export async function createPlatformSchoolAdmin(formData: FormData) {
       profileError.code === "23505"
         ? i18n.t("superAdmin.schoolDetail.errors.adminAlreadyExists")
         : i18n.tf("superAdmin.schoolDetail.errors.adminProfileFailed", {
-            error: profileError.message,
+            error: i18n.t("common.somethingWentWrong"),
           }),
     );
   }
@@ -281,7 +281,7 @@ export async function updatePlatformSchoolAdminStatus(formData: FormData) {
       schoolId,
       "error",
       i18n.tf("superAdmin.schoolDetail.errors.adminStatusFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
     );
   }

@@ -170,7 +170,7 @@ export async function updatePlatformConnectionStatus(formData: FormData) {
     redirectWithMessage(
       "error",
       i18n.tf("superAdmin.connections.errors.updateFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
     );
   }

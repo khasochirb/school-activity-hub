@@ -19,6 +19,11 @@ import {
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
+import {
+  formatEventCost,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
 import {
   getPageParam,
   getSearchParam,
@@ -78,6 +83,13 @@ type SchoolOption = {
   name: string;
 };
 
+type ResponsibleStaffProfile = {
+  full_name: string;
+  id: string;
+  role: "school_admin" | "teacher";
+  status: "active" | "inactive";
+};
+
 type Event = {
   id: string;
   school_id: string;
@@ -95,6 +107,16 @@ type Event = {
   risk_level: "low" | "medium" | "high";
   permission_required: boolean;
   permission_note: string | null;
+  responsible_staff_id: string | null;
+  eligibility_notes: string | null;
+  experience_level: EventExperienceLevel | null;
+  accessibility_notes: string | null;
+  cost_type: EventCostType | null;
+  cost_amount: number | string | null;
+  cost_currency: string | null;
+  cost_notes: string | null;
+  required_materials: string | null;
+  expected_commitment: string | null;
 };
 
 type EventAttendeeCountRow = {
@@ -244,6 +266,7 @@ export default async function EventsPage({
     registeredEventIds,
     currentStudentClubIds,
     connectedSchoolIds,
+    responsibleStaffOptions,
   ] = await Promise.all([
     isStaff
       ? getSchoolClubOptions(admin, profile.school_id)
@@ -259,6 +282,9 @@ export default async function EventsPage({
     getCurrentStudentClubIds(admin, profile, currentStudent),
     needsPartnerEvents
       ? getConnectedSchoolIds(admin, profile.school_id)
+      : Promise.resolve([]),
+    isStaff
+      ? getEligibleResponsibleStaff(admin, profile)
       : Promise.resolve([]),
   ]);
   const sharedEventIds = needsPartnerEvents && connectedSchoolIds.length
@@ -290,7 +316,12 @@ export default async function EventsPage({
   });
 
   const eventIds = events.map((event) => event.id);
-  const [attendeeRows, currentStudentAttendees, eventShares] = await Promise.all([
+  const [
+    attendeeRows,
+    currentStudentAttendees,
+    eventShares,
+    responsibleStaffProfiles,
+  ] = await Promise.all([
     eventIds.length
       ? getEventAttendeeCountRows(admin, eventIds)
       : Promise.resolve([]),
@@ -303,6 +334,9 @@ export default async function EventsPage({
         )
       : Promise.resolve([]),
     eventIds.length ? getEventShares(admin, eventIds) : Promise.resolve([]),
+    events.length
+      ? getResponsibleStaffProfiles(admin, events)
+      : Promise.resolve([]),
   ]);
   const attendeeCounts = countActiveAttendees(attendeeRows);
   const currentStudentRegistrationByEventId = mapCurrentStudentRegistrations(
@@ -334,6 +368,9 @@ export default async function EventsPage({
     ownerSchools.map((school) => [school.id, school.name]),
   );
   const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
+  const responsibleStaffById = new Map(
+    responsibleStaffProfiles.map((staff) => [staff.id, staff]),
+  );
   const defaultAudience = defaultEventAudience(profile.role);
   const hasResultFilters = Boolean(
     searchQuery ||
@@ -392,22 +429,45 @@ export default async function EventsPage({
       },
       baseUrl,
     );
+    const responsibleStaff = event.responsible_staff_id
+      ? responsibleStaffById.get(event.responsible_staff_id)
+      : null;
 
     return {
+      accessibilityLabel:
+        event.accessibility_notes ??
+        t("events.decisionInfo.accessibilityNotProvided"),
       attendeeCount,
       canRegister: canCurrentStudentRegister(event, profile.school_id),
       calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
       capacity: event.capacity,
       categoryLabel: event.category ? categoryLabel(event.category, t) : null,
       categoryValue: event.category,
+      costLabel: formatEventCost({
+        costAmount: event.cost_amount,
+        costCurrency: event.cost_currency,
+        costType: event.cost_type,
+      }, locale, {
+        free: t("events.practicalDetails.free"),
+        notSpecified: t("events.practicalDetails.costNotSpecified"),
+        variable: t("events.practicalDetails.variableCost"),
+      }),
+      costNotes: event.cost_notes,
+      costType: event.cost_type,
       dateBadgeLabel: formatDate(event.starts_at, locale),
       dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
         event.ends_at,
         locale,
       )}`,
       description: event.description,
+      eligibilityLabel:
+        event.eligibility_notes ?? t("events.decisionInfo.eligibilityNotSpecified"),
+      expectedCommitmentLabel:
+        event.expected_commitment ??
+        t("events.practicalDetails.commitmentNotSpecified"),
       endsAt: event.ends_at,
       hasCurrentStudent: Boolean(currentStudent),
+      hasEligibilityInfo: Boolean(event.eligibility_notes),
       hostName: clubName ?? ownerSchoolName,
       googleCalendarUrl: calendarLinks.googleCalendarUrl,
       id: event.id,
@@ -417,6 +477,8 @@ export default async function EventsPage({
       isPartnerEvent: !isOwnSchoolEvent,
       isStaff,
       location: event.location,
+      experienceLabel: experienceLevelLabel(event.experience_level, t),
+      experienceLevel: event.experience_level,
       permissionNote: event.permission_note,
       permissionRequired: event.permission_required,
       permissionStatusLabel: event.permission_required
@@ -432,6 +494,12 @@ export default async function EventsPage({
           : Math.max(event.capacity - attendeeCount, 0),
       riskLabel: riskLabel(event.risk_level, t),
       riskLevel: event.risk_level,
+      responsibleAdultLabel: responsibleStaff?.status === "active"
+        ? `${responsibleStaff.full_name} (${staffRoleLabel(responsibleStaff.role, t)})`
+        : t("events.decisionInfo.responsibleNotSpecified"),
+      requiredMaterialsLabel:
+        event.required_materials ??
+        t("events.practicalDetails.materialsNotSpecified"),
       sharedLabel: sharingLabel(event, sharedSchoolIds, t, tf),
       startsAt: event.starts_at,
       status: event.status,
@@ -525,10 +593,38 @@ export default async function EventsPage({
             canCreate={canCreate}
             categories={categorySelectOptions}
             clubs={createClubOptions}
+            defaultResponsibleStaffId={isStaff ? profile.id : null}
             isStaff={isStaff}
             locale={locale}
             labels={{
               basicDetails: t("events.formGroups.basicDetails"),
+              accessibilityGuidance: t(
+                "events.decisionInfo.accessibilityGuidance",
+              ),
+              accessibilityInformation: t(
+                "events.decisionInfo.accessibilityInformation",
+              ),
+              accessibilityPlaceholder: t(
+                "events.decisionInfo.accessibilityPlaceholder",
+              ),
+              beginnerFriendly: t("events.experience.beginnerFriendly"),
+              commitment: t("events.practicalDetails.expectedCommitment"),
+              commitmentPlaceholder: t(
+                "events.practicalDetails.commitmentPlaceholder",
+              ),
+              cost: t("events.practicalDetails.cost"),
+              costAmount: t("events.practicalDetails.amount"),
+              costCurrency: t("events.practicalDetails.currency"),
+              costFree: t("events.practicalDetails.free"),
+              costNotes: t("events.practicalDetails.costNotes"),
+              costNotesPlaceholder: t(
+                "events.practicalDetails.costNotesPlaceholder",
+              ),
+              costNotSpecified: t(
+                "events.practicalDetails.costNotSpecified",
+              ),
+              costPaid: t("events.practicalDetails.paid"),
+              costVariable: t("events.practicalDetails.variableCost"),
               category: t("events.form.category"),
               club: t("events.form.club"),
               createApproved: t("events.actions.createApproved"),
@@ -544,20 +640,44 @@ export default async function EventsPage({
               endTimeRequired: t("events.validation.endTimeRequired"),
               eventDate: t("events.form.eventDate"),
               eventTimePreview: t("events.form.eventTimePreview"),
+              eligibility: t("events.decisionInfo.eligibility"),
+              eligibilityPlaceholder: t(
+                "events.decisionInfo.eligibilityPlaceholder",
+              ),
+              experienceLevel: t("events.decisionInfo.experienceLevel"),
               leaderNeedsClub: t("events.create.leaderNeedsClub"),
               location: t("events.form.location"),
               maxParticipants: t("events.form.maxParticipants"),
+              materials: t("events.practicalDetails.requiredMaterials"),
+              materialsPlaceholder: t(
+                "events.practicalDetails.materialsPlaceholder",
+              ),
               noCategory: t("events.form.noCategory"),
+              notSpecified: t("common.notSpecified"),
               permissionNote: t("events.form.permissionNote"),
               permissionNotePlaceholder: t(
                 "events.form.permissionNotePlaceholder",
               ),
               permissionRequired: t("events.form.permissionRequired"),
+              practicalDetails: t("events.formGroups.practicalDetails"),
+              practicalGuidance: t(
+                "events.practicalDetails.privacyGuidance",
+              ),
               riskHigh: t("events.risk.high"),
               riskLevel: t("events.form.riskLevel"),
               riskLow: t("events.risk.low"),
               riskMedium: t("events.risk.medium"),
               quickDuration: t("events.form.quickDuration"),
+              priorExperienceRecommended: t(
+                "events.experience.priorExperienceRecommended",
+              ),
+              responsibleAdult: t("events.decisionInfo.responsibleAdult"),
+              responsibleAdultHelp: t(
+                "events.decisionInfo.responsibleAdultHelp",
+              ),
+              responsibleAdultReviewHelp: t(
+                "events.decisionInfo.responsibleAdultReviewHelp",
+              ),
               schoolWideEvent: t("events.form.schoolWideEvent"),
               safetyPermissions: t("events.formGroups.safetyPermissions"),
               startTime: t("events.form.startTime"),
@@ -568,7 +688,12 @@ export default async function EventsPage({
               timePreviewEmpty: t("events.form.timePreviewEmpty"),
               timezoneHelper: t("events.form.timezoneHelper"),
               title: t("events.form.title"),
+              whoCanAttend: t("events.formGroups.whoCanAttend"),
             }}
+            staffOptions={responsibleStaffOptions.map((staff) => ({
+              id: staff.id,
+              label: `${staff.full_name} (${staffRoleLabel(staff.role, t)})`,
+            }))}
           />
         </CollapsibleFormSection>
       ) : null}
@@ -607,7 +732,9 @@ export default async function EventsPage({
             </h2>
             {eventsError ? (
               <p className="mt-2 text-sm text-red-600">
-                {tf("events.errors.loadFailed", { error: eventsError.message })}
+                {tf("events.errors.loadFailed", {
+                  error: t("common.somethingWentWrong"),
+                })}
               </p>
             ) : null}
             {profile.role === "student" && !currentStudent ? (
@@ -1019,7 +1146,7 @@ async function getFilteredEvents(
   let query = admin
     .from("events")
     .select(
-      "id, school_id, club_id, created_by_profile_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note",
+      "id, school_id, club_id, created_by_profile_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
     );
 
   if (audience === "partners") {
@@ -1216,6 +1343,60 @@ async function getSchoolsById(
   return schools ?? [];
 }
 
+async function getEligibleResponsibleStaff(
+  admin: ReturnType<typeof createAdminClient>,
+  profile: Profile,
+) {
+  let query = admin
+    .from("profiles")
+    .select("id, full_name, role, status")
+    .eq("school_id", profile.school_id)
+    .eq("status", "active")
+    .in("role", ["school_admin", "teacher"])
+    .order("full_name", { ascending: true });
+
+  if (profile.role === "teacher") {
+    query = query.eq("id", profile.id);
+  }
+
+  const { data: staff } = await timeServer(
+    "events.query.eligible-responsible-staff",
+    () => query.returns<ResponsibleStaffProfile[]>(),
+  );
+
+  return staff ?? [];
+}
+
+async function getResponsibleStaffProfiles(
+  admin: ReturnType<typeof createAdminClient>,
+  events: Event[],
+) {
+  const responsibleStaffIds = Array.from(
+    new Set(
+      events
+        .map((event) => event.responsible_staff_id)
+        .filter((staffId): staffId is string => Boolean(staffId)),
+    ),
+  );
+
+  if (!responsibleStaffIds.length) {
+    return [];
+  }
+
+  const { data: staff } = await timeServer(
+    "events.query.responsible-staff",
+    () =>
+      admin
+        .from("profiles")
+        .select("id, full_name, role, status")
+        .in("id", responsibleStaffIds)
+        .in("role", ["school_admin", "teacher"])
+        .returns<ResponsibleStaffProfile[]>(),
+  );
+
+  return staff ?? [];
+}
+
 async function getEventShares(
   admin: ReturnType<typeof createAdminClient>,
   eventIds: string[],
@@ -1406,6 +1587,30 @@ function permissionLabel(
   }
 
   return t("events.permission.status.notRequired");
+}
+
+function experienceLevelLabel(
+  experienceLevel: EventExperienceLevel | null,
+  t: Translate,
+) {
+  if (experienceLevel === "beginner_friendly") {
+    return t("events.experience.beginnerFriendly");
+  }
+
+  if (experienceLevel === "prior_experience_recommended") {
+    return t("events.experience.priorExperienceRecommended");
+  }
+
+  return t("events.decisionInfo.experienceNotSpecified");
+}
+
+function staffRoleLabel(
+  role: ResponsibleStaffProfile["role"],
+  t: Translate,
+) {
+  return role === "school_admin"
+    ? t("roles.schoolAdmin")
+    : t("roles.teacher");
 }
 
 function parseEventAudience(

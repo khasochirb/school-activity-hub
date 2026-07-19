@@ -19,10 +19,10 @@ Only the named approval owner may mark a policy or operational item **Approved**
 
 | Rank | Blocker | Current status | Why it blocks real-student onboarding | Exit evidence |
 |---:|---|---|---|---|
-| 1 | Child safeguarding ownership and response | Not started | No named lead/backup, confidential route, restricted workflow, verified referral pathway, or emergency disclaimer/process is documented. | Approved safeguarding plan; named trained lead and backup; referral verification; reporting and escalation drill. |
-| 2 | Authorization and school-isolation assurance | Not started | Role/RLS/server checks exist, but no automated permission or cross-school adversarial suite demonstrates them. | Passing role/action/RLS/direct-URL tests across two schools, inactive users, shared events, and platform roles. |
-| 3 | Privacy and data governance | Not started | No approved controller/processor record, privacy assessment, notices, rights process, retention schedule, or transfer review exists. | Approved privacy assessment and records; published notices; tested rights and retention procedures. |
-| 4 | Operational and research separation | Not started | Operational access, research consent/assent, research custody, small-cell rules, and dataset separation are unresolved. | Approved protocol; separate consent; access boundary; minimization/suppression rules; no research before approval. |
+| 1 | Child safeguarding ownership and response | In progress | A local confidential route, explicit disclaimer, designation model, strict RLS, restricted audit, and draft workflow exist. Phase 3C locally applied the isolated migration and passed report/designation/RPC database tests, but production application and the lead/backup, monitored hours, verified referral, response target, training, and approval remain unresolved. | Approved safeguarding plan; named trained lead and backup; controlled production migration; referral verification; reporting and escalation drill. |
+| 2 | Authorization and school-isolation assurance | In progress | Phase 3C passed 63 local PostgreSQL assertions for the safeguarding/privacy tables across two synthetic schools, including inactive/role-changed designations and platform/anonymous denial. Broader route/action/RLS coverage for existing school workflows, shared events, and direct URLs remains Not run. | Passing role/action/RLS/direct-URL tests across two schools, inactive users, shared events, and platform roles. |
+| 3 | Privacy and data governance | In progress | Bilingual draft privacy information and a local data-rights intake/status workflow exist. Phase 3C passed own-school, cross-school, platform, anonymous, processor, audit, and destructive-operation database tests, but controller/processors, lawful basis, contacts, approved notices, identity verification, deadlines, retention, export delivery, deletion exceptions, transfer review, and production application remain unresolved. | Approved privacy assessment and records; published notices; controlled production migration; tested secure export, retention, deletion, and operational procedures. |
+| 4 | Operational and research separation | In progress | The UI and governance draft state that operations and research are separate, and no survey/consent data was added; custodian, ethics/legal route, consent/assent, linkage, storage, withdrawal, suppression, and deletion remain unresolved. | Approved protocol; separate consent; access/linkage boundary; minimization/suppression rules; no research before approval. |
 | 5 | Incident response and support escalation | Not started | No production incident runbook, severity model, notification path, response targets, support hours, or drill evidence exists. | Approved runbook, contact tree, targets, monitoring alerts, and completed tabletop exercise. |
 | 6 | Attendance data quality and fallback | Not started | QR exists, but no complete manual fallback, reconciliation/completeness process, or approved repeat-attendance definition exists. | Tested QR and manual paths; reconciliation/no-show rules; quality dashboard/check; metric dictionary. |
 | 7 | Activity supply and listing quality | Not started | Inventory owner and sufficient approved supply are unknown; listings lack accessibility, cost, transport, beginner, and safeguarding-contact information. | Approved inventory threshold; named owner; complete reviewed listings; sampling/refresh procedure. |
@@ -49,9 +49,9 @@ Only the named approval owner may mark a policy or operational item **Approved**
 |---|---|---|---|
 | Safeguarding lead and backup assigned | Blocker | Not started | Names, training, coverage, restricted contacts, conflicts, and absence process. |
 | Local referral pathway verified | Blocker | Not started | Current contacts, hours, eligibility, emergency alternatives, and dated verification. |
-| Confidential reporting route approved | Blocker | Not started | Platform or off-platform route, privacy statement, access list, acknowledgement, escalation, and deletion/retention. |
-| Restricted safeguarding workflow approved | Blocker | Not started | Triage, evidence, referral, case access, audit, closure, appeal, and school/NDYP boundaries. |
-| Emergency and counselling disclaimer approved | Blocker | Not started | Clear bilingual wording and approved local emergency/referral directions. |
+| Confidential reporting route approved | Blocker | In progress | Local bilingual route, confidential-not-anonymous statement, restricted access, safe receipt, and in-person option are implemented but unapplied/unapproved; acknowledgment, escalation, and retention decisions remain open. |
+| Restricted safeguarding workflow approved | Blocker | In progress | Minimal status transitions and restricted audit are implemented; local Phase 3C RLS/RPC/trigger/audit tests passed. Investigation/evidence/referral/appeal procedures, owners, browser tests, production application, and approval remain open. |
+| Emergency and counselling disclaimer approved | Blocker | In progress | Bilingual no-monitoring/no-emergency wording exists without invented contacts; verified local emergency/referral wording and school approval remain open. |
 | Account restriction and listing-unpublish process approved | Blocker | Not started | Authorized roles, triggers, response time, evidence preservation, review, restoration, and communication. |
 | Activity safeguarding information complete | Blocker | Not started | Supervision/contact, risk, permission, accessibility, cost, transport, suitability, and update owner. |
 | Safeguarding drill completed | Blocker | Not started | Scenario, participants, response times, gaps, remediation, and sign-off. |
@@ -68,8 +68,8 @@ Only the named approval owner may mark a policy or operational item **Approved**
 | Parent/guardian information approved | Blocker | Not started | Age/grade applicability, permission/consent distinction, channels, language/accessibility, questions, and offline access. |
 | Staff notice and acceptable-use guidance approved | Required | Not started | Administrative access, logging, exports, secure devices, incident reporting, retention, and prohibited use. |
 | Operational lawful basis approved | Blocker | Not started | Specific purpose and basis, authority, necessity, alternatives, and legal/school approval. |
-| Operational versus research consent separated | Blocker | Not started | Declining research cannot remove operational access; separate records, notices, withdrawal, custody, and approvals. |
-| Data access/correction/export/deletion procedure tested | Blocker | Not started | Request intake, identity verification, deadlines, exceptions, secure response, execution, and audit evidence. |
+| Operational versus research consent separated | Blocker | In progress | Draft bilingual notice and architecture document separate operations from future optional research; no survey/consent storage exists. Consent/assent, custody, linkage, withdrawal, ethics/legal approval, and tests remain open. |
+| Data access/correction/export/deletion procedure tested | Blocker | In progress | Local authenticated intake/status/audit RLS tests passed across two synthetic schools, including same-school admin processing and cross-school/platform/anonymous denial. There is no automatic deletion/export; identity verification, deadlines, secure delivery, execution, exception handling, browser tests, production application, and approval remain open. |
 | Retention and deletion schedule approved | Blocker | Not started | Record-level periods, legal hold, archive, deletion/anonymization, backups, audit logs, and partnership closeout. |
 | Operational/research data separation approved | Blocker | Not started | Access groups, source-to-dataset process, pseudonymization, release approval, storage, deletion, and audit. |
 | Small-cell suppression rule approved | Blocker for research | Not started | Threshold, complementary suppression, longitudinal handling, exceptions, and publication review. |
@@ -80,17 +80,19 @@ Only the named approval owner may mark a policy or operational item **Approved**
 | Requirement | Priority | Status | Evidence/notes required before approval |
 |---|---|---|---|
 | Verified-school onboarding procedure approved | Blocker | Not started | Institution/admin verification, bootstrap, renewal, suspension, and audit. |
-| Account and permission tests passed | Blocker | Not started | Student/teacher/admin/platform/inactive/unauthenticated role matrix; direct actions; two-school isolation. |
+| Account and permission tests passed | Blocker | In progress | Ten dependency-free repository boundary tests pass. Phase 3C also passed 63 local PostgreSQL assertions for the new safeguarding/privacy boundary. Existing student/teacher/admin/platform routes, actions, shared events, and other two-school RLS tests in `TECHNICAL_TEST_MATRIX.md` remain Not run. |
 | Connected-school event isolation tests passed | Blocker | Not started | Listing, registration, attendance visibility, sharing/unsharing, connection status, and cross-school writes. |
 | Invite-code security tests passed | Blocker | Not started | Hashing, one-time use, expiry, revocation, concurrency, cleanup, enumeration, and logs. |
 | Staff and platform-admin MFA approved and tested | Blocker | Not started | Enrollment, enforcement, recovery, backup method, lost device, new staff, and removal. |
 | Service-role usage review completed | Blocker | Ready for review | Repository places admin client server-side; enumerate all calls and prove preceding authorization and redaction. |
+| Repository secret and client/server boundary checks passed | Blocker | Ready for review | Automated checks confirm only placeholder `.env.example` is tracked, `.env.local` is ignored, the service-role variable is confined to the server-only admin module, and current client modules do not import privileged helpers. Provider configuration and history still require review. |
+| Safe baseline response headers verified in deployment | Required | In progress | Repository now configures content-type sniffing prevention, strict referrer handling, same-origin framing protection, and a conservative permissions policy. Production/preview response capture remains Not run; no CSP was introduced. |
 | Monitoring and error reporting operational | Blocker | Not started | Uptime, server errors, job/action failures, alert owner, redaction, severity, dashboards, and escalation. |
 | Incident-response procedure approved | Blocker | Not started | Security/privacy/safeguarding/service incidents, response targets, contacts, evidence, notifications, and exercises. |
 | Backups and restoration tested | Blocker | Not started | Live settings, scope, encryption, retention, RPO/RTO, owner, restore environment, and dated successful test. |
 | Staging and production separated | Blocker | Not started | Separate projects/credentials/data; preview gates; synthetic data; no real students in staging; seed control. |
 | Fake production data removed/controlled | Blocker | Not started | Canonical schema includes demo seed data; document migration/seed process and verify production contents. |
-| Automated tests and CI gates operational | Blocker | Not started | Unit/integration/E2E/RLS/accessibility/build/lint gates with safe fixtures. |
+| Automated tests and CI gates operational | Blocker | In progress | Ten static security-boundary tests run with Node's built-in test runner, and the local-only Phase 3C harness runs 63 real PostgreSQL RLS/RPC assertions plus a semantic schema comparison. Broader integration/E2E/accessibility suites and enforced CI gates remain absent. |
 | Vercel production reliability reviewed | Blocker | Not started | Protected deployment, environment mapping, health check, rollback, preview approval, domains/TLS, logs, and owner. |
 | Seoul-region configuration verified end to end | Required | In progress | `vercel.json` confirms `icn1`; verify live Vercel/Supabase, latency, transfer approval, and contingency. |
 
@@ -127,6 +129,25 @@ Only the named approval owner may mark a policy or operational item **Approved**
 | No unresolved critical defect | Blocker | Not started | Signed defect review covering security, safeguarding, privacy, data quality, accessibility, and operations. |
 | Final go/no-go meeting completed | Blocker | Not started | Named decision makers, evidence pack, dissent/conditions, decision, date, and next review. |
 
+## Phase 3D controlled production gate
+
+| Gate | Priority | Status | Required evidence |
+|---|---|---|---|
+| Independent Phase 3A migration review | Blocker | Ready for review | Reviewer confirms additive scope, exact grants/RLS, safe definer functions, composite school FKs, no platform bypass, and application compatibility. |
+| Named safeguarding/privacy governance approvals | Blocker | Not started | Completed `GOVERNANCE_APPROVAL_REGISTER.md` with names, dates, evidence, conditions, and review dates. |
+| Screenshot-exposed credential rotation | Blocker | Not started | Authorized owner records affected credential categories, rotation date, invalidation, and synthetic verification without recording values. |
+| Backup/PITR verified | Blocker | Not started | Provider evidence, scope, owner, date, approved RPO/RTO, and recovery responsibility. |
+| Production identity and read-only preflight | Blocker | Not run | Two-person project identity check, prerequisite rows PASS, and final decision PASS. `ALREADY PRESENT` requires postflight/investigation; partial state is a stop. |
+| Reviewed migration applied atomically | Blocker | Not run | Change record, exact revision and Phase 3A SQL SHA-256, execution date, approver, operator/verifier, transaction result, and controlled SQL record. Do not require or repair CLI history. |
+| Read-only postflight | Blocker | Not run | Final decision and all actual-object checks PASS before application deployment; migration history may be informationally `NOT TRACKED`. |
+| Synthetic RLS/RPC smoke test | Blocker | Not run | Same/cross-school, designated/non-designated, platform-only, anonymous, grant, receipt, and audit tests pass without sensitive evidence. |
+| Compatible application deployment and smoke test | Blocker | Not run | Route/auth/bilingual/mobile/accessibility/error/audit checks pass for the approved deployment; rollback target remains available. |
+| Monitoring and deployment record | Blocker | Not run | Named monitoring owner reviews errors/audit behavior and completes the deployment record. |
+| Original baseline migration reconstructed | Technical debt | Blocked | Reviewed canonical historical baseline and clean-reset migration-chain validation. This debt is not resolved by the recovered Phase 3C fixture. |
+| Supabase CLI migration-history governance | Technical debt | Blocked | Production has no reported `schema_migrations` relation. Reconcile the historical baseline before any future CLI history adoption; do not use `db push`, repair, or manual history rows for Phase 3A. |
+
+**Current Phase 3D launch result:** **No-Go for production execution and real-student onboarding** until the human approval and execution gates above are completed. The package may proceed to human governance approval review.
+
 ## Sign-off record
 
 - School executive sponsor: `[DECISION REQUIRED]`
@@ -136,4 +157,3 @@ Only the named approval owner may mark a policy or operational item **Approved**
 - Technical/security reviewer: `[DECISION REQUIRED]`
 - Legal/ethics reviewer where applicable: `[DECISION REQUIRED]`
 - Decision and date: `[DECISION REQUIRED]`
-

@@ -55,6 +55,7 @@ export default async function ResetPasswordPage() {
             labels={{
               email: t("auth.reset.email"),
               emailRequired: t("auth.reset.errors.emailRequired"),
+              requestFailed: t("auth.reset.errors.requestFailed"),
               sending: t("auth.reset.sending"),
               submit: t("auth.reset.submit"),
               success: t("auth.reset.success"),

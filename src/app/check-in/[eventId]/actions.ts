@@ -125,7 +125,7 @@ export async function checkInToEvent(
 
     return {
       message: i18n.tf("checkIn.errors.recordFailed", {
-        error: insertError.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
       success: false,
     };

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createPlatformAuditLog } from "@/lib/audit/platform-audit";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
+import { logServerError } from "@/lib/errors/server-error";
 import {
   formatTranslation,
   getDictionary,
@@ -58,7 +59,7 @@ export async function addPlatformAdmin(formData: FormData) {
     redirectWithMessage(
       "error",
       i18n.tf("superAdmin.platformAdmins.errors.lookupFailed", {
-        error: userLookupError,
+        error: i18n.t("common.somethingWentWrong"),
       }),
     );
   }
@@ -107,7 +108,7 @@ export async function addPlatformAdmin(formData: FormData) {
       error.code === "23505"
         ? i18n.t("superAdmin.platformAdmins.errors.alreadyPlatformAdmin")
         : i18n.tf("superAdmin.platformAdmins.errors.addFailed", {
-            error: error.message,
+            error: i18n.t("common.somethingWentWrong"),
           }),
     );
   }
@@ -181,7 +182,7 @@ export async function updatePlatformAdminStatus(formData: FormData) {
     redirectWithMessage(
       "error",
       i18n.tf("superAdmin.platformAdmins.errors.updateFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
     );
   }
@@ -234,7 +235,8 @@ async function findAuthUserByEmail(
     });
 
     if (error) {
-      return { error: error.message, user: null };
+      logServerError("Platform admin auth user lookup failed", error);
+      return { error: "lookup_failed", user: null };
     }
 
     const user =

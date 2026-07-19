@@ -1,3 +1,6 @@
+import "server-only";
+
+import { logServerError } from "@/lib/errors/server-error";
 import { createAdminClient } from "./admin";
 
 export async function hasAnySchool() {
@@ -7,7 +10,8 @@ export async function hasAnySchool() {
     .select("id", { count: "exact", head: true });
 
   if (error) {
-    throw new Error(`Unable to check school setup: ${error.message}`);
+    logServerError("School setup check failed", error);
+    throw new Error("Unable to check school setup.");
   }
 
   return (count ?? 0) > 0;

@@ -19,6 +19,15 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import {
+  EVENT_ACCESSIBILITY_MAX_LENGTH,
+  EVENT_ELIGIBILITY_MAX_LENGTH,
+  type EventExperienceLevel,
+} from "@/lib/events/event-decision-info";
+import {
+  formatEventCost,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
 import { canViewEvent } from "@/lib/events/event-visibility";
 import { getServerBaseUrl } from "@/lib/server-url";
 import { timeServer } from "@/lib/server-timing";
@@ -33,9 +42,11 @@ import {
   cancelEvent,
   cancelEventRegistration,
   joinEvent,
+  updateEventDecisionInfo,
   updateEventSafety,
   updateEventSharing,
 } from "../actions";
+import { EventPracticalDetailsForm } from "../event-practical-details-form";
 
 type Profile = {
   id: string;
@@ -64,6 +75,16 @@ type EventRecord = {
   risk_level: "low" | "medium" | "high";
   permission_required: boolean;
   permission_note: string | null;
+  responsible_staff_id: string | null;
+  eligibility_notes: string | null;
+  experience_level: EventExperienceLevel | null;
+  accessibility_notes: string | null;
+  cost_type: EventCostType | null;
+  cost_amount: number | string | null;
+  cost_currency: string | null;
+  cost_notes: string | null;
+  required_materials: string | null;
+  expected_commitment: string | null;
 };
 
 type StudentRoster = {
@@ -83,6 +104,13 @@ type SchoolOption = {
 type EventShare = {
   event_id: string;
   school_id: string;
+};
+
+type ResponsibleStaffProfile = {
+  full_name: string;
+  id: string;
+  role: "school_admin" | "teacher";
+  status: "active" | "inactive";
 };
 
 type EventAttendee = {
@@ -159,7 +187,14 @@ export default async function EventDetailPage({
     redirect("/events");
   }
 
-  const [attendees, club, ownerSchool, connectedSchools] = await Promise.all([
+  const [
+    attendees,
+    club,
+    ownerSchool,
+    connectedSchools,
+    responsibleStaff,
+    eligibleResponsibleStaff,
+  ] = await Promise.all([
     getEventAttendees(admin, [event.id]),
     event.club_id ? getClubById(admin, event.school_id, event.club_id) : null,
     isOwnSchoolEvent
@@ -167,6 +202,12 @@ export default async function EventDetailPage({
       : getSchoolById(admin, event.school_id),
     isStaff && isOwnSchoolEvent && connectedSchoolIds.length
       ? getSchoolsById(admin, connectedSchoolIds)
+      : Promise.resolve([]),
+    event.responsible_staff_id
+      ? getResponsibleStaffById(admin, event.responsible_staff_id)
+      : Promise.resolve(null),
+    isStaff && isOwnSchoolEvent
+      ? getEligibleResponsibleStaff(admin, profile, event.responsible_staff_id)
       : Promise.resolve([]),
   ]);
   const registeredCount = attendees.length;
@@ -190,6 +231,19 @@ export default async function EventDetailPage({
       title: event.title,
     },
     await getServerBaseUrl(),
+  );
+  const costLabel = formatEventCost(
+    {
+      costAmount: event.cost_amount,
+      costCurrency: event.cost_currency,
+      costType: event.cost_type,
+    },
+    locale,
+    {
+      free: t("events.practicalDetails.free"),
+      notSpecified: t("events.practicalDetails.costNotSpecified"),
+      variable: t("events.practicalDetails.variableCost"),
+    },
   );
 
   return (
@@ -270,6 +324,111 @@ export default async function EventDetailPage({
           </article>
 
           <article className="section-card section-card-padded order-5 lg:order-none">
+            <h2 className="section-title">
+              {t("events.formGroups.whoCanAttend")}
+            </h2>
+            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+              <DetailItem label={t("events.decisionInfo.responsibleAdult")}>
+                {responsibleStaff?.status === "active"
+                  ? `${responsibleStaff.full_name} (${staffRoleLabel(
+                      responsibleStaff.role,
+                      t,
+                    )})`
+                  : t("events.decisionInfo.responsibleNotSpecified")}
+              </DetailItem>
+              <DetailItem label={t("events.decisionInfo.experienceLevel")}>
+                {experienceLevelLabel(event.experience_level, t)}
+              </DetailItem>
+              <DetailItem label={t("events.decisionInfo.eligibility")}>
+                {event.eligibility_notes ??
+                  t("events.decisionInfo.eligibilityNotSpecified")}
+              </DetailItem>
+              <DetailItem
+                label={t("events.decisionInfo.accessibilityInformation")}
+              >
+                {event.accessibility_notes ??
+                  t("events.decisionInfo.accessibilityNotProvided")}
+              </DetailItem>
+            </dl>
+            {isStaff && isOwnSchoolEvent ? (
+              <div className="mt-4 border-t border-[var(--border)] pt-4">
+                <DecisionInfoForm
+                  event={event}
+                  responsibleStaffOptions={eligibleResponsibleStaff}
+                  t={t}
+                />
+              </div>
+            ) : null}
+          </article>
+
+          <article className="section-card section-card-padded order-6 lg:order-none">
+            <h2 className="section-title">
+              {t("events.formGroups.practicalDetails")}
+            </h2>
+            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+              <DetailItem label={t("events.practicalDetails.cost")}>
+                {costLabel}
+              </DetailItem>
+              <DetailItem
+                label={t("events.practicalDetails.requiredMaterials")}
+              >
+                {event.required_materials ??
+                  t("events.practicalDetails.materialsNotSpecified")}
+              </DetailItem>
+              <DetailItem
+                label={t("events.practicalDetails.expectedCommitment")}
+              >
+                {event.expected_commitment ??
+                  t("events.practicalDetails.commitmentNotSpecified")}
+              </DetailItem>
+              {event.cost_notes ? (
+                <DetailItem label={t("events.practicalDetails.costNotes")}>
+                  {event.cost_notes}
+                </DetailItem>
+              ) : null}
+            </dl>
+            {isStaff && isOwnSchoolEvent ? (
+              <div className="mt-4 border-t border-[var(--border)] pt-4">
+                <p className="mb-3 max-w-2xl text-xs leading-5 text-zinc-500">
+                  {t("events.practicalDetails.privacyGuidance")}
+                </p>
+                <EventPracticalDetailsForm
+                  event={event}
+                  labels={{
+                    amount: t("events.practicalDetails.amount"),
+                    cost: t("events.practicalDetails.cost"),
+                    costNotes: t("events.practicalDetails.costNotes"),
+                    costNotesPlaceholder: t(
+                      "events.practicalDetails.costNotesPlaceholder",
+                    ),
+                    currency: t("events.practicalDetails.currency"),
+                    expectedCommitment: t(
+                      "events.practicalDetails.expectedCommitment",
+                    ),
+                    expectedCommitmentPlaceholder: t(
+                      "events.practicalDetails.commitmentPlaceholder",
+                    ),
+                    free: t("events.practicalDetails.free"),
+                    notSpecified: t(
+                      "events.practicalDetails.costNotSpecified",
+                    ),
+                    paid: t("events.practicalDetails.paid"),
+                    requiredMaterials: t(
+                      "events.practicalDetails.requiredMaterials",
+                    ),
+                    requiredMaterialsPlaceholder: t(
+                      "events.practicalDetails.materialsPlaceholder",
+                    ),
+                    save: t("events.actions.savePracticalDetails"),
+                    saving: t("common.saving"),
+                    variable: t("events.practicalDetails.variableCost"),
+                  }}
+                />
+              </div>
+            ) : null}
+          </article>
+
+          <article className="section-card section-card-padded order-7 lg:order-none">
             <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
             <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
               <DetailItem label={t("events.card.safety")}>
@@ -662,6 +821,99 @@ function SafetyForm({ event, t }: { event: EventRecord; t: Translate }) {
   );
 }
 
+function DecisionInfoForm({
+  event,
+  responsibleStaffOptions,
+  t,
+}: {
+  event: EventRecord;
+  responsibleStaffOptions: ResponsibleStaffProfile[];
+  t: Translate;
+}) {
+  return (
+    <form
+      action={updateEventDecisionInfo}
+      className="compact-form flex flex-col gap-3"
+    >
+      <input name="event_id" type="hidden" value={event.id} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-zinc-700">
+          <span className="break-words">
+            {t("events.decisionInfo.responsibleAdult")}
+          </span>
+          <select
+            className="h-10 max-w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition focus:border-zinc-900"
+            defaultValue={event.responsible_staff_id ?? ""}
+            name="responsible_staff_id"
+          >
+            <option value="">{t("common.notSpecified")}</option>
+            {responsibleStaffOptions.map((staff) => (
+              <option key={staff.id} value={staff.id}>
+                {staff.full_name} ({staffRoleLabel(staff.role, t)})
+              </option>
+            ))}
+          </select>
+          <span className="break-words text-xs font-normal leading-5 text-zinc-500">
+            {t("events.decisionInfo.responsibleAdultHelp")}
+          </span>
+        </label>
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-zinc-700">
+          <span className="break-words">
+            {t("events.decisionInfo.experienceLevel")}
+          </span>
+          <select
+            className="h-10 max-w-full cursor-pointer rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition focus:border-zinc-900"
+            defaultValue={event.experience_level ?? ""}
+            name="experience_level"
+          >
+            <option value="">{t("common.notSpecified")}</option>
+            <option value="beginner_friendly">
+              {t("events.experience.beginnerFriendly")}
+            </option>
+            <option value="prior_experience_recommended">
+              {t("events.experience.priorExperienceRecommended")}
+            </option>
+          </select>
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
+        {t("events.decisionInfo.eligibility")}
+        <textarea
+          className="min-h-20 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none transition focus:border-zinc-900"
+          defaultValue={event.eligibility_notes ?? ""}
+          maxLength={EVENT_ELIGIBILITY_MAX_LENGTH}
+          name="eligibility_notes"
+          placeholder={t("events.decisionInfo.eligibilityPlaceholder")}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
+        {t("events.decisionInfo.accessibilityInformation")}
+        <textarea
+          aria-describedby="event-detail-accessibility-guidance"
+          className="min-h-24 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none transition focus:border-zinc-900"
+          defaultValue={event.accessibility_notes ?? ""}
+          maxLength={EVENT_ACCESSIBILITY_MAX_LENGTH}
+          name="accessibility_notes"
+          placeholder={t("events.decisionInfo.accessibilityPlaceholder")}
+        />
+        <span
+          className="text-xs font-normal leading-5 text-zinc-500"
+          id="event-detail-accessibility-guidance"
+        >
+          {t("events.decisionInfo.accessibilityGuidance")}
+        </span>
+      </label>
+      <PendingSubmitButton
+        className="btn btn-secondary min-h-10 px-3"
+        pendingLabel={t("common.saving")}
+        toastMessage={t("common.saving")}
+      >
+        {t("events.actions.saveDecisionInfo")}
+      </PendingSubmitButton>
+    </form>
+  );
+}
+
 function SharingForm({
   connectedSchools,
   event,
@@ -749,7 +1001,7 @@ async function getEventById(
     admin
       .from("events")
       .select(
-        "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, submitted_at, approved_at, rejection_reason, created_at, updated_at, allow_connected_school_registration, risk_level, permission_required, permission_note",
+        "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, submitted_at, approved_at, rejection_reason, created_at, updated_at, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
       )
       .eq("id", eventId)
       .maybeSingle<EventRecord>(),
@@ -828,6 +1080,58 @@ async function getSchoolsById(
   );
 
   return schools ?? [];
+}
+
+async function getResponsibleStaffById(
+  admin: ReturnType<typeof createAdminClient>,
+  staffId: string,
+) {
+  const { data: staff } = await timeServer(
+    "events.detail.query.responsible-staff",
+    () =>
+      admin
+        .from("profiles")
+        .select("id, full_name, role, status")
+        .eq("id", staffId)
+        .in("role", ["school_admin", "teacher"])
+        .maybeSingle<ResponsibleStaffProfile>(),
+  );
+
+  return staff;
+}
+
+async function getEligibleResponsibleStaff(
+  admin: ReturnType<typeof createAdminClient>,
+  profile: Profile,
+  currentResponsibleStaffId: string | null,
+) {
+  let query = admin
+    .from("profiles")
+    .select("id, full_name, role, status")
+    .eq("school_id", profile.school_id)
+    .eq("status", "active")
+    .in("role", ["school_admin", "teacher"])
+    .order("full_name", { ascending: true });
+
+  if (profile.role === "teacher") {
+    query = query.in(
+      "id",
+      Array.from(
+        new Set(
+          [profile.id, currentResponsibleStaffId].filter(
+            (staffId): staffId is string => Boolean(staffId),
+          ),
+        ),
+      ),
+    );
+  }
+
+  const { data: staff } = await timeServer(
+    "events.detail.query.eligible-responsible-staff",
+    () => query.returns<ResponsibleStaffProfile[]>(),
+  );
+
+  return staff ?? [];
 }
 
 async function getConnectedSchoolIds(
@@ -934,6 +1238,30 @@ function riskLabel(riskLevel: EventRecord["risk_level"], t: Translate) {
   return riskLevel === "medium"
     ? t("events.risk.medium")
     : t("events.risk.low");
+}
+
+function experienceLevelLabel(
+  experienceLevel: EventExperienceLevel | null,
+  t: Translate,
+) {
+  if (experienceLevel === "beginner_friendly") {
+    return t("events.experience.beginnerFriendly");
+  }
+
+  if (experienceLevel === "prior_experience_recommended") {
+    return t("events.experience.priorExperienceRecommended");
+  }
+
+  return t("events.decisionInfo.experienceNotSpecified");
+}
+
+function staffRoleLabel(
+  role: ResponsibleStaffProfile["role"],
+  t: Translate,
+) {
+  return role === "school_admin"
+    ? t("roles.schoolAdmin")
+    : t("roles.teacher");
 }
 
 function eventStatusLabel(status: string, t: Translate) {

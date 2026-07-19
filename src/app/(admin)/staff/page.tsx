@@ -187,7 +187,9 @@ export default async function StaffPage({
           <h2 className="section-title">{t("staff.profiles.title")}</h2>
           {staffError ? (
             <p className="mt-2 text-sm text-red-600">
-              {tf("staff.errors.loadFailed", { error: staffError.message })}
+              {tf("staff.errors.loadFailed", {
+                error: t("common.somethingWentWrong"),
+              })}
             </p>
           ) : null}
         </div>

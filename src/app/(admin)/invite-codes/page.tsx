@@ -177,7 +177,7 @@ export default async function InviteCodesPage({
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
             {tf("invites.errors.studentsLoadFailed", {
-              error: studentsError.message,
+              error: t("common.somethingWentWrong"),
             })}
           </p>
         ) : null}
@@ -205,7 +205,7 @@ export default async function InviteCodesPage({
         {studentsError ? (
           <p className="mt-2 text-sm text-red-600">
             {tf("invites.errors.studentsLoadFailed", {
-              error: studentsError.message,
+              error: t("common.somethingWentWrong"),
             })}
           </p>
         ) : null}
@@ -270,7 +270,7 @@ export default async function InviteCodesPage({
           {invitesError ? (
             <p className="mt-2 text-sm text-red-600">
               {tf("invites.errors.codesLoadFailed", {
-                error: invitesError.message,
+                error: t("common.somethingWentWrong"),
               })}
             </p>
           ) : null}

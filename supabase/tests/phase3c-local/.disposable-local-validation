@@ -1,0 +1,2 @@
+This directory owns a disposable, localhost-only Supabase stack for Phase 3C database tests.
+It must never be linked to a remote Supabase project.

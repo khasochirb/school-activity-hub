@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 type ResetPasswordFormLabels = {
   email: string;
   emailRequired: string;
+  requestFailed: string;
   sending: string;
   submit: string;
   success: string;
@@ -53,9 +54,9 @@ export function ResetPasswordForm({
     setIsSubmitting(false);
 
     if (resetError) {
-      setError(resetError.message);
+      setError(labels.requestFailed);
       toast.notify({
-        message: resetError.message,
+        message: labels.requestFailed,
         title: toast.labels.error,
         variant: "error",
       });

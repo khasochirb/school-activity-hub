@@ -80,7 +80,7 @@ export async function createAnnouncement(
   if (error) {
     return {
       message: i18n.tf("announcements.errors.createFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
       success: false,
     };

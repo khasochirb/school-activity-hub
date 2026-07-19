@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getCurrentPlatformAdminProfile } from "@/lib/auth/platform-admin";
+import { getCurrentSafeguardingAccess } from "@/lib/auth/sensitive-workflows";
 import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +25,12 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  const [schoolExists, profileResult, platformAdminProfile] = await Promise.all([
+  const [
+    schoolExists,
+    profileResult,
+    platformAdminProfile,
+    safeguardingAccess,
+  ] = await Promise.all([
     timeServer("admin-layout.school-setup", () => hasAnySchool()),
     timeServer("admin-layout.profile", () =>
       supabase
@@ -34,6 +40,7 @@ export default async function AdminLayout({
         .maybeSingle<AppShellProfile>(),
     ),
     getCurrentPlatformAdminProfile(),
+    getCurrentSafeguardingAccess(),
   ]);
 
   if (!schoolExists) {
@@ -46,6 +53,7 @@ export default async function AdminLayout({
     <AppShell
       email={user.email ?? null}
       isPlatformAdmin={Boolean(platformAdminProfile)}
+      isSafeguardingStaff={safeguardingAccess.isDesignated}
       profile={
         profile
           ? { role: profile.role, schoolName: profile.schools?.name ?? null }

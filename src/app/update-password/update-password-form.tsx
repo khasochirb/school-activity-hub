@@ -16,6 +16,7 @@ type UpdatePasswordFormLabels = {
   passwordMismatch: string;
   submit: string;
   success: string;
+  updateFailed: string;
   updating: string;
 };
 
@@ -55,7 +56,7 @@ export function UpdatePasswordForm({
       }
 
       if (sessionError) {
-        setSessionMessage(sessionError.message);
+        setSessionMessage(labels.openResetLink);
       } else if (!data.session) {
         setSessionMessage(labels.openResetLink);
       }
@@ -108,9 +109,9 @@ export function UpdatePasswordForm({
     setIsSubmitting(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(labels.updateFailed);
       toast.notify({
-        message: updateError.message,
+        message: labels.updateFailed,
         title: toast.labels.error,
         variant: "error",
       });

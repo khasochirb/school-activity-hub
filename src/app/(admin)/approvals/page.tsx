@@ -13,6 +13,11 @@ import {
   formatTime,
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
+import {
+  formatEventCost,
+  type EventCostType,
+} from "@/lib/events/event-practical-details";
 import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -43,6 +48,16 @@ type PendingEvent = {
   risk_level: "low" | "medium" | "high";
   permission_required: boolean;
   permission_note: string | null;
+  responsible_staff_id: string | null;
+  eligibility_notes: string | null;
+  experience_level: EventExperienceLevel | null;
+  accessibility_notes: string | null;
+  cost_type: EventCostType | null;
+  cost_amount: number | string | null;
+  cost_currency: string | null;
+  cost_notes: string | null;
+  required_materials: string | null;
+  expected_commitment: string | null;
   submitted_at: string | null;
   created_at: string;
 };
@@ -50,6 +65,13 @@ type PendingEvent = {
 type Club = {
   id: string;
   name: string;
+};
+
+type ResponsibleStaffProfile = {
+  full_name: string;
+  id: string;
+  role: "school_admin" | "teacher";
+  status: "active" | "inactive";
 };
 
 type Translate = (key: string) => string;
@@ -90,7 +112,7 @@ export default async function ApprovalsPage({
   const { data: pendingEvents, error: eventsError } = await supabase
     .from("events")
     .select(
-      "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, submitted_at, created_at",
+      "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment, submitted_at, created_at",
     )
     .eq("school_id", profile.school_id)
     .eq("status", "pending_approval")
@@ -103,16 +125,37 @@ export default async function ApprovalsPage({
         .filter((clubId): clubId is string => Boolean(clubId)),
     ),
   );
-  const { data: clubs } = clubIds.length
-    ? await supabase
-        .from("clubs")
-        .select("id, name")
-        .eq("school_id", profile.school_id)
-        .in("id", clubIds)
-        .returns<Club[]>()
-    : { data: [] };
+  const responsibleStaffIds = Array.from(
+    new Set(
+      (pendingEvents ?? [])
+        .map((event) => event.responsible_staff_id)
+        .filter((staffId): staffId is string => Boolean(staffId)),
+    ),
+  );
+  const [{ data: clubs }, { data: responsibleStaff }] = await Promise.all([
+    clubIds.length
+      ? supabase
+          .from("clubs")
+          .select("id, name")
+          .eq("school_id", profile.school_id)
+          .in("id", clubIds)
+          .returns<Club[]>()
+      : Promise.resolve({ data: [] as Club[] }),
+    responsibleStaffIds.length
+      ? supabase
+          .from("profiles")
+          .select("id, full_name, role, status")
+          .eq("school_id", profile.school_id)
+          .in("id", responsibleStaffIds)
+          .in("role", ["school_admin", "teacher"])
+          .returns<ResponsibleStaffProfile[]>()
+      : Promise.resolve({ data: [] as ResponsibleStaffProfile[] }),
+  ]);
 
   const clubNameById = new Map((clubs ?? []).map((club) => [club.id, club.name]));
+  const responsibleStaffById = new Map(
+    (responsibleStaff ?? []).map((staff) => [staff.id, staff]),
+  );
   const pendingQueue = pendingEvents ?? [];
   const filteredEvents = pendingQueue.filter((event) =>
     matchesSearch(searchQuery, [event.title, event.location, event.category]),
@@ -147,7 +190,7 @@ export default async function ApprovalsPage({
           {eventsError ? (
             <p className="mt-2 text-sm text-red-600">
               {tf("approvals.errors.loadFailed", {
-                error: eventsError.message,
+                error: t("common.somethingWentWrong"),
               })}
             </p>
           ) : null}
@@ -199,6 +242,26 @@ export default async function ApprovalsPage({
                       {t("events.permission.required")}
                     </Badge>
                   ) : null}
+                  {event.experience_level ? (
+                    <Badge>{experienceLevelLabel(event.experience_level, t)}</Badge>
+                  ) : null}
+                  <Badge>
+                    {formatEventCost(
+                      {
+                        costAmount: event.cost_amount,
+                        costCurrency: event.cost_currency,
+                        costType: event.cost_type,
+                      },
+                      locale,
+                      {
+                        free: t("events.practicalDetails.free"),
+                        notSpecified: t(
+                          "events.practicalDetails.costNotSpecified",
+                        ),
+                        variable: t("events.practicalDetails.variableCost"),
+                      },
+                    )}
+                  </Badge>
                 </div>
                 <DetailsDisclosure label={t("common.viewDetails")}>
                   <dl className="grid gap-3 text-sm sm:grid-cols-3">
@@ -244,6 +307,73 @@ export default async function ApprovalsPage({
                           : t("events.permission.notRequired")}
                       </dd>
                     </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.decisionInfo.responsibleAdult")}
+                      </dt>
+                      <dd className="text-zinc-800">
+                        {responsibleStaffLabel(
+                          event.responsible_staff_id
+                            ? responsibleStaffById.get(event.responsible_staff_id)
+                            : undefined,
+                          t,
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.decisionInfo.eligibility")}
+                      </dt>
+                      <dd className="whitespace-pre-wrap text-zinc-800">
+                        {event.eligibility_notes ??
+                          t("events.decisionInfo.eligibilityNotSpecified")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.decisionInfo.experienceLevel")}
+                      </dt>
+                      <dd className="text-zinc-800">
+                        {experienceLevelLabel(event.experience_level, t)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.decisionInfo.accessibilityInformation")}
+                      </dt>
+                      <dd className="whitespace-pre-wrap text-zinc-800">
+                        {event.accessibility_notes ??
+                          t("events.decisionInfo.accessibilityNotProvided")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.practicalDetails.requiredMaterials")}
+                      </dt>
+                      <dd className="whitespace-pre-wrap text-zinc-800">
+                        {event.required_materials ??
+                          t("events.practicalDetails.materialsNotSpecified")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t("events.practicalDetails.expectedCommitment")}
+                      </dt>
+                      <dd className="whitespace-pre-wrap text-zinc-800">
+                        {event.expected_commitment ??
+                          t("events.practicalDetails.commitmentNotSpecified")}
+                      </dd>
+                    </div>
+                    {event.cost_notes ? (
+                      <div>
+                        <dt className="text-zinc-500">
+                          {t("events.practicalDetails.costNotes")}
+                        </dt>
+                        <dd className="whitespace-pre-wrap text-zinc-800">
+                          {event.cost_notes}
+                        </dd>
+                      </div>
+                    ) : null}
                   </dl>
                   {event.permission_note ? (
                     <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
@@ -339,6 +469,37 @@ function riskLabel(riskLevel: PendingEvent["risk_level"], t: Translate) {
   return riskLevel === "medium"
     ? t("events.risk.medium")
     : t("events.risk.low");
+}
+
+function experienceLevelLabel(
+  experienceLevel: EventExperienceLevel | null,
+  t: Translate,
+) {
+  if (experienceLevel === "beginner_friendly") {
+    return t("events.experience.beginnerFriendly");
+  }
+
+  if (experienceLevel === "prior_experience_recommended") {
+    return t("events.experience.priorExperienceRecommended");
+  }
+
+  return t("events.decisionInfo.experienceNotSpecified");
+}
+
+function responsibleStaffLabel(
+  staff: ResponsibleStaffProfile | undefined,
+  t: Translate,
+) {
+  if (!staff || staff.status !== "active") {
+    return t("events.decisionInfo.responsibleNotSpecified");
+  }
+
+  const roleLabel =
+    staff.role === "school_admin"
+      ? t("roles.schoolAdmin")
+      : t("roles.teacher");
+
+  return `${staff.full_name} (${roleLabel})`;
 }
 
 function categoryLabel(category: string, t: Translate) {

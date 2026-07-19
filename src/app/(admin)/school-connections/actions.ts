@@ -91,7 +91,7 @@ export async function requestSchoolConnection(formData: FormData) {
       error.code === "23505"
         ? i18n.t("schoolConnections.errors.connectionExists")
         : i18n.tf("schoolConnections.errors.requestFailed", {
-            error: error.message,
+            error: i18n.t("common.somethingWentWrong"),
           }),
     );
   }
@@ -157,7 +157,7 @@ export async function respondToSchoolConnection(formData: FormData) {
     redirectWithMessage(
       "error",
       i18n.tf("schoolConnections.errors.updateFailed", {
-        error: error.message,
+        error: i18n.t("common.somethingWentWrong"),
       }),
     );
   }

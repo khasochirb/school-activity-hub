@@ -275,7 +275,6 @@ async function getAuditLogSchools(
   if (error) {
     console.error("Super Admin dashboard audit log school lookup failed", {
       code: error.code,
-      message: error.message,
     });
   }
 

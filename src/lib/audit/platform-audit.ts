@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { PlatformAdminProfile } from "@/lib/auth/platform-admin";
+import { logServerError } from "@/lib/errors/server-error";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type AuditMetadataValue = boolean | null | number | string | undefined;
@@ -37,14 +38,10 @@ export async function createPlatformAuditLog({
     });
 
     if (error) {
-      logAuditFailure(action, targetType, error.message);
+      logAuditFailure(action, targetType, error);
     }
   } catch (error) {
-    logAuditFailure(
-      action,
-      targetType,
-      error instanceof Error ? error.message : "Unknown audit logging error",
-    );
+    logAuditFailure(action, targetType, error);
   }
 }
 
@@ -64,10 +61,9 @@ function sanitizeMetadata(metadata: Record<string, AuditMetadataValue>) {
   );
 }
 
-function logAuditFailure(action: string, targetType: string, message: string) {
-  console.error("Platform audit log failed", {
+function logAuditFailure(action: string, targetType: string, error: unknown) {
+  logServerError("Platform audit log failed", error, {
     action,
-    message,
     targetType,
   });
 }

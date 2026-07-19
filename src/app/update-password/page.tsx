@@ -62,6 +62,7 @@ export default async function UpdatePasswordPage() {
               passwordMismatch: t("auth.updatePassword.errors.passwordMismatch"),
               submit: t("auth.updatePassword.submit"),
               success: t("auth.updatePassword.success"),
+              updateFailed: t("auth.updatePassword.errors.updateFailed"),
               updating: t("auth.updatePassword.updating"),
             }}
           />

@@ -64,7 +64,6 @@ export default async function SuperAdminPlatformAdminsPage({
   if (platformAdminsError) {
     console.error("Super Admin platform admins query failed", {
       code: platformAdminsError.code,
-      message: platformAdminsError.message,
     });
   }
 
@@ -81,7 +80,6 @@ export default async function SuperAdminPlatformAdminsPage({
   if (profiles.error) {
     console.error("Super Admin platform admin profiles query failed", {
       code: profiles.error.code,
-      message: profiles.error.message,
     });
   }
 

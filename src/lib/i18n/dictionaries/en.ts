@@ -22,6 +22,13 @@ export const en = {
     success: "Success",
     warning: "Warning",
   },
+  routeError: {
+    backToDashboard: "Back to dashboard",
+    description:
+      "A temporary problem prevented this page from loading. Try again without re-submitting any form.",
+    retry: "Try again",
+    title: "This page could not be loaded",
+  },
   a11y: {
     primaryNavigation: "Primary navigation",
   },
@@ -67,6 +74,7 @@ export const en = {
         "Use your school activity account to manage or join verified school activities.",
       email: "Email",
       eyebrow: "Account access",
+      failed: "Sign in failed. Check your email and password, then try again.",
       forgotPassword: "Forgot password?",
       password: "Password",
       signingIn: "Signing in...",
@@ -79,6 +87,7 @@ export const en = {
       email: "Email",
       errors: {
         emailRequired: "Email is required.",
+        requestFailed: "The reset email could not be requested. Try again.",
       },
       sending: "Sending...",
       submit: "Send reset email",
@@ -93,6 +102,7 @@ export const en = {
         "Choose a new password after opening the reset link from your email.",
       errors: {
         passwordMismatch: "Passwords do not match.",
+        updateFailed: "The password could not be updated. Try again.",
       },
       goToDashboard: "Go to dashboard",
       newPassword: "New password",
@@ -136,6 +146,7 @@ export const en = {
     no: "No",
     noExtraDetails: "No extra details",
     notAvailableShort: "N/A",
+    notSpecified: "Not specified",
     open: "Open",
     next: "Next",
     pending: "Pending",
@@ -664,11 +675,15 @@ export const en = {
     platformConnections: "Platform Connections",
     platformAdmins: "Platform Admins",
     profile: "Profile",
+    privacy: "Privacy and data rights",
     reports: "Activity Reports",
+    safeguardingInbox: "Safeguarding inbox",
     schoolConnections: "School Network",
     schoolManagement: "School Management",
     settings: "School Settings",
     schools: "Schools",
+    safety: "Safety and support",
+    safetyAndPrivacy: "Safety and privacy",
     staff: "Staff Accounts",
     students: "Students",
     superAdmin: "Platform Admin",
@@ -895,6 +910,8 @@ export const en = {
       joining: "Joining...",
       resetFilters: "Reset filters",
       saveSafety: "Save safety details",
+      saveDecisionInfo: "Save participation information",
+      savePracticalDetails: "Save practical details",
       saveSharing: "Save sharing settings",
       submitForApproval: "Submit for approval",
       submitting: "Submitting...",
@@ -969,22 +986,38 @@ export const en = {
       title: "No events match these filters",
     },
     errors: {
+      accessibilityTooLong: "Accessibility information is too long.",
+      commitmentTooLong: "Expected commitment information is too long.",
+      costNotesTooLong: "Cost notes are too long.",
       createFailed: "Event could not be created. Check the details and try again.",
+      eligibilityTooLong: "Eligibility information is too long.",
       invalidCategory: "Choose a valid category.",
       invalidClub: "Choose a valid club.",
+      invalidCostAmount: "Enter a valid positive cost amount.",
+      invalidCostCurrency: "Choose a supported currency.",
+      invalidCostType: "Choose a valid cost type.",
+      invalidExperienceLevel: "Choose a valid experience level.",
+      invalidResponsibleStaff:
+        "Choose an active teacher or school admin from your school.",
       invalidRiskLevel: "Choose a valid risk level.",
       leaderClubRequired:
         "Club leaders must choose one of their clubs.",
       loadFailed: "Events could not be loaded. Refresh and try again.",
       locationRequired: "Location is required.",
+      materialsTooLong: "Required materials information is too long.",
       maxParticipantsPositive:
         "Max participants must be a positive number.",
       staffOrLeaderOnly:
         "Only school staff or club leaders can create events.",
+      paidCostRequired: "Paid events require a positive cost amount.",
       timeRequired: "Start and end times are required.",
       titleRequired: "Event title is required.",
       unauthenticated: "You must be logged in.",
+      unexpectedCostDetails:
+        "The cost amount or currency does not match the selected cost type.",
       validTimeOrder: "End time must be after start time.",
+      variableCostNotesRequired:
+        "Variable-cost events require a short cost explanation.",
     },
     eyebrow: "Activities calendar",
     fallback: {
@@ -1015,7 +1048,9 @@ export const en = {
     formGroups: {
       basicDetails: "Basic details",
       dateTime: "Date and time",
+      practicalDetails: "Practical details",
       safetyPermissions: "Safety and permissions",
+      whoCanAttend: "Who can attend and what to expect",
     },
     form: {
       category: "Category",
@@ -1044,6 +1079,52 @@ export const en = {
       timePreviewEmpty: "Select a date and time to preview the schedule.",
       timezoneHelper: "Times are saved in your school timezone.",
       title: "Title",
+    },
+    decisionInfo: {
+      accessibilityGuidance:
+        "Accessibility information describes the activity and environment. Students are not required to disclose a disability publicly.",
+      accessibilityInformation: "Accessibility information",
+      accessibilityNotProvided: "Accessibility information not provided",
+      accessibilityPlaceholder:
+        "Describe the venue, activity format, and available accommodations",
+      eligibility: "Eligibility and grade information",
+      eligibilityNotSpecified: "Eligibility not specified",
+      eligibilityPlaceholder:
+        "Explain who can participate, including relevant grades or experience",
+      experienceLevel: "Experience level",
+      experienceNotSpecified: "Experience level not specified",
+      responsibleAdult: "Responsible adult",
+      responsibleAdultHelp:
+        "Choose the active teacher or school admin responsible for this activity.",
+      responsibleAdultReviewHelp:
+        "School staff can assign the responsible adult during review.",
+      responsibleNotSpecified: "Responsible adult not specified",
+    },
+    experience: {
+      beginnerFriendly: "Beginner-friendly",
+      priorExperienceRecommended: "Prior experience recommended",
+    },
+    practicalDetails: {
+      amount: "Amount",
+      commitmentNotSpecified: "Expected commitment not specified",
+      commitmentPlaceholder:
+        "For example: One 90-minute session or two practices per week",
+      cost: "Cost",
+      costNotes: "Cost notes",
+      costNotesPlaceholder:
+        "For example: equipment rental included or payment deadline",
+      costNotSpecified: "Cost not specified",
+      currency: "Currency",
+      expectedCommitment: "Expected commitment",
+      free: "Free",
+      materialsNotSpecified: "Required materials not specified",
+      materialsPlaceholder:
+        "Describe what participants should bring, if anything",
+      paid: "Paid",
+      privacyGuidance:
+        "Cost and materials describe the activity. Students are not required to publicly disclose their financial circumstances, disability, or whether they own the required materials.",
+      requiredMaterials: "Required materials",
+      variableCost: "Variable cost",
     },
     listTitles: {
       club: "Club events",
@@ -1942,6 +2023,301 @@ export const en = {
       },
       title: "Schools",
     },
+  },
+  safety: {
+    actions: {
+      back: "Back to safety and support",
+    },
+    cards: {
+      designationsAction: "Manage designations",
+      designationsDescription:
+        "Choose the trusted school staff who may open and respond to confidential reports.",
+      designationsTitle: "Safeguarding staff",
+      inboxAction: "Open restricted inbox",
+      inboxDescription:
+        "Review confidential same-school reports and record minimal workflow updates.",
+      inboxTitle: "Restricted safeguarding inbox",
+      myReportsAction: "View my report status",
+      myReportsDescription:
+        "See the safe status and response timestamps for reports you submitted.",
+      myReportsTitle: "My safety reports",
+      reportAction: "Report a safety concern",
+      reportDescription:
+        "Send a confidential concern to specifically designated safeguarding staff at your school.",
+      reportTitle: "Confidential reporting",
+    },
+    categories: {
+      activityOrEvent: "Activity or event concern",
+      bullyingOrHarassment: "Bullying or harassment",
+      onlineOrPlatform: "Online or platform safety",
+      other: "Other safety concern",
+      personalSafety: "Personal safety",
+    },
+    confidentiality: {
+      identity:
+        "This is confidential, not anonymous. Your authenticated account remains linked to the report so designated staff can respond safely.",
+      offline:
+        "You may also report in person to a trusted adult or the school office. You do not have to use the digital form.",
+      restricted:
+        "Only actively designated safeguarding staff at your school can read report descriptions. Ordinary teachers, non-designated school admins, and platform admins do not receive automatic access.",
+      title: "Confidentiality and other reporting options",
+    },
+    description:
+      "Find clear safety information, submit a confidential concern, or review the safe status of your own report.",
+    designations: {
+      actions: {
+        activate: "Designate staff member",
+        activating: "Designating...",
+        deactivate: "Remove designation",
+        deactivating: "Removing...",
+      },
+      assignedAt: "Originally assigned",
+      description:
+        "School admins may assign active teachers or school admins. A designation grants access to highly confidential same-school reports.",
+      emptyDescription: "Create an eligible staff profile before assigning this responsibility.",
+      emptyTitle: "No eligible staff found",
+      errors: {
+        ineligibleProfile: "Choose an active teacher or school admin from your school.",
+        invalidSelection: "Choose a valid staff member and designation status.",
+        loadFailed: "Safeguarding staff could not be loaded. Refresh and try again.",
+        noChange: "This safeguarding designation already has that status.",
+        updateFailed: "The safeguarding designation could not be updated.",
+      },
+      success: {
+        activated: "Safeguarding staff member designated.",
+        deactivated: "Safeguarding designation removed.",
+      },
+      title: "Safeguarding staff designations",
+      unassigned: "Not designated",
+      warningDescription:
+        "Give this access only to trained, approved staff. The safeguarding lead, backup, monitored hours, and response process still require formal school approval.",
+      warningTitle: "Restricted responsibility",
+    },
+    errors: {
+      categoryRequired: "Choose a broad concern category.",
+      descriptionRequired: "Briefly describe the concern.",
+      descriptionTooLong: "Keep the description to 2,000 characters or fewer.",
+      invalidRelatedActivity: "Choose a valid related activity from your school.",
+      invalidWorkflowUpdate: "Choose a valid next workflow status.",
+      loadInboxFailed: "Confidential reports could not be loaded. Refresh and try again.",
+      loadOwnReportsFailed: "Your report statuses could not be loaded. Refresh and try again.",
+      submitFailed: "The report could not be submitted. Try again or use the in-person reporting option.",
+      updateFailed: "The report status could not be updated.",
+    },
+    inbox: {
+      contactRequested: "Contact requested",
+      description:
+        "A restricted operational inbox for designated same-school safeguarding staff.",
+      emptyDescription: "No confidential reports are waiting in this school inbox.",
+      emptyTitle: "No safety reports",
+      externalReferralAt: "External or offline referral recorded",
+      nextStatus: "Next workflow status",
+      reporterUnavailable: "Reporter name unavailable",
+      restrictedDescription:
+        "Keep investigation notes and detailed case management in the school's approved offline system. Never copy narratives into ordinary logs, dashboards, or analytics.",
+      restrictedTitle: "Highly confidential information",
+      title: "Safeguarding inbox",
+      updateStatus: "Update status",
+      viewConfidentialDescription: "View confidential description",
+    },
+    myReports: {
+      acknowledgedAt: "Acknowledged",
+      closedAt: "Closed",
+      description:
+        "Only reporter-safe status information is shown here. Report descriptions are not returned to this page.",
+      emptyDescription: "Reports you submit will appear here with a limited status receipt.",
+      emptyTitle: "No safety reports submitted",
+      safeSubset:
+        "For confidentiality, this page shows only category, status, your contact request, and response timestamps.",
+      submittedAt: "Submitted",
+      title: "My safety reports",
+    },
+    related: {
+      clubPrefix: "Club",
+      eventPrefix: "Activity",
+    },
+    report: {
+      actions: {
+        submit: "Submit confidential report",
+        submitting: "Submitting securely...",
+      },
+      description:
+        "Share only the information needed for designated staff to understand the concern. Do not upload evidence or add unrelated personal details.",
+      fields: {
+        category: "Concern category",
+        description: "Brief description",
+        descriptionHelp:
+          "Use concise words. Avoid diagnoses and unnecessary names or personal details.",
+        immediateContact: "I would like a designated staff member to contact me",
+        immediateContactHelp:
+          "This requests follow-up but does not create an emergency response. The platform is not continuously monitored.",
+        noRelatedActivity: "No related activity",
+        relatedActivity: "Related school activity or club (optional)",
+      },
+      title: "Report a safety concern",
+    },
+    status: {
+      acknowledged: "Acknowledged",
+      closed: "Closed",
+      externalReferral: "External/offline referral",
+      inReview: "In review",
+      submitted: "Submitted",
+    },
+    success: {
+      submitted:
+        "Your confidential report was submitted. Use My safety reports to review its safe status.",
+      updated: "Safety report status updated.",
+    },
+    title: "Safety and support",
+    urgent: {
+      immediateDanger:
+        "If there is immediate danger, contact a trusted adult, the school office, or the school's verified local emergency process now.",
+      notEmergency:
+        "This platform is not continuously monitored and is not an emergency or counselling service.",
+      title: "For urgent or immediate danger",
+    },
+  },
+  privacy: {
+    access: {
+      items: {
+        platform:
+          "Platform-admin status does not automatically grant access to safeguarding narratives or school privacy requests.",
+        school:
+          "Authorized same-school staff receive only the access needed for their operational responsibility.",
+        self: "You can view your own profile and the requests you submit.",
+      },
+      title: "Who can access operational data",
+    },
+    actions: {
+      back: "Back to privacy information",
+      makeRequest: "Make a data-rights request",
+    },
+    commitments: {
+      noAutomaticDeletion:
+        "A request does not automatically delete records. Safeguarding, legal, attendance, audit, or backup exceptions require authorized review.",
+      noSale: "The platform does not sell student data or use it for advertising.",
+      retention:
+        "Records are kept only for approved operational, safeguarding, legal, audit, and continuity needs. The exact schedule is [DECISION REQUIRED].",
+      safeguardingLimits:
+        "Safeguarding confidentiality may be limited when approved staff must follow the school's safety or legal process.",
+      title: "Privacy commitments and limits",
+    },
+    contact: {
+      dataController: "Data controller",
+      privacyContact: "Privacy contact",
+      title: "Approved contacts",
+    },
+    description:
+      "Understand how operational data is used, who can access it, and how to request access, correction, export, or deletion review.",
+    manage: {
+      action: "Manage data-rights requests",
+      actions: {
+        save: "Update request",
+      },
+      description:
+        "School admins may process requests for their own school. The responsible privacy owner and response procedure still require formal approval.",
+      emptyDescription: "Submitted same-school requests will appear here for authorized review.",
+      emptyTitle: "No data-rights requests",
+      fields: {
+        response: "Safe response summary (optional)",
+        responseHelp:
+          "Keep this concise. Do not paste exports, safeguarding narratives, passwords, or other sensitive records here.",
+        status: "Next request status",
+      },
+      noDetails: "No additional details provided.",
+      requesterUnavailable: "Requester name unavailable",
+      reviewDescription:
+        "Verify identity and authority outside this screen before releasing, correcting, or deleting data. Use an approved secure delivery method.",
+      reviewTitle: "Authorized review required",
+      title: "Manage data-rights requests",
+    },
+    operational: {
+      items: {
+        account: "Verified account, school, role, profile, roster, and access information.",
+        activities: "Club, activity, registration, permission, attendance, and announcement records needed to operate the service.",
+        safety: "Restricted safeguarding and rights-request records only when a user chooses those workflows.",
+      },
+      title: "Operational data used by the platform",
+    },
+    requests: {
+      actions: {
+        submit: "Submit request",
+        submitting: "Submitting...",
+        withdraw: "Withdraw request",
+        withdrawing: "Withdrawing...",
+      },
+      currentTitle: "My requests",
+      description:
+        "Submit and track a request about your operational data. This does not automatically change or delete records.",
+      emptyDescription: "Requests you submit will appear here with their current status.",
+      emptyTitle: "No data-rights requests submitted",
+      errors: {
+        denialReasonRequired: "Add a concise reason before denying this request.",
+        detailsTooLong: "Keep request details to 2,000 characters or fewer.",
+        invalidRequest: "This request cannot be changed.",
+        invalidUpdate: "Choose a valid next request status.",
+        loadFailed: "Data-rights requests could not be loaded. Refresh and try again.",
+        responseTooLong: "Keep the response summary to 1,000 characters or fewer.",
+        submitFailed: "The data-rights request could not be submitted.",
+        typeRequired: "Choose a request type.",
+        updateFailed: "The data-rights request could not be updated.",
+      },
+      fields: {
+        details: "Request details (optional)",
+        detailsHelp:
+          "Explain what you need without adding passwords, invite codes, or unrelated information.",
+        type: "Request type",
+      },
+      newDescription:
+        "Choose the closest request type. An authorized person will review identity, scope, retention, and any exceptions.",
+      newTitle: "Submit a request",
+      response: "Response summary",
+      reviewNotice:
+        "No legal response deadline is promised here until the school and data controller approve one.",
+      status: {
+        acknowledged: "Acknowledged",
+        actionRequired: "Action required",
+        completed: "Completed",
+        deniedWithReason: "Denied with reason",
+        submitted: "Submitted",
+        underReview: "Under review",
+        withdrawn: "Withdrawn",
+      },
+      submittedAt: "Submitted",
+      success: {
+        submitted: "Data-rights request submitted.",
+        updated: "Data-rights request updated.",
+        withdrawn: "Data-rights request withdrawn.",
+      },
+      title: "Data-rights requests",
+      types: {
+        access: "Access my operational data",
+        correction: "Correct my operational data",
+        deletionOrDeactivation: "Request deletion or deactivation review",
+        export: "Request a secure export",
+        researchWithdrawal: "Withdraw from future optional research linkage",
+      },
+    },
+    research: {
+      items: {
+        noDisadvantage:
+          "Declining or withdrawing from optional research must not block platform or activity access.",
+        noInference:
+          "Clicks and participation are not used to diagnose loneliness, mental health, personality, or friendships.",
+        separate:
+          "Operational participation is separate from optional research. No research survey or research-consent record is stored in this application in this phase.",
+      },
+      title: "Operational use and research are separate",
+    },
+    rights: {
+      items: {
+        access: "Request access, correction, secure export, or deletion/deactivation review.",
+        delivery: "Sensitive exports are not stored in an ordinary field or emailed automatically.",
+        review: "Authorized staff review identity, scope, retention exceptions, and a secure response method.",
+      },
+      title: "Your data-rights process",
+    },
+    title: "Privacy and data rights",
   },
   workflow: {
     addStudents: "Add students",

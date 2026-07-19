@@ -1,0 +1,3 @@
+# Local CLI state only. Never commit a project reference or generated local state.
+.branches
+.temp

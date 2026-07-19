@@ -219,7 +219,9 @@ export default async function StudentsPage({
           <h2 className="section-title">{t("students.roster.title")}</h2>
           {error ? (
             <p className="mt-2 text-sm text-red-600">
-              {tf("students.errors.loadFailed", { error: error.message })}
+              {tf("students.errors.loadFailed", {
+                error: t("common.somethingWentWrong"),
+              })}
             </p>
           ) : null}
         </div>

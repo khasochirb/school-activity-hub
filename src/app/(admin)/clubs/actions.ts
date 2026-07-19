@@ -92,7 +92,9 @@ export async function createClub(
       message:
         error.code === "23505"
           ? i18n.t("clubs.errors.duplicateName")
-          : i18n.tf("clubs.errors.createFailed", { error: error.message }),
+          : i18n.tf("clubs.errors.createFailed", {
+              error: i18n.t("common.somethingWentWrong"),
+            }),
       success: false,
     };
   }
