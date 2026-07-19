@@ -1,6 +1,5 @@
 import "server-only";
 
-import type { PlatformAdminProfile } from "@/lib/auth/platform-admin";
 import { logServerError } from "@/lib/errors/server-error";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -8,7 +7,7 @@ type AuditMetadataValue = boolean | null | number | string | undefined;
 
 type PlatformAuditLogInput = {
   action: string;
-  actor: Pick<PlatformAdminProfile, "id">;
+  actor: { id: string };
   metadata?: Record<string, AuditMetadataValue>;
   targetId?: string | null;
   targetSchoolId?: string | null;

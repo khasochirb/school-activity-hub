@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentEventActor, isEventStaffActor } from "@/lib/auth/event-access";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   createQrCodeMatrix,
@@ -23,12 +23,6 @@ import { createClient } from "@/lib/supabase/server";
 import { updateAttendeePermissionStatus } from "./actions";
 import { CopyCheckInLinkButton } from "./copy-check-in-link-button";
 
-type StaffProfile = {
-  id: string;
-  school_id: string;
-  role: "school_admin" | "teacher" | "student";
-};
-
 type EventRecord = {
   id: string;
   title: string;
@@ -36,6 +30,7 @@ type EventRecord = {
   starts_at: string;
   ends_at: string;
   risk_level: "low" | "medium" | "high";
+  school_id: string;
   permission_required: boolean;
   permission_note: string | null;
   status: string;
@@ -126,43 +121,40 @@ export default async function EventAttendancePage({
   const { eventId } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const activeFilter = parseAttendanceFilter(resolvedSearchParams.filter);
-  const supabase = await createClient();
-  const user = await getCurrentUser();
+  const actor = await getCurrentEventActor();
 
-  if (!user) {
+  if (!actor) {
     redirect("/login");
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<StaffProfile>();
-
-  if (!profile || !isSchoolStaff(profile)) {
+  if (!isEventStaffActor(actor)) {
     redirect("/dashboard");
   }
 
+  const supabase = await createClient();
   const admin = createAdminClient();
-  const { data: event } = await admin
+  let eventQuery = supabase
     .from("events")
-    .select("id, title, location, starts_at, ends_at, risk_level, permission_required, permission_note, status")
+    .select("id, school_id, title, location, starts_at, ends_at, risk_level, permission_required, permission_note, status")
     .eq("id", eventId)
-    .eq("school_id", profile.school_id)
-    .eq("status", "approved")
-    .maybeSingle<EventRecord>();
+    .eq("status", "approved");
+
+  if (!actor.isPlatformAdmin && actor.profile) {
+    eventQuery = eventQuery.eq("school_id", actor.profile.school_id);
+  }
+
+  const { data: event } = await eventQuery.maybeSingle<EventRecord>();
 
   if (!event) {
     redirect("/events");
   }
 
-  const { data: attendees } = await admin
+  const { data: attendees } = await supabase
     .from("event_attendees")
     .select(
       "id, student_roster_id, attendee_school_id, attendee_profile_id, permission_status, status, registered_at, checked_in_at",
     )
     .eq("event_id", event.id)
-    .eq("school_id", profile.school_id)
+    .eq("school_id", event.school_id)
     .order("registered_at", { ascending: true })
     .returns<EventAttendee[]>();
 
@@ -176,7 +168,7 @@ export default async function EventAttendancePage({
     new Set((attendees ?? []).map((attendee) => attendee.attendee_school_id)),
   );
   const rosters = rosterIds.length
-    ? await getStudentRosters(admin, profile.school_id, rosterIds)
+    ? await getStudentRosters(admin, event.school_id, rosterIds)
     : [];
   const attendeeProfiles = attendeeProfileIds.length
     ? await getProfilesById(admin, attendeeProfileIds)
@@ -185,7 +177,7 @@ export default async function EventAttendancePage({
     ? await getSchoolsById(admin, attendeeSchoolIds)
     : [];
   const checkins = (attendees ?? []).length
-    ? await getSuccessfulCheckins(admin, profile.school_id, event.id)
+    ? await getSuccessfulCheckins(supabase, event.school_id, event.id)
     : [];
   const rosterById = new Map(rosters.map((student) => [student.id, student]));
   const profileById = new Map(
@@ -723,11 +715,11 @@ async function getStudentRosters(
 }
 
 async function getSuccessfulCheckins(
-  admin: ReturnType<typeof createAdminClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   schoolId: string,
   eventId: string,
 ) {
-  const { data: checkins } = await admin
+  const { data: checkins } = await supabase
     .from("attendance_checkins")
     .select(
       "id, event_attendee_id, student_roster_id, attendee_profile_id, method, result, checked_in_at",
@@ -805,9 +797,6 @@ function normalizeBaseUrl(value: string) {
   return value.replace(/\/+$/, "");
 }
 
-function isSchoolStaff(profile: StaffProfile) {
-  return profile.role === "school_admin" || profile.role === "teacher";
-}
 
 function StatusBadge({ status, t }: { status: string; t: Translate }) {
   const isAttended = status === "attended";

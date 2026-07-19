@@ -17,6 +17,10 @@ $phase4b1MigrationPath = Join-Path $repositoryRoot "supabase/migrations/20260718
 $simplificationPreflightPath = Join-Path $repositoryRoot "supabase/production-readiness/phase3-safety-simplification-preflight.sql"
 $simplificationMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180003_simplify_safety_reporting.sql"
 $simplificationPostflightPath = Join-Path $repositoryRoot "supabase/production-readiness/phase3-safety-simplification-postflight.sql"
+$platformEventsPreflightPath = Join-Path $repositoryRoot "supabase/production-readiness/platform-admin-events-preflight.sql"
+$platformEventsMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180004_add_global_platform_admin_event_access.sql"
+$platformEventsPostflightPath = Join-Path $repositoryRoot "supabase/production-readiness/platform-admin-events-postflight.sql"
+$platformEventsTestPath = Join-Path $PSScriptRoot "platform-admin-events.sql"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
 $phase4b1TestPath = Join-Path $PSScriptRoot "phase4b1-event-practical-details.sql"
@@ -49,18 +53,18 @@ function Invoke-PsqlText(
       )
       $exitCode = $LASTEXITCODE
     } else {
-      $sql | & docker exec -i $script:dbContainer psql -X -q -v ON_ERROR_STOP=1 -U postgres -d $database *> $null
+      $output = @(
+        $sql | & docker exec -i $script:dbContainer psql -X -q -v ON_ERROR_STOP=1 -U postgres -d $database 2>&1 |
+          ForEach-Object { $_.ToString() }
+      )
       $exitCode = $LASTEXITCODE
     }
   } finally {
     $ErrorActionPreference = $previousPreference
   }
   if ($exitCode -ne 0) {
-    if ($Capture) {
-      $diagnostic = ($output | Out-String).Trim()
-      throw "PostgreSQL command failed with exit code $exitCode.`n$diagnostic"
-    }
-    throw "PostgreSQL command failed with exit code $exitCode."
+    $diagnostic = ($output | Out-String).Trim()
+    throw "PostgreSQL command failed with exit code $exitCode.`n$diagnostic"
   }
   if ($Capture) {
     return @($output)
@@ -300,6 +304,29 @@ grant all on schema public to postgres, service_role;
   }
   $phase4b1TestOutput |
     Where-Object { $_ -match 'ok - |PHASE4B1_EVENT_PRACTICAL_DETAILS_TESTS_PASSED' } |
+    Write-Output
+
+  $platformEventsPreflightOutput = Invoke-PsqlFile -database "postgres" -path $platformEventsPreflightPath -Capture
+  if (($platformEventsPreflightOutput -join "`n") -notmatch 'Platform-admin Events preflight decision\|PASS\|') {
+    throw "Platform-admin Events preflight did not return PASS."
+  }
+  Write-Output "Platform-admin Events preflight passed."
+
+  Invoke-PsqlFile -database "postgres" -path $platformEventsMigrationPath
+  Write-Output "Applied only 202607180004_add_global_platform_admin_event_access.sql."
+
+  $platformEventsPostflightOutput = Invoke-PsqlFile -database "postgres" -path $platformEventsPostflightPath -Capture
+  if (($platformEventsPostflightOutput -join "`n") -notmatch 'Platform-admin Events postflight decision\|PASS\|') {
+    throw "Platform-admin Events postflight did not return PASS."
+  }
+  Write-Output "Platform-admin Events postflight passed."
+
+  $platformEventsTestOutput = Invoke-PsqlFile -database "postgres" -path $platformEventsTestPath -Capture
+  if (($platformEventsTestOutput -join "`n") -notmatch 'PLATFORM_ADMIN_EVENTS_TESTS_PASSED') {
+    throw "Platform-admin Events database tests did not emit their success marker."
+  }
+  $platformEventsTestOutput |
+    Where-Object { $_ -match 'ok - |PLATFORM_ADMIN_EVENTS_TESTS_PASSED' } |
     Write-Output
 
   Invoke-PsqlText -database "postgres" -sql "drop database if exists $expectedDatabase with (force); create database $expectedDatabase;"

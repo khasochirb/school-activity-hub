@@ -19,6 +19,7 @@ export type EventsFiltersLabels = {
   hideFilters: string;
   search: string;
   searchEvents: string;
+  school: string;
   showFilters: string;
   status: string;
   time: string;
@@ -36,8 +37,10 @@ export function EventsFilters({
   selectedAudience,
   selectedCategory,
   selectedStatus,
+  selectedSchool,
   selectedTime,
   statusOptions,
+  schoolOptions,
   timeOptions,
   view,
   week,
@@ -53,8 +56,10 @@ export function EventsFilters({
   selectedAudience: string;
   selectedCategory: string;
   selectedStatus: string;
+  selectedSchool: string;
   selectedTime: string;
   statusOptions: EventsFilterOption[];
+  schoolOptions: EventsFilterOption[];
   timeOptions: EventsFilterOption[];
   view: "list" | "month" | "week";
   week: string;
@@ -77,6 +82,14 @@ export function EventsFilters({
               label={labels.search}
               placeholder={labels.searchEvents}
             />
+            {schoolOptions.length ? (
+              <SelectFilter
+                defaultValue={selectedSchool}
+                label={labels.school}
+                name="school"
+                options={schoolOptions}
+              />
+            ) : null}
             <SelectFilter
               defaultValue={selectedAudience}
               label={labels.audience}

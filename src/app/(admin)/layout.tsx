@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getCurrentPlatformAdminProfile } from "@/lib/auth/platform-admin";
+import { getCurrentPlatformAdminIdentity } from "@/lib/auth/platform-admin";
 import { getCurrentSafeguardingAccess } from "@/lib/auth/sensitive-workflows";
 import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
@@ -39,7 +39,7 @@ export default async function AdminLayout({
         .eq("id", user.id)
         .maybeSingle<AppShellProfile>(),
     ),
-    getCurrentPlatformAdminProfile(),
+    getCurrentPlatformAdminIdentity(),
     getCurrentSafeguardingAccess(),
   ]);
 

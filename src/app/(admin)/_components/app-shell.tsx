@@ -45,6 +45,22 @@ const primaryIntentHrefs: Record<Role, ReadonlySet<string>> = {
 
 const platformPrimaryIntentHrefs = new Set(["/super-admin/schools"]);
 
+const platformEventMobilePrimaryNav: RoleAwareNavItem[] = [
+  { href: "/events", labelKey: "nav.activities", match: "events" },
+  {
+    href: "/events?view=month",
+    labelKey: "nav.calendar",
+    match: "calendar",
+    intentPrefetch: false,
+  },
+  { href: "/approvals", labelKey: "nav.approvals" },
+  {
+    href: staffAttendanceHref,
+    labelKey: "nav.attendance",
+    match: "attendance",
+  },
+];
+
 const navSections: Array<{
   items: RoleAwareNavItem[];
   labelKey: string;
@@ -687,7 +703,11 @@ function getMobileNavigation(
   isSafeguardingStaff: boolean,
   t: (key: string) => string,
 ) {
-  const primaryDefinitions = profile ? mobilePrimaryNav[profile.role] : [];
+  const primaryDefinitions = profile
+    ? mobilePrimaryNav[profile.role]
+    : isPlatformAdmin
+      ? platformEventMobilePrimaryNav
+      : [];
   const primaryItems = primaryDefinitions.map((item) =>
     toMobileNavItem(item, profile, isPlatformAdmin, t),
   );
@@ -761,6 +781,10 @@ function isVisibleForRole(
 
   if (item.safeguardingOnly && !isSafeguardingStaff) {
     return false;
+  }
+
+  if (isPlatformAdmin && item.href === "/approvals") {
+    return true;
   }
 
   return !item.roles || (profile?.role && item.roles.includes(profile.role));

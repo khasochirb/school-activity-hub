@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentEventActor, isEventStaffActor } from "@/lib/auth/event-access";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@/lib/events/event-practical-details";
 import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   DetailsDisclosure,
   EmptyState,
@@ -30,13 +31,9 @@ import {
 } from "../_components/page-ui";
 import { approveEvent, rejectEvent } from "./actions";
 
-type StaffProfile = {
-  school_id: string;
-  role: "school_admin" | "teacher" | "student";
-};
-
 type PendingEvent = {
   id: string;
+  school_id: string;
   club_id: string | null;
   title: string;
   description: string | null;
@@ -67,6 +64,11 @@ type Club = {
   name: string;
 };
 
+type School = {
+  id: string;
+  name: string;
+};
+
 type ResponsibleStaffProfile = {
   full_name: string;
   id: string;
@@ -93,29 +95,25 @@ export default async function ApprovalsPage({
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
   const supabase = await createClient();
-  const user = await getCurrentUser();
+  const actor = await getCurrentEventActor();
 
-  if (!user) {
+  if (!actor) {
     redirect("/login");
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<StaffProfile>();
-
-  if (!profile || !["school_admin", "teacher"].includes(profile.role)) {
+  if (!isEventStaffActor(actor)) {
     redirect("/dashboard");
   }
 
-  const { data: pendingEvents, error: eventsError } = await supabase
+  let eventsQuery = supabase
     .from("events")
     .select(
-      "id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment, submitted_at, created_at",
+      "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment, submitted_at, created_at",
     )
-    .eq("school_id", profile.school_id)
-    .eq("status", "pending_approval")
+    .eq("status", "pending_approval");
+  if (!actor.isPlatformAdmin && actor.profile) {
+    eventsQuery = eventsQuery.eq("school_id", actor.profile.school_id);
+  }
+  const { data: pendingEvents, error: eventsError } = await eventsQuery
     .order("submitted_at", { ascending: true, nullsFirst: false })
     .returns<PendingEvent[]>();
   const clubIds = Array.from(
@@ -132,30 +130,48 @@ export default async function ApprovalsPage({
         .filter((staffId): staffId is string => Boolean(staffId)),
     ),
   );
-  const [{ data: clubs }, { data: responsibleStaff }] = await Promise.all([
+  const schoolIds = Array.from(
+    new Set((pendingEvents ?? []).map((event) => event.school_id)),
+  );
+  const lookupClient = actor.isPlatformAdmin ? createAdminClient() : supabase;
+  const [{ data: clubs }, { data: responsibleStaff }, { data: schools }] = await Promise.all([
     clubIds.length
-      ? supabase
+      ? lookupClient
           .from("clubs")
           .select("id, name")
-          .eq("school_id", profile.school_id)
           .in("id", clubIds)
           .returns<Club[]>()
       : Promise.resolve({ data: [] as Club[] }),
     responsibleStaffIds.length
-      ? supabase
+      ? lookupClient
           .from("profiles")
           .select("id, full_name, role, status")
-          .eq("school_id", profile.school_id)
           .in("id", responsibleStaffIds)
           .in("role", ["school_admin", "teacher"])
           .returns<ResponsibleStaffProfile[]>()
       : Promise.resolve({ data: [] as ResponsibleStaffProfile[] }),
+    actor.isPlatformAdmin && schoolIds.length
+      ? lookupClient
+          .from("schools")
+          .select("id, name")
+          .in("id", schoolIds)
+          .returns<School[]>()
+      : Promise.resolve({ data: [] as School[] }),
   ]);
 
   const clubNameById = new Map((clubs ?? []).map((club) => [club.id, club.name]));
   const responsibleStaffById = new Map(
     (responsibleStaff ?? []).map((staff) => [staff.id, staff]),
   );
+  const schoolNameById = new Map(
+    (schools ?? []).map((school) => [school.id, school.name]),
+  );
+  if (eventsError) {
+    console.error("approvals.query.pending-events failed", {
+      code: eventsError.code,
+      platformAdmin: actor.isPlatformAdmin,
+    });
+  }
   const pendingQueue = pendingEvents ?? [];
   const filteredEvents = pendingQueue.filter((event) =>
     matchesSearch(searchQuery, [event.title, event.location, event.category]),
@@ -187,15 +203,16 @@ export default async function ApprovalsPage({
       <section className="section-card">
         <div className="section-header">
           <h2 className="section-title">{t("approvals.pending.title")}</h2>
-          {eventsError ? (
-            <p className="mt-2 text-sm text-red-600">
+        </div>
+        {eventsError ? (
+          <div className="p-4">
+            <div className="error-box" role="alert">
               {tf("approvals.errors.loadFailed", {
                 error: t("common.somethingWentWrong"),
               })}
-            </p>
-          ) : null}
-        </div>
-        {pendingQueue.length && filteredEvents.length ? (
+            </div>
+          </div>
+        ) : pendingQueue.length && filteredEvents.length ? (
           <div className="grid gap-3 p-3">
             {filteredEvents.map((event) => (
               <article
@@ -225,6 +242,12 @@ export default async function ApprovalsPage({
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge>{t("status.pendingApproval")}</Badge>
+                  {actor.isPlatformAdmin ? (
+                    <Badge>
+                      {schoolNameById.get(event.school_id) ??
+                        t("events.platform.school")}
+                    </Badge>
+                  ) : null}
                   {event.category ? (
                     <Badge>{categoryLabel(event.category, t)}</Badge>
                   ) : null}

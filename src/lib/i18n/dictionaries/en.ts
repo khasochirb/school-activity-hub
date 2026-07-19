@@ -1003,6 +1003,7 @@ export const en = {
       leaderClubRequired:
         "Club leaders must choose one of their clubs.",
       loadFailed: "Events could not be loaded. Refresh and try again.",
+      loadUnavailable: "Events are not available right now. Refresh and try again.",
       locationRequired: "Location is required.",
       materialsTooLong: "Required materials information is too long.",
       maxParticipantsPositive:
@@ -1018,6 +1019,12 @@ export const en = {
       validTimeOrder: "End time must be after start time.",
       variableCostNotesRequired:
         "Variable-cost events require a short cost explanation.",
+      authorization_error: "You do not have permission to create this event.",
+      conflict_error: "This event conflicts with an existing record.",
+      schema_update_required: "The Events database update must be applied before this action is available.",
+      service_unavailable: "The event service is temporarily unavailable. Try again shortly.",
+      unexpected_error: "The event could not be created. Try again.",
+      validation_error: "Check the highlighted event details.",
     },
     eyebrow: "Activities calendar",
     fallback: {
@@ -2178,6 +2185,17 @@ export const en = {
       title: "Important safety notice",
       urgentProcess:
         "Urgent concerns should be reported directly to school staff or the appropriate local emergency process.",
+    },
+    platform: {
+      allSchools: "All schools",
+      description: "Review events globally, or select an active school before creating a school-scoped event.",
+      globalResults: "Showing events across all active schools.",
+      invalidSchool: "Choose a valid active school.",
+      mode: "Platform administrator mode",
+      school: "School",
+      schoolContext: "Event school context",
+      selectSchoolRequired: "Select a school before creating an event.",
+      selectedSchool: "Selected school",
     },
   },
   privacy: {

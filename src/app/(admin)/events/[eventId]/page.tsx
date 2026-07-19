@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getCurrentEventActor } from "@/lib/auth/event-access";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { EventCalendarActions } from "@/components/events/event-calendar-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -144,39 +145,40 @@ export default async function EventDetailPage({
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
   const { eventId } = await params;
-  const supabase = await createClient();
-  const user = await getCurrentUser();
+  const actor = await getCurrentEventActor();
 
-  if (!user) {
+  if (!actor) {
     redirect("/login");
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
-
-  if (!profile) {
+  if (!actor.profile && !actor.isPlatformAdmin) {
     redirect("/dashboard");
   }
 
+  const supabase = await createClient();
   const admin = createAdminClient();
-  const event = await getEventById(admin, eventId);
+  const event = await getEventById(supabase, eventId);
 
   if (!event) {
     redirect("/events");
   }
 
-  const isStaff = profile.role === "school_admin" || profile.role === "teacher";
-  const isOwnSchoolEvent = event.school_id === profile.school_id;
+  const profile: Profile = actor.profile ?? {
+    id: actor.userId,
+    role: "school_admin",
+    school_id: event.school_id,
+  };
+  const isPlatformAdmin = actor.isPlatformAdmin;
+  const isStaff = isPlatformAdmin || profile.role === "school_admin" || profile.role === "teacher";
+  const isOwnSchoolEvent = !isPlatformAdmin && event.school_id === profile.school_id;
+  const canManageEvent = isPlatformAdmin || (isStaff && isOwnSchoolEvent);
+  const eventContextSchoolId = isPlatformAdmin ? event.school_id : profile.school_id;
   const [currentStudent, connectedSchoolIds, eventShares] = await Promise.all([
-    getCurrentStudent(admin, profile),
-    getConnectedSchoolIds(admin, profile.school_id),
-    getEventShares(admin, [event.id]),
+    isPlatformAdmin ? Promise.resolve(null) : getCurrentStudent(admin, profile),
+    getConnectedSchoolIds(admin, eventContextSchoolId),
+    getEventShares(isPlatformAdmin ? supabase : admin, [event.id]),
   ]);
   const sharedSchoolIds = eventShares.map((share) => share.school_id);
-  const canView = canViewEvent({
+  const canView = isPlatformAdmin || canViewEvent({
     connectedSchoolIds,
     event,
     profile,
@@ -195,19 +197,21 @@ export default async function EventDetailPage({
     responsibleStaff,
     eligibleResponsibleStaff,
   ] = await Promise.all([
-    getEventAttendees(admin, [event.id]),
+    getEventAttendees(isPlatformAdmin ? supabase : admin, [event.id]),
     event.club_id ? getClubById(admin, event.school_id, event.club_id) : null,
-    isOwnSchoolEvent
+    isOwnSchoolEvent && !isPlatformAdmin
       ? Promise.resolve(null)
       : getSchoolById(admin, event.school_id),
-    isStaff && isOwnSchoolEvent && connectedSchoolIds.length
+    canManageEvent && connectedSchoolIds.length
       ? getSchoolsById(admin, connectedSchoolIds)
       : Promise.resolve([]),
     event.responsible_staff_id
       ? getResponsibleStaffById(admin, event.responsible_staff_id)
       : Promise.resolve(null),
-    isStaff && isOwnSchoolEvent
-      ? getEligibleResponsibleStaff(admin, profile, event.responsible_staff_id)
+    canManageEvent
+      ? isPlatformAdmin
+        ? getPlatformResponsibleStaff(supabase, event.school_id)
+        : getEligibleResponsibleStaff(admin, profile, event.responsible_staff_id)
       : Promise.resolve([]),
   ]);
   const registeredCount = attendees.length;
@@ -255,6 +259,11 @@ export default async function EventDetailPage({
               {t("common.backToEvents")}
             </HeaderActionLink>
             <span className="page-eyebrow">{t("events.detail.overview")}</span>
+            {isPlatformAdmin ? (
+              <StatusBadge variant="warning">
+                {t("events.platform.mode")}: {ownerSchoolName}
+              </StatusBadge>
+            ) : null}
           </div>
           <div className="min-w-0 space-y-3">
             <div>
@@ -350,7 +359,7 @@ export default async function EventDetailPage({
                   t("events.decisionInfo.accessibilityNotProvided")}
               </DetailItem>
             </dl>
-            {isStaff && isOwnSchoolEvent ? (
+            {canManageEvent ? (
               <div className="mt-4 border-t border-[var(--border)] pt-4">
                 <DecisionInfoForm
                   event={event}
@@ -387,7 +396,7 @@ export default async function EventDetailPage({
                 </DetailItem>
               ) : null}
             </dl>
-            {isStaff && isOwnSchoolEvent ? (
+            {canManageEvent ? (
               <div className="mt-4 border-t border-[var(--border)] pt-4">
                 <p className="mb-3 max-w-2xl text-xs leading-5 text-zinc-500">
                   {t("events.practicalDetails.privacyGuidance")}
@@ -450,7 +459,7 @@ export default async function EventDetailPage({
                 </p>
               </div>
             ) : null}
-            {isStaff && isOwnSchoolEvent ? (
+            {canManageEvent ? (
               <div className="mt-4 border-t border-[var(--border)] pt-4">
                 <SafetyForm event={event} t={t} />
               </div>
@@ -467,7 +476,7 @@ export default async function EventDetailPage({
                 currentStudent={currentStudent}
                 event={event}
                 isFull={isFull}
-                isOwnSchoolEvent={isOwnSchoolEvent}
+                isOwnSchoolEvent={canManageEvent}
                 isStaff={isStaff}
                 t={t}
                 userSchoolId={profile.school_id}
@@ -524,7 +533,7 @@ export default async function EventDetailPage({
             </dl>
           </article>
 
-          {isStaff && isOwnSchoolEvent ? (
+          {canManageEvent ? (
             <article className="section-card section-card-padded order-6 lg:order-none">
               <h2 className="section-title">{t("events.detail.management")}</h2>
               <p className="section-description">{t("events.detail.staffTools")}</p>
@@ -544,7 +553,7 @@ export default async function EventDetailPage({
             </article>
           ) : null}
 
-          {isStaff && isOwnSchoolEvent ? (
+          {canManageEvent ? (
             <article className="section-card section-card-padded order-7 lg:order-none">
               <h2 className="section-title">{t("events.detail.sharing")}</h2>
               <p className="section-description">
@@ -994,7 +1003,7 @@ function canCurrentStudentRegister(
 }
 
 async function getEventById(
-  admin: ReturnType<typeof createAdminClient>,
+  admin: SupabaseClient,
   eventId: string,
 ) {
   const { data: event } = await timeServer("events.detail.query.event", () =>
@@ -1008,6 +1017,26 @@ async function getEventById(
   );
 
   return event;
+}
+
+async function getPlatformResponsibleStaff(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const { data, error } = await supabase.rpc(
+    "get_platform_event_staff_options",
+    { target_school_id: schoolId },
+  );
+
+  if (error) {
+    console.error("events.detail.query.platform-staff failed", {
+      code: error.code,
+      schoolId,
+    });
+    return [];
+  }
+
+  return (data ?? []) as ResponsibleStaffProfile[];
 }
 
 async function getCurrentStudent(
@@ -1167,13 +1196,13 @@ async function getConnectedSchoolIds(
 }
 
 async function getEventShares(
-  admin: ReturnType<typeof createAdminClient>,
+  client: Awaited<ReturnType<typeof createClient>>,
   eventIds: string[],
 ) {
   const { data: shares } = await timeServer(
     "events.detail.query.event-shares",
     () =>
-      admin
+      client
         .from("event_school_shares")
         .select("event_id, school_id")
         .in("event_id", eventIds)
@@ -1184,13 +1213,13 @@ async function getEventShares(
 }
 
 async function getEventAttendees(
-  admin: ReturnType<typeof createAdminClient>,
+  client: Awaited<ReturnType<typeof createClient>>,
   eventIds: string[],
 ) {
   const { data: attendees } = await timeServer(
     "events.detail.query.event-attendees",
     () =>
-      admin
+      client
         .from("event_attendees")
         .select(
           "event_id, student_roster_id, attendee_profile_id, permission_status, status",

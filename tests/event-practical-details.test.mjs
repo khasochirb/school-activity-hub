@@ -53,8 +53,9 @@ test("event actions preserve server authorization and registration behavior", ()
   const joinEnd = actions.indexOf("export async function cancelEventRegistration", joinStart);
   const joinAction = actions.slice(joinStart, joinEnd);
 
-  assert.match(updateAction, /isSchoolStaff\(profile\)/);
-  assert.match(updateAction, /\.eq\("school_id", profile\.school_id\)/);
+  assert.match(updateAction, /requireEventStaffActor\(\)/);
+  assert.match(updateAction, /getManageableEvent\(actor, eventId\)/);
+  assert.match(updateAction, /\.eq\("school_id", event\.school_id\)/);
   assert.match(actions, /parseEventPracticalDetails\(formData\)/);
   assert.doesNotMatch(joinAction, /cost_type|required_materials|expected_commitment/);
 });

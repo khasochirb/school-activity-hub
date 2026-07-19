@@ -85,6 +85,8 @@ type CreateEventFormLabels = {
   permissionRequired: string;
   practicalDetails: string;
   practicalGuidance: string;
+  platformMode: string;
+  selectedSchool: string;
   riskHigh: string;
   riskLevel: string;
   riskLow: string;
@@ -120,6 +122,7 @@ export function CreateEventForm({
   isStaff,
   labels,
   locale,
+  platformSchool,
   staffOptions,
 }: {
   canCreate: boolean;
@@ -129,6 +132,7 @@ export function CreateEventForm({
   isStaff: boolean;
   labels: CreateEventFormLabels;
   locale: Locale;
+  platformSchool?: { id: string; name: string } | null;
   staffOptions: StaffOption[];
 }) {
   const [state, formAction] = useActionState(createEvent, initialState);
@@ -208,6 +212,16 @@ export function CreateEventForm({
     >
       <ActionToast message={clientError} success={false} />
       <ActionToast message={state.message} success={state.success} />
+      {platformSchool ? (
+        <div className="notice-box min-w-0">
+          <p className="font-bold">{labels.platformMode}</p>
+          <p className="mt-1 break-words text-sm">
+            {labels.selectedSchool}: {platformSchool.name}
+          </p>
+          <input name="school_id" type="hidden" value={platformSchool.id} />
+          <FieldError message={state.fieldErrors?.school_id} />
+        </div>
+      ) : null}
       <fieldset className="form-group">
         <legend className="form-group-title">{labels.basicDetails}</legend>
         <div className="mt-3 grid gap-3 md:grid-cols-[minmax(16rem,2fr)_minmax(11rem,1fr)_minmax(13rem,1.4fr)]">
@@ -218,6 +232,7 @@ export function CreateEventForm({
               name="title"
               required
             />
+            <FieldError message={state.fieldErrors?.title} />
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
             {labels.category}
@@ -232,6 +247,7 @@ export function CreateEventForm({
                 </option>
               ))}
             </select>
+            <FieldError message={state.fieldErrors?.category} />
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
             {labels.location}
@@ -240,6 +256,7 @@ export function CreateEventForm({
               name="location"
               required
             />
+            <FieldError message={state.fieldErrors?.location} />
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:max-w-48">
             {labels.maxParticipants}
@@ -249,6 +266,7 @@ export function CreateEventForm({
               name="max_participants"
               type="number"
             />
+            <FieldError message={state.fieldErrors?.max_participants} />
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-2">
             {labels.club}
@@ -264,6 +282,7 @@ export function CreateEventForm({
                 </option>
               ))}
             </select>
+            <FieldError message={state.fieldErrors?.club_id} />
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-3">
             {labels.description}
@@ -309,6 +328,7 @@ export function CreateEventForm({
               type="time"
               value={startTime}
             />
+            <FieldError message={state.fieldErrors?.starts_at} />
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
             {labels.endTime}
@@ -323,6 +343,7 @@ export function CreateEventForm({
               type="time"
               value={endTime}
             />
+            <FieldError message={state.fieldErrors?.ends_at} />
           </label>
         </div>
         <div className="mt-3 flex flex-col gap-2">
@@ -383,6 +404,7 @@ export function CreateEventForm({
               <option value="paid">{labels.costPaid}</option>
               <option value="variable">{labels.costVariable}</option>
             </select>
+            <FieldError message={state.fieldErrors?.cost_type} />
           </label>
           {costType === "paid" ? (
             <div className="grid gap-3 sm:grid-cols-[minmax(10rem,1fr)_8rem] md:col-span-1">
@@ -397,6 +419,7 @@ export function CreateEventForm({
                   step="0.01"
                   type="number"
                 />
+                <FieldError message={state.fieldErrors?.cost_amount} />
               </label>
               <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
                 <span className="break-words">{labels.costCurrency}</span>
@@ -409,6 +432,7 @@ export function CreateEventForm({
                     {EVENT_COST_CURRENCY}
                   </option>
                 </select>
+                <FieldError message={state.fieldErrors?.cost_currency} />
               </label>
             </div>
           ) : null}
@@ -422,6 +446,7 @@ export function CreateEventForm({
                 placeholder={labels.costNotesPlaceholder}
                 required={costType === "variable"}
               />
+              <FieldError message={state.fieldErrors?.cost_notes} />
             </label>
           ) : null}
           <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
@@ -432,6 +457,7 @@ export function CreateEventForm({
               name="required_materials"
               placeholder={labels.materialsPlaceholder}
             />
+            <FieldError message={state.fieldErrors?.required_materials} />
           </label>
           <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
             <span className="break-words">{labels.commitment}</span>
@@ -441,6 +467,7 @@ export function CreateEventForm({
               name="expected_commitment"
               placeholder={labels.commitmentPlaceholder}
             />
+            <FieldError message={state.fieldErrors?.expected_commitment} />
           </label>
         </div>
       </fieldset>
@@ -462,6 +489,7 @@ export function CreateEventForm({
                   </option>
                 ))}
               </select>
+              <FieldError message={state.fieldErrors?.responsible_staff_id} />
               <span className="break-words text-xs font-normal leading-5 text-slate-600">
                 {labels.responsibleAdultHelp}
               </span>
@@ -489,6 +517,7 @@ export function CreateEventForm({
                 {labels.priorExperienceRecommended}
               </option>
             </select>
+            <FieldError message={state.fieldErrors?.experience_level} />
           </label>
           <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-2">
             <span className="break-words">{labels.eligibility}</span>
@@ -498,6 +527,7 @@ export function CreateEventForm({
               name="eligibility_notes"
               placeholder={labels.eligibilityPlaceholder}
             />
+            <FieldError message={state.fieldErrors?.eligibility_notes} />
           </label>
           <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-2">
             <span className="break-words">{labels.accessibilityInformation}</span>
@@ -508,6 +538,7 @@ export function CreateEventForm({
               name="accessibility_notes"
               placeholder={labels.accessibilityPlaceholder}
             />
+            <FieldError message={state.fieldErrors?.accessibility_notes} />
             <span
               className="break-words text-xs font-normal leading-5 text-slate-600"
               id="event-accessibility-guidance"
@@ -531,6 +562,7 @@ export function CreateEventForm({
               <option value="medium">{labels.riskMedium}</option>
               <option value="high">{labels.riskHigh}</option>
             </select>
+            <FieldError message={state.fieldErrors?.risk_level} />
           </label>
           <label className="flex items-center gap-2 self-end text-sm font-semibold text-slate-800">
             <input
@@ -573,6 +605,14 @@ export function CreateEventForm({
       </div>
     </form>
   );
+}
+
+function FieldError({ message }: { message?: string }) {
+  return message ? (
+    <span className="break-words text-xs font-medium text-red-600" role="alert">
+      {message}
+    </span>
+  ) : null;
 }
 
 function SubmitButton({

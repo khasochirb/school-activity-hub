@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  getCurrentEventActor,
+  isEventStaffActor,
+  type EventActor,
+} from "@/lib/auth/event-access";
+import { createPlatformAuditLog } from "@/lib/audit/platform-audit";
 import { parseActivityCategory } from "@/lib/activity-categories";
 import {
   parseEventDecisionInfo,
@@ -56,9 +62,21 @@ type ResponsibleStaffProfile = {
 };
 
 export type CreateEventState = {
+  category?: EventActionErrorCategory;
+  fieldErrors?: Record<string, string>;
   message: string;
   success: boolean;
 };
+
+export type EventActionErrorCategory =
+  | "authorization_error"
+  | "conflict_error"
+  | "invalid_responsible_staff"
+  | "invalid_school"
+  | "schema_update_required"
+  | "service_unavailable"
+  | "unexpected_error"
+  | "validation_error";
 
 type ServerI18n = {
   t: (key: string) => string;
@@ -70,10 +88,11 @@ export async function createEvent(
   formData: FormData,
 ): Promise<CreateEventState> {
   const i18n = await getServerI18n();
-  const profile = await getCurrentProfile();
+  const actor = await getCurrentEventActor();
+  const profile = actor?.profile ?? null;
 
-  if (!profile) {
-    return { message: i18n.t("events.errors.unauthenticated"), success: false };
+  if (!actor || (!profile && !actor.isPlatformAdmin)) {
+    return actionError("authorization_error", i18n.t("events.errors.unauthenticated"));
   }
 
   const title = String(formData.get("title") ?? "").trim();
@@ -91,107 +110,145 @@ export async function createEvent(
   const permissionNote = String(formData.get("permission_note") ?? "").trim();
   const decisionInfoResult = parseEventDecisionInfo(formData);
   const practicalDetailsResult = parseEventPracticalDetails(formData);
-  const isStaff = isSchoolStaff(profile);
+  const isStaff = isEventStaffActor(actor);
   const isLeaderEvent = !isStaff;
+  const requestedSchoolId = String(formData.get("school_id") ?? "").trim();
+  const targetSchoolId = actor.isPlatformAdmin
+    ? requestedSchoolId
+    : profile?.school_id ?? "";
+
+  if (actor.isPlatformAdmin && !targetSchoolId) {
+    return actionError("invalid_school", i18n.t("events.platform.selectSchoolRequired"), {
+      school_id: i18n.t("events.platform.selectSchoolRequired"),
+    });
+  }
+
+  if (actor.isPlatformAdmin) {
+    const schoolValidation = await validateActivePlatformEventSchool(targetSchoolId);
+    if (!schoolValidation.valid) {
+      const message =
+        schoolValidation.category === "invalid_school"
+          ? i18n.t("events.platform.invalidSchool")
+          : i18n.t(`events.errors.${schoolValidation.category}`);
+      return actionError(schoolValidation.category, message, {
+        school_id: message,
+      });
+    }
+  }
 
   if (!title) {
-    return { message: i18n.t("events.errors.titleRequired"), success: false };
+    return actionError("validation_error", i18n.t("events.errors.titleRequired"), {
+      title: i18n.t("events.errors.titleRequired"),
+    });
   }
 
   if (decisionInfoResult.error) {
-    return {
-      message: eventDecisionInfoErrorMessage(decisionInfoResult.error, i18n),
-      success: false,
-    };
+    const message = eventDecisionInfoErrorMessage(decisionInfoResult.error, i18n);
+    return actionError("validation_error", message, {
+      [eventDecisionInfoField(decisionInfoResult.error)]: message,
+    });
   }
 
   const decisionInfo = decisionInfoResult.data;
 
   if (practicalDetailsResult.error) {
-    return {
-      message: eventPracticalDetailsErrorMessage(
-        practicalDetailsResult.error,
-        i18n,
-      ),
-      success: false,
-    };
+    const message = eventPracticalDetailsErrorMessage(
+      practicalDetailsResult.error,
+      i18n,
+    );
+    return actionError("validation_error", message, {
+      [eventPracticalDetailsField(practicalDetailsResult.error)]: message,
+    });
   }
 
   const practicalDetails = practicalDetailsResult.data;
 
   if (!location) {
-    return { message: i18n.t("events.errors.locationRequired"), success: false };
+    return actionError("validation_error", i18n.t("events.errors.locationRequired"), {
+      location: i18n.t("events.errors.locationRequired"),
+    });
   }
 
   if (categoryInput && !category) {
-    return { message: i18n.t("events.errors.invalidCategory"), success: false };
+    return actionError("validation_error", i18n.t("events.errors.invalidCategory"), {
+      category: i18n.t("events.errors.invalidCategory"),
+    });
   }
 
   const startsAt = parseDateTime(startsAtInput);
   const endsAt = parseDateTime(endsAtInput);
 
   if (!startsAt || !endsAt) {
-    return { message: i18n.t("events.errors.timeRequired"), success: false };
+    return actionError("validation_error", i18n.t("events.errors.timeRequired"), {
+      starts_at: i18n.t("events.errors.timeRequired"),
+      ends_at: i18n.t("events.errors.timeRequired"),
+    });
   }
 
   if (endsAt <= startsAt) {
-    return { message: i18n.t("events.errors.validTimeOrder"), success: false };
+    return actionError("validation_error", i18n.t("events.errors.validTimeOrder"), {
+      ends_at: i18n.t("events.errors.validTimeOrder"),
+    });
   }
 
   const capacity = parseCapacity(maxParticipantsInput);
 
   if (capacity === "invalid") {
-    return {
-      message: i18n.t("events.errors.maxParticipantsPositive"),
-      success: false,
-    };
+    return actionError(
+      "validation_error",
+      i18n.t("events.errors.maxParticipantsPositive"),
+      { max_participants: i18n.t("events.errors.maxParticipantsPositive") },
+    );
   }
 
   if (!riskLevel) {
-    return { message: i18n.t("events.errors.invalidRiskLevel"), success: false };
+    return actionError("validation_error", i18n.t("events.errors.invalidRiskLevel"), {
+      risk_level: i18n.t("events.errors.invalidRiskLevel"),
+    });
   }
 
   if (isLeaderEvent && !clubId) {
-    return {
-      message: i18n.t("events.errors.leaderClubRequired"),
-      success: false,
-    };
+    return actionError("validation_error", i18n.t("events.errors.leaderClubRequired"), {
+      club_id: i18n.t("events.errors.leaderClubRequired"),
+    });
   }
 
-  if (!isStaff && !(await isCurrentUserLeaderForClub(profile, clubId))) {
-    return {
-      message: i18n.t("events.errors.staffOrLeaderOnly"),
-      success: false,
-    };
+  if (!isStaff && (!profile || !(await isCurrentUserLeaderForClub(profile, clubId)))) {
+    return actionError("authorization_error", i18n.t("events.errors.staffOrLeaderOnly"));
   }
 
-  if (clubId && !(await isClubInCurrentSchool(profile, clubId))) {
-    return { message: i18n.t("events.errors.invalidClub"), success: false };
+  if (clubId && !(await isClubInSchool(targetSchoolId, clubId))) {
+    return actionError("validation_error", i18n.t("events.errors.invalidClub"), {
+      club_id: i18n.t("events.errors.invalidClub"),
+    });
   }
 
   const responsibleStaff = await validateResponsibleStaffAssignment({
+    actor,
     currentResponsibleStaffId: null,
-    profile,
+    schoolId: targetSchoolId,
     requestedResponsibleStaffId: decisionInfo.responsibleStaffId,
   });
 
   if (!responsibleStaff.valid) {
-    return {
-      message: i18n.t("events.errors.invalidResponsibleStaff"),
-      success: false,
-    };
+    return actionError(
+      "invalid_responsible_staff",
+      i18n.t("events.errors.invalidResponsibleStaff"),
+      { responsible_staff_id: i18n.t("events.errors.invalidResponsibleStaff") },
+    );
   }
 
   const now = new Date().toISOString();
   const status = isStaff ? "approved" : "pending_approval";
   const supabase = await createClient();
-  const { error } = await timeServer("events.action.create.insert", () =>
+  const { data: createdEvent, error } = await timeServer("events.action.create.insert", () =>
     supabase.from("events").insert({
-      school_id: profile.school_id,
+      school_id: targetSchoolId,
       club_id: clubId || null,
-      created_by_profile_id: profile.id,
-      submitted_by_profile_id: profile.id,
-      approved_by_profile_id: isStaff ? profile.id : null,
+      created_by_profile_id: actor.isPlatformAdmin ? null : profile?.id ?? null,
+      submitted_by_profile_id: actor.isPlatformAdmin ? null : profile?.id ?? null,
+      approved_by_profile_id:
+        isStaff && !actor.isPlatformAdmin ? profile?.id ?? null : null,
       title,
       description: description || null,
       category: category || null,
@@ -216,16 +273,25 @@ export async function createEvent(
       status,
       submitted_at: now,
       approved_at: isStaff ? now : null,
-    }),
+    }).select("id").single<{ id: string }>(),
   );
 
   if (error) {
-    return {
-      message: i18n.tf("events.errors.createFailed", {
-        error: i18n.t("common.somethingWentWrong"),
-      }),
-      success: false,
-    };
+    console.error("events.action.create failed", {
+      code: error.code,
+      platformAdmin: actor.isPlatformAdmin,
+      schoolId: targetSchoolId,
+    });
+    const category = error.code === "42P01" || error.code === "42703"
+      ? "schema_update_required"
+      : error.code === "23505"
+        ? "conflict_error"
+        : "service_unavailable";
+    return actionError(category, i18n.t(`events.errors.${category}`));
+  }
+
+  if (actor.isPlatformAdmin && createdEvent) {
+    await createPlatformEventAudit(actor, "platform.event.created", createdEvent.id, targetSchoolId);
   }
 
   revalidatePath("/events");
@@ -355,11 +421,7 @@ export async function cancelEventRegistration(formData: FormData) {
 }
 
 export async function cancelEvent(formData: FormData) {
-  const profile = await getCurrentProfile();
-
-  if (!profile || !isSchoolStaff(profile)) {
-    redirect("/events");
-  }
+  const actor = await requireEventStaffActor();
 
   const eventId = String(formData.get("event_id") ?? "").trim();
 
@@ -368,24 +430,28 @@ export async function cancelEvent(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await timeServer("events.action.cancel-event.update", () =>
-    supabase
-      .from("events")
-      .update({ status: "canceled" })
-      .eq("id", eventId)
-      .eq("school_id", profile.school_id)
-      .eq("status", "approved"),
+  let query = supabase
+    .from("events")
+    .update({ status: "canceled" })
+    .eq("id", eventId)
+    .eq("status", "approved");
+
+  if (!actor.isPlatformAdmin && actor.profile) {
+    query = query.eq("school_id", actor.profile.school_id);
+  }
+
+  const { data: event } = await timeServer("events.action.cancel-event.update", () =>
+    query.select("id, school_id").maybeSingle<{ id: string; school_id: string }>(),
   );
+  if (event) {
+    await createPlatformEventAudit(actor, "platform.event.canceled", event.id, event.school_id);
+  }
 
   revalidatePath("/events");
 }
 
 export async function updateEventSafety(formData: FormData) {
-  const profile = await getCurrentProfile();
-
-  if (!profile || !isSchoolStaff(profile)) {
-    redirect("/events");
-  }
+  const actor = await requireEventStaffActor();
 
   const eventId = String(formData.get("event_id") ?? "").trim();
   const riskLevel = parseRiskLevel(formData.get("risk_level"));
@@ -398,28 +464,30 @@ export async function updateEventSafety(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await timeServer("events.action.update-safety.update", () =>
-    supabase
-      .from("events")
-      .update({
-        risk_level: riskLevel,
-        permission_required: permissionRequired,
-        permission_note: permissionNote || null,
-      })
-      .eq("id", eventId)
-      .eq("school_id", profile.school_id),
+  let query = supabase
+    .from("events")
+    .update({
+      risk_level: riskLevel,
+      permission_required: permissionRequired,
+      permission_note: permissionNote || null,
+    })
+    .eq("id", eventId);
+  if (!actor.isPlatformAdmin && actor.profile) {
+    query = query.eq("school_id", actor.profile.school_id);
+  }
+  const { data: event } = await timeServer("events.action.update-safety.update", () =>
+    query.select("id, school_id").maybeSingle<{ id: string; school_id: string }>(),
   );
+  if (event) {
+    await createPlatformEventAudit(actor, "platform.event.safety_updated", event.id, event.school_id);
+  }
 
   revalidatePath("/events");
   revalidatePath("/approvals");
 }
 
 export async function updateEventDecisionInfo(formData: FormData) {
-  const profile = await getCurrentProfile();
-
-  if (!profile || !isSchoolStaff(profile)) {
-    redirect("/events");
-  }
+  const actor = await requireEventStaffActor();
 
   const eventId = String(formData.get("event_id") ?? "").trim();
   const decisionInfoResult = parseEventDecisionInfo(formData);
@@ -434,19 +502,23 @@ export async function updateEventDecisionInfo(formData: FormData) {
     () =>
       admin
         .from("events")
-        .select("id, responsible_staff_id")
+        .select("id, school_id, responsible_staff_id")
         .eq("id", eventId)
-        .eq("school_id", profile.school_id)
-        .maybeSingle<{ id: string; responsible_staff_id: string | null }>(),
+        .maybeSingle<{ id: string; school_id: string; responsible_staff_id: string | null }>(),
   );
 
   if (!event) {
     return;
   }
 
+  if (!actor.isPlatformAdmin && actor.profile?.school_id !== event.school_id) {
+    return;
+  }
+
   const responsibleStaff = await validateResponsibleStaffAssignment({
+    actor,
     currentResponsibleStaffId: event.responsible_staff_id,
-    profile,
+    schoolId: event.school_id,
     requestedResponsibleStaffId:
       decisionInfoResult.data.responsibleStaffId,
   });
@@ -456,7 +528,7 @@ export async function updateEventDecisionInfo(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await timeServer("events.action.update-decision-info.update", () =>
+  const { data: updatedEvent } = await timeServer("events.action.update-decision-info.update", () =>
     supabase
       .from("events")
       .update({
@@ -466,8 +538,14 @@ export async function updateEventDecisionInfo(formData: FormData) {
         responsible_staff_id: responsibleStaff.responsibleStaffId,
       })
       .eq("id", event.id)
-      .eq("school_id", profile.school_id),
+      .eq("school_id", event.school_id)
+      .select("id")
+      .maybeSingle<{ id: string }>(),
   );
+
+  if (updatedEvent) {
+    await createPlatformEventAudit(actor, "platform.event.decision_info_updated", event.id, event.school_id);
+  }
 
   revalidatePath("/events");
   revalidatePath(`/events/${event.id}`);
@@ -475,11 +553,7 @@ export async function updateEventDecisionInfo(formData: FormData) {
 }
 
 export async function updateEventPracticalDetails(formData: FormData) {
-  const profile = await getCurrentProfile();
-
-  if (!profile || !isSchoolStaff(profile)) {
-    redirect("/events");
-  }
+  const actor = await requireEventStaffActor();
 
   const eventId = String(formData.get("event_id") ?? "").trim();
   const practicalDetailsResult = parseEventPracticalDetails(formData);
@@ -488,8 +562,12 @@ export async function updateEventPracticalDetails(formData: FormData) {
     return;
   }
 
+  const event = await getManageableEvent(actor, eventId);
+  if (!event) {
+    return;
+  }
   const supabase = await createClient();
-  await timeServer("events.action.update-practical-details", () =>
+  const { data: updatedEvent } = await timeServer("events.action.update-practical-details", () =>
     supabase
       .from("events")
       .update({
@@ -501,8 +579,14 @@ export async function updateEventPracticalDetails(formData: FormData) {
         required_materials: practicalDetailsResult.data.requiredMaterials,
       })
       .eq("id", eventId)
-      .eq("school_id", profile.school_id),
+      .eq("school_id", event.school_id)
+      .select("id")
+      .maybeSingle<{ id: string }>(),
   );
+
+  if (updatedEvent) {
+    await createPlatformEventAudit(actor, "platform.event.practical_details_updated", event.id, event.school_id);
+  }
 
   revalidatePath("/events");
   revalidatePath(`/events/${eventId}`);
@@ -510,11 +594,7 @@ export async function updateEventPracticalDetails(formData: FormData) {
 }
 
 export async function updateEventSharing(formData: FormData) {
-  const profile = await getCurrentProfile();
-
-  if (!profile || !isSchoolStaff(profile)) {
-    redirect("/events");
-  }
+  const actor = await requireEventStaffActor();
 
   const eventId = String(formData.get("event_id") ?? "").trim();
   const requestedSchoolIds = Array.from(
@@ -533,57 +613,104 @@ export async function updateEventSharing(formData: FormData) {
   }
 
   const admin = createAdminClient();
+  const supabase = await createClient();
   const { data: event } = await timeServer(
     "events.action.update-sharing.event-lookup",
     () =>
       admin
         .from("events")
-        .select("id")
+        .select("id, school_id")
         .eq("id", eventId)
-        .eq("school_id", profile.school_id)
         .eq("status", "approved")
-        .maybeSingle<{ id: string }>(),
+        .maybeSingle<{ id: string; school_id: string }>(),
   );
 
   if (!event) {
     return;
   }
 
-  const connectedSchoolIds = await getConnectedSchoolIds(admin, profile.school_id);
+  if (!actor.isPlatformAdmin && actor.profile?.school_id !== event.school_id) {
+    return;
+  }
+
+  const connectedSchoolIds = await getConnectedSchoolIds(admin, event.school_id);
   const connectedSchoolIdSet = new Set(connectedSchoolIds);
   const shareSchoolIds = requestedSchoolIds.filter((schoolId) =>
     connectedSchoolIdSet.has(schoolId),
   );
 
-  await timeServer("events.action.update-sharing.delete-shares", () =>
-    admin.from("event_school_shares").delete().eq("event_id", event.id),
+  const { error: deleteError } = await timeServer("events.action.update-sharing.delete-shares", () =>
+    supabase.from("event_school_shares").delete().eq("event_id", event.id),
   );
+  if (deleteError) {
+    console.error("events.action.update-sharing.delete failed", { code: deleteError.code });
+    return;
+  }
 
   if (shareSchoolIds.length) {
-    await timeServer(
+    const { error: insertError } = await timeServer(
       "events.action.update-sharing.insert-shares",
       () =>
-        admin.from("event_school_shares").insert(
+        supabase.from("event_school_shares").insert(
           shareSchoolIds.map((schoolId) => ({
             event_id: event.id,
             school_id: schoolId,
           })),
-        ),
+      ),
     );
+    if (insertError) {
+      console.error("events.action.update-sharing.insert failed", { code: insertError.code });
+      return;
+    }
   }
 
-  await timeServer("events.action.update-sharing.update-event", () =>
-    admin
+  const { data: updatedEvent } = await timeServer("events.action.update-sharing.update-event", () =>
+    supabase
       .from("events")
       .update({
         allow_connected_school_registration:
           shareSchoolIds.length > 0 && allowConnectedRegistration,
       })
       .eq("id", event.id)
-      .eq("school_id", profile.school_id),
+      .eq("school_id", event.school_id)
+      .select("id")
+      .maybeSingle<{ id: string }>(),
   );
 
+  if (updatedEvent) {
+    await createPlatformEventAudit(actor, "platform.event.sharing_updated", event.id, event.school_id);
+  }
+
   revalidatePath("/events");
+}
+
+async function requireEventStaffActor() {
+  const actor = await getCurrentEventActor();
+
+  if (!actor) {
+    redirect("/login");
+  }
+
+  if (!isEventStaffActor(actor)) {
+    redirect("/events");
+  }
+
+  return actor;
+}
+
+async function getManageableEvent(actor: EventActor, eventId: string) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("events")
+    .select("id, school_id")
+    .eq("id", eventId);
+
+  if (!actor.isPlatformAdmin && actor.profile) {
+    query = query.eq("school_id", actor.profile.school_id);
+  }
+
+  const { data } = await query.maybeSingle<{ id: string; school_id: string }>();
+  return data;
 }
 
 async function getCurrentProfile(): Promise<Profile | null> {
@@ -824,7 +951,7 @@ async function isCurrentUserLeaderForClub(profile: Profile, clubId: string) {
   return Boolean(membership);
 }
 
-async function isClubInCurrentSchool(profile: Profile, clubId: string) {
+async function isClubInSchool(schoolId: string, clubId: string) {
   const admin = createAdminClient();
   const { data: club } = await timeServer(
     "events.action.club-in-current-school",
@@ -833,7 +960,7 @@ async function isClubInCurrentSchool(profile: Profile, clubId: string) {
         .from("clubs")
         .select("id")
         .eq("id", clubId)
-        .eq("school_id", profile.school_id)
+        .eq("school_id", schoolId)
         .eq("status", "active")
         .maybeSingle<{ id: string }>(),
   );
@@ -841,17 +968,15 @@ async function isClubInCurrentSchool(profile: Profile, clubId: string) {
   return Boolean(club);
 }
 
-function isSchoolStaff(profile: Profile) {
-  return profile.role === "school_admin" || profile.role === "teacher";
-}
-
 async function validateResponsibleStaffAssignment({
+  actor,
   currentResponsibleStaffId,
-  profile,
+  schoolId,
   requestedResponsibleStaffId,
 }: {
+  actor: EventActor;
   currentResponsibleStaffId: string | null;
-  profile: Profile;
+  schoolId: string;
   requestedResponsibleStaffId: string | null;
 }): Promise<
   | { responsibleStaffId: string | null; valid: true }
@@ -859,22 +984,24 @@ async function validateResponsibleStaffAssignment({
 > {
   if (!requestedResponsibleStaffId) {
     const teacherCanClear =
-      profile.role !== "teacher" ||
+      actor.isPlatformAdmin ||
+      actor.profile?.role !== "teacher" ||
       !currentResponsibleStaffId ||
-      currentResponsibleStaffId === profile.id;
+      currentResponsibleStaffId === actor.profile?.id;
 
     return teacherCanClear
       ? { responsibleStaffId: null, valid: true }
       : { responsibleStaffId: null, valid: false };
   }
 
-  if (!isSchoolStaff(profile)) {
+  if (!isEventStaffActor(actor)) {
     return { responsibleStaffId: null, valid: false };
   }
 
   if (
-    profile.role === "teacher" &&
-    requestedResponsibleStaffId !== profile.id &&
+    !actor.isPlatformAdmin &&
+    actor.profile?.role === "teacher" &&
+    requestedResponsibleStaffId !== actor.profile.id &&
     requestedResponsibleStaffId !== currentResponsibleStaffId
   ) {
     return { responsibleStaffId: null, valid: false };
@@ -888,7 +1015,7 @@ async function validateResponsibleStaffAssignment({
         .from("profiles")
         .select("id, school_id, role, status")
         .eq("id", requestedResponsibleStaffId)
-        .eq("school_id", profile.school_id)
+        .eq("school_id", schoolId)
         .eq("status", "active")
         .in("role", ["school_admin", "teacher"])
         .maybeSingle<ResponsibleStaffProfile>(),
@@ -897,6 +1024,82 @@ async function validateResponsibleStaffAssignment({
   return responsibleStaff
     ? { responsibleStaffId: responsibleStaff.id, valid: true }
     : { responsibleStaffId: null, valid: false };
+}
+
+async function validateActivePlatformEventSchool(
+  schoolId: string,
+): Promise<
+  | { valid: true }
+  | {
+      category: "invalid_school" | "schema_update_required" | "service_unavailable";
+      valid: false;
+    }
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_platform_event_school_options");
+
+  if (error) {
+    console.error("events.action.platform-school-options failed", {
+      code: error.code,
+    });
+    return {
+      category: ["42P01", "42703", "42883", "PGRST202"].includes(error.code)
+        ? "schema_update_required"
+        : "service_unavailable",
+      valid: false,
+    };
+  }
+
+  return (data as Array<{ id: string }> | null)?.some(
+    (school) => school.id === schoolId,
+  )
+    ? { valid: true }
+    : { category: "invalid_school", valid: false };
+}
+
+function actionError(
+  category: EventActionErrorCategory,
+  message: string,
+  fieldErrors?: Record<string, string>,
+): CreateEventState {
+  return { category, fieldErrors, message, success: false };
+}
+
+function eventDecisionInfoField(error: EventDecisionInfoError) {
+  if (error === "eligibility_too_long") return "eligibility_notes";
+  if (error === "accessibility_too_long") return "accessibility_notes";
+  return "experience_level";
+}
+
+function eventPracticalDetailsField(error: EventPracticalDetailsError) {
+  if (error === "commitment_too_long") return "expected_commitment";
+  if (error === "materials_too_long") return "required_materials";
+  if (error === "invalid_cost_amount" || error === "paid_cost_required") {
+    return "cost_amount";
+  }
+  if (error === "invalid_cost_currency") return "cost_currency";
+  if (error === "invalid_cost_type") return "cost_type";
+  return "cost_notes";
+}
+
+async function createPlatformEventAudit(
+  actor: EventActor,
+  action: string,
+  eventId: string,
+  schoolId: string,
+) {
+  if (!actor.isPlatformAdmin) {
+    return;
+  }
+
+  await createPlatformAuditLog({
+    action,
+    actor: { id: actor.userId },
+    metadata: { outcome: "success" },
+    targetId: eventId,
+    targetSchoolId: schoolId,
+    targetType: "event",
+  });
 }
 
 function eventDecisionInfoErrorMessage(

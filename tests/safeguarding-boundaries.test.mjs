@@ -41,10 +41,7 @@ test("retained safety access is same-school, actively designated, and not platfo
   const helperStart = schema.indexOf(
     "create or replace function public.current_user_is_designated_safeguarding_staff",
   );
-  const helperEnd = schema.indexOf(
-    "create or replace function public.get_my_safety_report_receipts",
-    helperStart,
-  );
+  const helperEnd = schema.indexOf("$$;", helperStart) + 3;
   const helper = schema.slice(helperStart, helperEnd);
 
   assert.match(helper, /p\.id = auth\.uid\(\)/);

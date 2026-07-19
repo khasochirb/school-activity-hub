@@ -41,7 +41,7 @@ test("responsible adult is school-aware and limited to active staff", () => {
   assert.match(actions, /\.in\("role", \["school_admin", "teacher"\]\)/);
   assert.match(
     actions,
-    /profile\.role === "teacher"[\s\S]{0,220}requestedResponsibleStaffId !== profile\.id/,
+    /actor\.profile\?\.role === "teacher"[\s\S]{0,220}requestedResponsibleStaffId !== actor\.profile\.id/,
   );
 });
 
@@ -94,8 +94,8 @@ test("event mutations keep independent authorization and registration logic", ()
   const joinEnd = actions.indexOf("export async function cancelEventRegistration", joinStart);
   const joinAction = actions.slice(joinStart, joinEnd);
 
-  assert.match(updateAction, /isSchoolStaff\(profile\)/);
-  assert.match(updateAction, /\.eq\("school_id", profile\.school_id\)/);
+  assert.match(updateAction, /requireEventStaffActor\(\)/);
+  assert.match(updateAction, /actor\.profile\?\.school_id !== event\.school_id/);
   assert.doesNotMatch(
     joinAction,
     /responsible_staff_id|eligibility_notes|experience_level|accessibility_notes/,

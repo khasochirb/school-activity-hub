@@ -3,6 +3,7 @@ import {
   calendarFilename,
   type CalendarEvent,
 } from "@/lib/events/event-calendar";
+import { getCurrentEventActor } from "@/lib/auth/event-access";
 import { canViewEvent } from "@/lib/events/event-visibility";
 import { absoluteServerUrl, getServerBaseUrl } from "@/lib/server-url";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -30,27 +31,20 @@ export async function GET(
 ) {
   const { eventId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const actor = await getCurrentEventActor();
 
-  if (!user) {
+  if (!actor) {
     return new Response("Authentication required", { status: 401 });
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .eq("status", "active")
-    .maybeSingle<Profile>();
+  const profile = actor.profile as Profile | null;
 
-  if (!profile) {
+  if (!profile && !actor.isPlatformAdmin) {
     return new Response("Event not found", { status: 404 });
   }
 
   const admin = createAdminClient();
-  const { data: rawEvent } = await admin
+  const { data: rawEvent } = await supabase
     .from("events")
     .select(
       "id, school_id, title, description, location, starts_at, ends_at, status, created_at",
@@ -69,6 +63,19 @@ export async function GET(
     }>();
 
   if (!rawEvent) {
+    return new Response("Event not found", { status: 404 });
+  }
+
+  if (actor.isPlatformAdmin) {
+    const { data: school } = await admin
+      .from("schools")
+      .select("name")
+      .eq("id", rawEvent.school_id)
+      .maybeSingle<{ name: string }>();
+    return buildCalendarResponse(rawEvent, school?.name ?? null, await getServerBaseUrl());
+  }
+
+  if (!profile) {
     return new Response("Event not found", { status: 404 });
   }
 
@@ -110,19 +117,36 @@ export async function GET(
     .select("name")
     .eq("id", rawEvent.school_id)
     .maybeSingle<{ name: string }>();
+  return buildCalendarResponse(rawEvent, school?.name ?? null, await getServerBaseUrl());
+}
+
+function buildCalendarResponse(
+  rawEvent: {
+    created_at: string;
+    description: string | null;
+    ends_at: string;
+    id: string;
+    location: string | null;
+    school_id: string;
+    starts_at: string;
+    status: string;
+    title: string;
+  },
+  schoolName: string | null,
+  baseUrl: string,
+) {
   const event: CalendarEventRecord = {
     createdAt: rawEvent.created_at,
     description: rawEvent.description,
     endsAt: rawEvent.ends_at,
     id: rawEvent.id,
     location: rawEvent.location,
-    organizerName: school?.name ?? null,
+    organizerName: schoolName,
     school_id: rawEvent.school_id,
     startsAt: rawEvent.starts_at,
     status: rawEvent.status,
     title: rawEvent.title,
   };
-  const baseUrl = await getServerBaseUrl();
   const detailUrl = absoluteServerUrl(baseUrl, `/events/${event.id}`);
   const filename = calendarFilename(event.title, event.id);
 

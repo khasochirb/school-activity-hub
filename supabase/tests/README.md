@@ -1,6 +1,6 @@
 # Supabase database tests
 
-`run-phase3c-local.ps1` validates the historical Phase 3A foundation, the additive Phase 4A and Phase 4B1 event-information migrations, and the append-only Phase 3 safety simplification in an isolated local Supabase stack.
+`run-phase3c-local.ps1` validates the historical Phase 3A foundation, the additive Phase 4A and Phase 4B1 event-information migrations, the append-only Phase 3 safety simplification, and the scoped platform-admin Events migration in an isolated local Supabase stack.
 
 Safety properties:
 
@@ -12,6 +12,7 @@ Safety properties:
 - The historical snapshot does not record legacy Data API grants. `fixtures/pre_phase_3a_runtime_grants.sql` reconstructs only the minimum pre-existing authenticated reads/updates needed to exercise the profiles and event RLS policies; those policies remain active. This test-only grant context is not proof of live production grants.
 - Phase 4A checks cover same-school active staff assignment, cross-school/student/inactive rejection, nullable legacy events, experience-level states, text bounds, unauthorized updates, and unchanged registration/attendance policy presence.
 - Phase 4B1 checks cover exact cost-state constraints, bounded and trimmed materials/commitment text, nullable legacy events, unauthorized updates, privacy separation, and unchanged registration/attendance policy presence.
+- Platform-admin Events checks cover profile-independent platform identity, two-school list/create/edit access, active same-school responsible staff, ordinary-role isolation, sharing and attendance management, scoped RLS, and read-only migration pre/postflight.
 - The safety-simplification preflight must return `PASS` before the correction runs. The postflight must return `PASS` afterward; both tolerate missing Supabase CLI migration history.
 - Safety-only database tests cover authenticated submission, safe receipts, direct-narrative denial, same/cross-school access, non-designated and platform-admin denial, stale designations, the three-person response-team cap and replacement, exact function grants, trigger operation, status-only audit metadata, and removal of digital data-rights objects.
 - Semantic catalog comparison proves the migrated result matches `supabase/schema.sql`, including the absence of the removed request table/functions/policies and preservation of both event-information phases.

@@ -185,6 +185,9 @@ function EventCard({
         <div className="mt-3 space-y-1.5 text-sm text-slate-600">
           <p className="font-semibold text-slate-800">{item.dateTimeLabel}</p>
           <p className="min-w-0 break-words">{item.location || "-"}</p>
+          <p className="min-w-0 break-words">
+            {item.schoolName}
+          </p>
           {item.isPartnerEvent ? (
             <p className="min-w-0 break-words">
               {labels.hostedBy}: {item.hostName}

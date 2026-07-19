@@ -60,6 +60,7 @@ test("privileged and request-bound helpers are explicitly server-only", () => {
     "src/lib/audit/platform-audit-query.ts",
     "src/lib/audit/platform-audit.ts",
     "src/lib/auth/current-user.ts",
+    "src/lib/auth/event-access.ts",
     "src/lib/auth/platform-admin.ts",
     "src/lib/auth/sensitive-workflows.ts",
     "src/lib/errors/server-error.ts",
@@ -162,7 +163,7 @@ test("sensitive server actions perform their own identity or platform check", ()
     assert.match(source, /^["']use server["'];/m, path);
     assert.match(
       source,
-      /auth\.getUser\(\)|getCurrentProfile\(\)|getCurrentUser\(\)|requirePlatformAdmin\(\)|requireActiveSchoolProfile\(\)|requireSafeguardingStaff\(\)|requireSchoolAdminForSensitiveWorkflow\(\)/,
+      /auth\.getUser\(\)|getCurrentEventActor\(\)|getCurrentProfile\(\)|getCurrentUser\(\)|requirePlatformAdmin\(\)|requireActiveSchoolProfile\(\)|requireSafeguardingStaff\(\)|requireSchoolAdminForSensitiveWorkflow\(\)/,
       path,
     );
   }

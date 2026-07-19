@@ -2,12 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getCurrentEventActor, isEventStaffActor } from "@/lib/auth/event-access";
+import { createPlatformAuditLog } from "@/lib/audit/platform-audit";
 import { createClient } from "@/lib/supabase/server";
-
-type StaffProfile = {
-  school_id: string;
-  role: "school_admin" | "teacher" | "student";
-};
 
 type EventPermissionStatus =
   | "declined"
@@ -17,21 +14,12 @@ type EventPermissionStatus =
 
 export async function updateAttendeePermissionStatus(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const actor = await getCurrentEventActor();
 
-  if (!user) {
+  if (!actor) {
     redirect("/login");
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("school_id, role")
-    .eq("id", user.id)
-    .maybeSingle<StaffProfile>();
-
-  if (!profile || !isSchoolStaff(profile)) {
+  if (!isEventStaffActor(actor)) {
     redirect("/dashboard");
   }
 
@@ -45,23 +33,44 @@ export async function updateAttendeePermissionStatus(formData: FormData) {
     return;
   }
 
-  const { data: event } = await supabase
+  let eventQuery = supabase
     .from("events")
-    .select("id, permission_required")
-    .eq("id", eventId)
-    .eq("school_id", profile.school_id)
-    .maybeSingle<{ id: string; permission_required: boolean }>();
+    .select("id, school_id, permission_required")
+    .eq("id", eventId);
+
+  if (!actor.isPlatformAdmin && actor.profile) {
+    eventQuery = eventQuery.eq("school_id", actor.profile.school_id);
+  }
+
+  const { data: event } = await eventQuery.maybeSingle<{
+    id: string;
+    permission_required: boolean;
+    school_id: string;
+  }>();
 
   if (!event?.permission_required) {
     return;
   }
 
-  await supabase
+  const { data: updatedAttendee } = await supabase
     .from("event_attendees")
     .update({ permission_status: permissionStatus })
     .eq("id", attendeeId)
     .eq("event_id", event.id)
-    .eq("school_id", profile.school_id);
+    .eq("school_id", event.school_id)
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (actor.isPlatformAdmin && updatedAttendee) {
+    await createPlatformAuditLog({
+      action: "platform.event.attendee_permission_updated",
+      actor: { id: actor.userId },
+      metadata: { outcome: "success" },
+      targetId: event.id,
+      targetSchoolId: event.school_id,
+      targetType: "event",
+    });
+  }
 
   revalidatePath(`/events/${event.id}/attendance`);
   revalidatePath("/events");
@@ -82,8 +91,4 @@ function parsePermissionStatus(
   }
 
   return null;
-}
-
-function isSchoolStaff(profile: StaffProfile) {
-  return profile.role === "school_admin" || profile.role === "teacher";
 }

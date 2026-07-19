@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getCurrentEventActor } from "@/lib/auth/event-access";
 import {
   ACTIVITY_CATEGORIES,
   getActivityCategoryTranslationKey,
@@ -81,6 +82,11 @@ type StudentRoster = {
 type SchoolOption = {
   id: string;
   name: string;
+};
+
+type PlatformSchoolOption = SchoolOption & {
+  slug: string;
+  status: "active" | "archived";
 };
 
 type ResponsibleStaffProfile = {
@@ -169,6 +175,7 @@ type EventsSearchParams = {
   page?: string | string[];
   q?: string | string[];
   scope?: string | string[];
+  school?: string | string[];
   status?: string | string[];
   time?: string | string[];
   view?: string | string[];
@@ -180,6 +187,7 @@ type EventsUrlState = {
   category: string | null;
   month: string;
   searchQuery: string;
+  schoolId: string;
   status: EventStatusFilter;
   time: EventTimeFilter;
   view: EventBrowseView;
@@ -223,39 +231,47 @@ export default async function EventsPage({
         : null;
   const page = getPageParam(params.page);
   const range = pageRange(page, EVENTS_PAGE_SIZE);
-  const supabase = await createClient();
-  const user = await timeServer("events.query.auth-get-user", () =>
-    getCurrentUser(),
-  );
+  const actor = await timeServer("events.query.actor", () => getCurrentEventActor());
 
-  if (!user) {
+  if (!actor) {
     redirect("/login");
   }
-
-  const { data: profile } = await timeServer("events.query.profile", () =>
-    supabase
-      .from("profiles")
-      .select("id, school_id, role")
-      .eq("id", user.id)
-      .maybeSingle<Profile>(),
-  );
-
-  if (!profile) {
+  if (!actor.profile && !actor.isPlatformAdmin) {
     redirect("/dashboard");
   }
 
+  const supabase = await createClient();
   const admin = createAdminClient();
   const baseUrl = await getServerBaseUrl();
-  const isStaff = profile.role === "school_admin" || profile.role === "teacher";
-  const selectedAudience = parseEventAudience(
-    getSearchValue(params.scope),
-    getSearchValue(params.filter),
-    profile.role,
-  );
+  const platformSchoolResult = actor.isPlatformAdmin
+    ? await getPlatformEventSchools(supabase)
+    : { errorCode: null, schools: [] as PlatformSchoolOption[] };
+  const platformSchools = platformSchoolResult.schools;
+  const requestedSchoolId = getSearchParam(params.school);
+  const selectedPlatformSchool = actor.isPlatformAdmin
+    ? platformSchools.find((school) => school.id === requestedSchoolId) ??
+      (platformSchools.length === 1 ? platformSchools[0] : null)
+    : null;
+  const profile: Profile = actor.profile ?? {
+    id: actor.userId,
+    role: "school_admin",
+    school_id: selectedPlatformSchool?.id ?? "",
+  };
+  const isPlatformAdmin = actor.isPlatformAdmin;
+  const isStaff = isPlatformAdmin || profile.role === "school_admin" || profile.role === "teacher";
+  const selectedAudience = isPlatformAdmin
+    ? "all"
+    : parseEventAudience(
+        getSearchValue(params.scope),
+        getSearchValue(params.filter),
+        profile.role,
+      );
   const selectedStatus = isStaff
-    ? parseEventStatus(getSearchParam(params.status))
+    ? isPlatformAdmin && !getSearchParam(params.status)
+      ? "all"
+      : parseEventStatus(getSearchParam(params.status))
     : "approved";
-  const currentStudent = await getCurrentStudent(admin, profile);
+  const currentStudent = isPlatformAdmin ? null : await getCurrentStudent(admin, profile);
   const now = new Date().toISOString();
   const needsPartnerEvents = ["all", "partners", "registered"].includes(
     selectedAudience,
@@ -268,26 +284,28 @@ export default async function EventsPage({
     connectedSchoolIds,
     responsibleStaffOptions,
   ] = await Promise.all([
-    isStaff
+    isStaff && profile.school_id
       ? getSchoolClubOptions(admin, profile.school_id)
       : Promise.resolve([]),
-    profile.role === "student"
+    !isPlatformAdmin && profile.role === "student"
       ? getLeaderClubOptions(admin, profile, currentStudent)
       : Promise.resolve([]),
-    getCurrentStudentRegisteredEventIds(
+    isPlatformAdmin ? Promise.resolve([]) : getCurrentStudentRegisteredEventIds(
       admin,
       profile,
       currentStudent,
     ),
-    getCurrentStudentClubIds(admin, profile, currentStudent),
-    needsPartnerEvents
+    isPlatformAdmin ? Promise.resolve([]) : getCurrentStudentClubIds(admin, profile, currentStudent),
+    !isPlatformAdmin && needsPartnerEvents
       ? getConnectedSchoolIds(admin, profile.school_id)
       : Promise.resolve([]),
-    isStaff
-      ? getEligibleResponsibleStaff(admin, profile)
+    isStaff && profile.school_id
+      ? isPlatformAdmin
+        ? getPlatformEventStaff(supabase, profile.school_id)
+        : getEligibleResponsibleStaff(admin, profile)
       : Promise.resolve([]),
   ]);
-  const sharedEventIds = needsPartnerEvents && connectedSchoolIds.length
+  const sharedEventIds = !isPlatformAdmin && needsPartnerEvents && connectedSchoolIds.length
     ? await getSharedEventIdsForSchool(admin, profile.school_id)
     : [];
   const categoryOptions = ACTIVITY_CATEGORIES;
@@ -296,8 +314,12 @@ export default async function EventsPage({
     value: category,
   }));
   const createClubOptions = isStaff ? clubOptions : leaderClubOptions;
-  const canCreate = isStaff || leaderClubOptions.length > 0;
-  const { error: eventsError, events, hasNextPage } = await getFilteredEvents(admin, {
+  const canCreate = isPlatformAdmin
+    ? Boolean(selectedPlatformSchool)
+    : isStaff || leaderClubOptions.length > 0;
+  const { error: eventsError, events, hasNextPage } = await getFilteredEvents(
+    isPlatformAdmin ? supabase : admin,
+    {
     audience: selectedAudience,
     connectedSchoolIds,
     currentStudentClubIds,
@@ -313,7 +335,17 @@ export default async function EventsPage({
     now,
     range,
     calendarRange,
-  });
+    isPlatformAdmin,
+    platformSchoolId: selectedPlatformSchool?.id ?? null,
+    },
+  );
+  if (eventsError) {
+    console.error("events.query.filtered-events failed", {
+      code: eventsError.code,
+      platformAdmin: isPlatformAdmin,
+      schoolId: selectedPlatformSchool?.id ?? null,
+    });
+  }
 
   const eventIds = events.map((event) => event.id);
   const [
@@ -323,7 +355,7 @@ export default async function EventsPage({
     responsibleStaffProfiles,
   ] = await Promise.all([
     eventIds.length
-      ? getEventAttendeeCountRows(admin, eventIds)
+      ? getEventAttendeeCountRows(isPlatformAdmin ? supabase : admin, eventIds)
       : Promise.resolve([]),
     eventIds.length
       ? getCurrentStudentEventAttendees(
@@ -333,7 +365,9 @@ export default async function EventsPage({
           currentStudent,
         )
       : Promise.resolve([]),
-    eventIds.length ? getEventShares(admin, eventIds) : Promise.resolve([]),
+    eventIds.length
+      ? getEventShares(isPlatformAdmin ? supabase : admin, eventIds)
+      : Promise.resolve([]),
     events.length
       ? getResponsibleStaffProfiles(admin, events)
       : Promise.resolve([]),
@@ -345,20 +379,23 @@ export default async function EventsPage({
   const linkedClubIds = Array.from(
     new Set(
       events
-        .filter((event) => event.school_id === profile.school_id)
         .map((event) => event.club_id)
         .filter((clubId): clubId is string => Boolean(clubId)),
     ),
   );
   const linkedClubs = linkedClubIds.length
-    ? await getClubsById(admin, profile.school_id, linkedClubIds)
+    ? await getClubsById(
+        admin,
+        isPlatformAdmin ? null : profile.school_id,
+        linkedClubIds,
+      )
     : [];
   const clubNameById = new Map(linkedClubs.map((club) => [club.id, club.name]));
   const ownerSchoolIds = Array.from(
     new Set(
       events
         .map((event) => event.school_id)
-        .filter((schoolId) => schoolId !== profile.school_id),
+        .filter((schoolId) => isPlatformAdmin || schoolId !== profile.school_id),
     ),
   );
   const ownerSchools = ownerSchoolIds.length
@@ -371,7 +408,7 @@ export default async function EventsPage({
   const responsibleStaffById = new Map(
     responsibleStaffProfiles.map((staff) => [staff.id, staff]),
   );
-  const defaultAudience = defaultEventAudience(profile.role);
+  const defaultAudience = isPlatformAdmin ? "all" : defaultEventAudience(profile.role);
   const hasResultFilters = Boolean(
     searchQuery ||
       selectedCategory ||
@@ -393,6 +430,7 @@ export default async function EventsPage({
     );
     const permissionStatus = registrationStatus?.permission_status;
     const isOwnSchoolEvent = event.school_id === profile.school_id;
+    const canManageEvent = isPlatformAdmin || (isStaff && isOwnSchoolEvent);
     const isMyClubEvent = Boolean(
       event.club_id && currentStudentClubIds.includes(event.club_id),
     );
@@ -405,7 +443,7 @@ export default async function EventsPage({
     const clubName = event.club_id
       ? clubNameById.get(event.club_id) ?? t("events.fallback.clubEvent")
       : null;
-    const ownerSchoolName = isOwnSchoolEvent
+    const ownerSchoolName = !isPlatformAdmin && isOwnSchoolEvent
       ? t("events.card.mySchool")
       : schoolNameById.get(event.school_id) ??
         t("events.fallback.connectedSchool");
@@ -439,6 +477,7 @@ export default async function EventsPage({
         t("events.decisionInfo.accessibilityNotProvided"),
       attendeeCount,
       canRegister: canCurrentStudentRegister(event, profile.school_id),
+      canManageEvent,
       calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
       capacity: event.capacity,
       categoryLabel: event.category ? categoryLabel(event.category, t) : null,
@@ -501,6 +540,7 @@ export default async function EventsPage({
         event.required_materials ??
         t("events.practicalDetails.materialsNotSpecified"),
       sharedLabel: sharingLabel(event, sharedSchoolIds, t, tf),
+      schoolName: ownerSchoolName,
       startsAt: event.starts_at,
       status: event.status,
       statusLabel: eventStatusLabel(event.status, t),
@@ -543,6 +583,7 @@ export default async function EventsPage({
     category: selectedCategory,
     month: selectedMonth,
     searchQuery,
+    schoolId: selectedPlatformSchool?.id ?? "",
     status: selectedStatus,
     time: selectedTime,
     view: selectedView,
@@ -577,6 +618,46 @@ export default async function EventsPage({
         title={t("events.title")}
       />
 
+      {isPlatformAdmin ? (
+        <section className="section-card section-card-padded min-w-0">
+          <p className="page-eyebrow">{t("events.platform.mode")}</p>
+          <h2 className="section-title mt-1">{t("events.platform.schoolContext")}</h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            {t("events.platform.description")}
+          </p>
+          <form action="/events" className="mt-3 flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="flex min-w-0 flex-1 flex-col gap-2 text-sm font-semibold text-slate-800">
+              {t("events.platform.school")}
+              <select
+                className="h-11 max-w-full cursor-pointer rounded-md border bg-white px-3 text-base"
+                defaultValue={selectedPlatformSchool?.id ?? ""}
+                name="school"
+              >
+                <option value="">{t("events.platform.allSchools")}</option>
+                {platformSchools.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn btn-primary min-h-11" type="submit">
+              {t("common.open")}
+            </button>
+          </form>
+          <p className="mt-3 break-words text-sm font-semibold text-slate-700">
+            {selectedPlatformSchool
+              ? `${t("events.platform.selectedSchool")}: ${selectedPlatformSchool.name}`
+              : t("events.platform.globalResults")}
+          </p>
+          {platformSchoolResult.errorCode ? (
+            <div className="error-box mt-3" role="alert">
+              {t("events.errors.loadUnavailable")}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       {canCreate ? (
         <CollapsibleFormSection
           description={
@@ -593,9 +674,10 @@ export default async function EventsPage({
             canCreate={canCreate}
             categories={categorySelectOptions}
             clubs={createClubOptions}
-            defaultResponsibleStaffId={isStaff ? profile.id : null}
+            defaultResponsibleStaffId={isStaff && !isPlatformAdmin ? profile.id : null}
             isStaff={isStaff}
             locale={locale}
+            platformSchool={selectedPlatformSchool}
             labels={{
               basicDetails: t("events.formGroups.basicDetails"),
               accessibilityGuidance: t(
@@ -663,6 +745,8 @@ export default async function EventsPage({
               practicalGuidance: t(
                 "events.practicalDetails.privacyGuidance",
               ),
+              platformMode: t("events.platform.mode"),
+              selectedSchool: t("events.platform.selectedSchool"),
               riskHigh: t("events.risk.high"),
               riskLevel: t("events.form.riskLevel"),
               riskLow: t("events.risk.low"),
@@ -703,10 +787,13 @@ export default async function EventsPage({
         categoryOptions={categoryOptions}
         resultCount={events.length}
         isStaff={isStaff}
+        isPlatformAdmin={isPlatformAdmin}
+        platformSchools={platformSchools}
         searchQuery={searchQuery}
         selectedAudience={selectedAudience}
         selectedCategory={selectedCategory}
         selectedStatus={selectedStatus}
+        selectedSchoolId={selectedPlatformSchool?.id ?? ""}
         selectedTime={selectedTime}
         selectedView={selectedView}
         selectedMonth={selectedMonth}
@@ -730,13 +817,6 @@ export default async function EventsPage({
                     t,
                   )}
             </h2>
-            {eventsError ? (
-              <p className="mt-2 text-sm text-red-600">
-                {tf("events.errors.loadFailed", {
-                  error: t("common.somethingWentWrong"),
-                })}
-              </p>
-            ) : null}
             {profile.role === "student" && !currentStudent ? (
               <p className="mt-2 text-sm text-zinc-600">
                 {t("events.student.noRosterWarning")}
@@ -744,7 +824,13 @@ export default async function EventsPage({
             ) : null}
           </div>
         </div>
-        {selectedView === "month" ? (
+        {eventsError ? (
+          <div className="p-4">
+            <div className="error-box" role="alert">
+              {t("events.errors.loadUnavailable")}
+            </div>
+          </div>
+        ) : selectedView === "month" ? (
           <EventCalendar
             items={eventBrowserItems}
             key={selectedMonth}
@@ -851,10 +937,13 @@ function EventFilters({
   categoryOptions,
   resultCount,
   isStaff,
+  isPlatformAdmin,
+  platformSchools,
   searchQuery,
   selectedAudience,
   selectedCategory,
   selectedStatus,
+  selectedSchoolId,
   selectedTime,
   selectedView,
   selectedMonth,
@@ -866,10 +955,13 @@ function EventFilters({
   categoryOptions: readonly string[];
   resultCount: number;
   isStaff: boolean;
+  isPlatformAdmin: boolean;
+  platformSchools: PlatformSchoolOption[];
   searchQuery: string;
   selectedAudience: EventAudience;
   selectedCategory: string | null;
   selectedStatus: EventStatusFilter;
+  selectedSchoolId: string;
   selectedTime: EventTimeFilter;
   selectedView: EventBrowseView;
   selectedMonth: string;
@@ -877,7 +969,9 @@ function EventFilters({
   t: Translate;
   tf: FormatTranslate;
 }) {
-  const audienceOptions: EventsFilterOption[] = isStaff
+  const audienceOptions: EventsFilterOption[] = isPlatformAdmin
+    ? [{ label: t("events.filters.allEvents"), value: "all" }]
+    : isStaff
     ? [
         { label: t("events.filters.allEvents"), value: "all" },
         { label: t("events.filters.createdByMe"), value: "created" },
@@ -908,10 +1002,12 @@ function EventFilters({
       ]}
       clearHref={
         selectedView === "month"
-          ? `/events?view=month&month=${selectedMonth}`
+          ? `/events?view=month&month=${selectedMonth}${selectedSchoolId ? `&school=${selectedSchoolId}` : ""}`
           : selectedView === "week"
-            ? `/events?view=week&week=${selectedWeek}`
-            : "/events"
+            ? `/events?view=week&week=${selectedWeek}${selectedSchoolId ? `&school=${selectedSchoolId}` : ""}`
+            : selectedSchoolId
+              ? `/events?school=${selectedSchoolId}`
+              : "/events"
       }
       labels={{
         audience: t("filters.filter"),
@@ -921,6 +1017,7 @@ function EventFilters({
         hideFilters: t("filters.filter"),
         search: t("filters.search"),
         searchEvents: t("filters.searchEvents"),
+        school: t("events.platform.school"),
         showFilters: t("filters.filter"),
         status: t("filters.status"),
         time: t("filters.time"),
@@ -931,6 +1028,7 @@ function EventFilters({
       selectedAudience={selectedAudience}
       selectedCategory={selectedCategory ?? ""}
       selectedStatus={selectedStatus}
+      selectedSchool={selectedSchoolId}
       selectedTime={selectedTime}
       statusOptions={
         isStaff
@@ -943,6 +1041,17 @@ function EventFilters({
               { label: t("status.canceled"), value: "canceled" },
               { label: t("status.rejected"), value: "rejected" },
               { label: t("filters.all"), value: "all" },
+            ]
+          : []
+      }
+      schoolOptions={
+        isPlatformAdmin
+          ? [
+              { label: t("events.platform.allSchools"), value: "" },
+              ...platformSchools.map((school) => ({
+                label: school.name,
+                value: school.id,
+              })),
             ]
           : []
       }
@@ -1096,18 +1205,20 @@ function sharingLabel(
 }
 
 async function getFilteredEvents(
-  admin: ReturnType<typeof createAdminClient>,
+  client: SupabaseClient,
   {
     audience,
     calendarRange,
     connectedSchoolIds,
     currentStudentClubIds,
     isStaff,
+    isPlatformAdmin,
     now,
     profileId,
     registeredEventIds,
     searchQuery,
     schoolId,
+    platformSchoolId,
     selectedCategory,
     selectedStatus,
     selectedTime,
@@ -1119,11 +1230,13 @@ async function getFilteredEvents(
     connectedSchoolIds: string[];
     currentStudentClubIds: string[];
     isStaff: boolean;
+    isPlatformAdmin: boolean;
     now: string;
     profileId: string;
     registeredEventIds: string[];
     searchQuery: string;
     schoolId: string;
+    platformSchoolId: string | null;
     selectedCategory: string | null;
     selectedStatus: EventStatusFilter;
     selectedTime: EventTimeFilter;
@@ -1143,13 +1256,17 @@ async function getFilteredEvents(
     return { error: null, events: [], hasNextPage: false };
   }
 
-  let query = admin
+  let query = client
     .from("events")
     .select(
       "id, school_id, club_id, created_by_profile_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes, cost_type, cost_amount, cost_currency, cost_notes, required_materials, expected_commitment",
     );
 
-  if (audience === "partners") {
+  if (isPlatformAdmin) {
+    if (platformSchoolId) {
+      query = query.eq("school_id", platformSchoolId);
+    }
+  } else if (audience === "partners") {
     query = query.in("id", sharedEventIds).in("school_id", connectedSchoolIds);
   } else if (audience === "all" || audience === "registered") {
     query = hasPartnerEvents(connectedSchoolIds, sharedEventIds)
@@ -1164,7 +1281,7 @@ async function getFilteredEvents(
     query = query.eq("school_id", schoolId);
   }
 
-  if (!isStaff || audience === "partners") {
+  if (!isStaff || (!isPlatformAdmin && audience === "partners")) {
     query = query.eq("status", "approved");
   } else if (selectedStatus !== "all") {
     query = query.eq("status", selectedStatus);
@@ -1189,7 +1306,7 @@ async function getFilteredEvents(
     query = query.in("club_id", currentStudentClubIds);
   }
 
-  if (audience === "created") {
+  if (!isPlatformAdmin && audience === "created") {
     query = query.eq("created_by_profile_id", profileId);
   }
 
@@ -1313,19 +1430,54 @@ async function getSharedEventIdsForSchool(
 
 async function getClubsById(
   admin: ReturnType<typeof createAdminClient>,
-  schoolId: string,
+  schoolId: string | null,
   clubIds: string[],
 ) {
+  let query = admin.from("clubs").select("id, name").in("id", clubIds);
+
+  if (schoolId) {
+    query = query.eq("school_id", schoolId);
+  }
+
   const { data: clubs } = await timeServer("events.query.clubs-by-id", () =>
-    admin
-      .from("clubs")
-      .select("id, name")
-      .eq("school_id", schoolId)
-      .in("id", clubIds)
-      .returns<ClubOption[]>(),
+    query.returns<ClubOption[]>(),
   );
 
   return clubs ?? [];
+}
+
+async function getPlatformEventSchools(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data, error } = await timeServer("events.query.platform-schools", () =>
+    supabase.rpc("get_platform_event_school_options"),
+  );
+
+  if (error) {
+    console.error("events.query.platform-schools failed", { code: error.code });
+    return { errorCode: error.code, schools: [] as PlatformSchoolOption[] };
+  }
+
+  return {
+    errorCode: null,
+    schools: (data ?? []) as PlatformSchoolOption[],
+  };
+}
+
+async function getPlatformEventStaff(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const { data, error } = await timeServer("events.query.platform-staff", () =>
+    supabase.rpc("get_platform_event_staff_options", {
+      target_school_id: schoolId,
+    }),
+  );
+
+  if (error) {
+    console.error("events.query.platform-staff failed", { code: error.code, schoolId });
+    return [];
+  }
+
+  return (data ?? []) as ResponsibleStaffProfile[];
 }
 
 async function getSchoolsById(
@@ -1398,11 +1550,11 @@ async function getResponsibleStaffProfiles(
 }
 
 async function getEventShares(
-  admin: ReturnType<typeof createAdminClient>,
+  client: Awaited<ReturnType<typeof createClient>>,
   eventIds: string[],
 ) {
   const { data: shares } = await timeServer("events.query.event-shares", () =>
-    admin
+    client
       .from("event_school_shares")
       .select("event_id, school_id")
       .in("event_id", eventIds)
@@ -1489,13 +1641,13 @@ async function getCurrentStudentClubIds(
 }
 
 async function getEventAttendeeCountRows(
-  admin: ReturnType<typeof createAdminClient>,
+  client: Awaited<ReturnType<typeof createClient>>,
   eventIds: string[],
 ) {
   const { data: attendees } = await timeServer(
     "events.query.event-attendee-count-rows",
     () =>
-      admin
+      client
         .from("event_attendees")
         .select("event_id")
         .in("event_id", eventIds)
@@ -1848,12 +2000,16 @@ function hasPartnerEvents(
 
 function buildEventsHref(
   state: EventsUrlState,
-  omitted: Array<"category" | "q" | "scope" | "status" | "time"> = [],
+  omitted: Array<"category" | "q" | "school" | "scope" | "status" | "time"> = [],
 ) {
   const query = new URLSearchParams();
 
   if (!omitted.includes("q") && state.searchQuery) {
     query.set("q", state.searchQuery);
+  }
+
+  if (!omitted.includes("school") && state.schoolId) {
+    query.set("school", state.schoolId);
   }
 
   if (!omitted.includes("scope")) {

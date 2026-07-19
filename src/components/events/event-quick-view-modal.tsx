@@ -21,6 +21,7 @@ export type EventQuickViewItem = {
   accessibilityLabel: string;
   attendeeCount: number;
   canRegister: boolean;
+  canManageEvent: boolean;
   calendarDownloadUrl: string;
   capacity: number | null;
   categoryLabel: string | null;
@@ -56,6 +57,7 @@ export type EventQuickViewItem = {
   responsibleAdultLabel: string;
   requiredMaterialsLabel: string;
   sharedLabel: string;
+  schoolName: string;
   status: string;
   statusLabel: string;
   title: string;
@@ -400,7 +402,7 @@ export function EventPrimaryAction({
     );
   }
 
-  if (item.isStaff && item.isOwnSchoolEvent) {
+  if (item.isStaff && item.canManageEvent) {
     return (
       <Link
         className={`btn btn-primary min-h-11 ${widthClass}`}

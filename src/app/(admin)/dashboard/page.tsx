@@ -1343,6 +1343,7 @@ function buildStudentQuickViewEvents(
         t("events.decisionInfo.accessibilityNotProvided"),
       attendeeCount,
       canRegister,
+      canManageEvent: false,
       calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
       capacity: event.capacity,
       categoryLabel: categoryKey ? t(categoryKey) : event.category,
@@ -1415,6 +1416,7 @@ function buildStudentQuickViewEvents(
         event.required_materials ??
         t("events.practicalDetails.materialsNotSpecified"),
       sharedLabel: t("events.sharing.internalOnly"),
+      schoolName: t("events.card.mySchool"),
       status: event.status,
       statusLabel: t("status.approved"),
       title: event.title,
