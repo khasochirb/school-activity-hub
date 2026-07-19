@@ -16,6 +16,7 @@ import {
 import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
 import type { EventQuickViewItem } from "@/components/events/event-quick-view-modal";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import {
   formatDateTime,
@@ -55,6 +56,10 @@ type UpcomingEvent = {
   risk_level: "low" | "medium" | "high";
   permission_required: boolean;
   permission_note: string | null;
+  responsible_staff_id: string | null;
+  eligibility_notes: string | null;
+  experience_level: EventExperienceLevel | null;
+  accessibility_notes: string | null;
 };
 
 type DashboardEventAttendee = {
@@ -68,6 +73,13 @@ type DashboardEventAttendee = {
 type DashboardClub = {
   id: string;
   name: string;
+};
+
+type DashboardResponsibleStaff = {
+  full_name: string;
+  id: string;
+  role: "school_admin" | "teacher";
+  status: "active" | "inactive";
 };
 
 type EventPermissionStatus =
@@ -987,12 +999,23 @@ async function getStudentUpcomingEventContext(
         .filter((clubId): clubId is string => Boolean(clubId)),
     ),
   );
+  const responsibleStaffIds = Array.from(
+    new Set(
+      events
+        .map((event) => event.responsible_staff_id)
+        .filter((staffId): staffId is string => Boolean(staffId)),
+    ),
+  );
 
   if (!eventIds.length) {
-    return { upcomingEventAttendees: [], upcomingEventClubs: [] };
+    return {
+      upcomingEventAttendees: [],
+      upcomingEventClubs: [],
+      upcomingEventResponsibleStaff: [],
+    };
   }
 
-  const [attendeeResult, clubResult] = await Promise.all([
+  const [attendeeResult, clubResult, responsibleStaffResult] = await Promise.all([
     timeServer("dashboard.query.upcoming-event-attendees", () =>
       admin
         .from("event_attendees")
@@ -1014,11 +1037,25 @@ async function getStudentUpcomingEventContext(
             .returns<DashboardClub[]>(),
         )
       : Promise.resolve({ data: [] as DashboardClub[], error: null }),
+    responsibleStaffIds.length
+      ? timeServer("dashboard.query.upcoming-event-responsible-staff", () =>
+          admin
+            .from("profiles")
+            .select("id, full_name, role, status")
+            .in("id", responsibleStaffIds)
+            .in("role", ["school_admin", "teacher"])
+            .returns<DashboardResponsibleStaff[]>(),
+        )
+      : Promise.resolve({
+          data: [] as DashboardResponsibleStaff[],
+          error: null,
+        }),
   ]);
 
   return {
     upcomingEventAttendees: attendeeResult.data ?? [],
     upcomingEventClubs: clubResult.data ?? [],
+    upcomingEventResponsibleStaff: responsibleStaffResult.data ?? [],
   };
 }
 
@@ -1232,7 +1269,7 @@ async function getUpcomingEvents(
       admin
         .from("events")
         .select(
-          "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note",
+          "id, school_id, club_id, title, description, category, location, starts_at, ends_at, capacity, status, allow_connected_school_registration, risk_level, permission_required, permission_note, responsible_staff_id, eligibility_notes, experience_level, accessibility_notes",
         )
         .eq("school_id", schoolId)
         .eq("status", "approved")
@@ -1254,6 +1291,9 @@ function buildStudentQuickViewEvents(
 ): EventQuickViewItem[] {
   const clubNameById = new Map(
     analytics.upcomingEventClubs.map((club) => [club.id, club.name]),
+  );
+  const responsibleStaffById = new Map(
+    analytics.upcomingEventResponsibleStaff.map((staff) => [staff.id, staff]),
   );
 
   return analytics.upcomingEvents.map((event) => {
@@ -1283,8 +1323,14 @@ function buildStudentQuickViewEvents(
       },
       baseUrl,
     );
+    const responsibleStaff = event.responsible_staff_id
+      ? responsibleStaffById.get(event.responsible_staff_id)
+      : null;
 
     return {
+      accessibilityLabel:
+        event.accessibility_notes ??
+        t("events.decisionInfo.accessibilityNotProvided"),
       attendeeCount,
       canRegister,
       calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
@@ -1295,7 +1341,12 @@ function buildStudentQuickViewEvents(
         locale,
       )}`,
       description: event.description,
+      eligibilityLabel:
+        event.eligibility_notes ?? t("events.decisionInfo.eligibilityNotSpecified"),
+      experienceLabel: dashboardExperienceLevelLabel(event.experience_level, t),
+      experienceLevel: event.experience_level,
       hasCurrentStudent: Boolean(analytics.currentStudent),
+      hasEligibilityInfo: Boolean(event.eligibility_notes),
       hostName:
         (event.club_id && clubNameById.get(event.club_id)) ||
         t("events.card.mySchool"),
@@ -1326,6 +1377,12 @@ function buildStudentQuickViewEvents(
           : Math.max(event.capacity - attendeeCount, 0),
       riskLabel: eventRiskLabel(event.risk_level, t),
       riskLevel: event.risk_level,
+      responsibleAdultLabel: responsibleStaff?.status === "active"
+        ? `${responsibleStaff.full_name} (${dashboardStaffRoleLabel(
+            responsibleStaff.role,
+            t,
+          )})`
+        : t("events.decisionInfo.responsibleNotSpecified"),
       sharedLabel: t("events.sharing.internalOnly"),
       status: event.status,
       statusLabel: t("status.approved"),
@@ -1345,6 +1402,30 @@ function eventRiskLabel(
   return riskLevel === "medium"
     ? t("events.risk.medium")
     : t("events.risk.low");
+}
+
+function dashboardExperienceLevelLabel(
+  experienceLevel: EventExperienceLevel | null,
+  t: (key: string) => string,
+) {
+  if (experienceLevel === "beginner_friendly") {
+    return t("events.experience.beginnerFriendly");
+  }
+
+  if (experienceLevel === "prior_experience_recommended") {
+    return t("events.experience.priorExperienceRecommended");
+  }
+
+  return t("events.decisionInfo.experienceNotSpecified");
+}
+
+function dashboardStaffRoleLabel(
+  role: DashboardResponsibleStaff["role"],
+  t: (key: string) => string,
+) {
+  return role === "school_admin"
+    ? t("roles.schoolAdmin")
+    : t("roles.teacher");
 }
 
 function eventPermissionLabel(

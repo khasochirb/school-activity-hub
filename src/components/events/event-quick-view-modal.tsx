@@ -18,6 +18,7 @@ import {
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 
 export type EventQuickViewItem = {
+  accessibilityLabel: string;
   attendeeCount: number;
   canRegister: boolean;
   calendarDownloadUrl: string;
@@ -25,7 +26,14 @@ export type EventQuickViewItem = {
   categoryLabel: string | null;
   dateTimeLabel: string;
   description: string | null;
+  eligibilityLabel: string;
+  experienceLabel: string;
+  experienceLevel:
+    | "beginner_friendly"
+    | "prior_experience_recommended"
+    | null;
   hasCurrentStudent: boolean;
+  hasEligibilityInfo: boolean;
   googleCalendarUrl: string;
   hostName: string;
   id: string;
@@ -41,6 +49,7 @@ export type EventQuickViewItem = {
   remainingSpaces: number | null;
   riskLabel: string;
   riskLevel: "high" | "low" | "medium";
+  responsibleAdultLabel: string;
   sharedLabel: string;
   status: string;
   statusLabel: string;
@@ -48,6 +57,7 @@ export type EventQuickViewItem = {
 };
 
 export type EventQuickViewLabels = EventCalendarActionLabels & {
+  accessibility: string;
   attendanceQr: string;
   cancelRegistration: string;
   cancelling: string;
@@ -57,6 +67,8 @@ export type EventQuickViewLabels = EventCalendarActionLabels & {
   dateTime: string;
   description: string;
   eventQuickView: string;
+  eligibility: string;
+  experienceLevel: string;
   hostedBy: string;
   joining: string;
   joinEvent: string;
@@ -66,9 +78,11 @@ export type EventQuickViewLabels = EventCalendarActionLabels & {
   permission: string;
   permissionNote: string;
   permissionRequired: string;
+  participationInformation: string;
   registration: string;
   registrationFull: string;
   riskLevel: string;
+  responsibleAdult: string;
   safety: string;
   sharedEvent: string;
   spacesRemaining: string;
@@ -218,6 +232,9 @@ export function EventQuickViewModal({
                 {labels.permissionRequired}
               </StatusBadge>
             ) : null}
+            {event.experienceLevel ? (
+              <StatusBadge variant="info">{event.experienceLabel}</StatusBadge>
+            ) : null}
           </div>
 
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -265,6 +282,30 @@ export function EventQuickViewModal({
             <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">
               {event.description || labels.noDescription}
             </p>
+          </section>
+
+          <section className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-4">
+            <h3 className="text-sm font-bold text-slate-950">
+              {labels.participationInformation}
+            </h3>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+              <ModalDetail
+                label={labels.responsibleAdult}
+                value={event.responsibleAdultLabel}
+              />
+              <ModalDetail
+                label={labels.experienceLevel}
+                value={event.experienceLabel}
+              />
+              <ModalDetail
+                label={labels.eligibility}
+                value={event.eligibilityLabel}
+              />
+              <ModalDetail
+                label={labels.accessibility}
+                value={event.accessibilityLabel}
+              />
+            </dl>
           </section>
 
           <section className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-4">

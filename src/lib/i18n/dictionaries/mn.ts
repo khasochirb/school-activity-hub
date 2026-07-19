@@ -142,6 +142,7 @@ export const mn = {
     no: "Үгүй",
     noExtraDetails: "Нэмэлт мэдээлэл алга",
     notAvailableShort: "N/A",
+    notSpecified: "Тодорхойлоогүй",
     open: "Нээх",
     next: "Дараах",
     pending: "Хүлээгдэж буй",
@@ -382,6 +383,7 @@ export const mn = {
       joining: "Нэгдэж байна...",
       resetFilters: "Шүүлтүүрийг дахин тохируулах",
       saveSafety: "Аюулгүй байдлын мэдээлэл хадгалах",
+      saveDecisionInfo: "Оролцох мэдээллийг хадгалах",
       saveSharing: "Хуваалцах тохиргоо хадгалах",
       submitForApproval: "Зөвшөөрөл хүсэх",
       submitting: "Илгээж байна...",
@@ -456,10 +458,15 @@ export const mn = {
       title: "Эдгээр шүүлтүүрт тохирох үйл ажиллагаа алга",
     },
     errors: {
+      accessibilityTooLong: "Хүртээмжийн мэдээлэл хэт урт байна.",
       createFailed:
         "Үйл ажиллагааг үүсгэж чадсангүй. Мэдээллээ шалгаад дахин оролдоно уу.",
+      eligibilityTooLong: "Оролцох шаардлагын мэдээлэл хэт урт байна.",
       invalidCategory: "Зөв ангилал сонгоно уу.",
       invalidClub: "Зөв клуб сонгоно уу.",
+      invalidExperienceLevel: "Туршлагын зөв түвшнийг сонгоно уу.",
+      invalidResponsibleStaff:
+        "Танай сургуулийн идэвхтэй багш эсвэл сургуулийн админыг сонгоно уу.",
       invalidRiskLevel: "Зөв эрсдэлийн түвшин сонгоно уу.",
       leaderClubRequired:
         "Клубын удирдагчид өөрийн клубүүдээс нэгийг сонгох ёстой.",
@@ -505,6 +512,7 @@ export const mn = {
       basicDetails: "Үндсэн мэдээлэл",
       dateTime: "Огноо ба цаг",
       safetyPermissions: "Аюулгүй байдал, зөвшөөрөл",
+      whoCanAttend: "Хэн оролцож болох, юу хүлээх вэ",
     },
     form: {
       category: "Ангилал",
@@ -533,6 +541,30 @@ export const mn = {
       timePreviewEmpty: "Хуваарийг урьдчилан харахын тулд огноо, цаг сонгоно уу.",
       timezoneHelper: "Цагийг танай сургуулийн цагийн бүсээр хадгална.",
       title: "Үйл ажиллагааны нэр",
+    },
+    decisionInfo: {
+      accessibilityGuidance:
+        "Хүртээмжийн мэдээлэл нь үйл ажиллагаа болон орчныг тайлбарлана. Сурагчид хөгжлийн бэрхшээлтэй эсэхээ олон нийтэд мэдэгдэх шаардлагагүй.",
+      accessibilityInformation: "Хүртээмжийн мэдээлэл",
+      accessibilityNotProvided: "Хүртээмжийн мэдээлэл оруулаагүй",
+      accessibilityPlaceholder:
+        "Байршил, үйл ажиллагааны хэлбэр, боломжтой дэмжлэгийг тайлбарлана уу",
+      eligibility: "Оролцох шаардлага, ангийн мэдээлэл",
+      eligibilityNotSpecified: "Оролцох шаардлагыг тодорхойлоогүй",
+      eligibilityPlaceholder:
+        "Оролцож болох анги болон холбогдох туршлагыг тайлбарлана уу",
+      experienceLevel: "Туршлагын түвшин",
+      experienceNotSpecified: "Туршлагын түвшнийг тодорхойлоогүй",
+      responsibleAdult: "Хариуцсан багш/ажилтан",
+      responsibleAdultHelp:
+        "Энэ үйл ажиллагааг хариуцах идэвхтэй багш эсвэл сургуулийн админыг сонгоно уу.",
+      responsibleAdultReviewHelp:
+        "Сургуулийн ажилтан хянан үзэхдээ хариуцсан багш/ажилтныг томилно.",
+      responsibleNotSpecified: "Хариуцсан багш/ажилтныг тодорхойлоогүй",
+    },
+    experience: {
+      beginnerFriendly: "Анхлан оролцогчдод тохиромжтой",
+      priorExperienceRecommended: "Өмнөх туршлагатай байхыг зөвлөж байна",
     },
     listTitles: {
       club: "Клубын үйл ажиллагаа",

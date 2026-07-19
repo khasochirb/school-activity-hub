@@ -12,6 +12,8 @@
 
 This runbook contains no project URL, credential, emergency number, or real student data. The original production baseline migration is not in this repository. The Phase 3C evidence therefore proves the recovered pre-Phase-3A fixture plus this one migration, not a reproducible historical migration chain.
 
+Owner-reported production observation: `supabase_migrations.schema_migrations` is absent. Production must therefore be treated as not currently managed through Supabase CLI migration history. Introducing CLI migration tracking is separate migration-governance work and is outside Phase 3A deployment.
+
 ## Reviewed change
 
 The migration is additive. It creates four school-scoped tables, seven explicit indexes, eight restricted functions, workflow triggers, and 14 RLS policies. It does not alter existing profile roles or grant platform administrators access to sensitive records.
@@ -46,7 +48,7 @@ No verified critical or high-severity defect remained after the authenticated ta
 
 ## Local validation evidence
 
-On 2026-07-17 the disposable localhost-only harness used PostgreSQL 17.6 at `127.0.0.1:55322`, applied only the recovered pre-Phase-3A fixture plus migration `202607170001`, and passed 63 PostgreSQL RLS/RPC assertions and semantic catalog comparison. The Phase 3D preflight and postflight scripts were also executed read-only against that disposable catalog. The postflight passed every table, constraint, index, RLS, policy, grant, and function check; only the migration-ledger check failed as expected because the harness deliberately disables automatic migrations and applies the SQL directly. The stack and test volumes were then removed.
+On 2026-07-17 the disposable localhost-only harness used PostgreSQL 17.6 at `127.0.0.1:55322`, applied only the recovered pre-Phase-3A fixture plus migration `202607170001`, and passed 63 PostgreSQL RLS/RPC assertions and semantic catalog comparison. The Phase 3D preflight and postflight scripts were also executed read-only against that disposable catalog. Actual table, constraint, index, RLS, policy, grant, and function checks passed independently of migration-history availability. The stack and test volumes were then removed.
 
 ## Required approvals and evidence
 
@@ -57,7 +59,7 @@ Do not schedule production execution until all of the following are recorded:
 3. Any credential visible in an earlier screenshot has been rotated, with category, owner, date, and verification recorded but no value copied into evidence.
 4. A current Supabase backup or point-in-time recovery capability is verified by an authorized owner.
 5. The approved application revision and known-good rollback deployment are identified.
-6. A staging rehearsal has used the same migration and read-only checks.
+6. A staging rehearsal has used the same migration and read-only checks through the controlled SQL procedure.
 7. A maintenance/change window, operator, verifier, monitoring owner, and stop authority are named.
 
 ## Controlled deployment order
@@ -88,22 +90,23 @@ The database migration must precede the application deployment because the new s
 3. Run only `phase3a-preflight.sql`.
 4. Have the independent verifier review the `database_identity` row and every automated row.
 5. Save the result with operator, verifier, date/time, approved project identifier, and change record. Do not include credentials or record data.
-6. Continue only when every automated result is `PASS` and identity is signed. A `FAIL`, SQL error, unexpected object, or uncertain project identity is a stop condition.
+6. Continue only when `Phase 3A preflight decision` is `PASS` and every prerequisite is `PASS`. If it is `ALREADY PRESENT`, do not apply the migration; run postflight and investigate the existing deployment record. A `FAIL`, SQL error, partial object inventory, or uncertain project identity is a stop condition.
 
-The preflight checks existing columns and constraints, helper functions, required extension and roles/enums, absence of the Phase 3A tables/functions/index names/policies, and absence of migration version `202607170001` from the Supabase migration ledger.
+The preflight checks existing columns and constraints, helper functions, required extension and roles/enums, and the actual Phase 3A table/function/policy/index inventory. Migration history is informational only: if the optional relation is absent, the script reports `MIGRATION HISTORY: NOT AVAILABLE` and decides readiness from actual objects. Missing history is not proof that the migration is unapplied.
 
 ## Migration application
 
-1. Use the approved Supabase migration workflow that records `202607170001` in `supabase_migrations.schema_migrations` and was rehearsed against staging.
-2. Apply the reviewed file unchanged. Do not copy selected statements into the SQL editor or mix unrelated migrations.
-3. The approved mechanism must execute the migration atomically. If atomic execution has not been demonstrated in staging, stop.
-4. Record start/end time and the tool/version. Do not capture connection strings or tokens.
-5. If the migration reports an error, stop and follow the matching rollback scenario below.
+1. Do **not** run `supabase db push`: the repository lacks its original baseline, so earlier migrations may be treated as unapplied.
+2. Do **not** create or repair `supabase_migrations` history and do not insert migration-history rows manually.
+3. Calculate and independently verify the SHA-256 checksum of `202607170001_add_safeguarding_privacy_foundations.sql`.
+4. In the intended production SQL Editor, use the approved controlled SQL procedure rehearsed in staging to execute the complete reviewed file atomically. Do not copy selected statements or mix unrelated SQL.
+5. Record the checksum, execution date/time, named approver, named operator, independent verifier, SQL Editor project identity, and result. Do not capture connection strings or tokens.
+6. If execution reports an error, stop and follow the matching rollback scenario below.
 
 ## Postflight and synthetic smoke tests
 
 1. Run only `phase3a-postflight.sql` immediately after migration.
-2. Continue only when every row is `PASS`.
+2. Continue only when `Phase 3A postflight decision` and every actual-object check are `PASS`. `NOT TRACKED` or `NOT RECORDED` on the informational migration-history row is permitted only when the manual deployment record is complete.
 3. Using synthetic accounts in the intended school boundary, verify:
    - an active student can submit an own-school safety report but cannot read a narrative;
    - the receipt RPC exposes only its seven reviewed fields;
@@ -148,7 +151,7 @@ No destructive rollback SQL is provided. Prefer application rollback and access 
 
 - Confirm the approved migration mechanism rolled back the transaction.
 - Do not retry until the exact database error and catalog state have been reviewed.
-- Re-run the read-only preflight only after confirming no partial objects or ledger entry remain.
+- Re-run the read-only preflight only after confirming no partial objects remain. Do not create, delete, or repair migration-history records.
 - If partial state exists, escalate to the database owner; do not improvise drops.
 
 ### Postflight failure before application deployment
@@ -176,12 +179,13 @@ No destructive rollback SQL is provided. Prefer application rollback and access 
 ## Deployment record
 
 - Change record: `[DECISION REQUIRED]`
-- Approved revision and migration hash: `[DECISION REQUIRED]`
+- Approved revision and Phase 3A SQL SHA-256 checksum: `[DECISION REQUIRED]`
 - Production project confirmation: `[DECISION REQUIRED]`
-- Operator / independent verifier: `[DECISION REQUIRED]`
+- Named approver / operator / independent verifier: `[DECISION REQUIRED]`
 - Backup/PITR evidence: `[DECISION REQUIRED]`
 - Preflight result: `[DECISION REQUIRED]`
-- Migration result: `[DECISION REQUIRED]`
+- Controlled SQL execution date/time and result: `[DECISION REQUIRED]`
+- Migration-history status (`NOT TRACKED`, `NOT RECORDED`, or `RECORDED`): `[DECISION REQUIRED]`
 - Postflight result: `[DECISION REQUIRED]`
 - Synthetic smoke result: `[DECISION REQUIRED]`
 - Application deployment and rollback target: `[DECISION REQUIRED]`
@@ -191,3 +195,5 @@ No destructive rollback SQL is provided. Prefer application rollback and access 
 ## Known technical debt
 
 The repository does not contain its original baseline production migration. The local Phase 3C fixture was historically recovered from `supabase/schema.sql`, and a test-only legacy `profiles` grant was reconstructed. This is not proof of production catalog state and must not be represented as a fully reproducible migration chain. Reconstructing, reviewing, and validating a canonical baseline remains separate technical debt.
+
+Supabase CLI migration-history adoption is also separate technical debt. It requires a reviewed baseline reconciliation and governance plan; it must not be bootstrapped by `db push`, migration repair, or manual history rows during the Phase 3A change.

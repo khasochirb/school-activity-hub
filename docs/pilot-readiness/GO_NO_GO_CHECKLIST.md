@@ -137,13 +137,14 @@ Only the named approval owner may mark a policy or operational item **Approved**
 | Named safeguarding/privacy governance approvals | Blocker | Not started | Completed `GOVERNANCE_APPROVAL_REGISTER.md` with names, dates, evidence, conditions, and review dates. |
 | Screenshot-exposed credential rotation | Blocker | Not started | Authorized owner records affected credential categories, rotation date, invalidation, and synthetic verification without recording values. |
 | Backup/PITR verified | Blocker | Not started | Provider evidence, scope, owner, date, approved RPO/RTO, and recovery responsibility. |
-| Production identity and read-only preflight | Blocker | Not run | Two-person project identity check and all `phase3a-preflight.sql` automated rows PASS. |
-| Reviewed migration applied atomically | Blocker | Not run | Change record, exact migration/revision hash, tool/version, operator/verifier, transaction result, and migration ledger entry. |
-| Read-only postflight | Blocker | Not run | Every `phase3a-postflight.sql` row PASS before application deployment. |
+| Production identity and read-only preflight | Blocker | Not run | Two-person project identity check, prerequisite rows PASS, and final decision PASS. `ALREADY PRESENT` requires postflight/investigation; partial state is a stop. |
+| Reviewed migration applied atomically | Blocker | Not run | Change record, exact revision and Phase 3A SQL SHA-256, execution date, approver, operator/verifier, transaction result, and controlled SQL record. Do not require or repair CLI history. |
+| Read-only postflight | Blocker | Not run | Final decision and all actual-object checks PASS before application deployment; migration history may be informationally `NOT TRACKED`. |
 | Synthetic RLS/RPC smoke test | Blocker | Not run | Same/cross-school, designated/non-designated, platform-only, anonymous, grant, receipt, and audit tests pass without sensitive evidence. |
 | Compatible application deployment and smoke test | Blocker | Not run | Route/auth/bilingual/mobile/accessibility/error/audit checks pass for the approved deployment; rollback target remains available. |
 | Monitoring and deployment record | Blocker | Not run | Named monitoring owner reviews errors/audit behavior and completes the deployment record. |
 | Original baseline migration reconstructed | Technical debt | Blocked | Reviewed canonical historical baseline and clean-reset migration-chain validation. This debt is not resolved by the recovered Phase 3C fixture. |
+| Supabase CLI migration-history governance | Technical debt | Blocked | Production has no reported `schema_migrations` relation. Reconcile the historical baseline before any future CLI history adoption; do not use `db push`, repair, or manual history rows for Phase 3A. |
 
 **Current Phase 3D launch result:** **No-Go for production execution and real-student onboarding** until the human approval and execution gates above are completed. The package may proceed to human governance approval review.
 

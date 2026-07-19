@@ -111,20 +111,33 @@ actual_authenticated_grants as (
     and c.relname in (select name from expected_tables)
   group by c.relname
 ),
-migration_ledger(applied) as (
-  select case
-    when to_regclass('supabase_migrations.schema_migrations') is null then null
-    else query_to_xml(
-      $$select exists (
-          select 1
-          from supabase_migrations.schema_migrations
-          where version = '202607170001'
-        ) as applied$$,
-      true,
-      false,
-      ''
-    )::text like '%<applied>true</applied>%'
-  end
+history_relation as (
+  select
+    exists (
+      select 1 from pg_catalog.pg_namespace where nspname = 'supabase_migrations'
+    ) as schema_exists,
+    to_regclass('supabase_migrations.schema_migrations') is not null as table_exists
+),
+migration_history as (
+  select
+    schema_exists,
+    table_exists,
+    case
+      when not table_exists then null
+      else query_to_xml(
+        $history$
+          select exists (
+            select 1
+            from supabase_migrations.schema_migrations
+            where version = '202607170001'
+          ) as version_recorded
+        $history$,
+        true,
+        false,
+        ''
+      )::text like '%<version_recorded>true</version_recorded>%'
+    end as version_recorded
+  from history_relation
 ),
 checks(check_name, passed, details) as (
   select
@@ -278,15 +291,45 @@ checks(check_name, passed, details) as (
          )
     ),
     'authenticated can execute only the designation check and receipt RPC; anon and PUBLIC can execute none'
+),
+postflight_decision as (
+  select case when bool_and(passed) then 'PASS' else 'FAIL' end as result
+  from checks
+),
+result_rows(sort_order, check_name, result, details) as (
+  select
+    10,
+    'Phase 3A postflight decision',
+    result,
+    case result
+      when 'PASS' then 'All Phase 3A tables, constraints, indexes, RLS policies, grants, and functions match the reviewed deployment.'
+      else 'Stop before application deployment: one or more actual Phase 3A object checks failed.'
+    end
+  from postflight_decision
   union all
   select
-    'Phase 3A migration recorded',
-    coalesce((select applied from migration_ledger), false),
-    'migration version 202607170001 is present in the Supabase migration ledger'
+    20,
+    'migration history',
+    case
+      when not table_exists then 'NOT TRACKED'
+      when version_recorded then 'RECORDED'
+      else 'NOT RECORDED'
+    end,
+    case
+      when not schema_exists then 'Supabase CLI migration history is not available; schema and table are absent. Verify deployment through actual objects and the manual deployment record.'
+      when not table_exists then 'Supabase CLI migration history is not available; schema exists but schema_migrations is absent. Verify deployment through actual objects and the manual deployment record.'
+      when version_recorded then 'Version 202607170001 is recorded; actual Phase 3A object checks remain authoritative.'
+      else 'Migration history exists but version 202607170001 is not recorded; actual Phase 3A object checks remain authoritative.'
+    end
+  from migration_history
+  union all
+  select
+    100,
+    check_name,
+    case when passed then 'PASS' else 'FAIL' end,
+    details
+  from checks
 )
-select
-  check_name,
-  case when passed then 'PASS' else 'FAIL' end as result,
-  details
-from checks
-order by check_name;
+select check_name, result, details
+from result_rows
+order by sort_order, check_name;

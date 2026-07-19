@@ -163,6 +163,12 @@ function EventCard({
               {labels.permissionRequired}
             </StatusBadge>
           ) : null}
+          {item.experienceLevel ? (
+            <StatusBadge variant="info">{item.experienceLabel}</StatusBadge>
+          ) : null}
+          {item.hasEligibilityInfo ? (
+            <StatusBadge>{labels.eligibility}</StatusBadge>
+          ) : null}
         </div>
 
         <div className="mt-3 space-y-1.5 text-sm text-slate-600">

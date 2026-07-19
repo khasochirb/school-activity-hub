@@ -4,6 +4,7 @@ type Translate = (key: string) => string;
 
 export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
   return {
+    accessibility: t("events.decisionInfo.accessibilityInformation"),
     addToCalendar: t("events.calendarActions.add"),
     attendanceQr: t("events.actions.attendanceQr"),
     cancelRegistration: t("events.actions.cancelMyRegistration"),
@@ -15,6 +16,8 @@ export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
     description: t("events.form.description"),
     downloadCalendarFile: t("events.calendarActions.download"),
     eventQuickView: t("events.quickView.title"),
+    eligibility: t("events.decisionInfo.eligibility"),
+    experienceLevel: t("events.decisionInfo.experienceLevel"),
     hostedBy: t("events.card.hostedBy"),
     googleCalendar: t("events.calendarActions.google"),
     joinEvent: t("events.actions.join"),
@@ -25,10 +28,12 @@ export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
     permission: t("events.card.permission"),
     permissionNote: t("events.permission.note"),
     permissionRequired: t("events.permission.required"),
+    participationInformation: t("events.formGroups.whoCanAttend"),
     registration: t("events.card.registration"),
     registrationFull: t("events.quickView.registrationFull"),
     registeredSuggestion: t("events.calendarActions.registeredSuggestion"),
     riskLevel: t("events.form.riskLevel"),
+    responsibleAdult: t("events.decisionInfo.responsibleAdult"),
     safety: t("events.card.safety"),
     sharedEvent: t("events.sharing.sharedEvent"),
     spacesRemaining: t("events.quickView.spacesRemaining"),

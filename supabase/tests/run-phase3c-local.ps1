@@ -12,7 +12,9 @@ $disposableSentinel = Join-Path $localProjectRoot ".disposable-local-validation"
 $fixturePath = Join-Path $PSScriptRoot "fixtures/pre_phase_3a_schema.sql"
 $fixtureGrantsPath = Join-Path $PSScriptRoot "fixtures/pre_phase_3a_runtime_grants.sql"
 $migrationPath = Join-Path $repositoryRoot "supabase/migrations/202607170001_add_safeguarding_privacy_foundations.sql"
+$phase4aMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180001_add_event_decision_information.sql"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
+$phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
 $catalogPath = Join-Path $PSScriptRoot "catalog-snapshot.sql"
 $expectedAuthPath = Join-Path $PSScriptRoot "bootstrap-expected-auth.sql"
 $currentSchemaPath = Join-Path $repositoryRoot "supabase/schema.sql"
@@ -142,8 +144,15 @@ try {
     throw "The pre-Phase-3A fixture contains seed data or Phase 3A objects."
   }
 
-  $committedSchema = @(& git show HEAD:supabase/schema.sql)
-  Assert-LastExitCode "Historical schema read"
+  $phase3aCommit = (& git log -1 --format=%H -- "supabase/migrations/202607170001_add_safeguarding_privacy_foundations.sql").ToString().Trim()
+  Assert-LastExitCode "Phase 3A migration commit lookup"
+  if (-not $phase3aCommit) {
+    throw "The commit that introduced the Phase 3A migration was not found."
+  }
+  $committedSchema = @(
+    & git show "${phase3aCommit}^:supabase/schema.sql"
+  )
+  Assert-LastExitCode "Pre-Phase-3A historical schema read"
   $seedMarker = [Array]::IndexOf(
     $committedSchema,
     "-- Fake seed data only. These rows are for local/demo development and should be"
@@ -151,9 +160,18 @@ try {
   if ($seedMarker -lt 0) {
     throw "The committed schema seed marker was not found."
   }
-  $fixtureBody = (($fixture -split "`r?`n") | Select-Object -Skip 4) -join "`n"
-  $historicalBody = ($committedSchema[0..($seedMarker - 1)] -join "`n").TrimEnd()
-  if ($fixtureBody.TrimEnd() -ne $historicalBody) {
+  $fixtureBody = (
+    ($fixture -split "`r?`n") |
+      Select-Object -Skip 4 |
+      Where-Object { $_.Trim().Length -gt 0 } |
+      ForEach-Object { $_.TrimEnd() }
+  ) -join "`n"
+  $historicalBody = (
+    $committedSchema[0..($seedMarker - 1)] |
+      Where-Object { $_.Trim().Length -gt 0 } |
+      ForEach-Object { $_.TrimEnd() }
+  ) -join "`n"
+  if ($fixtureBody -ne $historicalBody) {
     throw "The test fixture no longer matches the committed pre-Phase-3A schema snapshot."
   }
 
@@ -227,12 +245,24 @@ grant all on schema public to postgres, service_role;
   Invoke-PsqlFile -database "postgres" -path $migrationPath
   Write-Output "Applied only 202607170001_add_safeguarding_privacy_foundations.sql."
 
+  Invoke-PsqlFile -database "postgres" -path $phase4aMigrationPath
+  Write-Output "Applied only 202607180001_add_event_decision_information.sql."
+
   $testOutput = Invoke-PsqlFile -database "postgres" -path $testPath -Capture
   $testText = $testOutput -join "`n"
   if ($testText -notmatch 'PHASE3C_DATABASE_TESTS_PASSED') {
     throw "Database test suite did not emit its success marker."
   }
   $testOutput | Where-Object { $_ -match 'ok - |PHASE3C_DATABASE_TESTS_PASSED' } | Write-Output
+
+  $phase4aTestOutput = Invoke-PsqlFile -database "postgres" -path $phase4aTestPath -Capture
+  $phase4aTestText = $phase4aTestOutput -join "`n"
+  if ($phase4aTestText -notmatch 'PHASE4A_EVENT_INFO_TESTS_PASSED') {
+    throw "Phase 4A database test suite did not emit its success marker."
+  }
+  $phase4aTestOutput |
+    Where-Object { $_ -match 'ok - |PHASE4A_EVENT_INFO_TESTS_PASSED' } |
+    Write-Output
 
   Invoke-PsqlText -database "postgres" -sql "drop database if exists $expectedDatabase with (force); create database $expectedDatabase;"
   Invoke-PsqlFile -database $expectedDatabase -path $expectedAuthPath

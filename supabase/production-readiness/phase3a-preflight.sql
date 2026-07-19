@@ -2,16 +2,20 @@
 -- Run in the intended Supabase production project's SQL editor only after the
 -- operator has matched that project to the approved change record. This script
 -- performs no DDL, DML, privilege changes, or transaction-state changes.
--- Expected outcome: every automated check is PASS and the database identity row
--- is reviewed and signed by the operator. Any FAIL or unreviewed identity stops
--- the migration.
+--
+-- Decision meanings:
+-- PASS: prerequisites exist and all Phase 3A objects are absent.
+-- FAIL: prerequisites are missing, object state is partial, or history conflicts.
+-- ALREADY PRESENT: all four tables, eight functions, and 14 policies exist;
+--                  do not apply the migration and run the postflight instead.
 
 select
-  'database_identity' as check_name,
+  'database identity' as check_name,
   'MANUAL REVIEW' as result,
   format(
-    'database=%s; user=%s; server_version=%s. Match the active Supabase project to the approved production change record.',
+    'database=%s; schema=%s; user=%s; server_version=%s. Match the active Supabase project to the approved production change record; portable PostgreSQL metadata does not expose the Supabase project environment.',
     current_database(),
+    current_schema(),
     current_user,
     current_setting('server_version')
   ) as details;
@@ -42,14 +46,14 @@ expected_constraints(table_name, constraint_name, constraint_type) as (
     ('events', 'events_school_id_fkey', 'FOREIGN KEY'),
     ('events', 'events_id_school_unique', 'UNIQUE')
 ),
-phase3a_tables(name) as (
+expected_tables(name) as (
   values
     ('safeguarding_staff_designations'),
     ('safety_reports'),
     ('data_rights_requests'),
     ('restricted_workflow_audit_events')
 ),
-phase3a_functions(name, arguments) as (
+expected_functions(name, arguments) as (
   values
     ('current_user_is_designated_safeguarding_staff', 'uuid'),
     ('get_my_safety_report_receipts', ''),
@@ -60,7 +64,7 @@ phase3a_functions(name, arguments) as (
     ('protect_data_rights_request_workflow', ''),
     ('log_restricted_workflow_event', '')
 ),
-phase3a_indexes(name) as (
+expected_indexes(name) as (
   values
     ('safeguarding_designations_school_status_idx'),
     ('safety_reports_school_status_created_at_idx'),
@@ -70,39 +74,52 @@ phase3a_indexes(name) as (
     ('restricted_workflow_audit_school_created_at_idx'),
     ('restricted_workflow_audit_report_created_at_idx')
 ),
-phase3a_policies(name) as (
+expected_policies(table_name, policy_name, command) as (
   values
-    ('School admins can view safeguarding designations'),
-    ('Designated staff can view their own designation'),
-    ('School admins can assign safeguarding staff'),
-    ('School admins can update safeguarding designations'),
-    ('Active users can submit their own safety reports'),
-    ('Designated safeguarding staff can read same-school reports'),
-    ('Designated safeguarding staff can update same-school reports'),
-    ('Users can view their own data-rights requests'),
-    ('School admins can view same-school data-rights requests'),
-    ('Users can submit their own data-rights requests'),
-    ('Users can withdraw their own unresolved data-rights requests'),
-    ('School admins can process same-school data-rights requests'),
-    ('Safeguarding staff can view report audit events'),
-    ('School admins can view designation and rights audit events')
+    ('safeguarding_staff_designations', 'School admins can view safeguarding designations', 'SELECT'),
+    ('safeguarding_staff_designations', 'Designated staff can view their own designation', 'SELECT'),
+    ('safeguarding_staff_designations', 'School admins can assign safeguarding staff', 'INSERT'),
+    ('safeguarding_staff_designations', 'School admins can update safeguarding designations', 'UPDATE'),
+    ('safety_reports', 'Active users can submit their own safety reports', 'INSERT'),
+    ('safety_reports', 'Designated safeguarding staff can read same-school reports', 'SELECT'),
+    ('safety_reports', 'Designated safeguarding staff can update same-school reports', 'UPDATE'),
+    ('data_rights_requests', 'Users can view their own data-rights requests', 'SELECT'),
+    ('data_rights_requests', 'School admins can view same-school data-rights requests', 'SELECT'),
+    ('data_rights_requests', 'Users can submit their own data-rights requests', 'INSERT'),
+    ('data_rights_requests', 'Users can withdraw their own unresolved data-rights requests', 'UPDATE'),
+    ('data_rights_requests', 'School admins can process same-school data-rights requests', 'UPDATE'),
+    ('restricted_workflow_audit_events', 'Safeguarding staff can view report audit events', 'SELECT'),
+    ('restricted_workflow_audit_events', 'School admins can view designation and rights audit events', 'SELECT')
 ),
-migration_ledger(applied) as (
-  select case
-    when to_regclass('supabase_migrations.schema_migrations') is null then null
-    else query_to_xml(
-      $$select exists (
-          select 1
-          from supabase_migrations.schema_migrations
-          where version = '202607170001'
-        ) as applied$$,
-      true,
-      false,
-      ''
-    )::text like '%<applied>true</applied>%'
-  end
+history_relation as (
+  select
+    exists (
+      select 1 from pg_catalog.pg_namespace where nspname = 'supabase_migrations'
+    ) as schema_exists,
+    to_regclass('supabase_migrations.schema_migrations') is not null as table_exists
 ),
-checks(check_name, passed, details) as (
+migration_history as (
+  select
+    schema_exists,
+    table_exists,
+    case
+      when not table_exists then null
+      else query_to_xml(
+        $history$
+          select exists (
+            select 1
+            from supabase_migrations.schema_migrations
+            where version = '202607170001'
+          ) as version_recorded
+        $history$,
+        true,
+        false,
+        ''
+      )::text like '%<version_recorded>true</version_recorded>%'
+    end as version_recorded
+  from history_relation
+),
+prerequisite_checks(check_name, passed, details) as (
   select
     'required pre-Phase-3A columns',
     not exists (
@@ -141,48 +158,9 @@ checks(check_name, passed, details) as (
     'public.current_profile_school_id() and public.current_profile_role() exist'
   union all
   select
-    'Phase 3A tables absent',
-    not exists (
-      select 1
-      from phase3a_tables e
-      join pg_catalog.pg_class c on c.relname = e.name
-      join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-      where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm', 'f')
-    ),
-    'the four new relation names are unused in public'
-  union all
-  select
-    'Phase 3A functions absent',
-    not exists (
-      select 1
-      from phase3a_functions e
-      join pg_catalog.pg_proc p on p.proname = e.name
-      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public'
-        and pg_catalog.oidvectortypes(p.proargtypes) = e.arguments
-    ),
-    'all eight Phase 3A function signatures are unused in public'
-  union all
-  select
-    'Phase 3A index names absent',
-    not exists (
-      select 1
-      from phase3a_indexes e
-      join pg_catalog.pg_class c on c.relname = e.name and c.relkind = 'i'
-      join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-      where n.nspname = 'public'
-    ),
-    'all seven explicit Phase 3A index names are unused in public'
-  union all
-  select
-    'Phase 3A policy names absent',
-    not exists (
-      select 1
-      from phase3a_policies e
-      join pg_catalog.pg_policies p on p.policyname = e.name
-      where p.schemaname = 'public'
-    ),
-    'the reviewed policy names are not already present on a public table'
+    'current schema is public',
+    current_schema() = 'public',
+    'the SQL Editor session resolves unqualified objects through the expected public schema'
   union all
   select
     'pgcrypto extension available',
@@ -216,20 +194,109 @@ checks(check_name, passed, details) as (
       where n.nspname = 'public' and t.typname = 'profile_status'
     ), array[]::text[]) = array['active', 'inactive']::text[],
     'public.profile_status contains active and inactive in the reviewed order'
+),
+object_counts as (
+  select
+    (select count(*) from expected_tables e where to_regclass('public.' || e.name) is not null) as table_count,
+    (
+      select count(*)
+      from expected_functions e
+      join pg_catalog.pg_proc p
+        on p.proname = e.name
+       and pg_catalog.oidvectortypes(p.proargtypes) = e.arguments
+      join pg_catalog.pg_namespace n
+        on n.oid = p.pronamespace
+       and n.nspname = 'public'
+    ) as function_count,
+    (
+      select count(*)
+      from expected_policies e
+      join pg_catalog.pg_policies p
+        on p.schemaname = 'public'
+       and p.tablename = e.table_name
+       and p.policyname = e.policy_name
+       and p.cmd = e.command
+    ) as policy_count,
+    (
+      select count(*)
+      from expected_indexes e
+      join pg_catalog.pg_class c on c.relname = e.name and c.relkind = 'i'
+      join pg_catalog.pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+    ) as index_count
+),
+object_state as (
+  select
+    table_count,
+    function_count,
+    policy_count,
+    index_count,
+    case
+      when table_count = 0 and function_count = 0 and policy_count = 0 then 'ABSENT'
+      when table_count = 4 and function_count = 8 and policy_count = 14 then 'COMPLETE'
+      else 'PARTIAL'
+    end as state
+  from object_counts
+),
+preflight_decision as (
+  select case
+    when o.state = 'COMPLETE' then 'ALREADY PRESENT'
+    when o.state = 'PARTIAL' then 'FAIL'
+    when o.index_count <> 0 then 'FAIL'
+    when coalesce(h.version_recorded, false) then 'FAIL'
+    when not (select bool_and(passed) from prerequisite_checks) then 'FAIL'
+    else 'PASS'
+  end as result
+  from object_state o
+  cross join migration_history h
+),
+result_rows(sort_order, check_name, result, details) as (
+  select
+    10,
+    'Phase 3A preflight decision',
+    result,
+    case result
+      when 'PASS' then 'Prerequisites pass and all Phase 3A objects are absent; migration may proceed through the approved controlled SQL procedure.'
+      when 'ALREADY PRESENT' then 'All expected Phase 3A tables, functions, and policies are present; do not reapply the migration and run the postflight.'
+      else 'Stop: prerequisites failed, Phase 3A is partially present, an index name conflicts, or migration history conflicts with actual objects.'
+    end
+  from preflight_decision
   union all
   select
-    'Supabase migration ledger available',
-    to_regclass('supabase_migrations.schema_migrations') is not null,
-    'supabase_migrations.schema_migrations exists'
+    20,
+    'Phase 3A object inventory',
+    state,
+    format(
+      'tables=%s/4; functions=%s/8; policies=%s/14; expected_index_names=%s/7',
+      table_count,
+      function_count,
+      policy_count,
+      index_count
+    )
+  from object_state
   union all
   select
-    'Phase 3A migration not recorded',
-    coalesce(not (select applied from migration_ledger), false),
-    'migration version 202607170001 is not present in the Supabase migration ledger'
+    30,
+    'migration history',
+    case
+      when not table_exists then 'MIGRATION HISTORY: NOT AVAILABLE'
+      when version_recorded then 'MIGRATION HISTORY: VERSION RECORDED'
+      else 'MIGRATION HISTORY: VERSION NOT RECORDED'
+    end,
+    case
+      when not schema_exists then 'Production appears not to be managed through Supabase CLI migration history; schema and table are absent.'
+      when not table_exists then 'Production appears not to be managed through Supabase CLI migration history; schema exists but schema_migrations is absent.'
+      when version_recorded then 'Version 202607170001 is recorded; actual Phase 3A objects remain authoritative.'
+      else 'Migration history exists but version 202607170001 is not recorded; actual Phase 3A objects remain authoritative.'
+    end
+  from migration_history
+  union all
+  select
+    100,
+    check_name,
+    case when passed then 'PASS' else 'FAIL' end,
+    details
+  from prerequisite_checks
 )
-select
-  check_name,
-  case when passed then 'PASS' else 'FAIL' end as result,
-  details
-from checks
-order by check_name;
+select check_name, result, details
+from result_rows
+order by sort_order, check_name;

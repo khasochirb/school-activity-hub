@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseActivityCategory } from "@/lib/activity-categories";
 import {
+  parseEventDecisionInfo,
+  type EventDecisionInfoError,
+} from "@/lib/events/event-decision-info";
+import {
   formatTranslation,
   getDictionary,
   translate,
@@ -40,6 +44,13 @@ type EventRecord = {
   permission_required: boolean;
 };
 
+type ResponsibleStaffProfile = {
+  id: string;
+  role: "school_admin" | "teacher" | "student";
+  school_id: string;
+  status: "active" | "inactive";
+};
+
 export type CreateEventState = {
   message: string;
   success: boolean;
@@ -74,12 +85,22 @@ export async function createEvent(
   const permissionRequired =
     String(formData.get("permission_required") ?? "") === "true";
   const permissionNote = String(formData.get("permission_note") ?? "").trim();
+  const decisionInfoResult = parseEventDecisionInfo(formData);
   const isStaff = isSchoolStaff(profile);
   const isLeaderEvent = !isStaff;
 
   if (!title) {
     return { message: i18n.t("events.errors.titleRequired"), success: false };
   }
+
+  if (decisionInfoResult.error) {
+    return {
+      message: eventDecisionInfoErrorMessage(decisionInfoResult.error, i18n),
+      success: false,
+    };
+  }
+
+  const decisionInfo = decisionInfoResult.data;
 
   if (!location) {
     return { message: i18n.t("events.errors.locationRequired"), success: false };
@@ -131,6 +152,19 @@ export async function createEvent(
     return { message: i18n.t("events.errors.invalidClub"), success: false };
   }
 
+  const responsibleStaff = await validateResponsibleStaffAssignment({
+    currentResponsibleStaffId: null,
+    profile,
+    requestedResponsibleStaffId: decisionInfo.responsibleStaffId,
+  });
+
+  if (!responsibleStaff.valid) {
+    return {
+      message: i18n.t("events.errors.invalidResponsibleStaff"),
+      success: false,
+    };
+  }
+
   const now = new Date().toISOString();
   const status = isStaff ? "approved" : "pending_approval";
   const supabase = await createClient();
@@ -152,6 +186,10 @@ export async function createEvent(
       risk_level: riskLevel,
       permission_required: permissionRequired,
       permission_note: permissionNote || null,
+      responsible_staff_id: responsibleStaff.responsibleStaffId,
+      eligibility_notes: decisionInfo.eligibilityNotes,
+      experience_level: decisionInfo.experienceLevel,
+      accessibility_notes: decisionInfo.accessibilityNotes,
       status,
       submitted_at: now,
       approved_at: isStaff ? now : null,
@@ -350,6 +388,66 @@ export async function updateEventSafety(formData: FormData) {
   );
 
   revalidatePath("/events");
+  revalidatePath("/approvals");
+}
+
+export async function updateEventDecisionInfo(formData: FormData) {
+  const profile = await getCurrentProfile();
+
+  if (!profile || !isSchoolStaff(profile)) {
+    redirect("/events");
+  }
+
+  const eventId = String(formData.get("event_id") ?? "").trim();
+  const decisionInfoResult = parseEventDecisionInfo(formData);
+
+  if (!eventId || decisionInfoResult.error) {
+    return;
+  }
+
+  const admin = createAdminClient();
+  const { data: event } = await timeServer(
+    "events.action.update-decision-info.event",
+    () =>
+      admin
+        .from("events")
+        .select("id, responsible_staff_id")
+        .eq("id", eventId)
+        .eq("school_id", profile.school_id)
+        .maybeSingle<{ id: string; responsible_staff_id: string | null }>(),
+  );
+
+  if (!event) {
+    return;
+  }
+
+  const responsibleStaff = await validateResponsibleStaffAssignment({
+    currentResponsibleStaffId: event.responsible_staff_id,
+    profile,
+    requestedResponsibleStaffId:
+      decisionInfoResult.data.responsibleStaffId,
+  });
+
+  if (!responsibleStaff.valid) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await timeServer("events.action.update-decision-info.update", () =>
+    supabase
+      .from("events")
+      .update({
+        accessibility_notes: decisionInfoResult.data.accessibilityNotes,
+        eligibility_notes: decisionInfoResult.data.eligibilityNotes,
+        experience_level: decisionInfoResult.data.experienceLevel,
+        responsible_staff_id: responsibleStaff.responsibleStaffId,
+      })
+      .eq("id", event.id)
+      .eq("school_id", profile.school_id),
+  );
+
+  revalidatePath("/events");
+  revalidatePath(`/events/${event.id}`);
   revalidatePath("/approvals");
 }
 
@@ -687,6 +785,75 @@ async function isClubInCurrentSchool(profile: Profile, clubId: string) {
 
 function isSchoolStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
+}
+
+async function validateResponsibleStaffAssignment({
+  currentResponsibleStaffId,
+  profile,
+  requestedResponsibleStaffId,
+}: {
+  currentResponsibleStaffId: string | null;
+  profile: Profile;
+  requestedResponsibleStaffId: string | null;
+}): Promise<
+  | { responsibleStaffId: string | null; valid: true }
+  | { responsibleStaffId: null; valid: false }
+> {
+  if (!requestedResponsibleStaffId) {
+    const teacherCanClear =
+      profile.role !== "teacher" ||
+      !currentResponsibleStaffId ||
+      currentResponsibleStaffId === profile.id;
+
+    return teacherCanClear
+      ? { responsibleStaffId: null, valid: true }
+      : { responsibleStaffId: null, valid: false };
+  }
+
+  if (!isSchoolStaff(profile)) {
+    return { responsibleStaffId: null, valid: false };
+  }
+
+  if (
+    profile.role === "teacher" &&
+    requestedResponsibleStaffId !== profile.id &&
+    requestedResponsibleStaffId !== currentResponsibleStaffId
+  ) {
+    return { responsibleStaffId: null, valid: false };
+  }
+
+  const admin = createAdminClient();
+  const { data: responsibleStaff } = await timeServer(
+    "events.action.validate-responsible-staff",
+    () =>
+      admin
+        .from("profiles")
+        .select("id, school_id, role, status")
+        .eq("id", requestedResponsibleStaffId)
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .in("role", ["school_admin", "teacher"])
+        .maybeSingle<ResponsibleStaffProfile>(),
+  );
+
+  return responsibleStaff
+    ? { responsibleStaffId: responsibleStaff.id, valid: true }
+    : { responsibleStaffId: null, valid: false };
+}
+
+function eventDecisionInfoErrorMessage(
+  error: EventDecisionInfoError,
+  i18n: ServerI18n,
+) {
+  if (error === "eligibility_too_long") {
+    return i18n.t("events.errors.eligibilityTooLong");
+  }
+
+  if (error === "accessibility_too_long") {
+    return i18n.t("events.errors.accessibilityTooLong");
+  }
+
+  return i18n.t("events.errors.invalidExperienceLevel");
 }
 
 function parseRiskLevel(value: FormDataEntryValue | null): EventRiskLevel | null {

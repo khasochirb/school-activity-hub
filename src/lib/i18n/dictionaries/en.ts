@@ -146,6 +146,7 @@ export const en = {
     no: "No",
     noExtraDetails: "No extra details",
     notAvailableShort: "N/A",
+    notSpecified: "Not specified",
     open: "Open",
     next: "Next",
     pending: "Pending",
@@ -909,6 +910,7 @@ export const en = {
       joining: "Joining...",
       resetFilters: "Reset filters",
       saveSafety: "Save safety details",
+      saveDecisionInfo: "Save participation information",
       saveSharing: "Save sharing settings",
       submitForApproval: "Submit for approval",
       submitting: "Submitting...",
@@ -983,9 +985,14 @@ export const en = {
       title: "No events match these filters",
     },
     errors: {
+      accessibilityTooLong: "Accessibility information is too long.",
       createFailed: "Event could not be created. Check the details and try again.",
+      eligibilityTooLong: "Eligibility information is too long.",
       invalidCategory: "Choose a valid category.",
       invalidClub: "Choose a valid club.",
+      invalidExperienceLevel: "Choose a valid experience level.",
+      invalidResponsibleStaff:
+        "Choose an active teacher or school admin from your school.",
       invalidRiskLevel: "Choose a valid risk level.",
       leaderClubRequired:
         "Club leaders must choose one of their clubs.",
@@ -1030,6 +1037,7 @@ export const en = {
       basicDetails: "Basic details",
       dateTime: "Date and time",
       safetyPermissions: "Safety and permissions",
+      whoCanAttend: "Who can attend and what to expect",
     },
     form: {
       category: "Category",
@@ -1058,6 +1066,30 @@ export const en = {
       timePreviewEmpty: "Select a date and time to preview the schedule.",
       timezoneHelper: "Times are saved in your school timezone.",
       title: "Title",
+    },
+    decisionInfo: {
+      accessibilityGuidance:
+        "Accessibility information describes the activity and environment. Students are not required to disclose a disability publicly.",
+      accessibilityInformation: "Accessibility information",
+      accessibilityNotProvided: "Accessibility information not provided",
+      accessibilityPlaceholder:
+        "Describe the venue, activity format, and available accommodations",
+      eligibility: "Eligibility and grade information",
+      eligibilityNotSpecified: "Eligibility not specified",
+      eligibilityPlaceholder:
+        "Explain who can participate, including relevant grades or experience",
+      experienceLevel: "Experience level",
+      experienceNotSpecified: "Experience level not specified",
+      responsibleAdult: "Responsible adult",
+      responsibleAdultHelp:
+        "Choose the active teacher or school admin responsible for this activity.",
+      responsibleAdultReviewHelp:
+        "School staff can assign the responsible adult during review.",
+      responsibleNotSpecified: "Responsible adult not specified",
+    },
+    experience: {
+      beginnerFriendly: "Beginner-friendly",
+      priorExperienceRecommended: "Prior experience recommended",
     },
     listTitles: {
       club: "Club events",
