@@ -27,22 +27,21 @@ with required_columns(column_name, present) as (
   from information_schema.columns
   where table_schema = 'public'
     and table_name = 'events'
-    and column_name in ('supervision_information', 'schedule_change_notice')
+    and column_name = 'cancellation_notice'
 ), phase_constraints as (
   select count(*)::integer as constraint_count
   from pg_constraint
   where conrelid = to_regclass('public.events')
     and conname in (
-      'events_supervision_information_valid',
-      'events_schedule_change_notice_valid'
+      'events_cancellation_notice_valid'
     )
 ), phase_guard as (
   select
-    (to_regprocedure('public.enforce_event_staff_authored_information()') is not null)::integer
+    (to_regprocedure('public.enforce_event_staff_cancellation_notice()') is not null)::integer
       + (exists (
           select 1 from pg_trigger
           where tgrelid = to_regclass('public.events')
-            and tgname = 'enforce_event_staff_authored_information'
+            and tgname = 'enforce_event_staff_cancellation_notice'
             and not tgisinternal
         ))::integer as guard_count
 ), checks as (
@@ -76,13 +75,13 @@ with required_columns(column_name, present) as (
    and pg_policies.policyname = expected_policies.policy_name
   union all
   select 'Phase 4B2A columns',
-    case when column_count = 0 then 'PASS' when column_count = 2 then 'ALREADY PRESENT' else 'FAIL' end,
-    column_count::text || ' of 2 columns found'
+    case when column_count = 0 then 'PASS' when column_count = 1 then 'ALREADY PRESENT' else 'FAIL' end,
+    column_count::text || ' of 1 column found'
   from phase_columns
   union all
   select 'Phase 4B2A constraints',
-    case when constraint_count = 0 then 'PASS' when constraint_count = 2 then 'ALREADY PRESENT' else 'FAIL' end,
-    constraint_count::text || ' of 2 constraints found'
+    case when constraint_count = 0 then 'PASS' when constraint_count = 1 then 'ALREADY PRESENT' else 'FAIL' end,
+    constraint_count::text || ' of 1 constraint found'
   from phase_constraints
   union all
   select 'Phase 4B2A staff-authoring guard',
@@ -102,8 +101,8 @@ select 'Phase 4B2A preflight decision',
     when (select column_count from phase_columns) = 0
       and (select constraint_count from phase_constraints) = 0
       and (select guard_count from phase_guard) = 0 then 'PASS'
-    when (select column_count from phase_columns) = 2
-      and (select constraint_count from phase_constraints) = 2
+    when (select column_count from phase_columns) = 1
+      and (select constraint_count from phase_constraints) = 1
       and (select guard_count from phase_guard) = 2 then 'ALREADY PRESENT'
     else 'FAIL'
   end,

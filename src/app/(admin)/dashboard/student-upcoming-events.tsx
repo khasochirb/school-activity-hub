@@ -59,7 +59,7 @@ export function StudentUpcomingEvents({
                   <span className="mt-1 block break-words text-sm text-slate-600">
                     {event.location || locationNotSet}
                   </span>
-                  {event.scheduleChangeNotice ? (
+                  {event.cancellationNotice ? (
                     <span className="badge badge-warning mt-2 w-fit">
                       {labels.scheduleUpdate}
                     </span>

@@ -47,8 +47,7 @@ const quickViewSelect = [
   "cost_notes",
   "required_materials",
   "expected_commitment",
-  "supervision_information",
-  "schedule_change_notice",
+  "cancellation_notice",
 ].join(",");
 const detailSelect = [
   quickViewSelect,
@@ -71,7 +70,7 @@ await verifyRelationshipResolution();
 await verifySchemaDriftSignatures();
 await verifyRoleLists();
 await verifyCreationFlows();
-await verifySupervisionScheduleEdits();
+await verifyCancellationNoticeEdits();
 await verifyPageQueries();
 await verifyRoleBoundaries();
 
@@ -210,8 +209,7 @@ async function createEvent({
     school_id: schoolId,
     starts_at: startsAt,
     status: "approved",
-    supervision_information: "Responsible teacher present throughout",
-    schedule_change_notice: "Location changed to the local test room",
+    cancellation_notice: "This local test event has been canceled",
     submitted_at: new Date().toISOString(),
     submitted_by_profile_id: creatorId,
     title: `PostgREST ${label} event`,
@@ -226,14 +224,13 @@ async function createEvent({
 
   const readback = await request(
     actorId,
-    `/events?id=eq.${id}&school_id=eq.${schoolId}&select=${encodeURIComponent("id,school_id,supervision_information,schedule_change_notice")}`,
+    `/events?id=eq.${id}&school_id=eq.${schoolId}&select=${encodeURIComponent("id,school_id,cancellation_notice")}`,
   );
   assert.equal(readback.status, 200);
   assert.deepEqual(readback.body, [{
     id,
     school_id: schoolId,
-    supervision_information: payload.supervision_information,
-    schedule_change_notice: payload.schedule_change_notice,
+    cancellation_notice: payload.cancellation_notice,
   }]);
 
   const retry = await request(actorId, "/events", {
@@ -253,7 +250,7 @@ async function createEvent({
   return id;
 }
 
-async function verifySupervisionScheduleEdits() {
+async function verifyCancellationNoticeEdits() {
   for (const [actorId, eventId, label] of [
     [identities.teacher, createdIds[0], "Teacher update"],
     [identities.schoolAdmin, createdIds[1], "School admin update"],
@@ -261,22 +258,24 @@ async function verifySupervisionScheduleEdits() {
   ]) {
     const result = await request(actorId, `/events?id=eq.${eventId}`, {
       body: {
-        supervision_information: label,
-        schedule_change_notice: `${label} schedule notice`,
+        cancellation_notice: `${label} cancellation notice`,
       },
       method: "PATCH",
       prefer: "return=representation",
     });
     assert.equal(result.status, 200);
     assert.equal(result.body.length, 1);
-    assert.equal(result.body[0].supervision_information, label);
+    assert.equal(
+      result.body[0].cancellation_notice,
+      `${label} cancellation notice`,
+    );
   }
 
   const studentResult = await request(
     identities.student,
     `/events?id=eq.${createdIds[0]}`,
     {
-      body: { schedule_change_notice: "Forbidden student update" },
+      body: { cancellation_notice: "Forbidden student update" },
       method: "PATCH",
       prefer: "return=representation",
     },
@@ -292,8 +291,8 @@ async function verifyPageQueries() {
     ["detail", `/events?id=eq.${eventId}&select=${encodeURIComponent(detailSelect)}`],
     ["dashboard", `/events?school_id=eq.${schools.a}&status=eq.approved&select=${encodeURIComponent(quickViewSelect)}&limit=5`],
     ["approvals", `/events?status=eq.pending_approval&select=${encodeURIComponent(approvalSelect)}`],
-    ["attendance", `/events?id=eq.${eventId}&select=${encodeURIComponent("id,school_id,title,location,starts_at,ends_at,risk_level,permission_required,permission_note,supervision_information,schedule_change_notice,status")}`],
-    ["calendar-export", `/events?id=eq.${eventId}&select=${encodeURIComponent("id,school_id,title,description,schedule_change_notice,location,starts_at,ends_at,status,created_at")}`],
+    ["attendance", `/events?id=eq.${eventId}&select=${encodeURIComponent("id,school_id,title,location,starts_at,ends_at,risk_level,permission_required,permission_note,cancellation_notice,status")}`],
+    ["calendar-export", `/events?id=eq.${eventId}&select=${encodeURIComponent("id,school_id,title,description,cancellation_notice,location,starts_at,ends_at,status,created_at")}`],
   ]) {
     const result = await request(identities.schoolAdmin, path);
     assert.equal(result.status, 200, `${label} query failed`);

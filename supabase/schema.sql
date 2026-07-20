@@ -429,8 +429,7 @@ create table if not exists public.events (
   cost_notes text,
   required_materials text,
   expected_commitment text,
-  supervision_information text,
-  schedule_change_notice text,
+  cancellation_notice text,
   constraint events_id_school_unique unique (id, school_id),
   constraint events_title_not_blank check (length(btrim(title)) > 0),
   constraint events_time_order check (ends_at > starts_at),
@@ -486,18 +485,11 @@ create table if not exists public.events (
       and expected_commitment = btrim(expected_commitment)
     )
   ),
-  constraint events_supervision_information_valid check (
-    supervision_information is null
+  constraint events_cancellation_notice_valid check (
+    cancellation_notice is null
     or (
-      length(supervision_information) between 1 and 1000
-      and supervision_information = btrim(supervision_information)
-    )
-  ),
-  constraint events_schedule_change_notice_valid check (
-    schedule_change_notice is null
-    or (
-      length(schedule_change_notice) between 1 and 1000
-      and schedule_change_notice = btrim(schedule_change_notice)
+      length(cancellation_notice) between 1 and 1000
+      and cancellation_notice = btrim(cancellation_notice)
     )
   ),
   constraint events_club_school_fk foreign key (club_id, school_id)
@@ -555,10 +547,7 @@ alter table public.events
   add column if not exists expected_commitment text;
 
 alter table public.events
-  add column if not exists supervision_information text;
-
-alter table public.events
-  add column if not exists schedule_change_notice text;
+  add column if not exists cancellation_notice text;
 
 do $$
 begin
@@ -647,25 +636,11 @@ end $$;
 do $$
 begin
   alter table public.events
-    add constraint events_supervision_information_valid check (
-      supervision_information is null
+    add constraint events_cancellation_notice_valid check (
+      cancellation_notice is null
       or (
-        length(supervision_information) between 1 and 1000
-        and supervision_information = btrim(supervision_information)
-      )
-    );
-exception
-  when duplicate_object then null;
-end $$;
-
-do $$
-begin
-  alter table public.events
-    add constraint events_schedule_change_notice_valid check (
-      schedule_change_notice is null
-      or (
-        length(schedule_change_notice) between 1 and 1000
-        and schedule_change_notice = btrim(schedule_change_notice)
+        length(cancellation_notice) between 1 and 1000
+        and cancellation_notice = btrim(cancellation_notice)
       )
     );
 exception
@@ -1073,25 +1048,21 @@ as $$
     and public.current_profile_role() in ('school_admin', 'teacher')
 $$;
 
-create or replace function public.enforce_event_staff_authored_information()
+create or replace function public.enforce_event_staff_cancellation_notice()
 returns trigger
 language plpgsql
 set search_path = pg_catalog, public
 as $$
 declare
-  protected_information_changed boolean;
+  cancellation_notice_changed boolean;
 begin
-  protected_information_changed := case
-    when tg_op = 'INSERT' then
-      new.supervision_information is not null
-      or new.schedule_change_notice is not null
-    else
-      new.supervision_information is distinct from old.supervision_information
-      or new.schedule_change_notice is distinct from old.schedule_change_notice
+  cancellation_notice_changed := case
+    when tg_op = 'INSERT' then new.cancellation_notice is not null
+    else new.cancellation_notice is distinct from old.cancellation_notice
   end;
 
   if current_user = 'authenticated'
-    and protected_information_changed
+    and cancellation_notice_changed
     and not (
       public.current_user_is_platform_admin()
       or public.current_user_can_manage_school(new.school_id)
@@ -1099,21 +1070,21 @@ begin
   then
     raise exception using
       errcode = '42501',
-      message = 'event supervision and schedule information requires staff authority';
+      message = 'event cancellation notices require staff authority';
   end if;
 
   return new;
 end;
 $$;
 
-alter function public.enforce_event_staff_authored_information() owner to postgres;
-revoke all on function public.enforce_event_staff_authored_information()
+alter function public.enforce_event_staff_cancellation_notice() owner to postgres;
+revoke all on function public.enforce_event_staff_cancellation_notice()
   from public, anon, authenticated;
 
-drop trigger if exists enforce_event_staff_authored_information on public.events;
-create trigger enforce_event_staff_authored_information
+drop trigger if exists enforce_event_staff_cancellation_notice on public.events;
+create trigger enforce_event_staff_cancellation_notice
   before insert or update on public.events
-  for each row execute function public.enforce_event_staff_authored_information();
+  for each row execute function public.enforce_event_staff_cancellation_notice();
 
 create or replace function public.schools_have_approved_connection(
   first_school_id uuid,

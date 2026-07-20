@@ -3,7 +3,7 @@
 
 select phase3c_test.assert_true(
   (
-    select supervision_information is null and schedule_change_notice is null
+    select cancellation_notice is null
     from public.events
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'
   ),
@@ -12,41 +12,28 @@ select phase3c_test.assert_true(
 
 select phase3c_test.assert_lives(
   $$update public.events
-    set supervision_information = 'Responsible teacher present throughout',
-        schedule_change_notice = 'Start time moved to 3:30 PM'
+    set cancellation_notice = 'This event has been canceled'
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
-  'bounded supervision and schedule information is accepted'
+  'a bounded cancellation notice is accepted'
 );
 
 select phase3c_test.assert_lives(
   $$update public.events
-    set supervision_information = null, schedule_change_notice = null
+    set cancellation_notice = null
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
   'blank-normalized null values remain valid'
 );
 
 select phase3c_test.assert_throws(
-  $$update public.events set supervision_information = repeat('x', 1001)
+  $$update public.events set cancellation_notice = repeat('x', 1001)
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
-  'supervision longer than 1000 characters is rejected'
+  'cancellation notice longer than 1000 characters is rejected'
 );
 
 select phase3c_test.assert_throws(
-  $$update public.events set schedule_change_notice = repeat('x', 1001)
+  $$update public.events set cancellation_notice = '  Not trimmed  '
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
-  'schedule notice longer than 1000 characters is rejected'
-);
-
-select phase3c_test.assert_throws(
-  $$update public.events set supervision_information = '  Not trimmed  '
-    where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
-  'untrimmed supervision is rejected at the database boundary'
-);
-
-select phase3c_test.assert_throws(
-  $$update public.events set schedule_change_notice = ''
-    where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
-  'blank schedule notice is rejected at the database boundary'
+  'untrimmed cancellation notice is rejected at the database boundary'
 );
 
 insert into public.student_rosters (
@@ -89,9 +76,9 @@ select phase3c_test.assert_command_rows(
   'club leader retains existing draft-event edit authority'
 );
 select phase3c_test.assert_throws(
-  $$update public.events set schedule_change_notice = 'Forged leader notice'
+  $$update public.events set cancellation_notice = 'Forged leader notice'
     where id = 'aaaaaaaa-0000-4000-8000-000000009003'$$,
-  'club leader cannot modify staff-authored schedule information'
+  'club leader cannot modify a staff-authored cancellation notice'
 );
 reset role;
 
@@ -105,13 +92,13 @@ select phase3c_test.assert_true(
 set role authenticated;
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000001003', false);
 select phase3c_test.assert_command_rows(
-  $$update public.events set supervision_information = 'Teacher same-school edit'
+  $$update public.events set cancellation_notice = 'Teacher same-school edit'
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
   1,
-  'teacher can edit supervision for a same-school event'
+  'teacher can edit a cancellation notice for a same-school event'
 );
 select phase3c_test.assert_command_rows(
-  $$update public.events set schedule_change_notice = 'Forbidden cross-school edit'
+  $$update public.events set cancellation_notice = 'Forbidden cross-school edit'
     where id = 'bbbbbbbb-0000-4000-8000-000000006001'$$,
   0,
   'teacher cannot edit another school event'
@@ -121,17 +108,17 @@ reset role;
 set role authenticated;
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000001001', false);
 select phase3c_test.assert_command_rows(
-  $$update public.events set schedule_change_notice = 'School admin update'
+  $$update public.events set cancellation_notice = 'School admin update'
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
   1,
-  'school admin can edit a same-school schedule notice'
+  'school admin can edit a same-school cancellation notice'
 );
 reset role;
 
 set role authenticated;
 select set_config('request.jwt.claim.sub', 'cccccccc-0000-4000-8000-000000003001', false);
 select phase3c_test.assert_command_rows(
-  $$update public.events set supervision_information = 'Platform oversight update'
+  $$update public.events set cancellation_notice = 'Platform oversight update'
     where id = 'bbbbbbbb-0000-4000-8000-000000006001'$$,
   1,
   'platform admin can edit another school event through global event authority'
@@ -141,10 +128,10 @@ reset role;
 set role authenticated;
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000001004', false);
 select phase3c_test.assert_command_rows(
-  $$update public.events set schedule_change_notice = 'Forbidden student edit'
+  $$update public.events set cancellation_notice = 'Forbidden student edit'
     where id = 'aaaaaaaa-0000-4000-8000-000000006001'$$,
   0,
-  'student cannot edit schedule information'
+  'student cannot edit cancellation information'
 );
 reset role;
 
@@ -154,7 +141,7 @@ select phase3c_test.assert_true(
     where id = 'cccccccc-0000-4000-8000-000000005001'
       and status = 'registered'
   ),
-  'schedule and supervision updates leave registration unchanged'
+  'cancellation notices leave registration unchanged'
 );
 
 select phase3c_test.assert_true(
@@ -166,4 +153,4 @@ select phase3c_test.assert_true(
   'attendance policies remain unchanged'
 );
 
-select 'PHASE4B2A_EVENT_SUPERVISION_SCHEDULE_TESTS_PASSED';
+select 'PHASE4B2A_EVENT_CANCELLATION_NOTICE_TESTS_PASSED';

@@ -37,7 +37,7 @@ export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
     registrationFull: t("events.quickView.registrationFull"),
     registeredSuggestion: t("events.calendarActions.registeredSuggestion"),
     riskLevel: t("events.form.riskLevel"),
-    scheduleChangeNotice: t(
+    cancellationNotice: t(
       "events.supervisionSchedule.scheduleChangeNotice",
     ),
     scheduleUpdate: t("events.supervisionSchedule.importantScheduleUpdate"),
@@ -46,12 +46,6 @@ export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
     safety: t("events.card.safety"),
     sharedEvent: t("events.sharing.sharedEvent"),
     spacesRemaining: t("events.quickView.spacesRemaining"),
-    supervisionInformation: t(
-      "events.supervisionSchedule.supervisionInformation",
-    ),
-    supervisionNotSpecified: t(
-      "events.supervisionSchedule.supervisionNotSpecified",
-    ),
     viewEvent: t("events.quickView.viewEvent"),
     viewFullDetails: t("events.quickView.viewFullDetails"),
   };

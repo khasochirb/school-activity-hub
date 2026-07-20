@@ -373,7 +373,7 @@ function CalendarEventChip({
       <span className="mt-0.5 block truncate text-xs font-bold text-slate-950">
         {event.title}
       </span>
-      {event.scheduleChangeNotice ? (
+      {event.cancellationNotice ? (
         <span className="mt-0.5 block truncate text-[10px] font-bold text-amber-800 dark:text-amber-200">
           {labels.scheduleUpdate}
         </span>
@@ -427,7 +427,7 @@ function CalendarAgenda({
                 event.registrationStatus === "attended" ? (
                   <StatusBadge variant="success">{labels.registered}</StatusBadge>
                 ) : null}
-                {event.scheduleChangeNotice ? (
+                {event.cancellationNotice ? (
                   <StatusBadge variant="warning">{labels.scheduleUpdate}</StatusBadge>
                 ) : null}
                 {event.isMyClubEvent ? (

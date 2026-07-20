@@ -49,7 +49,7 @@ import {
   updateEventSharing,
 } from "../actions";
 import { EventPracticalDetailsForm } from "../event-practical-details-form";
-import { EventSupervisionScheduleForm } from "../event-supervision-schedule-form";
+import { EventCancellationNoticeForm } from "../event-cancellation-notice-form";
 
 type Profile = {
   id: string;
@@ -88,8 +88,7 @@ type EventRecord = {
   cost_notes: string | null;
   required_materials: string | null;
   expected_commitment: string | null;
-  supervision_information: string | null;
-  schedule_change_notice: string | null;
+  cancellation_notice: string | null;
 };
 
 type StudentRoster = {
@@ -235,7 +234,7 @@ export default async function EventDetailPage({
       endsAt: event.ends_at,
       id: event.id,
       location: event.location,
-      scheduleChangeNotice: event.schedule_change_notice,
+      cancellationNotice: event.cancellation_notice,
       startsAt: event.starts_at,
       title: event.title,
     },
@@ -339,51 +338,34 @@ export default async function EventDetailPage({
 
           <article className="section-card section-card-padded order-5 lg:order-none">
             <h2 className="section-title">
-              {t("events.supervisionSchedule.title")}
+              {t("events.supervisionSchedule.scheduleChangeNotice")}
             </h2>
-            {event.schedule_change_notice ? (
+            {event.cancellation_notice ? (
               <div className="mt-3 rounded-md border border-amber-400/70 bg-amber-50 p-3 dark:bg-amber-950/25">
                 <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100">
                   {t("events.supervisionSchedule.importantScheduleUpdate")}
                 </h3>
                 <p className="mt-2 whitespace-pre-line break-words text-sm leading-6 text-amber-900 dark:text-amber-100">
-                  {event.schedule_change_notice}
+                  {event.cancellation_notice}
                 </p>
               </div>
             ) : null}
-            <dl className="mt-3 grid gap-3 text-sm">
-              <DetailItem
-                label={t("events.supervisionSchedule.supervisionInformation")}
-              >
-                {event.supervision_information ??
-                  t("events.supervisionSchedule.supervisionNotSpecified")}
-              </DetailItem>
-            </dl>
             {canManageEvent ? (
               <div className="mt-4 border-t border-[var(--border)] pt-4">
-                <EventSupervisionScheduleForm
+                <EventCancellationNoticeForm
                   event={event}
                   labels={{
-                    save: t("events.actions.saveSupervisionSchedule"),
-                    saving: t("common.saving"),
-                    scheduleChangeNotice: t(
-                      "events.supervisionSchedule.scheduleChangeNotice",
-                    ),
-                    scheduleNoticeGuidance: t(
+                    guidance: t(
                       "events.supervisionSchedule.scheduleNoticeGuidance",
                     ),
-                    scheduleNoticePlaceholder: t(
+                    label: t(
+                      "events.supervisionSchedule.scheduleChangeNotice",
+                    ),
+                    placeholder: t(
                       "events.supervisionSchedule.scheduleNoticePlaceholder",
                     ),
-                    supervisionGuidance: t(
-                      "events.supervisionSchedule.supervisionGuidance",
-                    ),
-                    supervisionInformation: t(
-                      "events.supervisionSchedule.supervisionInformation",
-                    ),
-                    supervisionPlaceholder: t(
-                      "events.supervisionSchedule.supervisionPlaceholder",
-                    ),
+                    save: t("common.save"),
+                    saving: t("common.saving"),
                   }}
                 />
               </div>

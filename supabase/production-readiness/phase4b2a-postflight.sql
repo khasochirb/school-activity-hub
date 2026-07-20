@@ -20,7 +20,7 @@ with expected_policies(policy_name) as (
       and c.data_type = 'text'
       and c.is_nullable = 'YES' then 'PASS' else 'FAIL' end as result,
     coalesce(c.data_type || ', nullable=' || c.is_nullable, 'missing') as detail
-  from (values ('supervision_information'), ('schedule_change_notice')) expected(column_name)
+  from (values ('cancellation_notice')) expected(column_name)
   left join information_schema.columns c
     on c.table_schema = 'public'
    and c.table_name = 'events'
@@ -31,10 +31,7 @@ with expected_policies(policy_name) as (
       and pg_get_constraintdef(c.oid) ilike '%1000%'
       and pg_get_constraintdef(c.oid) ilike '%btrim%' then 'PASS' else 'FAIL' end,
     coalesce(pg_get_constraintdef(c.oid), 'missing')
-  from (values
-    ('events_supervision_information_valid'),
-    ('events_schedule_change_notice_valid')
-  ) expected(constraint_name)
+  from (values ('events_cancellation_notice_valid')) expected(constraint_name)
   left join pg_constraint c
     on c.conrelid = to_regclass('public.events')
    and c.conname = expected.constraint_name
@@ -64,22 +61,22 @@ with expected_policies(policy_name) as (
    and pg_policies.tablename = 'events'
    and pg_policies.policyname = expected_policies.policy_name
   union all
-  select 'staff-authored information trigger function',
+  select 'staff-authored cancellation trigger function',
     case when p.oid is not null
       and not p.prosecdef
       and p.proconfig @> array['search_path=pg_catalog, public']::text[]
       then 'PASS' else 'FAIL' end,
     coalesce(p.proname, 'missing')
-  from (select to_regprocedure('public.enforce_event_staff_authored_information()') as oid) expected
+  from (select to_regprocedure('public.enforce_event_staff_cancellation_notice()') as oid) expected
   left join pg_proc p on p.oid = expected.oid
   union all
-  select 'staff-authored information trigger',
+  select 'staff-authored cancellation trigger',
     case when t.oid is not null and not t.tgisinternal then 'PASS' else 'FAIL' end,
     coalesce(t.tgname, 'missing')
   from (select to_regclass('public.events') as oid) events
   left join pg_trigger t
     on t.tgrelid = events.oid
-   and t.tgname = 'enforce_event_staff_authored_information'
+   and t.tgname = 'enforce_event_staff_cancellation_notice'
   union all
   select 'authenticated events grants',
     case when count(*) = 3 then 'PASS' else 'FAIL' end,

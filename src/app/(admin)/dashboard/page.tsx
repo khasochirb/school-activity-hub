@@ -71,8 +71,7 @@ type UpcomingEvent = {
   cost_notes: string | null;
   required_materials: string | null;
   expected_commitment: string | null;
-  supervision_information: string | null;
-  schedule_change_notice: string | null;
+  cancellation_notice: string | null;
 };
 
 type DashboardEventAttendee = {
@@ -832,7 +831,7 @@ function UpcomingEventsSection({
               <p className="mt-1 text-sm text-slate-600">
                 {event.location || t("dashboard.upcoming.locationNotSet")}
               </p>
-              {event.schedule_change_notice ? (
+              {event.cancellation_notice ? (
                 <span className="badge badge-warning mt-2 w-fit">
                   {t("events.supervisionSchedule.scheduleUpdate")}
                 </span>
@@ -1340,7 +1339,7 @@ function buildStudentQuickViewEvents(
         endsAt: event.ends_at,
         id: event.id,
         location: event.location,
-        scheduleChangeNotice: event.schedule_change_notice,
+        cancellationNotice: event.cancellation_notice,
         startsAt: event.starts_at,
         title: event.title,
       },
@@ -1419,7 +1418,7 @@ function buildStudentQuickViewEvents(
           : Math.max(event.capacity - attendeeCount, 0),
       riskLabel: eventRiskLabel(event.risk_level, t),
       riskLevel: event.risk_level,
-      scheduleChangeNotice: event.schedule_change_notice,
+      cancellationNotice: event.cancellation_notice,
       responsibleAdultLabel: responsibleStaff?.status === "active"
         ? `${responsibleStaff.full_name} (${dashboardStaffRoleLabel(
             responsibleStaff.role,
@@ -1433,7 +1432,6 @@ function buildStudentQuickViewEvents(
       schoolName: t("events.card.mySchool"),
       status: event.status,
       statusLabel: t("status.approved"),
-      supervisionInformation: event.supervision_information,
       title: event.title,
     };
   });

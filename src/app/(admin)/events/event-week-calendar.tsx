@@ -285,7 +285,7 @@ function WeekEventCard({
         event.registrationStatus === "attended" ? (
           <StatusBadge variant="success">{labels.registered}</StatusBadge>
         ) : null}
-        {event.scheduleChangeNotice ? (
+        {event.cancellationNotice ? (
           <StatusBadge variant="warning">{labels.scheduleUpdate}</StatusBadge>
         ) : null}
       </span>

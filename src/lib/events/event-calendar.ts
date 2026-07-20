@@ -8,7 +8,7 @@ export type CalendarEvent = {
   id: string;
   location: string | null;
   organizerName?: string | null;
-  scheduleChangeNotice: string | null;
+  cancellationNotice: string | null;
   startsAt: string;
   title: string;
 };
@@ -30,7 +30,7 @@ export function buildIcsCalendar(
   detailUrl: string,
 ) {
   const description = [
-    event.scheduleChangeNotice?.trim(),
+    event.cancellationNotice?.trim(),
     event.description?.trim(),
     detailUrl,
   ]
@@ -83,7 +83,7 @@ function buildGoogleCalendarUrl(
     action: "TEMPLATE",
     dates: `${formatGoogleDate(event.startsAt)}/${formatGoogleDate(event.endsAt)}`,
     details: [
-      event.scheduleChangeNotice?.trim(),
+      event.cancellationNotice?.trim(),
       event.description?.trim(),
       detailUrl,
     ]

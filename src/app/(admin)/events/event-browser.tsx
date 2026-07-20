@@ -169,7 +169,7 @@ function EventCard({
           {item.hasEligibilityInfo ? (
             <StatusBadge>{labels.eligibility}</StatusBadge>
           ) : null}
-          {item.scheduleChangeNotice ? (
+          {item.cancellationNotice ? (
             <StatusBadge variant="warning">{labels.scheduleUpdate}</StatusBadge>
           ) : null}
           <StatusBadge

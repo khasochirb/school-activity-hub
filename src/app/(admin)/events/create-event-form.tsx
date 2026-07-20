@@ -22,9 +22,8 @@ import {
   type EventCostType,
 } from "@/lib/events/event-practical-details";
 import {
-  EVENT_SCHEDULE_NOTICE_MAX_LENGTH,
-  EVENT_SUPERVISION_MAX_LENGTH,
-} from "@/lib/events/event-supervision-schedule";
+  EVENT_CANCELLATION_NOTICE_MAX_LENGTH,
+} from "@/lib/events/event-cancellation-notice";
 import { formatSchedulePreview } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
 import { createEvent, type CreateEventState } from "./actions";
@@ -68,8 +67,7 @@ type EventFormValues = {
   permissionNote: string;
   requiredMaterials: string;
   responsibleStaffId: string;
-  scheduleChangeNotice: string;
-  supervisionInformation: string;
+  cancellationNotice: string;
   title: string;
 };
 
@@ -159,10 +157,6 @@ type CreateEventFormLabels = {
   startTimeRequired: string;
   submitForApproval: string;
   submitting: string;
-  supervisionGuidance: string;
-  supervisionInformation: string;
-  supervisionPlaceholder: string;
-  supervisionSchedule: string;
   timeOrder: string;
   timePreviewEmpty: string;
   timezoneHelper: string;
@@ -230,8 +224,7 @@ export function CreateEventForm({
     permissionNote: "",
     requiredMaterials: "",
     responsibleStaffId: defaultResponsibleStaffId ?? "",
-    scheduleChangeNotice: "",
-    supervisionInformation: "",
+    cancellationNotice: "",
     title: "",
   }));
   const [eligibilityPreset, setEligibilityPreset] = useState("");
@@ -949,47 +942,26 @@ export function CreateEventForm({
           {isStaff ? (
             <fieldset className="form-group min-w-0 lg:col-span-2">
               <legend className="form-group-title">
-                {labels.supervisionSchedule}
+                {labels.scheduleChangeNotice}
               </legend>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
-                  {labels.supervisionInformation}
-                  <textarea
-                    className="min-h-20 rounded-md border px-3 py-2 text-base outline-none transition"
-                    maxLength={EVENT_SUPERVISION_MAX_LENGTH}
-                    name="supervision_information"
-                    onChange={(event) =>
-                      updateValue(
-                        "supervisionInformation",
-                        event.target.value,
-                        "supervision_information",
-                      )
-                    }
-                    placeholder={labels.supervisionPlaceholder}
-                    value={values.supervisionInformation}
-                  />
-                  <FieldError message={fieldError("supervision_information")} />
-                  <span className="text-xs font-normal leading-5 text-slate-600">
-                    {labels.supervisionGuidance}
-                  </span>
-                </label>
+              <div className="mt-3 grid gap-3">
                 <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
                   {labels.scheduleChangeNotice}
                   <textarea
                     className="min-h-20 rounded-md border px-3 py-2 text-base outline-none transition"
-                    maxLength={EVENT_SCHEDULE_NOTICE_MAX_LENGTH}
-                    name="schedule_change_notice"
+                    maxLength={EVENT_CANCELLATION_NOTICE_MAX_LENGTH}
+                    name="cancellation_notice"
                     onChange={(event) =>
                       updateValue(
-                        "scheduleChangeNotice",
+                        "cancellationNotice",
                         event.target.value,
-                        "schedule_change_notice",
+                        "cancellation_notice",
                       )
                     }
                     placeholder={labels.scheduleNoticePlaceholder}
-                    value={values.scheduleChangeNotice}
+                    value={values.cancellationNotice}
                   />
-                  <FieldError message={fieldError("schedule_change_notice")} />
+                  <FieldError message={fieldError("cancellation_notice")} />
                   <span className="text-xs font-normal leading-5 text-slate-600">
                     {labels.scheduleNoticeGuidance}
                   </span>
