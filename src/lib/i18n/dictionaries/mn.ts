@@ -685,6 +685,16 @@ export const mn = {
       studentNotice:
         "Энэ үйл ажиллагаанд сургууль/эцэг эхийн зөвшөөрөл шаардлагатай байж магадгүй.",
     },
+    completeness: {
+      detailsCompleted: "Мэдээлэл бүрдсэн",
+      goBackAndComplete: "Буцаж нөхөх",
+      listingCompleteness: "Мэдээллийн бүрдэл",
+      missingInformation: "Дутуу мэдээлэл",
+      needsMoreDetails: "Нэмэлт мэдээлэл шаардлагатай",
+      publishAnyway: "Ямартай ч нийтлэх",
+      readyToPublish: "Нийтлэхэд бэлэн",
+      submitProposalAnyway: "Саналыг үргэлжлүүлэн илгээх",
+    },
     quickView: {
       registrationFull: "Бүртгэл дүүрсэн",
       spacesRemaining: "Үлдсэн суудал",

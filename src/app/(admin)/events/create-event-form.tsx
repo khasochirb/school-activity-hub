@@ -14,6 +14,11 @@ import {
   AccessibilityOptionsField,
   type AccessibilityOption,
 } from "@/components/events/accessibility-options-field";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import {
+  EventCompletenessChecklist,
+  type EventCompletenessLabels,
+} from "@/components/events/event-listing-completeness";
 import {
   EVENT_ACCESSIBILITY_MAX_LENGTH,
   EVENT_ELIGIBILITY_MAX_LENGTH,
@@ -25,6 +30,11 @@ import {
   EVENT_REQUIRED_MATERIALS_MAX_LENGTH,
   type EventCostType,
 } from "@/lib/events/event-practical-details";
+import {
+  EVENT_COMPLETENESS_STEP_BY_ITEM,
+  getEventListingCompleteness,
+  type EventCompletenessItemId,
+} from "@/lib/events/event-listing-completeness";
 import {
   EVENT_CANCELLATION_NOTICE_MAX_LENGTH,
 } from "@/lib/events/event-cancellation-notice";
@@ -102,9 +112,11 @@ type CreateEventFormLabels = {
   createApproved: string;
   creating: string;
   custom: string;
+  dateTime: string;
   dateRequired: string;
   description: string;
   device: string;
+  detailsCompleted: string;
   duration30: string;
   duration60: string;
   duration90: string;
@@ -117,16 +129,20 @@ type CreateEventFormLabels = {
   eligibilityPlaceholder: string;
   experienceLevel: string;
   fullTerm: string;
+  goBackAndComplete: string;
   leaderClubRequired: string;
   leaderNeedsClub: string;
   location: string;
   locationRequired: string;
+  listingCompleteness: string;
   maxParticipants: string;
   maxParticipantsPositive: string;
   materials: string;
   materialsPlaceholder: string;
+  missingInformation: string;
   no: string;
   noCategory: string;
+  needsMoreDetails: string;
   notebookAndPen: string;
   notSpecified: string;
   nothingRequired: string;
@@ -139,11 +155,13 @@ type CreateEventFormLabels = {
   platformMode: string;
   selectedSchool: string;
   priorExperienceRecommended: string;
+  publishAnyway: string;
   quietEnvironment: string;
   quickDuration: string;
   responsibleAdult: string;
   responsibleAdultHelp: string;
   responsibleAdultReviewHelp: string;
+  readyToPublish: string;
   review: string;
   riskHigh: string;
   riskLevel: string;
@@ -160,6 +178,7 @@ type CreateEventFormLabels = {
   startTime: string;
   startTimeRequired: string;
   submitForApproval: string;
+  submitProposalAnyway: string;
   submitting: string;
   timeOrder: string;
   timePreviewEmpty: string;
@@ -400,6 +419,44 @@ export function CreateEventForm({
         : costType === "variable"
           ? labels.costVariable
           : labels.costNotSpecified;
+  const completeness = getEventListingCompleteness({
+    accessibilityNotes: values.accessibilityNotes,
+    category: values.category,
+    costAmount: values.costAmount,
+    costCurrency: costType === "paid" ? EVENT_COST_CURRENCY : null,
+    costNotes: values.costNotes,
+    costType: costType || null,
+    description: values.description,
+    eligibilityNotes: values.eligibilityNotes,
+    endsAt: endsAtValue,
+    experienceLevel: values.experienceLevel,
+    expectedCommitment: values.expectedCommitment,
+    location: values.location,
+    requiredMaterials: values.requiredMaterials,
+    responsibleAdultRequired: isStaff,
+    responsibleStaffId: values.responsibleStaffId,
+    startsAt: startsAtValue,
+  });
+  const completenessLabels: EventCompletenessLabels = {
+    detailsCompleted: labels.detailsCompleted,
+    listingCompleteness: labels.listingCompleteness,
+    missingInformation: labels.missingInformation,
+    needsMoreDetails: labels.needsMoreDetails,
+    readyToPublish: labels.readyToPublish,
+  };
+  const completenessItemLabels: Record<EventCompletenessItemId, string> = {
+    accessibility: labels.accessibilityInformation,
+    category: labels.category,
+    commitment: labels.commitment,
+    cost: labels.cost,
+    description: labels.description,
+    eligibility: labels.eligibility,
+    experience: labels.experienceLevel,
+    location: labels.location,
+    materials: labels.materials,
+    responsible_adult: labels.responsibleAdult,
+    schedule: labels.dateTime,
+  };
 
   return (
     <form
@@ -821,6 +878,17 @@ export function CreateEventForm({
         <h3 className="section-title" id="event-create-review">
           {labels.review}
         </h3>
+        <div className="mt-3">
+          <EventCompletenessChecklist
+            itemLabels={completenessItemLabels}
+            labels={completenessLabels}
+            live
+            onSelectMissingItem={(item) =>
+              showStep(EVENT_COMPLETENESS_STEP_BY_ITEM[item])
+            }
+            result={completeness}
+          />
+        </div>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <fieldset className="form-group min-w-0">
             <legend className="form-group-title">
@@ -1013,7 +1081,12 @@ export function CreateEventForm({
             {labels.continue}
           </button>
         ) : (
-          <SubmitButton isStaff={isStaff} labels={labels} />
+          <SubmitButton
+            completeness={completeness}
+            itemLabels={completenessItemLabels}
+            isStaff={isStaff}
+            labels={labels}
+          />
         )}
       </div>
     </form>
@@ -1153,13 +1226,34 @@ function FieldError({ message }: { message?: string }) {
 }
 
 function SubmitButton({
+  completeness,
+  itemLabels,
   isStaff,
   labels,
 }: {
+  completeness: ReturnType<typeof getEventListingCompleteness>;
+  itemLabels: Record<EventCompletenessItemId, string>;
   isStaff: boolean;
   labels: CreateEventFormLabels;
 }) {
   const { pending } = useFormStatus();
+  const isIncomplete = completeness.status === "needs_details";
+  const warningDescription = `${completeness.completedCount}/${completeness.applicableCount} ${labels.detailsCompleted}. ${labels.missingInformation}: ${completeness.missingItems.map((item) => itemLabels[item]).join(", ")}`;
+
+  if (isStaff && isIncomplete) {
+    return (
+      <ConfirmSubmitButton
+        cancelLabel={labels.goBackAndComplete}
+        className="btn btn-primary h-11 w-full sm:w-auto"
+        confirmDescription={warningDescription}
+        confirmLabel={labels.publishAnyway}
+        confirmTitle={labels.needsMoreDetails}
+        pendingLabel={labels.creating}
+      >
+        {labels.publishAnyway}
+      </ConfirmSubmitButton>
+    );
+  }
 
   return (
     <button
@@ -1173,7 +1267,9 @@ function SubmitButton({
           : labels.submitting
         : isStaff
           ? labels.createApproved
-          : labels.submitForApproval}
+          : isIncomplete
+            ? labels.submitProposalAnyway
+            : labels.submitForApproval}
     </button>
   );
 }

@@ -1205,6 +1205,16 @@ export const en = {
       },
       studentNotice: "This event may require school/parent permission.",
     },
+    completeness: {
+      detailsCompleted: "Details completed",
+      goBackAndComplete: "Go back and complete",
+      listingCompleteness: "Listing completeness",
+      missingInformation: "Missing information",
+      needsMoreDetails: "Needs more details",
+      publishAnyway: "Publish anyway",
+      readyToPublish: "Ready to publish",
+      submitProposalAnyway: "Submit proposal anyway",
+    },
     quickView: {
       registrationFull: "Registration full",
       spacesRemaining: "Spaces remaining",

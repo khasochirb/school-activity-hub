@@ -5,6 +5,10 @@ import { getCurrentEventActor } from "@/lib/auth/event-access";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { AccessibilityOptionsField } from "@/components/events/accessibility-options-field";
 import { EventCalendarActions } from "@/components/events/event-calendar-actions";
+import {
+  EventCompletenessChecklist,
+  type EventCompletenessLabels,
+} from "@/components/events/event-listing-completeness";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   getActivityCategoryTranslationKey,
@@ -21,6 +25,10 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import {
+  getEventCompletenessItemLabels,
+  getEventListingCompleteness,
+} from "@/lib/events/event-listing-completeness";
 import {
   EVENT_ACCESSIBILITY_MAX_LENGTH,
   EVENT_ELIGIBILITY_MAX_LENGTH,
@@ -254,6 +262,31 @@ export default async function EventDetailPage({
       variable: t("events.practicalDetails.variableCost"),
     },
   );
+  const completeness = getEventListingCompleteness({
+    accessibilityNotes: event.accessibility_notes,
+    category: event.category,
+    costAmount: event.cost_amount,
+    costCurrency: event.cost_currency,
+    costNotes: event.cost_notes,
+    costType: event.cost_type,
+    description: event.description,
+    eligibilityNotes: event.eligibility_notes,
+    endsAt: event.ends_at,
+    experienceLevel: event.experience_level,
+    expectedCommitment: event.expected_commitment,
+    location: event.location,
+    requiredMaterials: event.required_materials,
+    responsibleAdultRequired: true,
+    responsibleStaffId: event.responsible_staff_id,
+    startsAt: event.starts_at,
+  });
+  const completenessLabels: EventCompletenessLabels = {
+    detailsCompleted: t("events.completeness.detailsCompleted"),
+    listingCompleteness: t("events.completeness.listingCompleteness"),
+    missingInformation: t("events.completeness.missingInformation"),
+    needsMoreDetails: t("events.completeness.needsMoreDetails"),
+    readyToPublish: t("events.completeness.readyToPublish"),
+  };
 
   return (
     <div className="page-stack">
@@ -329,6 +362,16 @@ export default async function EventDetailPage({
               </DetailItem>
             </dl>
           </article>
+
+          {canManageEvent ? (
+            <div className="order-4 lg:order-none">
+              <EventCompletenessChecklist
+                itemLabels={getEventCompletenessItemLabels(t)}
+                labels={completenessLabels}
+                result={completeness}
+              />
+            </div>
+          ) : null}
 
           <article className="section-card section-card-padded order-4 lg:order-none">
             <h2 className="section-title">{t("events.form.description")}</h2>

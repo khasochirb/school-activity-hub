@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentEventActor, isEventStaffActor } from "@/lib/auth/event-access";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import {
+  EventCompletenessBadge,
+  type EventCompletenessLabels,
+} from "@/components/events/event-listing-completeness";
 import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
 import {
   formatTranslation,
@@ -19,6 +23,7 @@ import {
   type EventCostType,
 } from "@/lib/events/event-practical-details";
 import { EVENT_APPROVAL_SELECT } from "@/lib/events/event-selects";
+import { getEventListingCompleteness } from "@/lib/events/event-listing-completeness";
 import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -94,6 +99,13 @@ export default async function ApprovalsPage({
   const t = (key: string) => translate(dictionary, key);
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
+  const completenessLabels: EventCompletenessLabels = {
+    detailsCompleted: t("events.completeness.detailsCompleted"),
+    listingCompleteness: t("events.completeness.listingCompleteness"),
+    missingInformation: t("events.completeness.missingInformation"),
+    needsMoreDetails: t("events.completeness.needsMoreDetails"),
+    readyToPublish: t("events.completeness.readyToPublish"),
+  };
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
   const supabase = await createClient();
@@ -242,6 +254,10 @@ export default async function ApprovalsPage({
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge>{t("status.pendingApproval")}</Badge>
+                  <EventCompletenessBadge
+                    labels={completenessLabels}
+                    result={getApprovalEventCompleteness(event)}
+                  />
                   {actor.isPlatformAdmin ? (
                     <Badge>
                       {schoolNameById.get(event.school_id) ??
@@ -494,6 +510,27 @@ function riskBadgeVariant(riskLevel: PendingEvent["risk_level"]) {
     : riskLevel === "medium"
       ? "warning"
       : "default";
+}
+
+function getApprovalEventCompleteness(event: PendingEvent) {
+  return getEventListingCompleteness({
+    accessibilityNotes: event.accessibility_notes,
+    category: event.category,
+    costAmount: event.cost_amount,
+    costCurrency: event.cost_currency,
+    costNotes: event.cost_notes,
+    costType: event.cost_type,
+    description: event.description,
+    eligibilityNotes: event.eligibility_notes,
+    endsAt: event.ends_at,
+    experienceLevel: event.experience_level,
+    expectedCommitment: event.expected_commitment,
+    location: event.location,
+    requiredMaterials: event.required_materials,
+    responsibleAdultRequired: true,
+    responsibleStaffId: event.responsible_staff_id,
+    startsAt: event.starts_at,
+  });
 }
 
 function riskLabel(riskLevel: PendingEvent["risk_level"], t: Translate) {

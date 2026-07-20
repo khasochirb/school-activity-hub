@@ -739,8 +739,10 @@ export default async function EventsPage({
               createApproved: t("events.actions.createApproved"),
               creating: t("events.actions.creating"),
               custom: t("common.custom"),
+              dateTime: t("events.formGroups.dateTime"),
               dateRequired: t("events.validation.dateRequired"),
               description: t("events.form.description"),
+              detailsCompleted: t("events.completeness.detailsCompleted"),
               device: t("events.presets.device"),
               duration30: t("events.form.duration30"),
               duration60: t("events.form.duration60"),
@@ -756,10 +758,16 @@ export default async function EventsPage({
               ),
               experienceLevel: t("events.decisionInfo.experienceLevel"),
               fullTerm: t("events.presets.fullTerm"),
+              goBackAndComplete: t(
+                "events.completeness.goBackAndComplete",
+              ),
               leaderClubRequired: t("events.errors.leaderClubRequired"),
               leaderNeedsClub: t("events.create.leaderNeedsClub"),
               location: t("events.form.location"),
               locationRequired: t("events.errors.locationRequired"),
+              listingCompleteness: t(
+                "events.completeness.listingCompleteness",
+              ),
               maxParticipants: t("events.form.maxParticipants"),
               maxParticipantsPositive: t(
                 "events.errors.maxParticipantsPositive",
@@ -768,8 +776,14 @@ export default async function EventsPage({
               materialsPlaceholder: t(
                 "events.practicalDetails.materialsPlaceholder",
               ),
+              missingInformation: t(
+                "events.completeness.missingInformation",
+              ),
               no: t("common.no"),
               noCategory: t("events.form.noCategory"),
+              needsMoreDetails: t(
+                "events.completeness.needsMoreDetails",
+              ),
               notebookAndPen: t("events.presets.notebookAndPen"),
               notSpecified: t("common.notSpecified"),
               nothingRequired: t("events.practicalDetails.nothingRequired"),
@@ -791,6 +805,7 @@ export default async function EventsPage({
               priorExperienceRecommended: t(
                 "events.experience.priorExperienceRecommended",
               ),
+              publishAnyway: t("events.completeness.publishAnyway"),
               quietEnvironment: t("events.presets.quietEnvironment"),
               responsibleAdult: t("events.decisionInfo.responsibleAdult"),
               responsibleAdultHelp: t(
@@ -798,6 +813,9 @@ export default async function EventsPage({
               ),
               responsibleAdultReviewHelp: t(
                 "events.decisionInfo.responsibleAdultReviewHelp",
+              ),
+              readyToPublish: t(
+                "events.completeness.readyToPublish",
               ),
               review: t("events.formSteps.review"),
               schoolWideEvent: t("events.form.schoolWideEvent"),
@@ -817,6 +835,9 @@ export default async function EventsPage({
               specificGrades: t("events.presets.specificGrades"),
               sportswear: t("events.presets.sportswear"),
               submitForApproval: t("events.actions.submitForApproval"),
+              submitProposalAnyway: t(
+                "events.completeness.submitProposalAnyway",
+              ),
               submitting: t("events.actions.submitting"),
               timeOrder: t("events.validation.timeOrder"),
               timePreviewEmpty: t("events.form.timePreviewEmpty"),
