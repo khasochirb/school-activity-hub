@@ -8,6 +8,7 @@ export type CalendarEvent = {
   id: string;
   location: string | null;
   organizerName?: string | null;
+  scheduleChangeNotice: string | null;
   startsAt: string;
   title: string;
 };
@@ -28,7 +29,11 @@ export function buildIcsCalendar(
   event: CalendarEvent,
   detailUrl: string,
 ) {
-  const description = [event.description?.trim(), detailUrl]
+  const description = [
+    event.scheduleChangeNotice?.trim(),
+    event.description?.trim(),
+    detailUrl,
+  ]
     .filter(Boolean)
     .join("\n\n");
   const lines = [
@@ -77,7 +82,13 @@ function buildGoogleCalendarUrl(
   const query = new URLSearchParams({
     action: "TEMPLATE",
     dates: `${formatGoogleDate(event.startsAt)}/${formatGoogleDate(event.endsAt)}`,
-    details: [event.description?.trim(), detailUrl].filter(Boolean).join("\n\n"),
+    details: [
+      event.scheduleChangeNotice?.trim(),
+      event.description?.trim(),
+      detailUrl,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
     location: event.location ?? "",
     text: event.title,
   });

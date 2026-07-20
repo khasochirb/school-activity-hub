@@ -129,6 +129,8 @@ type Event = {
   cost_notes: string | null;
   required_materials: string | null;
   expected_commitment: string | null;
+  supervision_information: string | null;
+  schedule_change_notice: string | null;
 };
 
 type EventAttendeeCountRow = {
@@ -477,6 +479,7 @@ export default async function EventsPage({
         endsAt: event.ends_at,
         id: event.id,
         location: event.location,
+        scheduleChangeNotice: event.schedule_change_notice,
         startsAt: event.starts_at,
         title: event.title,
       },
@@ -548,6 +551,7 @@ export default async function EventsPage({
           : Math.max(event.capacity - attendeeCount, 0),
       riskLabel: riskLabel(event.risk_level, t),
       riskLevel: event.risk_level,
+      scheduleChangeNotice: event.schedule_change_notice,
       responsibleAdultLabel: responsibleStaff?.status === "active"
         ? `${responsibleStaff.full_name} (${staffRoleLabel(responsibleStaff.role, t)})`
         : t("events.decisionInfo.responsibleNotSpecified"),
@@ -559,6 +563,7 @@ export default async function EventsPage({
       startsAt: event.starts_at,
       status: event.status,
       statusLabel: eventStatusLabel(event.status, t),
+      supervisionInformation: event.supervision_information,
       title: event.title,
       visualInitials: getInitials(clubName ?? ownerSchoolName ?? event.title),
     };
@@ -782,6 +787,15 @@ export default async function EventsPage({
               ),
               schoolWideEvent: t("events.form.schoolWideEvent"),
               safetyPermissions: t("events.formGroups.safetyPermissions"),
+              scheduleChangeNotice: t(
+                "events.supervisionSchedule.scheduleChangeNotice",
+              ),
+              scheduleNoticeGuidance: t(
+                "events.supervisionSchedule.scheduleNoticeGuidance",
+              ),
+              scheduleNoticePlaceholder: t(
+                "events.supervisionSchedule.scheduleNoticePlaceholder",
+              ),
               startTime: t("events.form.startTime"),
               startTimeRequired: t("events.validation.startTimeRequired"),
               submitForApproval: t("events.actions.submitForApproval"),
@@ -790,6 +804,18 @@ export default async function EventsPage({
               timePreviewEmpty: t("events.form.timePreviewEmpty"),
               timezoneHelper: t("events.form.timezoneHelper"),
               title: t("events.form.title"),
+              supervisionGuidance: t(
+                "events.supervisionSchedule.supervisionGuidance",
+              ),
+              supervisionInformation: t(
+                "events.supervisionSchedule.supervisionInformation",
+              ),
+              supervisionPlaceholder: t(
+                "events.supervisionSchedule.supervisionPlaceholder",
+              ),
+              supervisionSchedule: t(
+                "events.supervisionSchedule.title",
+              ),
               whoCanAttend: t("events.formGroups.whoCanAttend"),
             }}
             staffOptions={responsibleStaffOptions.map((staff) => ({

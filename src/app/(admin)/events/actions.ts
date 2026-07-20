@@ -18,6 +18,10 @@ import {
   parseEventPracticalDetails,
   type EventPracticalDetailsError,
 } from "@/lib/events/event-practical-details";
+import {
+  parseEventSupervisionSchedule,
+  type EventSupervisionScheduleError,
+} from "@/lib/events/event-supervision-schedule";
 import { classifyEventServiceError } from "@/lib/events/event-errors";
 import { EVENT_CREATE_RESULT_SELECT } from "@/lib/events/event-selects";
 import {
@@ -119,6 +123,7 @@ export async function createEvent(
   const permissionNote = String(formData.get("permission_note") ?? "").trim();
   const decisionInfoResult = parseEventDecisionInfo(formData);
   const practicalDetailsResult = parseEventPracticalDetails(formData);
+  const supervisionScheduleResult = parseEventSupervisionSchedule(formData);
   const isStaff = isEventStaffActor(actor);
   const isLeaderEvent = !isStaff;
   const requestedSchoolId = String(formData.get("school_id") ?? "").trim();
@@ -173,6 +178,29 @@ export async function createEvent(
   }
 
   const practicalDetails = practicalDetailsResult.data;
+
+  if (supervisionScheduleResult.error) {
+    const message = eventSupervisionScheduleErrorMessage(
+      supervisionScheduleResult.error,
+      i18n,
+    );
+    return actionError("validation_error", message, {
+      [eventSupervisionScheduleField(supervisionScheduleResult.error)]: message,
+    });
+  }
+
+  const supervisionSchedule = supervisionScheduleResult.data;
+
+  if (
+    !isStaff &&
+    (supervisionSchedule.supervisionInformation ||
+      supervisionSchedule.scheduleChangeNotice)
+  ) {
+    return actionError(
+      "authorization_error",
+      i18n.t("events.errors.staffSupervisionScheduleOnly"),
+    );
+  }
 
   if (!location) {
     return actionError("validation_error", i18n.t("events.errors.locationRequired"), {
@@ -282,6 +310,8 @@ export async function createEvent(
       cost_notes: practicalDetails.costNotes,
       required_materials: practicalDetails.requiredMaterials,
       expected_commitment: practicalDetails.expectedCommitment,
+      supervision_information: supervisionSchedule.supervisionInformation,
+      schedule_change_notice: supervisionSchedule.scheduleChangeNotice,
       status,
       submitted_at: now,
       approved_at: isStaff ? now : null,
@@ -314,7 +344,12 @@ export async function createEvent(
         .select(EVENT_CREATE_RESULT_SELECT)
         .eq("id", eventId)
         .eq("school_id", targetSchoolId)
-        .maybeSingle<{ id: string; school_id: string }>(),
+        .maybeSingle<{
+          id: string;
+          school_id: string;
+          schedule_change_notice: string | null;
+          supervision_information: string | null;
+        }>(),
   );
 
   if (readbackError || !createdEvent) {
@@ -642,6 +677,94 @@ export async function updateEventPracticalDetails(formData: FormData) {
   revalidatePath("/events");
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/approvals");
+}
+
+export async function updateEventSupervisionSchedule(
+  _state: CreateEventState,
+  formData: FormData,
+): Promise<CreateEventState> {
+  const i18n = await getServerI18n();
+  const actor = await requireEventStaffActor();
+  const eventId = String(formData.get("event_id") ?? "").trim();
+  const supervisionScheduleResult = parseEventSupervisionSchedule(formData);
+
+  if (!eventId) {
+    return actionError(
+      "validation_error",
+      i18n.t("events.errors.validation_error"),
+    );
+  }
+
+  if (supervisionScheduleResult.error) {
+    const message = eventSupervisionScheduleErrorMessage(
+      supervisionScheduleResult.error,
+      i18n,
+    );
+    return actionError("validation_error", message, {
+      [eventSupervisionScheduleField(supervisionScheduleResult.error)]: message,
+    });
+  }
+
+  const event = await getManageableEvent(actor, eventId);
+  if (!event) {
+    return actionError(
+      "authorization_error",
+      i18n.t("events.errors.authorization_error"),
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: updatedEvent, error } = await timeServer(
+    "events.action.update-supervision-schedule",
+    () =>
+      supabase
+        .from("events")
+        .update({
+          schedule_change_notice:
+            supervisionScheduleResult.data.scheduleChangeNotice,
+          supervision_information:
+            supervisionScheduleResult.data.supervisionInformation,
+        })
+        .eq("id", event.id)
+        .eq("school_id", event.school_id)
+        .select("id, school_id")
+        .maybeSingle<{ id: string; school_id: string }>(),
+  );
+
+  if (error || !updatedEvent) {
+    const referenceId = createServerErrorReference("EVT-UPDATE");
+    const category = classifyEventServiceError(error?.code);
+    logServerError("events.action.update-supervision-schedule failed", error, {
+      eventId: event.id,
+      operation: "event_supervision_schedule_update",
+      platformAdmin: actor.isPlatformAdmin,
+      referenceId,
+      schoolId: event.school_id,
+    });
+    return actionError(
+      category,
+      withErrorReference(i18n.t(`events.errors.${category}`), referenceId, i18n),
+      undefined,
+      referenceId,
+    );
+  }
+
+  await createPlatformEventAudit(
+    actor,
+    "platform.event.supervision_schedule_updated",
+    event.id,
+    event.school_id,
+  );
+
+  revalidatePath("/events");
+  revalidatePath(`/events/${event.id}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/approvals");
+
+  return {
+    message: i18n.t("common.savedSuccessfully"),
+    success: true,
+  };
 }
 
 export async function updateEventSharing(formData: FormData) {
@@ -1151,6 +1274,12 @@ function eventPracticalDetailsField(error: EventPracticalDetailsError) {
   return "cost_notes";
 }
 
+function eventSupervisionScheduleField(error: EventSupervisionScheduleError) {
+  return error === "supervision_too_long"
+    ? "supervision_information"
+    : "schedule_change_notice";
+}
+
 async function createPlatformEventAudit(
   actor: EventActor,
   action: string,
@@ -1203,6 +1332,15 @@ function eventPracticalDetailsErrorMessage(
   };
 
   return i18n.t(keyByError[error]);
+}
+
+function eventSupervisionScheduleErrorMessage(
+  error: EventSupervisionScheduleError,
+  i18n: ServerI18n,
+) {
+  return error === "supervision_too_long"
+    ? i18n.t("events.errors.supervisionTooLong")
+    : i18n.t("events.errors.scheduleNoticeTooLong");
 }
 
 function parseRiskLevel(value: FormDataEntryValue | null): EventRiskLevel | null {

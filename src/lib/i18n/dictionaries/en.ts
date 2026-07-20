@@ -912,6 +912,7 @@ export const en = {
       saveSafety: "Save safety details",
       saveDecisionInfo: "Save participation information",
       savePracticalDetails: "Save practical details",
+      saveSupervisionSchedule: "Save supervision and schedule updates",
       saveSharing: "Save sharing settings",
       submitForApproval: "Submit for approval",
       submitting: "Submitting...",
@@ -1008,10 +1009,14 @@ export const en = {
         "Events are not available right now. Refresh and try again. Reference: {reference}",
       locationRequired: "Location is required.",
       materialsTooLong: "Required materials information is too long.",
+      scheduleNoticeTooLong: "Schedule-change notice is too long.",
       maxParticipantsPositive:
         "Max participants must be a positive number.",
       staffOrLeaderOnly:
         "Only school staff or club leaders can create events.",
+      staffSupervisionScheduleOnly:
+        "Only school staff can set supervision or schedule-change information.",
+      supervisionTooLong: "Supervision information is too long.",
       paidCostRequired: "Paid events require a positive cost amount.",
       timeRequired: "Start and end times are required.",
       titleRequired: "Event title is required.",
@@ -1135,6 +1140,22 @@ export const en = {
         "Cost and materials describe the activity. Students are not required to publicly disclose their financial circumstances, disability, or whether they own the required materials.",
       requiredMaterials: "Required materials",
       variableCost: "Variable cost",
+    },
+    supervisionSchedule: {
+      importantScheduleUpdate: "Important schedule update",
+      noScheduleChanges: "No schedule changes",
+      scheduleChangeNotice: "Schedule-change notice",
+      scheduleNoticeGuidance:
+        "Use this only for cancellations, postponements, or meaningful changes students should know. Structured dates, times, location, and status remain authoritative.",
+      scheduleNoticePlaceholder:
+        "Tell students about cancellations, postponements, or important changes",
+      scheduleUpdate: "Schedule update",
+      supervisionGuidance:
+        "Describe the actual supervision arrangements. Do not include private contact information or student-specific risk information.",
+      supervisionInformation: "Supervision information",
+      supervisionNotSpecified: "Supervision not specified",
+      supervisionPlaceholder: "Describe how students will be supervised",
+      title: "Supervision and schedule updates",
     },
     listTitles: {
       club: "Club events",

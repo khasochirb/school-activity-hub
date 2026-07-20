@@ -37,11 +37,21 @@ export function getEventQuickViewLabels(t: Translate): EventQuickViewLabels {
     registrationFull: t("events.quickView.registrationFull"),
     registeredSuggestion: t("events.calendarActions.registeredSuggestion"),
     riskLevel: t("events.form.riskLevel"),
+    scheduleChangeNotice: t(
+      "events.supervisionSchedule.scheduleChangeNotice",
+    ),
+    scheduleUpdate: t("events.supervisionSchedule.importantScheduleUpdate"),
     responsibleAdult: t("events.decisionInfo.responsibleAdult"),
     requiredMaterials: t("events.practicalDetails.requiredMaterials"),
     safety: t("events.card.safety"),
     sharedEvent: t("events.sharing.sharedEvent"),
     spacesRemaining: t("events.quickView.spacesRemaining"),
+    supervisionInformation: t(
+      "events.supervisionSchedule.supervisionInformation",
+    ),
+    supervisionNotSpecified: t(
+      "events.supervisionSchedule.supervisionNotSpecified",
+    ),
     viewEvent: t("events.quickView.viewEvent"),
     viewFullDetails: t("events.quickView.viewFullDetails"),
   };

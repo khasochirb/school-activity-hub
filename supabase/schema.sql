@@ -429,6 +429,8 @@ create table if not exists public.events (
   cost_notes text,
   required_materials text,
   expected_commitment text,
+  supervision_information text,
+  schedule_change_notice text,
   constraint events_id_school_unique unique (id, school_id),
   constraint events_title_not_blank check (length(btrim(title)) > 0),
   constraint events_time_order check (ends_at > starts_at),
@@ -484,6 +486,20 @@ create table if not exists public.events (
       and expected_commitment = btrim(expected_commitment)
     )
   ),
+  constraint events_supervision_information_valid check (
+    supervision_information is null
+    or (
+      length(supervision_information) between 1 and 1000
+      and supervision_information = btrim(supervision_information)
+    )
+  ),
+  constraint events_schedule_change_notice_valid check (
+    schedule_change_notice is null
+    or (
+      length(schedule_change_notice) between 1 and 1000
+      and schedule_change_notice = btrim(schedule_change_notice)
+    )
+  ),
   constraint events_club_school_fk foreign key (club_id, school_id)
     references public.clubs(id, school_id)
     on delete restrict,
@@ -537,6 +553,12 @@ alter table public.events
 
 alter table public.events
   add column if not exists expected_commitment text;
+
+alter table public.events
+  add column if not exists supervision_information text;
+
+alter table public.events
+  add column if not exists schedule_change_notice text;
 
 do $$
 begin
@@ -616,6 +638,34 @@ begin
       or (
         length(expected_commitment) between 1 and 500
         and expected_commitment = btrim(expected_commitment)
+      )
+    );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.events
+    add constraint events_supervision_information_valid check (
+      supervision_information is null
+      or (
+        length(supervision_information) between 1 and 1000
+        and supervision_information = btrim(supervision_information)
+      )
+    );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.events
+    add constraint events_schedule_change_notice_valid check (
+      schedule_change_notice is null
+      or (
+        length(schedule_change_notice) between 1 and 1000
+        and schedule_change_notice = btrim(schedule_change_notice)
       )
     );
 exception
@@ -1022,6 +1072,48 @@ as $$
   select target_school_id = public.current_profile_school_id()
     and public.current_profile_role() in ('school_admin', 'teacher')
 $$;
+
+create or replace function public.enforce_event_staff_authored_information()
+returns trigger
+language plpgsql
+set search_path = pg_catalog, public
+as $$
+declare
+  protected_information_changed boolean;
+begin
+  protected_information_changed := case
+    when tg_op = 'INSERT' then
+      new.supervision_information is not null
+      or new.schedule_change_notice is not null
+    else
+      new.supervision_information is distinct from old.supervision_information
+      or new.schedule_change_notice is distinct from old.schedule_change_notice
+  end;
+
+  if current_user = 'authenticated'
+    and protected_information_changed
+    and not (
+      public.current_user_is_platform_admin()
+      or public.current_user_can_manage_school(new.school_id)
+    )
+  then
+    raise exception using
+      errcode = '42501',
+      message = 'event supervision and schedule information requires staff authority';
+  end if;
+
+  return new;
+end;
+$$;
+
+alter function public.enforce_event_staff_authored_information() owner to postgres;
+revoke all on function public.enforce_event_staff_authored_information()
+  from public, anon, authenticated;
+
+drop trigger if exists enforce_event_staff_authored_information on public.events;
+create trigger enforce_event_staff_authored_information
+  before insert or update on public.events
+  for each row execute function public.enforce_event_staff_authored_information();
 
 create or replace function public.schools_have_approved_connection(
   first_school_id uuid,

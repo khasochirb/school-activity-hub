@@ -169,6 +169,9 @@ function EventCard({
           {item.hasEligibilityInfo ? (
             <StatusBadge>{labels.eligibility}</StatusBadge>
           ) : null}
+          {item.scheduleChangeNotice ? (
+            <StatusBadge variant="warning">{labels.scheduleUpdate}</StatusBadge>
+          ) : null}
           <StatusBadge
             variant={
               item.costType === "free"

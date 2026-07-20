@@ -59,6 +59,11 @@ export function StudentUpcomingEvents({
                   <span className="mt-1 block break-words text-sm text-slate-600">
                     {event.location || locationNotSet}
                   </span>
+                  {event.scheduleChangeNotice ? (
+                    <span className="badge badge-warning mt-2 w-fit">
+                      {labels.scheduleUpdate}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="flex shrink-0 items-center gap-2 text-sm font-bold text-[var(--primary-strong)]">
                   <span className="hidden sm:inline">{labels.viewEvent}</span>

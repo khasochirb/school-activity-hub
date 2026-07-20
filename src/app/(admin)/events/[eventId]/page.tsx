@@ -49,6 +49,7 @@ import {
   updateEventSharing,
 } from "../actions";
 import { EventPracticalDetailsForm } from "../event-practical-details-form";
+import { EventSupervisionScheduleForm } from "../event-supervision-schedule-form";
 
 type Profile = {
   id: string;
@@ -87,6 +88,8 @@ type EventRecord = {
   cost_notes: string | null;
   required_materials: string | null;
   expected_commitment: string | null;
+  supervision_information: string | null;
+  schedule_change_notice: string | null;
 };
 
 type StudentRoster = {
@@ -232,6 +235,7 @@ export default async function EventDetailPage({
       endsAt: event.ends_at,
       id: event.id,
       location: event.location,
+      scheduleChangeNotice: event.schedule_change_notice,
       startsAt: event.starts_at,
       title: event.title,
     },
@@ -335,6 +339,59 @@ export default async function EventDetailPage({
 
           <article className="section-card section-card-padded order-5 lg:order-none">
             <h2 className="section-title">
+              {t("events.supervisionSchedule.title")}
+            </h2>
+            {event.schedule_change_notice ? (
+              <div className="mt-3 rounded-md border border-amber-400/70 bg-amber-50 p-3 dark:bg-amber-950/25">
+                <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                  {t("events.supervisionSchedule.importantScheduleUpdate")}
+                </h3>
+                <p className="mt-2 whitespace-pre-line break-words text-sm leading-6 text-amber-900 dark:text-amber-100">
+                  {event.schedule_change_notice}
+                </p>
+              </div>
+            ) : null}
+            <dl className="mt-3 grid gap-3 text-sm">
+              <DetailItem
+                label={t("events.supervisionSchedule.supervisionInformation")}
+              >
+                {event.supervision_information ??
+                  t("events.supervisionSchedule.supervisionNotSpecified")}
+              </DetailItem>
+            </dl>
+            {canManageEvent ? (
+              <div className="mt-4 border-t border-[var(--border)] pt-4">
+                <EventSupervisionScheduleForm
+                  event={event}
+                  labels={{
+                    save: t("events.actions.saveSupervisionSchedule"),
+                    saving: t("common.saving"),
+                    scheduleChangeNotice: t(
+                      "events.supervisionSchedule.scheduleChangeNotice",
+                    ),
+                    scheduleNoticeGuidance: t(
+                      "events.supervisionSchedule.scheduleNoticeGuidance",
+                    ),
+                    scheduleNoticePlaceholder: t(
+                      "events.supervisionSchedule.scheduleNoticePlaceholder",
+                    ),
+                    supervisionGuidance: t(
+                      "events.supervisionSchedule.supervisionGuidance",
+                    ),
+                    supervisionInformation: t(
+                      "events.supervisionSchedule.supervisionInformation",
+                    ),
+                    supervisionPlaceholder: t(
+                      "events.supervisionSchedule.supervisionPlaceholder",
+                    ),
+                  }}
+                />
+              </div>
+            ) : null}
+          </article>
+
+          <article className="section-card section-card-padded order-6 lg:order-none">
+            <h2 className="section-title">
               {t("events.formGroups.whoCanAttend")}
             </h2>
             <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
@@ -371,7 +428,7 @@ export default async function EventDetailPage({
             ) : null}
           </article>
 
-          <article className="section-card section-card-padded order-6 lg:order-none">
+          <article className="section-card section-card-padded order-7 lg:order-none">
             <h2 className="section-title">
               {t("events.formGroups.practicalDetails")}
             </h2>
@@ -438,7 +495,7 @@ export default async function EventDetailPage({
             ) : null}
           </article>
 
-          <article className="section-card section-card-padded order-7 lg:order-none">
+          <article className="section-card section-card-padded order-8 lg:order-none">
             <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
             <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
               <DetailItem label={t("events.card.safety")}>

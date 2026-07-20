@@ -21,6 +21,10 @@ import {
   EVENT_REQUIRED_MATERIALS_MAX_LENGTH,
   type EventCostType,
 } from "@/lib/events/event-practical-details";
+import {
+  EVENT_SCHEDULE_NOTICE_MAX_LENGTH,
+  EVENT_SUPERVISION_MAX_LENGTH,
+} from "@/lib/events/event-supervision-schedule";
 import { formatSchedulePreview } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
 import { createEvent, type CreateEventState } from "./actions";
@@ -100,6 +104,9 @@ type CreateEventFormLabels = {
   responsibleAdultReviewHelp: string;
   schoolWideEvent: string;
   safetyPermissions: string;
+  scheduleChangeNotice: string;
+  scheduleNoticeGuidance: string;
+  scheduleNoticePlaceholder: string;
   startTime: string;
   startTimeRequired: string;
   submitForApproval: string;
@@ -108,6 +115,10 @@ type CreateEventFormLabels = {
   timePreviewEmpty: string;
   timezoneHelper: string;
   title: string;
+  supervisionGuidance: string;
+  supervisionInformation: string;
+  supervisionPlaceholder: string;
+  supervisionSchedule: string;
   whoCanAttend: string;
 };
 
@@ -482,6 +493,47 @@ export function CreateEventForm({
           </label>
         </div>
       </fieldset>
+      {isStaff ? (
+        <fieldset className="form-group">
+          <legend className="form-group-title">{labels.supervisionSchedule}</legend>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
+              <span className="break-words">{labels.supervisionInformation}</span>
+              <textarea
+                aria-describedby="event-supervision-guidance"
+                className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
+                maxLength={EVENT_SUPERVISION_MAX_LENGTH}
+                name="supervision_information"
+                placeholder={labels.supervisionPlaceholder}
+              />
+              <FieldError message={state.fieldErrors?.supervision_information} />
+              <span
+                className="break-words text-xs font-normal leading-5 text-slate-600"
+                id="event-supervision-guidance"
+              >
+                {labels.supervisionGuidance}
+              </span>
+            </label>
+            <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">
+              <span className="break-words">{labels.scheduleChangeNotice}</span>
+              <textarea
+                aria-describedby="event-schedule-notice-guidance"
+                className="min-h-24 rounded-md border px-3 py-2 text-base outline-none transition"
+                maxLength={EVENT_SCHEDULE_NOTICE_MAX_LENGTH}
+                name="schedule_change_notice"
+                placeholder={labels.scheduleNoticePlaceholder}
+              />
+              <FieldError message={state.fieldErrors?.schedule_change_notice} />
+              <span
+                className="break-words text-xs font-normal leading-5 text-slate-600"
+                id="event-schedule-notice-guidance"
+              >
+                {labels.scheduleNoticeGuidance}
+              </span>
+            </label>
+          </div>
+        </fieldset>
+      ) : null}
       <fieldset className="form-group">
         <legend className="form-group-title">{labels.whoCanAttend}</legend>
         <div className="mt-3 grid gap-3 md:grid-cols-2">

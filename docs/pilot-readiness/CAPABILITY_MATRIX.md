@@ -14,6 +14,15 @@ Status vocabulary:
 - **Requires school/policy decision**: implementation depends on an unresolved operational, legal, ethics, or school choice.
 - **Explicitly deferred**: the repository or approved scope expressly excludes it.
 
+## Phase 4B2A event information increment
+
+| Capability | Status | Evidence | Boundary |
+|---|---|---|---|
+| Staff-authored supervision information | Implemented and verified locally | `events.supervision_information`, shared parser/action, event create/detail/quick-view UI, local PostgreSQL and PostgREST suites | Optional factual arrangements only; no contact data, student risk assessment, or inferred supervision |
+| Significant schedule-change notice | Implemented and verified locally | `events.schedule_change_notice`, compact indicators, full quick/detail/approval display, dashboard/calendar/ICS coverage | Informational only; structured time/location/status remain authoritative and no notification is sent |
+| Existing event cancellation | Implemented and preserved | Existing `event_status.canceled` and `cancelEvent` action | Approved-to-canceled transition does not alter registration or attendance records |
+| Automated event-change notifications | Explicitly deferred | No message, email, push, SMS, or background-delivery table/action added | Schools must use their approved operational communication process |
+
 ## Capability inventory
 
 | # | Capability | Status | Evidence and relevant files/routes/tables | Roles affected | Safety/privacy implications | Work still required | Phase | Priority |

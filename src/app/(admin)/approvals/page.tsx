@@ -56,6 +56,8 @@ type PendingEvent = {
   cost_notes: string | null;
   required_materials: string | null;
   expected_commitment: string | null;
+  supervision_information: string | null;
+  schedule_change_notice: string | null;
   submitted_at: string | null;
   created_at: string;
 };
@@ -386,6 +388,19 @@ export default async function ApprovalsPage({
                           t("events.practicalDetails.commitmentNotSpecified")}
                       </dd>
                     </div>
+                    <div>
+                      <dt className="text-zinc-500">
+                        {t(
+                          "events.supervisionSchedule.supervisionInformation",
+                        )}
+                      </dt>
+                      <dd className="whitespace-pre-wrap text-zinc-800">
+                        {event.supervision_information ??
+                          t(
+                            "events.supervisionSchedule.supervisionNotSpecified",
+                          )}
+                      </dd>
+                    </div>
                     {event.cost_notes ? (
                       <div>
                         <dt className="text-zinc-500">
@@ -397,6 +412,18 @@ export default async function ApprovalsPage({
                       </div>
                     ) : null}
                   </dl>
+                  {event.schedule_change_notice ? (
+                    <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/25 dark:text-amber-100">
+                      <p className="font-medium">
+                        {t(
+                          "events.supervisionSchedule.importantScheduleUpdate",
+                        )}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap break-words leading-6">
+                        {event.schedule_change_notice}
+                      </p>
+                    </div>
+                  ) : null}
                   {event.permission_note ? (
                     <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
                       <p className="font-medium text-zinc-900">

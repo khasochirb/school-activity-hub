@@ -21,6 +21,10 @@ $platformEventsPreflightPath = Join-Path $repositoryRoot "supabase/production-re
 $platformEventsMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180004_add_global_platform_admin_event_access.sql"
 $platformEventsPostflightPath = Join-Path $repositoryRoot "supabase/production-readiness/platform-admin-events-postflight.sql"
 $platformEventsTestPath = Join-Path $PSScriptRoot "platform-admin-events.sql"
+$phase4b2aPreflightPath = Join-Path $repositoryRoot "supabase/production-readiness/phase4b2a-preflight.sql"
+$phase4b2aMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180005_add_event_supervision_schedule_updates.sql"
+$phase4b2aPostflightPath = Join-Path $repositoryRoot "supabase/production-readiness/phase4b2a-postflight.sql"
+$phase4b2aTestPath = Join-Path $PSScriptRoot "phase4b2a-event-supervision-schedule.sql"
 $postgrestEventTestPath = Join-Path $PSScriptRoot "postgrest-event-regression.mjs"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
@@ -328,6 +332,29 @@ grant all on schema public to postgres, service_role;
   }
   $platformEventsTestOutput |
     Where-Object { $_ -match 'ok - |PLATFORM_ADMIN_EVENTS_TESTS_PASSED' } |
+    Write-Output
+
+  $phase4b2aPreflightOutput = Invoke-PsqlFile -database "postgres" -path $phase4b2aPreflightPath -Capture
+  if (($phase4b2aPreflightOutput -join "`n") -notmatch 'Phase 4B2A preflight decision\|PASS\|') {
+    throw "Phase 4B2A preflight did not return PASS."
+  }
+  Write-Output "Phase 4B2A preflight passed."
+
+  Invoke-PsqlFile -database "postgres" -path $phase4b2aMigrationPath
+  Write-Output "Applied only 202607180005_add_event_supervision_schedule_updates.sql."
+
+  $phase4b2aPostflightOutput = Invoke-PsqlFile -database "postgres" -path $phase4b2aPostflightPath -Capture
+  if (($phase4b2aPostflightOutput -join "`n") -notmatch 'Phase 4B2A postflight decision\|PASS\|') {
+    throw "Phase 4B2A postflight did not return PASS."
+  }
+  Write-Output "Phase 4B2A postflight passed."
+
+  $phase4b2aTestOutput = Invoke-PsqlFile -database "postgres" -path $phase4b2aTestPath -Capture
+  if (($phase4b2aTestOutput -join "`n") -notmatch 'PHASE4B2A_EVENT_SUPERVISION_SCHEDULE_TESTS_PASSED') {
+    throw "Phase 4B2A database tests did not emit their success marker."
+  }
+  $phase4b2aTestOutput |
+    Where-Object { $_ -match 'ok - |PHASE4B2A_EVENT_SUPERVISION_SCHEDULE_TESTS_PASSED' } |
     Write-Output
 
   $previousPreference = $ErrorActionPreference

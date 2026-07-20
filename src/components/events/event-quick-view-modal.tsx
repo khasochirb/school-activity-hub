@@ -54,12 +54,14 @@ export type EventQuickViewItem = {
   remainingSpaces: number | null;
   riskLabel: string;
   riskLevel: "high" | "low" | "medium";
+  scheduleChangeNotice: string | null;
   responsibleAdultLabel: string;
   requiredMaterialsLabel: string;
   sharedLabel: string;
   schoolName: string;
   status: string;
   statusLabel: string;
+  supervisionInformation: string | null;
   title: string;
 };
 
@@ -93,11 +95,15 @@ export type EventQuickViewLabels = EventCalendarActionLabels & {
   registrationFull: string;
   requiredMaterials: string;
   riskLevel: string;
+  scheduleChangeNotice: string;
+  scheduleUpdate: string;
   expectedCommitment: string;
   responsibleAdult: string;
   safety: string;
   sharedEvent: string;
   spacesRemaining: string;
+  supervisionInformation: string;
+  supervisionNotSpecified: string;
   viewEvent: string;
   viewFullDetails: string;
 };
@@ -287,6 +293,17 @@ export function EventQuickViewModal({
             />
           </div>
 
+          {event.scheduleChangeNotice ? (
+            <section className="mt-4 rounded-lg border border-amber-400/70 bg-amber-50 p-4 dark:bg-amber-950/25">
+              <h3 className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                {labels.scheduleUpdate}
+              </h3>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-amber-900 dark:text-amber-100">
+                {event.scheduleChangeNotice}
+              </p>
+            </section>
+          ) : null}
+
           <section className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-4">
             <h3 className="text-sm font-bold text-slate-950">
               {labels.description}
@@ -336,6 +353,12 @@ export function EventQuickViewModal({
               <ModalDetail
                 label={labels.accessibility}
                 value={event.accessibilityLabel}
+              />
+              <ModalDetail
+                label={labels.supervisionInformation}
+                value={
+                  event.supervisionInformation || labels.supervisionNotSpecified
+                }
               />
             </dl>
           </section>

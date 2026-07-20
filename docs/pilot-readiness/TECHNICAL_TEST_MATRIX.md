@@ -155,6 +155,22 @@ For mutation tests, capture target rows before/after, execute the action through
 
 ## Test completion rule
 
+## Phase 4B2A event supervision and schedule-change tests
+
+| ID | Scenario | Expected result | Automated evidence |
+|---|---|---|---|
+| T-59 | Legacy event after additive migration | Both new fields are nullable and the event remains valid | `phase4b2a-event-supervision-schedule.sql` |
+| T-60 | Text normalization and bounds | Application trims and maps blank to null; database rejects blank, untrimmed, or over-1,000-character values | Source regression test plus PostgreSQL constraints |
+| T-61 | Same-school teacher/admin edit | Authorized staff update only their own school event | PostgreSQL RLS and PostgREST PATCH tests |
+| T-62 | Platform-admin selected-school edit | Active platform admin updates an event across schools using existing global Events-domain authority | PostgreSQL RLS and PostgREST PATCH tests |
+| T-63 | Student edit attempt | No event row is changed | PostgreSQL RLS and PostgREST PATCH tests |
+| T-64 | Cancellation/registration/attendance regression | Existing `canceled` status remains; notice does not cancel an event or modify registration/attendance | Source cancellation-boundary test and PostgreSQL assertions |
+| T-65 | Student-facing information | Cards/calendar show a text indicator only when a notice exists; quick view/detail show full notice and neutral supervision fallback | Dependency-free UI source tests; browser QA remains required |
+| T-66 | Schema drift | Missing columns classify as `schema_update_required`; query failure is not rendered as an empty state | PostgREST schema-drift and source regression tests |
+| T-67 | Readiness and catalog alignment | Preflight PASS before migration, postflight PASS after migration, and migrated catalog equals `schema.sql` | Sentinel-protected disposable harness |
+
+Browser verification remains required for English/Mongolian wrapping, keyboard navigation, screen-reader announcements, mobile overflow, and all three theme modes.
+
 Phase 2 technical evidence is not complete until all blocker tests have **Passed** or an accountable owner has recorded an approved safer alternative. T-30, T-31, and T-32 cannot be converted to Passed through source inspection alone.
 
 The simplified Phase 3 workflow is not complete for pilot launch until T-34 through T-50 pass, safeguarding/privacy owners approve the operating procedures, and the corrective migration is independently reviewed and applied to the intended environments through change control.

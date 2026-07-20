@@ -14,6 +14,8 @@ test("shared event selects use verified columns and explicit profile relationshi
     "cost_type",
     "required_materials",
     "expected_commitment",
+    "supervision_information",
+    "schedule_change_notice",
   ]) {
     assert.match(selects, new RegExp(`"${column}"`));
   }

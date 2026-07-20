@@ -25,6 +25,8 @@ const EVENT_QUICK_VIEW_COLUMNS = [
   "cost_notes",
   "required_materials",
   "expected_commitment",
+  "supervision_information",
+  "schedule_change_notice",
 ] as const;
 
 export const EVENT_QUICK_VIEW_SELECT = EVENT_QUICK_VIEW_COLUMNS.join(", ");
@@ -59,6 +61,8 @@ export const EVENT_ATTENDANCE_SELECT = [
   "risk_level",
   "permission_required",
   "permission_note",
+  "supervision_information",
+  "schedule_change_notice",
   "status",
 ].join(", ");
 
@@ -67,6 +71,7 @@ export const EVENT_CALENDAR_EXPORT_SELECT = [
   "school_id",
   "title",
   "description",
+  "schedule_change_notice",
   "location",
   "starts_at",
   "ends_at",
@@ -74,7 +79,8 @@ export const EVENT_CALENDAR_EXPORT_SELECT = [
   "created_at",
 ].join(", ");
 
-export const EVENT_CREATE_RESULT_SELECT = "id, school_id";
+export const EVENT_CREATE_RESULT_SELECT =
+  "id, school_id, supervision_information, schedule_change_notice";
 
 // Events has four profile relationships. Any PostgREST embed must name the FK.
 export const EVENT_CREATOR_PROFILE_RELATION =

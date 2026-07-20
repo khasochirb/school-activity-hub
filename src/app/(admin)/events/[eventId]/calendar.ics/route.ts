@@ -55,6 +55,7 @@ export async function GET(
       ends_at: string;
       id: string;
       location: string | null;
+      schedule_change_notice: string | null;
       school_id: string;
       starts_at: string;
       status: string;
@@ -126,6 +127,7 @@ function buildCalendarResponse(
     ends_at: string;
     id: string;
     location: string | null;
+    schedule_change_notice: string | null;
     school_id: string;
     starts_at: string;
     status: string;
@@ -140,6 +142,7 @@ function buildCalendarResponse(
     endsAt: rawEvent.ends_at,
     id: rawEvent.id,
     location: rawEvent.location,
+    scheduleChangeNotice: rawEvent.schedule_change_notice,
     organizerName: schoolName,
     school_id: rawEvent.school_id,
     startsAt: rawEvent.starts_at,
