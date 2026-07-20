@@ -84,6 +84,7 @@ export function HeaderActionLink({
 
 export function CollapsibleFormSection({
   children,
+  collapsedSummary = true,
   description,
   hideLabel,
   id,
@@ -91,6 +92,7 @@ export function CollapsibleFormSection({
   title,
 }: {
   children: React.ReactNode;
+  collapsedSummary?: boolean;
   description: string;
   hideLabel: string;
   id: string;
@@ -99,6 +101,7 @@ export function CollapsibleFormSection({
 }) {
   return (
     <ClientCollapsibleFormSection
+      collapsedSummary={collapsedSummary}
       description={description}
       hideLabel={hideLabel}
       id={id}

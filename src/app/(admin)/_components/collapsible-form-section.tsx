@@ -14,6 +14,7 @@ type ButtonVariant = "primary" | "secondary";
 
 export function CollapsibleFormSection({
   children,
+  collapsedSummary = true,
   description,
   hideLabel,
   id,
@@ -21,6 +22,7 @@ export function CollapsibleFormSection({
   title,
 }: {
   children: React.ReactNode;
+  collapsedSummary?: boolean;
   description: string;
   hideLabel: string;
   id: string;
@@ -96,6 +98,10 @@ export function CollapsibleFormSection({
     };
   }, [id, setOpen]);
 
+  if (!isOpen && !collapsedSummary) {
+    return <div aria-hidden="true" id={id} />;
+  }
+
   return (
     <section
       aria-labelledby={summaryId}
@@ -111,24 +117,27 @@ export function CollapsibleFormSection({
           <p className="section-description">{description}</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:justify-end">
-          <button
-            aria-controls={contentId}
-            aria-expanded={isOpen}
-            className={`btn btn-primary w-full sm:w-auto ${isOpen ? "hidden" : ""}`}
-            onClick={() => setOpen(true)}
-            type="button"
-          >
-            {showLabel}
-          </button>
-          <button
-            aria-controls={contentId}
-            aria-expanded={isOpen}
-            className={`btn btn-secondary w-full sm:w-auto ${isOpen ? "" : "hidden"}`}
-            onClick={() => setOpen(false)}
-            type="button"
-          >
-            {hideLabel}
-          </button>
+          {!isOpen ? (
+            <button
+              aria-controls={contentId}
+              aria-expanded="false"
+              className="btn btn-primary w-full sm:w-auto"
+              onClick={() => setOpen(true)}
+              type="button"
+            >
+              {showLabel}
+            </button>
+          ) : (
+            <button
+              aria-controls={contentId}
+              aria-expanded="true"
+              className="btn btn-secondary w-full sm:w-auto"
+              onClick={() => setOpen(false)}
+              type="button"
+            >
+              {hideLabel}
+            </button>
+          )}
         </div>
       </div>
       {isOpen ? (

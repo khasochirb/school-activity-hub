@@ -683,12 +683,13 @@ export default async function EventsPage({
 
       {canCreate ? (
         <CollapsibleFormSection
+          collapsedSummary={false}
           description={
             isStaff
               ? t("events.create.staffDescription")
               : t("events.create.leaderDescription")
           }
-          hideLabel={t("common.hideForm")}
+          hideLabel={t("common.close")}
           id="create-event"
           showLabel={t("common.showForm")}
           title={t("events.actions.create")}
@@ -702,7 +703,6 @@ export default async function EventsPage({
             locale={locale}
             platformSchool={selectedPlatformSchool}
             labels={{
-              basicDetails: t("events.formGroups.basicDetails"),
               accessibilityGuidance: t(
                 "events.decisionInfo.accessibilityGuidance",
               ),
@@ -712,11 +712,17 @@ export default async function EventsPage({
               accessibilityPlaceholder: t(
                 "events.decisionInfo.accessibilityPlaceholder",
               ),
+              accessibleWashroom: t("events.presets.accessibleWashroom"),
+              allStudents: t("events.presets.allStudents"),
+              back: t("common.back"),
+              basics: t("events.formSteps.basics"),
               beginnerFriendly: t("events.experience.beginnerFriendly"),
+              clubMembers: t("events.presets.clubMembers"),
               commitment: t("events.practicalDetails.expectedCommitment"),
               commitmentPlaceholder: t(
                 "events.practicalDetails.commitmentPlaceholder",
               ),
+              continue: t("common.continue"),
               cost: t("events.practicalDetails.cost"),
               costAmount: t("events.practicalDetails.amount"),
               costCurrency: t("events.practicalDetails.currency"),
@@ -734,9 +740,10 @@ export default async function EventsPage({
               club: t("events.form.club"),
               createApproved: t("events.actions.createApproved"),
               creating: t("events.actions.creating"),
-              dateTime: t("events.formGroups.dateTime"),
+              custom: t("common.custom"),
               dateRequired: t("events.validation.dateRequired"),
               description: t("events.form.description"),
+              device: t("events.presets.device"),
               duration30: t("events.form.duration30"),
               duration60: t("events.form.duration60"),
               duration90: t("events.form.duration90"),
@@ -750,24 +757,32 @@ export default async function EventsPage({
                 "events.decisionInfo.eligibilityPlaceholder",
               ),
               experienceLevel: t("events.decisionInfo.experienceLevel"),
+              fullTerm: t("events.presets.fullTerm"),
+              leaderClubRequired: t("events.errors.leaderClubRequired"),
               leaderNeedsClub: t("events.create.leaderNeedsClub"),
               location: t("events.form.location"),
+              locationRequired: t("events.errors.locationRequired"),
               maxParticipants: t("events.form.maxParticipants"),
+              maxParticipantsPositive: t(
+                "events.errors.maxParticipantsPositive",
+              ),
               materials: t("events.practicalDetails.requiredMaterials"),
               materialsPlaceholder: t(
                 "events.practicalDetails.materialsPlaceholder",
               ),
+              no: t("common.no"),
               noCategory: t("events.form.noCategory"),
+              notebookAndPen: t("events.presets.notebookAndPen"),
               notSpecified: t("common.notSpecified"),
+              nothingRequired: t("events.practicalDetails.nothingRequired"),
+              oneTime: t("events.presets.oneTime"),
+              paidCostRequired: t("events.errors.paidCostRequired"),
+              participation: t("events.formSteps.participation"),
               permissionNote: t("events.form.permissionNote"),
               permissionNotePlaceholder: t(
                 "events.form.permissionNotePlaceholder",
               ),
               permissionRequired: t("events.form.permissionRequired"),
-              practicalDetails: t("events.formGroups.practicalDetails"),
-              practicalGuidance: t(
-                "events.practicalDetails.privacyGuidance",
-              ),
               platformMode: t("events.platform.mode"),
               selectedSchool: t("events.platform.selectedSchool"),
               riskHigh: t("events.risk.high"),
@@ -778,6 +793,7 @@ export default async function EventsPage({
               priorExperienceRecommended: t(
                 "events.experience.priorExperienceRecommended",
               ),
+              quietEnvironment: t("events.presets.quietEnvironment"),
               responsibleAdult: t("events.decisionInfo.responsibleAdult"),
               responsibleAdultHelp: t(
                 "events.decisionInfo.responsibleAdultHelp",
@@ -785,6 +801,7 @@ export default async function EventsPage({
               responsibleAdultReviewHelp: t(
                 "events.decisionInfo.responsibleAdultReviewHelp",
               ),
+              review: t("events.formSteps.review"),
               schoolWideEvent: t("events.form.schoolWideEvent"),
               safetyPermissions: t("events.formGroups.safetyPermissions"),
               scheduleChangeNotice: t(
@@ -798,12 +815,16 @@ export default async function EventsPage({
               ),
               startTime: t("events.form.startTime"),
               startTimeRequired: t("events.validation.startTimeRequired"),
+              seatingAvailable: t("events.presets.seatingAvailable"),
+              specificGrades: t("events.presets.specificGrades"),
+              sportswear: t("events.presets.sportswear"),
               submitForApproval: t("events.actions.submitForApproval"),
               submitting: t("events.actions.submitting"),
               timeOrder: t("events.validation.timeOrder"),
               timePreviewEmpty: t("events.form.timePreviewEmpty"),
               timezoneHelper: t("events.form.timezoneHelper"),
               title: t("events.form.title"),
+              titleRequired: t("events.errors.titleRequired"),
               supervisionGuidance: t(
                 "events.supervisionSchedule.supervisionGuidance",
               ),
@@ -816,7 +837,15 @@ export default async function EventsPage({
               supervisionSchedule: t(
                 "events.supervisionSchedule.title",
               ),
-              whoCanAttend: t("events.formGroups.whoCanAttend"),
+              twiceWeekly: t("events.presets.twiceWeekly"),
+              variableCostNotesRequired: t(
+                "events.errors.variableCostNotesRequired",
+              ),
+              weekly: t("events.presets.weekly"),
+              wheelchairAccessibleLocation: t(
+                "events.presets.wheelchairAccessibleLocation",
+              ),
+              yes: t("common.yes"),
             }}
             staffOptions={responsibleStaffOptions.map((staff) => ({
               id: staff.id,
@@ -940,15 +969,11 @@ export default async function EventsPage({
           <div className="p-4">
             <EmptyState
               action={
-                canCreate ? (
-                  <FormSectionToggleButton targetId="create-event">
-                    {t("events.actions.create")}
-                  </FormSectionToggleButton>
-                ) : (
+                !canCreate ? (
                   <HeaderActionLink href="/events" variant="secondary">
                     {t("events.actions.resetFilters")}
                   </HeaderActionLink>
-                )
+                ) : undefined
               }
               description={
                 canCreate
