@@ -85,6 +85,31 @@ test("accessibility information is event-only and privacy guarded", () => {
   );
 });
 
+test("create and edit forms share multi-select accessibility controls", () => {
+  const field = read(
+    "src/components/events/accessibility-options-field.tsx",
+  );
+  const createForm = read("src/app/(admin)/events/create-event-form.tsx");
+  const eventsPage = read("src/app/(admin)/events/page.tsx");
+  const editPage = read("src/app/(admin)/events/[eventId]/page.tsx");
+
+  assert.match(field, /type="checkbox"/);
+  assert.match(field, /Array\.from\(new Set\(next\.selectedIds\)\)/);
+  assert.match(field, /customEnabled/);
+  assert.match(field, /name=\{name\} type="hidden" value=\{combinedValue\}/);
+  assert.match(field, /values\.join\("\\n"\)/);
+  assert.match(field, /else customLines\.push\(line\)/);
+  assert.match(createForm, /<AccessibilityOptionsField/);
+  assert.match(editPage, /<AccessibilityOptionsField/);
+
+  for (const source of [eventsPage, editPage]) {
+    assert.match(source, /events\.presets\.wheelchairAccessibleLocation/);
+    assert.match(source, /events\.presets\.seatingAvailable/);
+    assert.match(source, /events\.presets\.accessibleWashroom/);
+    assert.match(source, /events\.presets\.quietEnvironment/);
+  }
+});
+
 test("event mutations keep independent authorization and registration logic", () => {
   const actions = read("src/app/(admin)/events/actions.ts");
   const updateStart = actions.indexOf("export async function updateEventDecisionInfo");

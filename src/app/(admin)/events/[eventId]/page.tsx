@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { AccessibilityOptionsField } from "@/components/events/accessibility-options-field";
 import { EventCalendarActions } from "@/components/events/event-calendar-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
@@ -935,23 +936,25 @@ function DecisionInfoForm({
           placeholder={t("events.decisionInfo.eligibilityPlaceholder")}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-        {t("events.decisionInfo.accessibilityInformation")}
-        <textarea
-          aria-describedby="event-detail-accessibility-guidance"
-          className="min-h-24 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none transition focus:border-zinc-900"
-          defaultValue={event.accessibility_notes ?? ""}
-          maxLength={EVENT_ACCESSIBILITY_MAX_LENGTH}
-          name="accessibility_notes"
-          placeholder={t("events.decisionInfo.accessibilityPlaceholder")}
-        />
-        <span
-          className="text-xs font-normal leading-5 text-zinc-500"
-          id="event-detail-accessibility-guidance"
-        >
-          {t("events.decisionInfo.accessibilityGuidance")}
-        </span>
-      </label>
+      <AccessibilityOptionsField
+        customLabel={t("common.custom")}
+        description={t("events.decisionInfo.accessibilityGuidance")}
+        initialValue={event.accessibility_notes ?? ""}
+        label={t("events.decisionInfo.accessibilityInformation")}
+        maxLength={EVENT_ACCESSIBILITY_MAX_LENGTH}
+        name="accessibility_notes"
+        notSpecifiedLabel={t("common.notSpecified")}
+        options={[
+          {
+            id: "wheelchair",
+            label: t("events.presets.wheelchairAccessibleLocation"),
+          },
+          { id: "seating", label: t("events.presets.seatingAvailable") },
+          { id: "washroom", label: t("events.presets.accessibleWashroom") },
+          { id: "quiet", label: t("events.presets.quietEnvironment") },
+        ]}
+        placeholder={t("events.decisionInfo.accessibilityPlaceholder")}
+      />
       <PendingSubmitButton
         className="btn btn-secondary min-h-10 px-3"
         pendingLabel={t("common.saving")}

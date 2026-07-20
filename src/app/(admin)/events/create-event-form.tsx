@@ -11,6 +11,10 @@ import {
 import { useFormStatus } from "react-dom";
 import { ActionToast } from "@/components/toast-provider";
 import {
+  AccessibilityOptionsField,
+  type AccessibilityOption,
+} from "@/components/events/accessibility-options-field";
+import {
   EVENT_ACCESSIBILITY_MAX_LENGTH,
   EVENT_ELIGIBILITY_MAX_LENGTH,
 } from "@/lib/events/event-decision-info";
@@ -230,7 +234,6 @@ export function CreateEventForm({
   const [eligibilityPreset, setEligibilityPreset] = useState("");
   const [materialsPreset, setMaterialsPreset] = useState("");
   const [commitmentPreset, setCommitmentPreset] = useState("");
-  const [accessibilityPreset, setAccessibilityPreset] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const submissionIdRef = useRef<HTMLInputElement>(null);
 
@@ -299,12 +302,11 @@ export function CreateEventForm({
     { id: "term", label: labels.fullTerm },
     { id: "custom", label: labels.custom, requiresDetails: true },
   ];
-  const accessibilityOptions: TextPresetOption[] = [
+  const accessibilityOptions: AccessibilityOption[] = [
     { id: "wheelchair", label: labels.wheelchairAccessibleLocation },
     { id: "seating", label: labels.seatingAvailable },
     { id: "washroom", label: labels.accessibleWashroom },
     { id: "quiet", label: labels.quietEnvironment },
-    { id: "custom", label: labels.custom, requiresDetails: true },
   ];
 
   function updateValue<Key extends keyof EventFormValues>(
@@ -789,13 +791,14 @@ export function CreateEventForm({
             value={values.expectedCommitment}
           />
           <div className="lg:col-span-2">
-            <PresetTextArea
+            <AccessibilityOptionsField
+              customLabel={labels.custom}
               description={labels.accessibilityGuidance}
               error={fieldError("accessibility_notes")}
+              initialValue={values.accessibilityNotes}
               label={labels.accessibilityInformation}
               maxLength={EVENT_ACCESSIBILITY_MAX_LENGTH}
               name="accessibility_notes"
-              onPresetChange={setAccessibilityPreset}
               onValueChange={(value) =>
                 updateValue(
                   "accessibilityNotes",
@@ -803,10 +806,9 @@ export function CreateEventForm({
                   "accessibility_notes",
                 )
               }
+              notSpecifiedLabel={labels.notSpecified}
               options={accessibilityOptions}
               placeholder={labels.accessibilityPlaceholder}
-              preset={accessibilityPreset}
-              value={values.accessibilityNotes}
             />
           </div>
         </div>
