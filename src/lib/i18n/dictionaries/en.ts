@@ -1215,6 +1215,18 @@ export const en = {
       readyToPublish: "Ready to publish",
       submitProposalAnyway: "Submit proposal anyway",
     },
+    platform: {
+      allSchools: "All schools",
+      creatingForSchool: "Creating event for {school}",
+      description: "Choose a school to view and manage its events.",
+      globalResults: "Showing events across all active schools.",
+      invalidSchool: "Choose a valid active school.",
+      mode: "Platform administrator mode",
+      school: "School",
+      schoolContext: "School event context",
+      selectSchoolRequired: "Select a school before creating an event.",
+      selectedSchool: "Selected school: {school}",
+    },
     quickView: {
       registrationFull: "Registration full",
       spacesRemaining: "Spaces remaining",
@@ -2244,17 +2256,6 @@ export const en = {
       title: "Important safety notice",
       urgentProcess:
         "Urgent concerns should be reported directly to school staff or the appropriate local emergency process.",
-    },
-    platform: {
-      allSchools: "All schools",
-      description: "Review events globally, or select an active school before creating a school-scoped event.",
-      globalResults: "Showing events across all active schools.",
-      invalidSchool: "Choose a valid active school.",
-      mode: "Platform administrator mode",
-      school: "School",
-      schoolContext: "Event school context",
-      selectSchoolRequired: "Select a school before creating an event.",
-      selectedSchool: "Selected school",
     },
   },
   privacy: {

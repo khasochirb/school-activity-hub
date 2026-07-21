@@ -665,7 +665,9 @@ export default async function EventsPage({
           </form>
           <p className="mt-3 break-words text-sm font-semibold text-slate-700">
             {selectedPlatformSchool
-              ? `${t("events.platform.selectedSchool")}: ${selectedPlatformSchool.name}`
+              ? tf("events.platform.selectedSchool", {
+                  school: selectedPlatformSchool.name,
+                })
               : t("events.platform.globalResults")}
           </p>
           {platformSchoolResult.errorCode ? (
@@ -795,8 +797,11 @@ export default async function EventsPage({
                 "events.form.permissionNotePlaceholder",
               ),
               permissionRequired: t("events.form.permissionRequired"),
-              platformMode: t("events.platform.mode"),
-              selectedSchool: t("events.platform.selectedSchool"),
+              creatingForSchool: selectedPlatformSchool
+                ? tf("events.platform.creatingForSchool", {
+                    school: selectedPlatformSchool.name,
+                  })
+                : "",
               riskHigh: t("events.risk.high"),
               riskLevel: t("events.form.riskLevel"),
               riskLow: t("events.risk.low"),

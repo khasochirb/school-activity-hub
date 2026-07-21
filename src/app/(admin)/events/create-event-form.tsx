@@ -152,8 +152,7 @@ type CreateEventFormLabels = {
   permissionNote: string;
   permissionNotePlaceholder: string;
   permissionRequired: string;
-  platformMode: string;
-  selectedSchool: string;
+  creatingForSchool: string;
   priorExperienceRecommended: string;
   publishAnyway: string;
   quietEnvironment: string;
@@ -473,9 +472,8 @@ export function CreateEventForm({
 
       {platformSchool ? (
         <div className="notice-box min-w-0">
-          <p className="font-bold">{labels.platformMode}</p>
-          <p className="mt-1 break-words text-sm">
-            {labels.selectedSchool}: {platformSchool.name}
+          <p className="break-words text-sm font-semibold">
+            {labels.creatingForSchool}
           </p>
           <input name="school_id" type="hidden" value={platformSchool.id} />
           <FieldError message={fieldError("school_id")} />

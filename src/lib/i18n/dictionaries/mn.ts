@@ -695,6 +695,19 @@ export const mn = {
       readyToPublish: "Нийтлэхэд бэлэн",
       submitProposalAnyway: "Саналыг үргэлжлүүлэн илгээх",
     },
+    platform: {
+      allSchools: "Бүх сургууль",
+      creatingForSchool: "{school}-д үйл ажиллагаа үүсгэж байна",
+      description:
+        "Үйл ажиллагааг харах болон удирдах сургуулиа сонгоно уу.",
+      globalResults: "Бүх идэвхтэй сургуулийн үйл ажиллагааг харуулж байна.",
+      invalidSchool: "Зөв идэвхтэй сургууль сонгоно уу.",
+      mode: "Платформын администраторын горим",
+      school: "Сургууль",
+      schoolContext: "Сургуулийн үйл ажиллагааны орчин",
+      selectSchoolRequired: "Үйл ажиллагаа үүсгэхийн өмнө сургууль сонгоно уу.",
+      selectedSchool: "Сонгосон сургууль: {school}",
+    },
     quickView: {
       registrationFull: "Бүртгэл дүүрсэн",
       spacesRemaining: "Үлдсэн суудал",
@@ -2183,17 +2196,6 @@ export const mn = {
       title: "Аюулгүй байдлын хүсэлтүүд",
       updateStatus: "Төлөв шинэчлэх",
       viewConfidentialDescription: "Нууц тайлбар харах",
-    },
-    platform: {
-      allSchools: "Бүх сургууль",
-      description: "Бүх сургуулийн үйл ажиллагааг харах эсвэл сургуульд хамаарах үйл ажиллагаа үүсгэхийн өмнө идэвхтэй сургуулийг сонгоно уу.",
-      globalResults: "Бүх идэвхтэй сургуулийн үйл ажиллагааг харуулж байна.",
-      invalidSchool: "Зөв идэвхтэй сургууль сонгоно уу.",
-      mode: "Платформын админы горим",
-      school: "Сургууль",
-      schoolContext: "Үйл ажиллагааны сургуулийн хүрээ",
-      selectSchoolRequired: "Үйл ажиллагаа үүсгэхийн өмнө сургууль сонгоно уу.",
-      selectedSchool: "Сонгосон сургууль",
     },
     myReports: {
       closedAt: "Хаасан",

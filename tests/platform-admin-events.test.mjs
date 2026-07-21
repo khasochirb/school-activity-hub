@@ -59,9 +59,30 @@ test("English and Mongolian platform-event labels are complete", () => {
     "src/lib/i18n/dictionaries/mn.ts",
   ]) {
     const dictionary = read(path);
-    assert.match(dictionary, /platform:\s*{/);
-    assert.match(dictionary, /selectSchoolRequired:/);
-    assert.match(dictionary, /selectedSchool:/);
+    const eventsStart = dictionary.indexOf("  events: {");
+    const eventsEnd = dictionary.indexOf("\n  safety: {", eventsStart);
+    const events = dictionary.slice(eventsStart, eventsEnd);
+
+    assert.match(events, /platform:\s*{/);
+    assert.match(events, /selectSchoolRequired:/);
+    assert.match(events, /selectedSchool:\s*"[^"]*\{school\}[^"]*"/);
+    assert.match(events, /creatingForSchool:\s*"[^"]*\{school\}[^"]*"/);
     assert.match(dictionary, /loadUnavailable:/);
   }
+});
+
+test("platform school context is interpolated once inside the create form", () => {
+  const page = read("src/app/(admin)/events/page.tsx");
+  const form = read("src/app/(admin)/events/create-event-form.tsx");
+
+  assert.match(
+    page,
+    /tf\("events\.platform\.selectedSchool",\s*{\s*school: selectedPlatformSchool\.name/,
+  );
+  assert.match(
+    page,
+    /tf\("events\.platform\.creatingForSchool",\s*{\s*school: selectedPlatformSchool\.name/,
+  );
+  assert.match(form, /labels\.creatingForSchool/);
+  assert.doesNotMatch(form, /labels\.platformMode|labels\.selectedSchool/);
 });
