@@ -783,6 +783,103 @@ a:hover .stat-card {
   color: var(--foreground);
 }
 
+a:has(.pending-link-indicator[data-pending="true"]) {
+  cursor: progress;
+  opacity: 0.82;
+}
+
+.pending-link-indicator {
+  display: inline-flex;
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: 0 0 0.875rem;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: auto;
+  opacity: 0;
+}
+
+.pending-link-indicator[data-pending="true"] {
+  animation: pending-link-reveal 1ms linear var(--motion-fast) both;
+}
+
+.pending-link-spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 999px;
+  animation: pending-link-spin calc(var(--motion-large) * 4) linear infinite;
+}
+
+.route-content-enter {
+  animation: route-content-enter var(--motion-normal) var(--motion-ease-out);
+}
+
+.route-loading-skeleton {
+  opacity: 0;
+  animation: route-loading-reveal 1ms linear var(--motion-fast) forwards;
+}
+
+.skeleton-block {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: color-mix(in srgb, var(--border) 72%, var(--card));
+}
+
+.skeleton-block::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--card) 72%, transparent),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer calc(var(--motion-large) * 6)
+    var(--motion-ease-out) var(--motion-large) infinite;
+}
+
+@keyframes pending-link-reveal {
+  from,
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pending-link-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes route-content-enter {
+  from {
+    opacity: 0.94;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes route-loading-reveal {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes mobile-drawer-slide-in {
   from {
     transform: translateX(100%);
@@ -803,12 +900,34 @@ a:hover .stat-card {
   }
 }
 
+@keyframes mobile-drawer-slide-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes mobile-drawer-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
 .mobile-drawer-panel {
   animation: mobile-drawer-slide-in var(--motion-large) var(--motion-ease-out);
 }
 
 .mobile-drawer-backdrop {
   animation: mobile-drawer-fade-in var(--motion-normal) var(--motion-ease-out);
+}
+
+.mobile-drawer-panel-closing {
+  animation: mobile-drawer-slide-out var(--motion-large) var(--motion-ease-out)
+    forwards;
+}
+
+.mobile-drawer-backdrop-closing {
+  animation: mobile-drawer-fade-out var(--motion-normal) var(--motion-ease-out)
+    forwards;
 }
 
 .compact-filter-card {
@@ -1099,8 +1218,22 @@ a:hover .stat-card {
   }
 
   .mobile-drawer-panel,
-  .mobile-drawer-backdrop {
+  .mobile-drawer-backdrop,
+  .pending-link-indicator,
+  .pending-link-spinner,
+  .route-content-enter,
+  .route-loading-skeleton,
+  .skeleton-block::after {
     animation: none;
+  }
+
+  .pending-link-indicator[data-pending="true"],
+  .route-loading-skeleton {
+    opacity: 1;
+  }
+
+  .skeleton-block::after {
+    display: none;
   }
 
   :where(button, .btn, .interactive-card, .motion-choice, .interactive-chip, .motion-directional, .nav-link, .nav-link-motion, button[aria-pressed]) {

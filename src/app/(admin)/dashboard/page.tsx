@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   DetailsDisclosure,
@@ -510,7 +511,10 @@ function NextSteps({
                   {step.action}
                 </h3>
               </div>
-              <StepStatusBadge status={step.status} t={t} />
+              <div className="flex shrink-0 items-center gap-2">
+                <StepStatusBadge status={step.status} t={t} />
+                <PendingLinkIndicator />
+              </div>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {step.description}
@@ -622,6 +626,7 @@ function NeedsAttention({
             prefetch={false}
           >
             {t("common.viewAll")}
+            <PendingLinkIndicator />
           </Link>
         </div>
       </div>
@@ -647,8 +652,9 @@ function NeedsAttention({
                   {formatNumber(item.count)}
                 </StatusBadge>
               </div>
-              <p className="mt-3 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
+              <p className="mt-3 flex items-center gap-2 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
                 {item.action}
+                <PendingLinkIndicator />
               </p>
             </Link>
           ))}
@@ -684,6 +690,7 @@ function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
           prefetch={false}
         >
           {t("dashboard.browseEvents")}
+          <PendingLinkIndicator />
         </Link>
         <Link
           className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
@@ -691,6 +698,7 @@ function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
           prefetch={false}
         >
           {t("dashboard.joinClubs")}
+          <PendingLinkIndicator />
         </Link>
         <Link
           className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
@@ -698,6 +706,7 @@ function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
           prefetch={false}
         >
           {t("dashboard.viewRegisteredEvents")}
+          <PendingLinkIndicator />
         </Link>
       </div>
     </section>
@@ -752,8 +761,9 @@ function QuickActions({ t }: { t: (key: string) => string }) {
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {action.description}
             </p>
-            <p className="mt-3 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
+            <p className="mt-3 flex items-center gap-2 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
               {t("common.open")}
+              <PendingLinkIndicator />
             </p>
           </Link>
         ))}
@@ -793,11 +803,12 @@ function MetricCard({
   return (
     <Link
       aria-label={`${label}: ${formatNumber(value)}`}
-      className="interactive-card group block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+      className="interactive-card group relative block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
       href={href}
       prefetch={false}
     >
       {content}
+      <PendingLinkIndicator className="absolute right-3 top-3" />
     </Link>
   );
 }

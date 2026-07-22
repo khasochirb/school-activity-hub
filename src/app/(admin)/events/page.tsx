@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
 import {
   ACTIVITY_CATEGORIES,
@@ -1170,6 +1171,7 @@ function EventViewToggle({
         prefetch={false}
       >
         {t("events.view.list")}
+        <PendingLinkIndicator />
       </Link>
       <Link
         aria-current={selectedView === "month" ? "page" : undefined}
@@ -1179,6 +1181,7 @@ function EventViewToggle({
         prefetch={false}
       >
         {t("events.view.month")}
+        <PendingLinkIndicator />
       </Link>
       <Link
         aria-current={selectedView === "week" ? "page" : undefined}
@@ -1188,6 +1191,7 @@ function EventViewToggle({
         prefetch={false}
       >
         {t("events.view.week")}
+        <PendingLinkIndicator />
       </Link>
     </nav>
   );
@@ -1195,7 +1199,7 @@ function EventViewToggle({
 
 function viewToggleClassName(isActive: boolean) {
   return [
-    "interactive-chip flex min-h-9 flex-1 items-center justify-center rounded px-3 text-sm font-semibold sm:flex-none",
+    "interactive-chip flex min-h-9 flex-1 items-center justify-center gap-2 rounded px-3 text-sm font-semibold sm:flex-none",
     isActive
       ? "bg-[var(--primary-soft)] text-[var(--primary-strong)] shadow-sm"
       : "text-slate-600 hover:bg-[var(--card)] hover:text-slate-950",

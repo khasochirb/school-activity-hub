@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { SearchField, SelectFilter } from "../_components/page-ui";
 
 export type EventsFilterOption = {
@@ -134,11 +135,12 @@ export function EventsFilters({
                 {labels.filter}
               </button>
               <Link
-                className="btn btn-secondary min-h-11 md:min-h-10"
+                className="btn btn-secondary min-h-11 gap-2 md:min-h-10"
                 href={clearHref}
                 prefetch={false}
               >
                 {labels.clear}
+                <PendingLinkIndicator />
               </Link>
             </div>
           </form>

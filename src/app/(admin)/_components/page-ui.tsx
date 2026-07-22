@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import {
   CollapsibleFormSection as ClientCollapsibleFormSection,
   FormSectionToggleButton as ClientFormSectionToggleButton,
@@ -73,11 +74,12 @@ export function HeaderActionLink({
 }) {
   return (
     <Link
-      className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"} w-full sm:w-auto`}
+      className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"} w-full gap-2 sm:w-auto`}
       href={href}
       prefetch={prefetch}
     >
       {children}
+      <PendingLinkIndicator />
     </Link>
   );
 }
@@ -171,11 +173,12 @@ export function FilterPanel({
             {submitLabel}
           </button>
           <Link
-            className="btn btn-secondary min-h-11 md:min-h-10"
+            className="btn btn-secondary min-h-11 gap-2 md:min-h-10"
             href={clearHref}
             prefetch={false}
           >
             {clearLabel}
+            <PendingLinkIndicator />
           </Link>
         </div>
       </form>
@@ -294,11 +297,12 @@ export function PaginationControls({
       <div className="flex flex-wrap gap-2">
         {page > 1 ? (
           <Link
-            className="btn btn-secondary min-h-10"
+            className="btn btn-secondary min-h-10 gap-2"
             href={getHref(page - 1)}
             prefetch={false}
           >
             {labels.previous}
+            <PendingLinkIndicator />
           </Link>
         ) : (
           <span className="btn btn-secondary min-h-10 cursor-not-allowed opacity-50">
@@ -307,11 +311,12 @@ export function PaginationControls({
         )}
         {hasNextPage ? (
           <Link
-            className="btn btn-secondary min-h-10"
+            className="btn btn-secondary min-h-10 gap-2"
             href={getHref(page + 1)}
             prefetch={false}
           >
             {labels.next}
+            <PendingLinkIndicator />
           </Link>
         ) : (
           <span className="btn btn-secondary min-h-10 cursor-not-allowed opacity-50">

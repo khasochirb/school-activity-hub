@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentTheme } from "@/lib/get-theme";
@@ -16,6 +17,7 @@ import {
   type MobileNavMatch,
 } from "./mobile-app-nav";
 import { MobileMenuDrawer } from "./mobile-menu-drawer";
+import { RouteContentTransition } from "./route-content-transition";
 
 type Role = "school_admin" | "teacher" | "student";
 
@@ -481,7 +483,7 @@ export async function AppShell({
         </header>
 
         <main className="mx-auto w-full max-w-[88rem] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6 xl:px-7">
-          {children}
+          <RouteContentTransition>{children}</RouteContentTransition>
         </main>
       </div>
     </div>
@@ -633,6 +635,7 @@ function MobileAccount({
         prefetch={false}
       >
         {profileLabel}
+        <PendingLinkIndicator />
       </Link>
       <div className="grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
         <LanguageSwitcher

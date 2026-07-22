@@ -19,6 +19,7 @@ const FOCUSABLE_SELECTOR = [
   "textarea:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
+const DRAWER_EXIT_MS = 240;
 
 export function MobileMenuDrawer({
   children,
@@ -32,15 +33,48 @@ export function MobileMenuDrawer({
   menuLabel: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const restoreScrollRef = useRef(true);
 
-  const closeDrawer = useCallback(() => {
-    setOpen(false);
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  const closeDrawer = useCallback((restoreFocus = true) => {
+    if (closeTimerRef.current !== null) {
+      return;
+    }
+
+    restoreScrollRef.current = restoreFocus;
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (!reducedMotion) {
+      setClosing(true);
+    }
+
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      setClosing(false);
+      closeTimerRef.current = null;
+
+      if (restoreFocus) {
+        window.requestAnimationFrame(() => triggerRef.current?.focus());
+      }
+    }, reducedMotion ? 0 : DRAWER_EXIT_MS);
   }, []);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -113,12 +147,14 @@ export function MobileMenuDrawer({
     }
 
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("popstate", closeDrawer);
+    const handlePopState = () => closeDrawer(false);
+
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
       window.cancelAnimationFrame(focusFrame);
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("popstate", closeDrawer);
+      window.removeEventListener("popstate", handlePopState);
       body.style.left = previousStyles.bodyLeft;
       body.style.overflow = previousStyles.bodyOverflow;
       body.style.paddingRight = previousStyles.bodyPaddingRight;
@@ -128,13 +164,16 @@ export function MobileMenuDrawer({
       body.style.width = previousStyles.bodyWidth;
       html.style.overflow = previousStyles.htmlOverflow;
       html.style.overscrollBehavior = previousStyles.htmlOverscrollBehavior;
-      window.scrollTo(0, scrollY);
+      if (restoreScrollRef.current) {
+        window.scrollTo(0, scrollY);
+      }
+      restoreScrollRef.current = true;
     };
   }, [closeDrawer, open]);
 
   function handleContentClick(event: MouseEvent<HTMLDivElement>) {
     if (event.target instanceof Element && event.target.closest("a[href]")) {
-      closeDrawer();
+      closeDrawer(false);
     }
   }
 
@@ -144,14 +183,18 @@ export function MobileMenuDrawer({
           <div className="fixed inset-0 z-[80] lg:hidden">
             <button
               aria-label={closeLabel}
-              className="mobile-drawer-backdrop absolute inset-0 cursor-pointer bg-slate-950/55"
-              onClick={closeDrawer}
+              className={`mobile-drawer-backdrop absolute inset-0 cursor-pointer bg-slate-950/55 ${
+                closing ? "mobile-drawer-backdrop-closing" : ""
+              }`}
+              onClick={() => closeDrawer()}
               type="button"
             />
             <aside
               aria-label={menuLabel}
               aria-modal="true"
-              className="mobile-drawer-panel fixed inset-y-0 right-0 z-[90] flex h-dvh max-h-dvh w-[min(22rem,92vw)] max-w-full min-w-0 touch-pan-y flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl"
+              className={`mobile-drawer-panel fixed inset-y-0 right-0 z-[90] flex h-dvh max-h-dvh w-[min(22rem,92vw)] max-w-full min-w-0 touch-pan-y flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl ${
+                closing ? "mobile-drawer-panel-closing" : ""
+              }`}
               id={panelId}
               ref={panelRef}
               role="dialog"
@@ -162,7 +205,7 @@ export function MobileMenuDrawer({
                 <button
                   aria-label={closeLabel}
                   className="btn btn-secondary flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 text-xl leading-none"
-                  onClick={closeDrawer}
+                  onClick={() => closeDrawer()}
                   ref={closeButtonRef}
                   type="button"
                 >
@@ -188,7 +231,11 @@ export function MobileMenuDrawer({
         aria-expanded={open}
         aria-label={menuLabel}
         className="btn btn-secondary min-h-11 gap-2 px-3"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          restoreScrollRef.current = true;
+          setClosing(false);
+          setOpen(true);
+        }}
         ref={triggerRef}
         type="button"
       >

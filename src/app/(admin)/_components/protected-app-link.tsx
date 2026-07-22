@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import {
   type ComponentProps,
   type FocusEvent,
@@ -25,6 +26,7 @@ type ProtectedAppLinkProps = Omit<
 export function ProtectedAppLink({
   href,
   intentPrefetch = false,
+  children,
   onFocus,
   onPointerEnter,
   onPointerLeave,
@@ -83,7 +85,10 @@ export function ProtectedAppLink({
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       prefetch={false}
-    />
+    >
+      {children}
+      <PendingLinkIndicator />
+    </Link>
   );
 }
 
