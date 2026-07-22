@@ -73,8 +73,8 @@ export function ThemeToggle({
               aria-pressed={active}
               className={
                 active
-                  ? "choice-pill-active min-h-8 min-w-0 cursor-pointer rounded px-1 text-center text-[0.68rem] font-bold leading-tight whitespace-nowrap sm:text-xs"
-                  : "min-h-8 min-w-0 cursor-pointer rounded px-1 text-center text-[0.68rem] font-semibold leading-tight whitespace-nowrap text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 sm:text-xs"
+                  ? "choice-pill-active motion-choice min-h-8 min-w-0 cursor-pointer rounded px-1 text-center text-[0.68rem] font-bold leading-tight whitespace-nowrap sm:text-xs"
+                  : "motion-choice min-h-8 min-w-0 cursor-pointer rounded px-1 text-center text-[0.68rem] font-semibold leading-tight whitespace-nowrap text-slate-600 hover:bg-slate-50 hover:text-slate-950 sm:text-xs"
               }
               key={option}
               onClick={() => selectTheme(option)}

@@ -50,8 +50,8 @@ export function LanguageSwitcher({
             aria-pressed={active}
             className={
               active
-                ? "choice-pill-active min-h-8 min-w-0 cursor-pointer rounded px-2 text-center text-sm font-bold leading-snug break-words whitespace-normal"
-                : "min-h-8 min-w-0 cursor-pointer rounded px-2 text-center text-sm font-semibold leading-snug break-words whitespace-normal text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
+                ? "choice-pill-active motion-choice min-h-8 min-w-0 cursor-pointer rounded px-2 text-center text-sm font-bold leading-snug break-words whitespace-normal"
+                : "motion-choice min-h-8 min-w-0 cursor-pointer rounded px-2 text-center text-sm font-semibold leading-snug break-words whitespace-normal text-slate-600 hover:bg-slate-50 hover:text-slate-950"
             }
             disabled={isPending}
             key={option}

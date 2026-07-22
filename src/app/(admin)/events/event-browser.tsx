@@ -103,7 +103,7 @@ function EventCard({
 
   return (
     <article
-      className="group flex h-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] transition duration-150 hover:-translate-y-0.5 hover:border-[#f2af68]/70 hover:shadow-lg focus-within:border-[#f2af68]"
+      className="interactive-card group flex h-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] focus-within:border-[#f2af68]"
       onClick={handleCardClick}
     >
       <button

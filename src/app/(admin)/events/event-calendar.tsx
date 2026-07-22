@@ -362,7 +362,7 @@ function CalendarEventChip({
   return (
     <button
       aria-label={`${labels.viewEvent}: ${event.title}`}
-      className="block min-h-11 w-full cursor-pointer overflow-hidden rounded-md border border-[var(--border)] border-l-[#f2af68] bg-[var(--card-soft)] px-2 py-1.5 text-left transition hover:border-[#f2af68] hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]"
+      className="interactive-chip block min-h-11 w-full cursor-pointer overflow-hidden rounded-md border border-[var(--border)] border-l-[#f2af68] bg-[var(--card-soft)] px-2 py-1.5 text-left hover:border-[#f2af68] hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]"
       onClick={(clickEvent) => onOpen(event.id, clickEvent.currentTarget)}
       type="button"
     >
@@ -409,7 +409,7 @@ function CalendarAgenda({
           {events.map((event) => (
             <button
               aria-label={`${labels.viewEvent}: ${event.title}`}
-              className="min-w-0 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#f2af68] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]"
+              className="interactive-card min-w-0 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]"
               key={event.id}
               onClick={(clickEvent) =>
                 onOpen(event.id, clickEvent.currentTarget)

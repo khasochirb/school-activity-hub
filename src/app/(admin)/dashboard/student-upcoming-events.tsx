@@ -67,7 +67,7 @@ export function StudentUpcomingEvents({
                 </span>
                 <span className="flex shrink-0 items-center gap-2 text-sm font-bold text-[var(--primary-strong)]">
                   <span className="hidden sm:inline">{labels.viewEvent}</span>
-                  <span aria-hidden="true" className="text-lg transition group-hover:translate-x-0.5">
+                  <span aria-hidden="true" className="motion-directional text-lg">
                     &rarr;
                   </span>
                 </span>

@@ -1163,6 +1163,7 @@ function EventViewToggle({
       className="inline-flex w-full rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-1 sm:w-auto"
     >
       <Link
+        aria-current={selectedView === "list" ? "page" : undefined}
         aria-label={t("events.view.viewList")}
         className={viewToggleClassName(selectedView === "list")}
         href={buildEventsViewHref(state, "list")}
@@ -1171,6 +1172,7 @@ function EventViewToggle({
         {t("events.view.list")}
       </Link>
       <Link
+        aria-current={selectedView === "month" ? "page" : undefined}
         aria-label={t("events.view.viewCalendar")}
         className={viewToggleClassName(selectedView === "month")}
         href={buildEventsViewHref(state, "month")}
@@ -1179,6 +1181,7 @@ function EventViewToggle({
         {t("events.view.month")}
       </Link>
       <Link
+        aria-current={selectedView === "week" ? "page" : undefined}
         aria-label={t("events.view.viewWeek")}
         className={viewToggleClassName(selectedView === "week")}
         href={buildEventsViewHref(state, "week")}
@@ -1192,7 +1195,7 @@ function EventViewToggle({
 
 function viewToggleClassName(isActive: boolean) {
   return [
-    "flex min-h-9 flex-1 items-center justify-center rounded px-3 text-sm font-semibold transition sm:flex-none",
+    "interactive-chip flex min-h-9 flex-1 items-center justify-center rounded px-3 text-sm font-semibold sm:flex-none",
     isActive
       ? "bg-[var(--primary-soft)] text-[var(--primary-strong)] shadow-sm"
       : "text-slate-600 hover:bg-[var(--card)] hover:text-slate-950",

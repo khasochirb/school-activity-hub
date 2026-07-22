@@ -488,7 +488,7 @@ export function CreateEventForm({
             return (
               <li
                 aria-current={active ? "step" : undefined}
-                className={`flex min-w-0 items-center gap-2 rounded-md border px-2 py-2 text-xs font-semibold sm:px-3 sm:text-sm ${
+                className={`motion-choice flex min-w-0 items-center gap-2 rounded-md border px-2 py-2 text-xs font-semibold sm:px-3 sm:text-sm ${
                   active
                     ? "border-[var(--accent)] bg-[var(--accent-soft)] text-slate-950"
                     : complete

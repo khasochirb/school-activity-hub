@@ -65,7 +65,7 @@ export function MobileAppNav({
                 <button
                   aria-controls={contentId}
                   aria-expanded={open}
-                  className="flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-xs font-extrabold uppercase leading-snug tracking-[0.12em] text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
+                  className="nav-link-motion flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-xs font-extrabold uppercase leading-snug tracking-[0.12em] text-slate-500 hover:bg-slate-50 hover:text-slate-950"
                   onClick={() =>
                     setOpenGroups((current) => ({
                       ...current,
@@ -77,7 +77,7 @@ export function MobileAppNav({
                   <span className="min-w-0 break-words">{group.label}</span>
                   <span
                     aria-hidden="true"
-                    className={`shrink-0 text-base transition-transform duration-150 ${
+                    className={`motion-rotate shrink-0 text-base ${
                       open ? "rotate-180" : ""
                     }`}
                   >
@@ -118,7 +118,7 @@ function MobileNavLink({
     <ProtectedAppLink
       aria-current={active ? "page" : undefined}
       className={[
-        "flex min-h-12 min-w-0 items-center gap-3 rounded-lg border px-3 py-2.5 text-sm leading-snug transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]",
+        "nav-link-motion flex min-h-12 min-w-0 items-center gap-3 rounded-lg border px-3 py-2.5 text-sm leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]",
         secondary ? "ml-1" : "",
         active
           ? "border-[#f2af68]/60 bg-[var(--primary-soft)] font-extrabold text-slate-950 shadow-sm"

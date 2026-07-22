@@ -494,7 +494,7 @@ function NextSteps({
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {steps.map((step, index) => (
           <Link
-            className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+            className="interactive-card group rounded-md border border-slate-200 bg-white p-3 shadow-sm"
             href={step.href}
             key={step.action}
             prefetch={false}
@@ -629,7 +629,7 @@ function NeedsAttention({
         <div className="grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-4">
           {attentionItems.map((item) => (
             <Link
-              className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+              className="interactive-card group rounded-md border border-slate-200 bg-white p-3 shadow-sm"
               href={item.href}
               key={item.title}
               prefetch={false}
@@ -741,7 +741,7 @@ function QuickActions({ t }: { t: (key: string) => string }) {
       <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-5">
         {actions.map((action) => (
           <Link
-            className="group rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+            className="interactive-card group rounded-md border border-slate-200 bg-white p-3 shadow-sm"
             href={action.href}
             key={action.href}
             prefetch={false}
@@ -793,7 +793,7 @@ function MetricCard({
   return (
     <Link
       aria-label={`${label}: ${formatNumber(value)}`}
-      className="group block rounded-lg transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+      className="interactive-card group block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
       href={href}
       prefetch={false}
     >

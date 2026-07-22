@@ -266,7 +266,7 @@ function WeekEventCard({
   return (
     <button
       aria-label={`${labels.viewEvent}: ${event.title}`}
-      className="block min-h-20 w-full min-w-0 cursor-pointer rounded-lg border border-[var(--border)] border-l-[#f2af68] bg-[var(--card-soft)] p-2 text-left transition hover:border-[#f2af68] hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]"
+      className="interactive-card block min-h-20 w-full min-w-0 cursor-pointer rounded-lg border border-[var(--border)] border-l-[#f2af68] bg-[var(--card-soft)] p-2 text-left hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]"
       onClick={(clickEvent) => onOpen(event.id, clickEvent.currentTarget)}
       type="button"
     >

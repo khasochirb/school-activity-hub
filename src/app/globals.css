@@ -37,6 +37,10 @@
   --btn-secondary-text: #334155;
   --danger-soft: #fff7f7;
   --danger-soft-hover: #fee2e2;
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
+  --motion-large: 240ms;
+  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -123,6 +127,8 @@ html[data-theme="dark"] {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --default-transition-duration: var(--motion-normal);
+  --default-transition-timing-function: var(--motion-ease-out);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -154,6 +160,24 @@ body {
   cursor: not-allowed;
 }
 
+:where(button) {
+  transition:
+    background-color var(--motion-normal) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out),
+    opacity var(--motion-fast) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
+}
+
+:where(button:disabled, button[aria-busy="true"], input[type="button"]:disabled, input[type="submit"]:disabled) {
+  opacity: 0.62;
+}
+
+:where(button:not(:disabled)):active {
+  transform: scale(0.98);
+}
+
 :where(input, select, textarea, button) {
   font: inherit;
 }
@@ -168,6 +192,11 @@ body {
   background-color: var(--input-bg);
   color: var(--foreground);
   box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03);
+  transition:
+    background-color var(--motion-normal) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out);
 }
 
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea):focus {
@@ -189,7 +218,7 @@ body {
 }
 
 :where(tbody tr) {
-  transition: background-color 140ms ease;
+  transition: background-color var(--motion-fast) var(--motion-ease-out);
 }
 
 :where(tbody tr:hover) {
@@ -417,9 +446,9 @@ main > .flex.flex-col.gap-6 > section:first-child p {
   padding: 0.9rem;
   box-shadow: var(--card-shadow);
   transition:
-    border-color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
+    border-color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
 }
 
 a:hover .stat-card {
@@ -464,6 +493,9 @@ a:hover .stat-card {
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 800;
+  transition:
+    background-color var(--motion-normal) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out);
 }
 
 .details-summary::-webkit-details-marker {
@@ -539,19 +571,23 @@ a:hover .stat-card {
   line-height: 1.15;
   white-space: normal;
   transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
+    background-color var(--motion-normal) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out),
+    opacity var(--motion-fast) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-}
-
-.btn:disabled {
+.btn:disabled,
+.btn[aria-busy="true"] {
+  box-shadow: none;
+  opacity: 0.62;
   transform: none;
+}
+
+.btn:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 .btn-primary {
@@ -646,6 +682,54 @@ a:hover .stat-card {
   color: var(--primary-strong);
 }
 
+:where(.motion-choice, button[aria-pressed], .interactive-chip, label:has(input[type="checkbox"]), label:has(input[type="radio"])) {
+  transition:
+    background-color var(--motion-normal) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out),
+    opacity var(--motion-fast) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
+}
+
+:where(.motion-choice, button[aria-pressed], .interactive-chip):not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.interactive-card {
+  transition:
+    background-color var(--motion-normal) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
+}
+
+.interactive-card:active {
+  transform: scale(0.99);
+}
+
+.motion-directional,
+.motion-rotate {
+  transition: transform var(--motion-fast) var(--motion-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
+  .interactive-card:hover {
+    border-color: rgba(242, 175, 104, 0.7);
+    box-shadow: var(--header-shadow);
+    transform: translateY(-1px);
+  }
+
+  .group:hover .motion-directional {
+    transform: translateX(2px);
+  }
+}
+
 .nav-link {
   display: flex;
   max-width: 100%;
@@ -660,10 +744,24 @@ a:hover .stat-card {
   line-height: 1.2;
   overflow-wrap: anywhere;
   transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease,
-    box-shadow 140ms ease;
+    background-color var(--motion-normal) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
+}
+
+.nav-link-motion {
+  transition:
+    background-color var(--motion-normal) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-normal) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
+}
+
+:where(.nav-link, .nav-link-motion):active {
+  transform: scale(0.98);
 }
 
 .nav-link-active {
@@ -706,18 +804,11 @@ a:hover .stat-card {
 }
 
 .mobile-drawer-panel {
-  animation: mobile-drawer-slide-in 180ms ease-out;
+  animation: mobile-drawer-slide-in var(--motion-large) var(--motion-ease-out);
 }
 
 .mobile-drawer-backdrop {
-  animation: mobile-drawer-fade-in 150ms ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mobile-drawer-panel,
-  .mobile-drawer-backdrop {
-    animation: none;
-  }
+  animation: mobile-drawer-fade-in var(--motion-normal) var(--motion-ease-out);
 }
 
 .compact-filter-card {
@@ -997,5 +1088,22 @@ a:hover .stat-card {
 
   .stat-value {
     font-size: 1.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
+    --motion-large: 0ms;
+  }
+
+  .mobile-drawer-panel,
+  .mobile-drawer-backdrop {
+    animation: none;
+  }
+
+  :where(button, .btn, .interactive-card, .motion-choice, .interactive-chip, .motion-directional, .nav-link, .nav-link-motion, button[aria-pressed]) {
+    transform: none !important;
   }
 }
