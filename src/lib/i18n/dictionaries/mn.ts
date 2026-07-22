@@ -944,6 +944,88 @@ export const mn = {
     },
     description:
       "Сургуулийн хэмжээний үйл ажиллагааны хураангуйг шалгаж, жагсаалт, бүртгэл болон ирцийн CSV файлууд экспортлоно уу.",
+    explorer: {
+      attendanceDefinition:
+        "Бүртгэгдсэн ирцийн хувь нь дор хаяж нэг ирц бүртгэгдсэн, дууссан үйл ажиллагааг хамарна. Ирцийн бүртгэлгүйг батлагдсан таслалт гэж үзэхгүй.",
+      attendanceNotRecorded: "Ирц бүртгэгдээгүй",
+      charts: {
+        participationByCategory: "Ангиллаарх оролцоо",
+        participationOverTime: "Хугацааны явц дахь оролцоо",
+        recordedAttendance: "Бүртгэгдсэн ирц",
+        registrationComparison: "Бүртгэл ба бүртгэгдсэн ирц",
+        viewAllActivities: "Бүх үйл ажиллагааг харах",
+      },
+      description:
+        "Сургуулийн үйл ажиллагаа, бүртгэл, бүртгэгдсэн ирцийн мэдээллийг харах.",
+      empty: {
+        activitiesDescription:
+          "Сонгосон шүүлтүүрт тохирох дууссан үйл ажиллагаа алга.",
+        activitiesTitle: "Энэ хугацаанд үйл ажиллагаа алга",
+        noParticipation: "Энэ хугацаанд оролцооны мэдээлэл алга",
+        noParticipationDescription:
+          "Тайлангийн шүүлтүүрийг өөрчлөх эсвэл дууссан үйл ажиллагааны ирцийг бүртгэнэ үү.",
+        studentsDescription:
+          "Одоогийн хайлтад тохирох идэвхтэй сурагч алга.",
+        studentsTitle: "Сурагч олдсонгүй",
+      },
+      errors: {
+        loadFailed:
+          "Үйл ажиллагааны тайланг ачаалж чадсангүй. Дахин ачаалаад оролдоно уу.",
+        studentDetailsFailed:
+          "Сурагчийн үйл ажиллагааны дэлгэрэнгүйг ачаалж чадсангүй. Хэсгийг хаагаад дахин оролдоно уу.",
+      },
+      filters: {
+        activity: "Үйл ажиллагаа",
+        allTime: "Бүх хугацаа",
+        attendance: "Ирцийн бүртгэл",
+        attendanceRecorded: "Ирц бүртгэгдсэн",
+        customRange: "Тусгай хугацаа",
+        dateRange: "Огнооны хүрээ",
+        from: "Эхлэх",
+        last30Days: "Сүүлийн 30 хоног",
+        last90Days: "Сүүлийн 90 хоног",
+        school: "Сургууль",
+        to: "Дуусах",
+      },
+      metrics: {
+        activitiesHeld: "Зохион байгуулсан үйл ажиллагаа",
+        participatingStudents: "Оролцсон сурагчид",
+        recordedAttendanceRate: "Бүртгэгдсэн ирцийн хувь",
+        recordedCheckins: "Бүртгэгдсэн ирц",
+        totalRegistrations: "Нийт бүртгэл",
+      },
+      platform: {
+        description: "Үйл ажиллагааны тайланг харах нэг сургуулийг сонгоно уу.",
+        selectSchool: "Сургууль сонгох",
+        unavailable: "Сургуулийн сонголт одоогоор ашиглах боломжгүй байна.",
+      },
+      students: {
+        clubsJoined: "Элссэн клуб",
+        detailsTitle: "Сурагчийн үйл ажиллагааны дэлгэрэнгүй",
+        filteredHistory: "Шүүсэн үйл ажиллагааны түүх",
+        joinedClubs: "Элссэн клубүүд",
+        lastParticipation: "Хамгийн сүүлд бүртгэгдсэн оролцоо",
+        loading: "Оролцооны мэдээллийг ачаалж байна...",
+        recentParticipation: "Сүүлийн үеийн оролцоо",
+        recordedAttendances: "Бүртгэгдсэн ирц",
+        registrationWithoutCheckin: "Ирц бүртгэгдээгүй бүртгэл",
+        searchStudents: "Сурагч хайх",
+        upcomingRegistrations: "Удахгүй болох бүртгэлүүд",
+        viewDetails: "Оролцооны дэлгэрэнгүй харах",
+      },
+      table: {
+        date: "Огноо",
+        responsibleStaff: "Хариуцсан ажилтан",
+        searchActivities: "Үйл ажиллагаа хайх",
+        sortBy: "Эрэмбэлэх",
+      },
+      tabs: {
+        activities: "Үйл ажиллагаа",
+        overview: "Тойм",
+        students: "Сурагчид",
+      },
+      title: "Үйл ажиллагааны тайлан",
+    },
     empty: {
       addStudents: "Сурагч нэмэх",
       createEvent: "Үйл ажиллагаа үүсгэх",

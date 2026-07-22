@@ -1491,6 +1491,89 @@ export const en = {
     },
     description:
       "Review school-wide activity summaries and export roster, registration, and attendance CSV files.",
+    explorer: {
+      attendanceDefinition:
+        "Recorded attendance rate includes only concluded activities where at least one check-in was recorded. Missing attendance records are not treated as confirmed absences.",
+      attendanceNotRecorded: "Attendance not recorded",
+      charts: {
+        participationByCategory: "Participation by category",
+        participationOverTime: "Participation over time",
+        recordedAttendance: "Recorded attendance",
+        registrationComparison: "Registration versus recorded attendance",
+        viewAllActivities: "View all activities",
+      },
+      description:
+        "Explore school-scoped activity, registration, and recorded attendance information.",
+      empty: {
+        activitiesDescription:
+          "No concluded activities match the selected report filters.",
+        activitiesTitle: "No activities for this period",
+        noParticipation: "No participation data for this period",
+        noParticipationDescription:
+          "Adjust the report filters or record attendance for a concluded activity.",
+        studentsDescription:
+          "No active roster students match the current search.",
+        studentsTitle: "No students found",
+      },
+      errors: {
+        loadFailed:
+          "Activity reports could not be loaded. Refresh and try again.",
+        studentDetailsFailed:
+          "Student activity details could not be loaded. Close this panel and try again.",
+      },
+      filters: {
+        activity: "Activity",
+        allTime: "All time",
+        attendance: "Attendance recording",
+        attendanceRecorded: "Attendance recorded",
+        customRange: "Custom range",
+        dateRange: "Date range",
+        from: "From",
+        last30Days: "Last 30 days",
+        last90Days: "Last 90 days",
+        school: "School",
+        to: "To",
+      },
+      metrics: {
+        activitiesHeld: "Activities held",
+        participatingStudents: "Participating students",
+        recordedAttendanceRate: "Recorded attendance rate",
+        recordedCheckins: "Recorded check-ins",
+        totalRegistrations: "Total registrations",
+      },
+      platform: {
+        description: "Choose one school to view its activity reports.",
+        selectSchool: "Select a school",
+        unavailable: "School options are not available right now.",
+      },
+      students: {
+        clubsJoined: "Clubs joined",
+        detailsTitle: "Student activity details",
+        filteredHistory: "Filtered event history",
+        joinedClubs: "Joined clubs",
+        lastParticipation: "Last recorded participation",
+        loading: "Loading activity details...",
+        recentParticipation: "Recent participation",
+        recordedAttendances: "Recorded attendances",
+        registrationWithoutCheckin:
+          "Registration without a recorded check-in",
+        searchStudents: "Search students",
+        upcomingRegistrations: "Upcoming registrations",
+        viewDetails: "View activity details",
+      },
+      table: {
+        date: "Date",
+        responsibleStaff: "Responsible staff",
+        searchActivities: "Search activities",
+        sortBy: "Sort by",
+      },
+      tabs: {
+        activities: "Activities",
+        overview: "Overview",
+        students: "Students",
+      },
+      title: "Activity reports",
+    },
     empty: {
       addStudents: "Add students",
       createEvent: "Create event",

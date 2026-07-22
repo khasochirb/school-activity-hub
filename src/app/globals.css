@@ -1172,6 +1172,32 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   }
 }
 
+@keyframes report-drawer-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes report-drawer-slide-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.report-drawer-panel {
+  animation: report-drawer-slide-in var(--motion-large) var(--motion-ease-out);
+}
+
+.report-drawer-panel-closing {
+  animation: report-drawer-slide-out var(--motion-large) var(--motion-ease-out)
+    forwards;
+  pointer-events: none;
+}
+
 .mobile-drawer-panel {
   animation: mobile-drawer-slide-in var(--motion-large) var(--motion-ease-out);
 }
@@ -1483,6 +1509,8 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   }
 
   .mobile-drawer-panel,
+  .report-drawer-panel,
+  .report-drawer-panel-closing,
   .dashboard-chart-bar-x,
   .dashboard-chart-bar-y,
   .dashboard-metric-value-enter,
