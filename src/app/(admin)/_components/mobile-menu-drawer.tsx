@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { MOTION_LARGE_MS, motionDuration } from "@/lib/ui/motion";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -19,7 +20,6 @@ const FOCUSABLE_SELECTOR = [
   "textarea:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
-const DRAWER_EXIT_MS = 240;
 
 export function MobileMenuDrawer({
   children,
@@ -48,11 +48,9 @@ export function MobileMenuDrawer({
 
     restoreScrollRef.current = restoreFocus;
 
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const closeDuration = motionDuration(MOTION_LARGE_MS);
 
-    if (!reducedMotion) {
+    if (closeDuration > 0) {
       setClosing(true);
     }
 
@@ -64,7 +62,7 @@ export function MobileMenuDrawer({
       if (restoreFocus) {
         window.requestAnimationFrame(() => triggerRef.current?.focus());
       }
-    }, reducedMotion ? 0 : DRAWER_EXIT_MS);
+    }, closeDuration);
   }, []);
 
   useEffect(

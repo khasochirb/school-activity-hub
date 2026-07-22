@@ -146,7 +146,7 @@ function ToastCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 shadow-lg backdrop-blur ${toastStyles[toast.variant]}`}
+      className={`toast-card rounded-xl border p-4 shadow-lg backdrop-blur ${toastStyles[toast.variant]}`}
       role={role}
     >
       <div className="flex items-start justify-between gap-3">

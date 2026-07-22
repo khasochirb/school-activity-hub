@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const FORM_SECTION_EVENT = "sah:form-section-toggle";
 
@@ -8,6 +8,7 @@ type FormSectionEventDetail = {
   id: string;
   open?: boolean;
   scroll?: boolean;
+  trigger?: HTMLElement;
 };
 
 type ButtonVariant = "primary" | "secondary";
@@ -32,6 +33,9 @@ export function CollapsibleFormSection({
   const summaryId = `${id}-summary`;
   const contentId = `${id}-form`;
   const [isOpen, setIsOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const toggleButtonRef = useRef<HTMLButtonElement>(null);
 
   const setOpen = useCallback(
     (nextOpen: boolean, options?: { scroll?: boolean }) => {
@@ -88,6 +92,9 @@ export function CollapsibleFormSection({
         return;
       }
 
+      if (detail.trigger) {
+        returnFocusRef.current = detail.trigger;
+      }
       setOpen(detail.open ?? true, { scroll: detail.scroll ?? true });
     }
 
@@ -98,54 +105,97 @@ export function CollapsibleFormSection({
     };
   }, [id, setOpen]);
 
-  if (!isOpen && !collapsedSummary) {
-    return <div aria-hidden="true" id={id} />;
+  function collapseSection() {
+    const focusTarget = collapsedSummary
+      ? toggleButtonRef.current
+      : returnFocusRef.current;
+
+    if (
+      !collapsedSummary ||
+      contentRef.current?.contains(document.activeElement)
+    ) {
+      focusTarget?.focus();
+    }
+
+    setOpen(false);
+  }
+
+  const header = (
+    <div
+      className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
+      id={summaryId}
+    >
+      <div className="max-w-xl">
+        <h2 className="section-title">{title}</h2>
+        <p className="section-description">{description}</p>
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:justify-end">
+        <button
+          aria-controls={contentId}
+          aria-expanded={isOpen}
+          className={`btn ${isOpen ? "btn-secondary" : "btn-primary"} w-full sm:w-auto`}
+          onClick={() => (isOpen ? collapseSection() : setOpen(true))}
+          ref={toggleButtonRef}
+          type="button"
+        >
+          {isOpen ? hideLabel : showLabel}
+        </button>
+      </div>
+    </div>
+  );
+
+  const animatedContent = (
+    <div
+      className="disclosure-motion"
+      data-open={isOpen ? "true" : "false"}
+    >
+      <div
+        aria-hidden={!isOpen}
+        className="disclosure-motion-inner"
+        id={contentId}
+        inert={!isOpen}
+        ref={contentRef}
+      >
+        <div className="collapsible-form-content mt-3">{children}</div>
+      </div>
+    </div>
+  );
+
+  if (collapsedSummary) {
+    return (
+      <section
+        aria-labelledby={summaryId}
+        className="collapsible-form-section section-card section-card-padded"
+        id={id}
+      >
+        {header}
+        {animatedContent}
+      </section>
+    );
   }
 
   return (
-    <section
-      aria-labelledby={summaryId}
-      className="collapsible-form-section section-card section-card-padded"
+    <div
+      className="collapsible-section-shell disclosure-motion"
+      data-open={isOpen ? "true" : "false"}
       id={id}
     >
       <div
-        className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
-        id={summaryId}
+        aria-hidden={!isOpen}
+        className="disclosure-motion-inner"
+        inert={!isOpen}
       >
-        <div className="max-w-xl">
-          <h2 className="section-title">{title}</h2>
-          <p className="section-description">{description}</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:justify-end">
-          {!isOpen ? (
-            <button
-              aria-controls={contentId}
-              aria-expanded="false"
-              className="btn btn-primary w-full sm:w-auto"
-              onClick={() => setOpen(true)}
-              type="button"
-            >
-              {showLabel}
-            </button>
-          ) : (
-            <button
-              aria-controls={contentId}
-              aria-expanded="true"
-              className="btn btn-secondary w-full sm:w-auto"
-              onClick={() => setOpen(false)}
-              type="button"
-            >
-              {hideLabel}
-            </button>
-          )}
-        </div>
+        <section
+          aria-labelledby={summaryId}
+          className="collapsible-form-section section-card section-card-padded"
+        >
+          {header}
+          <div className="collapsible-form-content mt-3" id={contentId} ref={contentRef}>
+            {children}
+          </div>
+        </section>
       </div>
-      {isOpen ? (
-        <div className="collapsible-form-content mt-3" id={contentId}>
-          {children}
-        </div>
-      ) : null}
-    </section>
+    </div>
   );
 }
 
@@ -161,7 +211,7 @@ export function FormSectionToggleButton({
   return (
     <button
       className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"} w-full sm:w-auto`}
-      onClick={() => openFormSection(targetId)}
+      onClick={(event) => openFormSection(targetId, event.currentTarget)}
       type="button"
     >
       {children}
@@ -169,10 +219,10 @@ export function FormSectionToggleButton({
   );
 }
 
-function openFormSection(id: string) {
+function openFormSection(id: string, trigger: HTMLElement) {
   window.dispatchEvent(
     new CustomEvent<FormSectionEventDetail>(FORM_SECTION_EVENT, {
-      detail: { id, open: true, scroll: true },
+      detail: { id, open: true, scroll: true, trigger },
     }),
   );
 }

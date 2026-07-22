@@ -191,7 +191,8 @@ test("protected navigation keeps automatic prefetch disabled", () => {
 
   assert.match(link, /prefetch={false}/);
   assert.match(link, /intentPrefetch = false/);
-  assert.match(mobileNav, /{open \? \(/);
+  assert.match(mobileNav, /className="disclosure-motion"/);
+  assert.match(mobileNav, /inert={!open}/);
   assert.match(drawer, /open && typeof document !== ["']undefined["']/);
 });
 

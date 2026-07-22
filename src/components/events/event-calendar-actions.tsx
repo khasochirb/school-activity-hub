@@ -17,7 +17,7 @@ export function EventCalendarActions({
   showRegisteredSuggestion?: boolean;
 }) {
   return (
-    <details className="group min-w-0 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-2">
+    <details className="animated-native-details group min-w-0 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-2">
       <summary className="btn btn-secondary min-h-10 w-full cursor-pointer list-none justify-between px-3 sm:w-auto">
         <span>{labels.addToCalendar}</span>
         <span aria-hidden="true" className="text-base leading-none">

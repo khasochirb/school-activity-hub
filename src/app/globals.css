@@ -498,27 +498,54 @@ a:hover .stat-card {
     color var(--motion-fast) var(--motion-ease-out);
 }
 
-.details-summary::-webkit-details-marker {
-  display: none;
-}
-
-.details-summary::after {
-  content: "+";
-  float: right;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.details-panel[open] .details-summary {
+.details-panel[data-open="true"] .details-summary {
   border-bottom: 1px solid var(--border);
-}
-
-.details-panel[open] .details-summary::after {
-  content: "-";
 }
 
 .details-content {
   padding: 0.8rem;
+}
+
+.disclosure-motion {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--motion-normal) var(--motion-ease-out),
+    opacity var(--motion-fast) var(--motion-ease-out);
+}
+
+.disclosure-motion[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.disclosure-motion-inner {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.animated-native-details {
+  interpolate-size: allow-keywords;
+}
+
+@supports selector(details::details-content) {
+  .animated-native-details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      block-size var(--motion-normal) var(--motion-ease-out),
+      content-visibility var(--motion-normal) allow-discrete,
+      opacity var(--motion-fast) var(--motion-ease-out);
+  }
+
+  .animated-native-details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
 }
 
 .empty-state {
@@ -536,6 +563,12 @@ a:hover .stat-card {
   color: var(--muted);
   font-size: 0.875rem;
   line-height: 1.65;
+}
+
+.notice-box[role="alert"],
+.notice-box[role="status"],
+.toast-card {
+  animation: feedback-enter var(--motion-normal) var(--motion-ease-out);
 }
 
 .notice-success {
@@ -880,6 +913,105 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   }
 }
 
+@keyframes local-panel-enter {
+  from {
+    opacity: 0.92;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes overlay-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes overlay-backdrop-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes overlay-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes overlay-panel-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+
+@keyframes feedback-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.local-panel-enter {
+  animation: local-panel-enter var(--motion-normal) var(--motion-ease-out);
+}
+
+.local-step-panel:not([hidden]) {
+  animation: local-panel-enter var(--motion-normal) var(--motion-ease-out);
+}
+
+.form-step-indicator::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--motion-normal) var(--motion-ease-out);
+}
+
+.form-step-indicator[data-active="true"]::after {
+  transform: scaleX(1);
+}
+
+.overlay-backdrop {
+  animation: overlay-backdrop-in var(--motion-normal) var(--motion-ease-out);
+}
+
+.overlay-panel {
+  animation: overlay-panel-in var(--motion-normal) var(--motion-ease-out);
+}
+
+.overlay-backdrop-closing {
+  animation: overlay-backdrop-out var(--motion-normal) var(--motion-ease-out)
+    forwards;
+}
+
+.overlay-panel-closing {
+  animation: overlay-panel-out var(--motion-normal) var(--motion-ease-out)
+    forwards;
+  pointer-events: none;
+}
+
 @keyframes mobile-drawer-slide-in {
   from {
     transform: translateX(100%);
@@ -970,6 +1102,10 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 }
 
 .collapsible-form-section {
+  scroll-margin-top: 1rem;
+}
+
+.collapsible-section-shell {
   scroll-margin-top: 1rem;
 }
 
@@ -1219,12 +1355,28 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 
   .mobile-drawer-panel,
   .mobile-drawer-backdrop,
+  .local-panel-enter,
+  .local-step-panel,
+  .overlay-backdrop,
+  .overlay-panel,
   .pending-link-indicator,
   .pending-link-spinner,
   .route-content-enter,
   .route-loading-skeleton,
-  .skeleton-block::after {
+  .skeleton-block::after,
+  .notice-box[role="alert"],
+  .notice-box[role="status"],
+  .toast-card {
     animation: none;
+  }
+
+  .disclosure-motion,
+  .animated-native-details::details-content {
+    transition-duration: 0ms;
+  }
+
+  .form-step-indicator::after {
+    transition-duration: 0ms;
   }
 
   .pending-link-indicator[data-pending="true"],

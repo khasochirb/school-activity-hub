@@ -488,13 +488,14 @@ export function CreateEventForm({
             return (
               <li
                 aria-current={active ? "step" : undefined}
-                className={`motion-choice flex min-w-0 items-center gap-2 rounded-md border px-2 py-2 text-xs font-semibold sm:px-3 sm:text-sm ${
+                className={`form-step-indicator motion-choice relative flex min-w-0 items-center gap-2 overflow-hidden rounded-md border px-2 py-2 text-xs font-semibold sm:px-3 sm:text-sm ${
                   active
                     ? "border-[var(--accent)] bg-[var(--accent-soft)] text-slate-950"
                     : complete
                       ? "border-[var(--border-strong)] bg-[var(--card-soft)] text-slate-800"
                       : "border-[var(--border)] text-slate-500"
                 }`}
+                data-active={active ? "true" : "false"}
                 key={stepLabel}
               >
                 <span
@@ -517,6 +518,7 @@ export function CreateEventForm({
 
       <section
         aria-labelledby="event-create-basics"
+        className="local-step-panel"
         hidden={currentStep !== 0}
       >
         <h3 className="section-title" id="event-create-basics">
@@ -653,6 +655,7 @@ export function CreateEventForm({
 
       <section
         aria-labelledby="event-create-participation"
+        className="local-step-panel"
         hidden={currentStep !== 1}
       >
         <h3 className="section-title" id="event-create-participation">
@@ -871,6 +874,7 @@ export function CreateEventForm({
 
       <section
         aria-labelledby="event-create-review"
+        className="local-step-panel"
         hidden={currentStep !== 2}
       >
         <h3 className="section-title" id="event-create-review">

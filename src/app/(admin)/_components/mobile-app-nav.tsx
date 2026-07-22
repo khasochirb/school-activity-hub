@@ -84,18 +84,28 @@ export function MobileAppNav({
                     &#8964;
                   </span>
                 </button>
-                {open ? (
-                  <div className="mt-1 grid min-w-0 gap-1.5 pl-2" id={contentId}>
-                    {group.items.map((item) => (
-                      <MobileNavLink
-                        active={isActiveItem(item, pathname, searchParams)}
-                        item={item}
-                        key={`${item.href}-${item.label}`}
-                        secondary
-                      />
-                    ))}
+                <div
+                  className="disclosure-motion"
+                  data-open={open ? "true" : "false"}
+                >
+                  <div
+                    aria-hidden={!open}
+                    className="disclosure-motion-inner"
+                    id={contentId}
+                    inert={!open}
+                  >
+                    <div className="mt-1 grid min-w-0 gap-1.5 pl-2">
+                      {group.items.map((item) => (
+                        <MobileNavLink
+                          active={isActiveItem(item, pathname, searchParams)}
+                          item={item}
+                          key={`${item.href}-${item.label}`}
+                          secondary
+                        />
+                      ))}
+                    </div>
                   </div>
-                ) : null}
+                </div>
               </section>
             );
           })}

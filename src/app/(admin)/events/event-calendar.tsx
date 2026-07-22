@@ -226,6 +226,7 @@ export function EventCalendar({
 
           <CalendarAgenda
             events={selectedEvents}
+            key={`desktop-${selectedDateKey}`}
             labels={labels}
             locale={locale}
             onOpen={openEvent}
@@ -271,6 +272,7 @@ export function EventCalendar({
 
           <CalendarAgenda
             events={selectedEvents}
+            key={`mobile-${selectedDateKey}`}
             labels={labels}
             locale={locale}
             onOpen={openEvent}
@@ -396,7 +398,7 @@ function CalendarAgenda({
   selectedDate: Date;
 }) {
   return (
-    <section className="border-t border-[var(--border)] p-3 sm:p-4">
+    <section className="local-panel-enter border-t border-[var(--border)] p-3 sm:p-4">
       <p className="text-xs font-bold uppercase text-[var(--primary-strong)]">
         {labels.selectedDate}
       </p>

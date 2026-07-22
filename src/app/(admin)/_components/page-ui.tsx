@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AnimatedDisclosure } from "@/components/animated-disclosure";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import {
   CollapsibleFormSection as ClientCollapsibleFormSection,
@@ -138,12 +139,7 @@ export function DetailsDisclosure({
   children: React.ReactNode;
   label: string;
 }) {
-  return (
-    <details className="details-panel">
-      <summary className="details-summary">{label}</summary>
-      <div className="details-content">{children}</div>
-    </details>
-  );
+  return <AnimatedDisclosure label={label}>{children}</AnimatedDisclosure>;
 }
 
 export function FilterPanel({

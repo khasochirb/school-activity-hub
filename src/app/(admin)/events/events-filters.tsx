@@ -67,7 +67,7 @@ export function EventsFilters({
 }) {
   return (
     <section className="section-card section-card-padded min-w-0">
-      <details className="group min-w-0">
+      <details className="animated-native-details group min-w-0">
         <summary className="btn btn-secondary min-h-11 w-full cursor-pointer list-none justify-between md:hidden">
           <span className="group-open:hidden">{labels.showFilters}</span>
           <span className="hidden group-open:inline">{labels.hideFilters}</span>

@@ -6,6 +6,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
@@ -16,6 +17,10 @@ import {
   type EventCalendarActionLabels,
 } from "@/components/events/event-calendar-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import {
+  MOTION_NORMAL_MS,
+  motionDuration,
+} from "@/lib/ui/motion";
 
 export type EventQuickViewItem = {
   accessibilityLabel: string;
@@ -118,12 +123,37 @@ export function EventQuickViewModal({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const titleId = useId();
 
   const closeModal = useCallback(() => {
-    onClose();
-    window.requestAnimationFrame(() => returnFocusRef.current?.focus());
+    if (closeTimerRef.current !== null) {
+      return;
+    }
+
+    const closeDuration = motionDuration(MOTION_NORMAL_MS);
+
+    if (closeDuration > 0) {
+      setIsClosing(true);
+    }
+
+    closeTimerRef.current = window.setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+      closeTimerRef.current = null;
+      window.requestAnimationFrame(() => returnFocusRef.current?.focus());
+    }, closeDuration);
   }, [onClose, returnFocusRef]);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!event) {
@@ -196,7 +226,9 @@ export function EventQuickViewModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/65 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className={`overlay-backdrop fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/65 p-0 backdrop-blur-sm sm:items-center sm:p-4 ${
+        isClosing ? "overlay-backdrop-closing" : ""
+      }`}
       onMouseDown={(mouseEvent) => {
         if (mouseEvent.target === mouseEvent.currentTarget) {
           closeModal();
@@ -207,7 +239,9 @@ export function EventQuickViewModal({
       <div
         aria-labelledby={titleId}
         aria-modal="true"
-        className="flex max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-[var(--border)] bg-[var(--card)] shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl"
+        className={`overlay-panel overlay-panel-sheet flex max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-[var(--border)] bg-[var(--card)] shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl ${
+          isClosing ? "overlay-panel-closing" : ""
+        }`}
         ref={dialogRef}
         role="dialog"
       >
@@ -225,6 +259,7 @@ export function EventQuickViewModal({
           </div>
           <button
             className="btn btn-secondary min-h-10 shrink-0 px-3"
+            disabled={isClosing}
             onClick={closeModal}
             ref={closeButtonRef}
             type="button"

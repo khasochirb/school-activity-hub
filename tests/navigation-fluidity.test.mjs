@@ -59,7 +59,7 @@ test("mobile drawer starts navigation while a bounded exit animation runs", () =
     "src/app/(admin)/_components/mobile-menu-drawer.tsx",
   );
 
-  assert.match(drawer, /const DRAWER_EXIT_MS = 240/);
+  assert.match(drawer, /motionDuration\(MOTION_LARGE_MS\)/);
   assert.match(drawer, /closeDrawer\(false\)/);
   assert.match(drawer, /mobile-drawer-panel-closing/);
   assert.doesNotMatch(drawer, /preventDefault\(\)[\s\S]{0,120}closest\("a\[href\]"\)/);
