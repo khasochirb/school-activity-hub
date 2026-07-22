@@ -90,24 +90,29 @@ export function ActivityReportTable({
               />
             ))}
           </div>
-          <div className="hidden overflow-x-auto md:block">
-            <table className="data-table min-w-[58rem]">
+          <div
+            aria-label={labels.title}
+            className="report-table-scroll hidden overflow-x-auto overscroll-x-contain md:block"
+            role="region"
+            tabIndex={0}
+          >
+            <table className="report-table min-w-[76rem]">
               <thead>
                 <tr>
-                  <th scope="col">{labels.title}</th>
-                  <th scope="col">{labels.date}</th>
-                  <th scope="col">{labels.category}</th>
-                  <th scope="col">{labels.registrations}</th>
-                  <th scope="col">{labels.checkins}</th>
-                  <th scope="col">{labels.rate}</th>
-                  <th scope="col">{labels.responsibleStaff}</th>
-                  <th scope="col"><span className="sr-only">{labels.viewEvent}</span></th>
+                  <th className="min-w-64" scope="col">{labels.title}</th>
+                  <th className="min-w-32" scope="col">{labels.date}</th>
+                  <th className="min-w-36" scope="col">{labels.category}</th>
+                  <th className="min-w-36" scope="col">{labels.registrations}</th>
+                  <th className="min-w-36" scope="col">{labels.checkins}</th>
+                  <th className="min-w-48" scope="col">{labels.rate}</th>
+                  <th className="min-w-48" scope="col">{labels.responsibleStaff}</th>
+                  <th className="report-table-action min-w-36" scope="col"><span className="sr-only">{labels.viewEvent}</span></th>
                 </tr>
               </thead>
               <tbody>
                 {visibleActivities.map((activity) => (
                   <tr key={activity.id}>
-                    <th className="max-w-64 break-words text-left" scope="row">
+                    <th className="max-w-80 break-words text-left" scope="row">
                       {activity.title}
                     </th>
                     <td>{formatDate(activity.startsAt, locale)}</td>
@@ -130,7 +135,7 @@ export function ActivityReportTable({
                       )}
                     </td>
                     <td>{activity.responsibleStaff ?? "-"}</td>
-                    <td>
+                    <td className="report-table-action">
                       <Link
                         className="btn btn-secondary min-h-10 gap-2"
                         href={`/events/${activity.id}`}

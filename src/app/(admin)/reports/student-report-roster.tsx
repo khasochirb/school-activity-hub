@@ -185,17 +185,22 @@ export function StudentReportRoster({
                 />
               ))}
             </div>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="data-table min-w-[58rem]">
+            <div
+              aria-label={labels.students}
+              className="report-table-scroll hidden overflow-x-auto overscroll-x-contain md:block"
+              role="region"
+              tabIndex={0}
+            >
+              <table className="report-table min-w-[84rem]">
                 <thead><tr>
-                  <th scope="col">{labels.students}</th>
-                  <th scope="col">{labels.registrations}</th>
-                  <th scope="col">{labels.recordedAttendances}</th>
-                  <th scope="col">{labels.registrationWithoutCheckin}</th>
-                  <th scope="col">{labels.clubsJoined}</th>
-                  <th scope="col">{labels.upcomingRegistrations}</th>
-                  <th scope="col">{labels.lastParticipation}</th>
-                  <th scope="col"><span className="sr-only">{labels.viewActivityDetails}</span></th>
+                  <th className="min-w-64" scope="col">{labels.students}</th>
+                  <th className="min-w-36" scope="col">{labels.registrations}</th>
+                  <th className="min-w-40" scope="col">{labels.recordedAttendances}</th>
+                  <th className="min-w-56" scope="col">{labels.registrationWithoutCheckin}</th>
+                  <th className="min-w-36" scope="col">{labels.clubsJoined}</th>
+                  <th className="min-w-44" scope="col">{labels.upcomingRegistrations}</th>
+                  <th className="min-w-48" scope="col">{labels.lastParticipation}</th>
+                  <th className="report-table-action min-w-52" scope="col"><span className="sr-only">{labels.viewActivityDetails}</span></th>
                 </tr></thead>
                 <tbody>
                   {pagedStudents.map((student) => (
@@ -212,7 +217,7 @@ export function StudentReportRoster({
                       <td>{student.clubsJoined}</td>
                       <td>{student.upcomingRegistrations}</td>
                       <td>{student.lastParticipationAt ? formatDate(student.lastParticipationAt, locale) : "-"}</td>
-                      <td>
+                      <td className="report-table-action">
                         <button
                           className="btn btn-secondary min-h-10"
                           onClick={(event) => openStudent(student.id, event.currentTarget)}

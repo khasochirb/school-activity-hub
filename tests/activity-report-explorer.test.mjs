@@ -177,3 +177,29 @@ test("student detail loading rechecks school-scoped report authorization", () =>
     /select\([^)]*(email|phone|student_number|safety)/,
   );
 });
+
+test("report polish keeps translated search labels and hidden chart data", () => {
+  const page = readFileSync(
+    join(process.cwd(), "src/app/(admin)/reports/page.tsx"),
+    "utf8",
+  );
+  const charts = readFileSync(
+    join(process.cwd(), "src/app/(admin)/reports/report-charts.tsx"),
+    "utf8",
+  );
+  const activityTable = readFileSync(
+    join(process.cwd(), "src/app/(admin)/reports/activity-report-table.tsx"),
+    "utf8",
+  );
+  const studentTable = readFileSync(
+    join(process.cwd(), "src/app/(admin)/reports/student-report-roster.tsx"),
+    "utf8",
+  );
+
+  assert.doesNotMatch(page, /common\.search/);
+  assert.match(page, /filters\.search/);
+  assert.match(charts, /report-visually-hidden/);
+  assert.match(charts, /report-axis-label/);
+  assert.match(activityTable, /report-table-scroll/);
+  assert.match(studentTable, /report-table-scroll/);
+});

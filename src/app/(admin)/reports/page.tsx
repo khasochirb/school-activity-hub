@@ -185,7 +185,7 @@ export default async function ReportsPage({
                 rate: t("reports.explorer.metrics.recordedAttendanceRate"),
                 registrations: t("reports.explorer.metrics.totalRegistrations"),
                 responsibleStaff: t("reports.explorer.table.responsibleStaff"),
-                search: t("common.search"),
+                search: t("filters.search"),
                 searchPlaceholder: t("reports.explorer.table.searchActivities"),
                 sort: t("reports.explorer.table.sortBy"),
                 title: t("reports.explorer.tabs.activities"),
@@ -235,7 +235,7 @@ export default async function ReportsPage({
                 registrationWithoutCheckin: t("reports.explorer.students.registrationWithoutCheckin"),
                 registrations: t("reports.explorer.metrics.totalRegistrations"),
                 school: t("reports.explorer.filters.school"),
-                search: t("common.search"),
+                search: t("filters.search"),
                 searchPlaceholder: t("reports.explorer.students.searchStudents"),
                 sort: t("reports.explorer.table.sortBy"),
                 studentActivityDetails: t("reports.explorer.students.detailsTitle"),
@@ -349,7 +349,10 @@ function ReportFilters({
 }) {
   return (
     <section className="section-card section-card-padded min-w-0">
-      <form action="/reports" className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <form
+        action="/reports"
+        className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      >
         <input name="school" type="hidden" value={schoolId} />
         <input data-report-tab-input="true" name="tab" type="hidden" value={initialTab} />
         <FilterSelect defaultValue={range} label={labels.dateRange} name="range" options={[
@@ -359,32 +362,32 @@ function ReportFilters({
           { label: labels.customRange, value: "custom" },
         ]} />
         <FilterSelect defaultValue={category} label={labels.category} name="category" options={[{ label: labels.all, value: "" }, ...categoryOptions]} />
-        <FilterSelect defaultValue={eventId} label={labels.event} name="event" options={[{ label: labels.all, value: "" }, ...eventOptions.map((event) => ({ label: event.title, value: event.id }))]} />
+        <FilterSelect className="sm:col-span-2 lg:col-span-2" defaultValue={eventId} label={labels.event} name="event" options={[{ label: labels.all, value: "" }, ...eventOptions.map((event) => ({ label: event.title, value: event.id }))]} />
         <FilterSelect defaultValue={attendance} label={labels.attendance} name="attendance" options={[
           { label: labels.all, value: "all" },
           { label: labels.recorded, value: "recorded" },
           { label: labels.attendanceNotRecorded, value: "not_recorded" },
         ]} />
-        <div className="grid min-w-0 grid-cols-2 gap-2">
+        <div className="grid min-w-0 gap-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-2">
           <FilterDate defaultValue={customFrom} label={labels.from} name="from" />
           <FilterDate defaultValue={customTo} label={labels.to} name="to" />
         </div>
-        <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-5">
+        <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 sm:col-span-2 sm:flex-row sm:flex-wrap sm:items-center lg:col-span-4">
           <button className="btn btn-primary min-h-11" type="submit">{labels.filter}</button>
           <Link className="btn btn-secondary min-h-11" href={`/reports?school=${schoolId}`} prefetch={false}>{labels.clear}</Link>
-          <p className="min-w-0 break-words text-sm font-semibold text-slate-600">{labels.dateRange}: {rangeLabel}</p>
+          <p className="min-w-0 break-words text-sm font-semibold leading-6 text-slate-600 sm:ml-auto">{labels.dateRange}: {rangeLabel}</p>
         </div>
       </form>
     </section>
   );
 }
 
-function FilterSelect({ defaultValue, label, name, options }: { defaultValue: string; label: string; name: string; options: Array<{ label: string; value: string }> }) {
-  return <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">{label}<select className="h-11 min-w-0 rounded-md border px-3 text-base font-normal outline-none" defaultValue={defaultValue} name={name}>{options.map((option) => <option key={`${name}-${option.value || "all"}`} value={option.value}>{option.label}</option>)}</select></label>;
+function FilterSelect({ className = "", defaultValue, label, name, options }: { className?: string; defaultValue: string; label: string; name: string; options: Array<{ label: string; value: string }> }) {
+  return <label className={`flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800 ${className}`}>{label}<select className="h-11 min-w-0 rounded-md border px-3 text-base font-normal outline-none" defaultValue={defaultValue} name={name}>{options.map((option) => <option key={`${name}-${option.value || "all"}`} value={option.value}>{option.label}</option>)}</select></label>;
 }
 
 function FilterDate({ defaultValue, label, name }: { defaultValue: string; label: string; name: string }) {
-  return <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-slate-800">{label}<input className="h-11 min-w-0 rounded-md border px-2 text-sm font-normal outline-none" defaultValue={defaultValue} name={name} type="date" /></label>;
+  return <label className="flex min-w-[11rem] flex-col gap-2 text-sm font-semibold text-slate-800">{label}<input className="h-11 w-full min-w-[11rem] rounded-md border px-3 text-base font-normal outline-none" defaultValue={defaultValue} name={name} type="date" /></label>;
 }
 
 function ExportReports({ t }: { t: (key: string) => string }) {

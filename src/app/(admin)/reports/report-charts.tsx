@@ -39,10 +39,12 @@ export function ReportCharts({
   weeks: Array<{ count: number; startsAt: string }>;
 }) {
   return (
-    <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-      <WeeklyChart labels={labels} locale={locale} weeks={weeks} />
+    <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <div className="flex min-w-0 flex-col gap-4">
+        <WeeklyChart labels={labels} locale={locale} weeks={weeks} />
+        <CategoryChart categories={categories} labels={labels} locale={locale} />
+      </div>
       <EventComparisonChart events={events} labels={labels} locale={locale} />
-      <CategoryChart categories={categories} labels={labels} locale={locale} />
     </div>
   );
 }
@@ -66,6 +68,8 @@ function WeeklyChart({
   }));
   const maximum = Math.max(...rows.map((row) => row.count), 1);
   const hasData = rows.some((row) => row.count > 0);
+  const desktopLabelInterval = labelInterval(rows.length, 7);
+  const mobileLabelInterval = labelInterval(rows.length, 4);
 
   return (
     <ChartCard title={labels.participationOverTime}>
@@ -76,7 +80,7 @@ function WeeklyChart({
               className="dashboard-week-chart min-w-[34rem]"
               style={{ gridTemplateColumns: `repeat(${rows.length}, minmax(2.5rem, 1fr))` }}
             >
-              {rows.map((row) => (
+              {rows.map((row, index) => (
                 <div
                   aria-label={`${row.label}: ${formatNumber(row.count, locale)}`}
                   className="dashboard-chart-point group min-w-0"
@@ -93,7 +97,22 @@ function WeeklyChart({
                       style={{ "--chart-scale": row.count / maximum } as CSSProperties}
                     />
                   </span>
-                  <span className="dashboard-chart-label">{row.label}</span>
+                  <span
+                    aria-hidden="true"
+                    className="dashboard-chart-label report-axis-label"
+                    data-mobile-visible={isAxisLabelVisible(
+                      rows.length,
+                      index,
+                      mobileLabelInterval,
+                    )}
+                    data-visible={isAxisLabelVisible(
+                      rows.length,
+                      index,
+                      desktopLabelInterval,
+                    )}
+                  >
+                    {formatAxisDate(weeks[index].startsAt, locale)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -290,7 +309,7 @@ function AccessibleTable({
   title: string;
 }) {
   return (
-    <table className="sr-only">
+    <table className="report-visually-hidden">
       <caption>{title}</caption>
       <thead><tr>{columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr></thead>
       <tbody>
@@ -308,4 +327,23 @@ function AccessibleTable({
 
 function formatNumber(value: number, locale: Locale) {
   return new Intl.NumberFormat(locale === "mn" ? "mn-MN" : "en-CA").format(value);
+}
+
+function labelInterval(itemCount: number, targetLabels: number) {
+  return Math.max(1, Math.ceil(itemCount / targetLabels));
+}
+
+function isAxisLabelVisible(
+  itemCount: number,
+  index: number,
+  interval: number,
+) {
+  return index === 0 || index === itemCount - 1 || index % interval === 0;
+}
+
+function formatAxisDate(value: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-CA", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(value));
 }
