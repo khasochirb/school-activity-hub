@@ -87,6 +87,7 @@ export default async function ReportsPage({
                 : t("reports.explorer.platform.description")
             }
             title={t("reports.explorer.platform.selectSchool")}
+            visual="school"
           />
         </section>
       </div>
@@ -171,6 +172,7 @@ export default async function ReportsPage({
             <ActivityReportTable
               activities={report.data.activities.map((activity) => ({
                 ...activity,
+                categoryValue: activity.category,
                 category: activity.category
                   ? categoryLabel(activity.category, t)
                   : null,
@@ -179,9 +181,12 @@ export default async function ReportsPage({
                 attendanceNotRecorded: t("reports.explorer.attendanceNotRecorded"),
                 category: t("filters.category"),
                 checkins: t("reports.explorer.metrics.recordedCheckins"),
+                clearFilters: t("filters.clear"),
                 date: t("reports.explorer.table.date"),
                 emptyDescription: t("reports.explorer.empty.activitiesDescription"),
                 emptyTitle: t("reports.explorer.empty.activitiesTitle"),
+                noResults: t("filters.noResults"),
+                noResultsDescription: t("filters.noResultsDescription"),
                 rate: t("reports.explorer.metrics.recordedAttendanceRate"),
                 registrations: t("reports.explorer.metrics.totalRegistrations"),
                 responsibleStaff: t("reports.explorer.table.responsibleStaff"),
@@ -215,6 +220,7 @@ export default async function ReportsPage({
               labels={{
                 attendanceRate: t("reports.explorer.metrics.recordedAttendanceRate"),
                 clubsJoined: t("reports.explorer.students.clubsJoined"),
+                clearFilters: t("filters.clear"),
                 close: t("common.close"),
                 detailsError: t("reports.explorer.errors.studentDetailsFailed"),
                 emptyDescription: t("reports.explorer.empty.studentsDescription"),
@@ -228,6 +234,8 @@ export default async function ReportsPage({
                 loading: t("reports.explorer.students.loading"),
                 next: t("common.next"),
                 noData: t("reports.explorer.empty.noParticipation"),
+                noResults: t("filters.noResults"),
+                noResultsDescription: t("filters.noResultsDescription"),
                 previous: t("common.previous"),
                 participationByCategory: t("reports.explorer.charts.participationByCategory"),
                 recentParticipation: t("reports.explorer.students.recentParticipation"),
@@ -295,6 +303,7 @@ function OverviewPanel({
       <ReportCharts
         categories={data.charts.categories.map((item) => ({
           ...item,
+          categoryValue: item.category,
           category: categoryLabel(item.category, t),
         }))}
         events={data.charts.events}

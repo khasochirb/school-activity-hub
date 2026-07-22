@@ -32,6 +32,7 @@ const PAGE_SIZE = 15;
 export type StudentReportLabels = {
   attendanceRate: string;
   clubsJoined: string;
+  clearFilters: string;
   close: string;
   detailsError: string;
   emptyDescription: string;
@@ -45,6 +46,8 @@ export type StudentReportLabels = {
   loading: string;
   next: string;
   noData: string;
+  noResults: string;
+  noResultsDescription: string;
   previous: string;
   participationByCategory: string;
   recentParticipation: string;
@@ -241,6 +244,23 @@ export function StudentReportRoster({
               </nav>
             ) : null}
           </>
+        ) : students.length && query ? (
+          <div className="p-4">
+            <EmptyState
+              action={
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setQuery("")}
+                  type="button"
+                >
+                  {labels.clearFilters}
+                </button>
+              }
+              description={labels.noResultsDescription}
+              title={labels.noResults}
+              visual="filter"
+            />
+          </div>
         ) : (
           <div className="p-4"><EmptyState description={labels.emptyDescription} title={labels.emptyTitle} /></div>
         )}

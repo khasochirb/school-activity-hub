@@ -292,6 +292,7 @@ function PlatformDashboard({
             <EmptyState
               description={t("dashboard.platform.emptyDescription")}
               title={t("dashboard.platform.selectSchool")}
+              visual="school"
             />
           </section>
         ) : null
@@ -1672,6 +1673,7 @@ function buildStudentQuickViewEvents(
       calendarDownloadUrl: calendarLinks.calendarDownloadUrl,
       capacity: event.capacity,
       categoryLabel: categoryKey ? t(categoryKey) : event.category,
+      categoryValue: event.category,
       costLabel: formatEventCost(
         {
           costAmount: event.cost_amount,

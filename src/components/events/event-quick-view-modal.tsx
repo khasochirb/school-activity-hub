@@ -30,6 +30,7 @@ export type EventQuickViewItem = {
   calendarDownloadUrl: string;
   capacity: number | null;
   categoryLabel: string | null;
+  categoryValue: string | null;
   costLabel: string;
   costNotes: string | null;
   costType: "free" | "paid" | "variable" | null;
@@ -271,7 +272,9 @@ export function EventQuickViewModal({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
           <div className="flex flex-wrap gap-2">
             {event.categoryLabel ? (
-              <CategoryBadge>{event.categoryLabel}</CategoryBadge>
+              <CategoryBadge category={event.categoryValue}>
+                {event.categoryLabel}
+              </CategoryBadge>
             ) : null}
             <StatusBadge status={event.status}>{event.statusLabel}</StatusBadge>
             <StatusBadge variant={riskBadgeVariant(event.riskLevel)}>

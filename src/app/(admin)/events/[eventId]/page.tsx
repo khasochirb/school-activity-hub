@@ -729,7 +729,9 @@ function EventBadges({
       ) : null}
       {clubName ? <StatusBadge>{clubName}</StatusBadge> : null}
       {event.category ? (
-        <CategoryBadge>{categoryLabel(event.category, t)}</CategoryBadge>
+        <CategoryBadge category={event.category}>
+          {categoryLabel(event.category, t)}
+        </CategoryBadge>
       ) : null}
       <StatusBadge variant={riskBadgeVariant(event.risk_level)}>
         {riskLabel(event.risk_level, t)}

@@ -347,7 +347,7 @@ main > .flex.flex-col.gap-6 > section:first-child p {
 .page-stack {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1rem;
 }
 
 .page-header {
@@ -357,7 +357,7 @@ main > .flex.flex-col.gap-6 > section:first-child p {
   border-radius: 0.5rem;
   background:
     var(--page-header-gradient);
-  padding: 1rem;
+  padding: 1.1rem;
   box-shadow: var(--header-shadow);
 }
 
@@ -621,27 +621,11 @@ a:hover .stat-card {
   inline-size: 100%;
   block-size: 100%;
   border-radius: inherit;
-  background: #c97934;
+  background: var(--category-solid, #c97934);
   transform: scaleX(var(--chart-scale));
   transform-origin: left;
   animation: dashboard-bar-grow-x var(--motion-data) var(--motion-ease-out)
     both;
-}
-
-.dashboard-chart-point:nth-child(5n + 2) .dashboard-chart-bar-x {
-  background: #497b85;
-}
-
-.dashboard-chart-point:nth-child(5n + 3) .dashboard-chart-bar-x {
-  background: #58749a;
-}
-
-.dashboard-chart-point:nth-child(5n + 4) .dashboard-chart-bar-x {
-  background: #7a6f9b;
-}
-
-.dashboard-chart-point:nth-child(5n) .dashboard-chart-bar-x {
-  background: #77835c;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -750,10 +734,36 @@ a:hover .stat-card {
 }
 
 .empty-state {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.8rem;
   border: 1px dashed var(--border-strong);
   border-radius: 0.5rem;
   background: var(--empty-gradient);
   padding: 1rem;
+}
+
+.empty-state-graphic {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--primary) 44%, var(--border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--primary-soft) 70%, var(--card));
+  color: var(--primary-strong);
+}
+
+.empty-state-graphic svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
 .notice-box {
@@ -793,7 +803,7 @@ a:hover .stat-card {
 .btn {
   display: inline-flex;
   max-width: 100%;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   cursor: pointer;
   align-items: center;
   justify-content: center;
@@ -897,9 +907,72 @@ a:hover .stat-card {
 }
 
 .category-badge {
-  border-color: #f4cfab;
-  background: #fff4e7;
-  color: var(--primary-strong);
+  border-color: var(--category-border);
+  background: var(--category-bg);
+  color: var(--category-text);
+}
+
+[data-category-tone="amber"] {
+  --category-bg: #fff4e7;
+  --category-border: #f4cfab;
+  --category-solid: #b86b2b;
+  --category-text: #8b4d1c;
+}
+
+[data-category-tone="blue"] {
+  --category-bg: #eaf4f8;
+  --category-border: #b8d6e2;
+  --category-solid: #3f7387;
+  --category-text: #275b70;
+}
+
+[data-category-tone="green"] {
+  --category-bg: #edf6ed;
+  --category-border: #bdd9bf;
+  --category-solid: #527c57;
+  --category-text: #35623b;
+}
+
+[data-category-tone="indigo"] {
+  --category-bg: #eef1fa;
+  --category-border: #c5cdec;
+  --category-solid: #596eaa;
+  --category-text: #40558f;
+}
+
+[data-category-tone="rose"] {
+  --category-bg: #faeef1;
+  --category-border: #e9c2cc;
+  --category-solid: #a85e72;
+  --category-text: #874357;
+}
+
+[data-category-tone="violet"] {
+  --category-bg: #f3eff9;
+  --category-border: #d6c7e8;
+  --category-solid: #75629a;
+  --category-text: #5d497f;
+}
+
+[data-category-tone="slate"] {
+  --category-bg: #eef2f7;
+  --category-border: #cbd5e1;
+  --category-solid: #64748b;
+  --category-text: #475569;
+}
+
+.event-card-category-stripe {
+  background: var(--category-solid);
+}
+
+.event-card-category-mark {
+  border-color: var(--category-solid);
+  background: var(--card-overlay);
+  color: var(--category-solid);
+}
+
+button[data-category-tone] {
+  background: color-mix(in srgb, var(--category-solid) 15%, var(--card-soft));
 }
 
 .brand-mark {
@@ -1545,9 +1618,58 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 }
 
 :is(.dark, html[data-theme="dark"]) .category-badge {
-  border-color: rgba(242, 175, 104, 0.38);
-  background: rgba(75, 47, 31, 0.56);
-  color: var(--primary-strong);
+  border-color: var(--category-border);
+  background: var(--category-bg);
+  color: var(--category-text);
+}
+
+:is(.dark, html[data-theme="dark"]) [data-category-tone="amber"] {
+  --category-bg: rgba(120, 68, 23, 0.42);
+  --category-border: rgba(242, 175, 104, 0.38);
+  --category-solid: #e0a05f;
+  --category-text: #f6c98f;
+}
+
+:is(.dark, html[data-theme="dark"]) [data-category-tone="blue"] {
+  --category-bg: rgba(31, 78, 96, 0.46);
+  --category-border: rgba(111, 173, 194, 0.38);
+  --category-solid: #69a2b6;
+  --category-text: #a8d3df;
+}
+
+:is(.dark, html[data-theme="dark"]) [data-category-tone="green"] {
+  --category-bg: rgba(35, 79, 45, 0.46);
+  --category-border: rgba(110, 168, 117, 0.38);
+  --category-solid: #77a77d;
+  --category-text: #b6d9b9;
+}
+
+:is(.dark, html[data-theme="dark"]) [data-category-tone="indigo"] {
+  --category-bg: rgba(49, 60, 112, 0.46);
+  --category-border: rgba(116, 132, 194, 0.4);
+  --category-solid: #8291c7;
+  --category-text: #c2c9ea;
+}
+
+:is(.dark, html[data-theme="dark"]) [data-category-tone="rose"] {
+  --category-bg: rgba(100, 43, 61, 0.46);
+  --category-border: rgba(190, 103, 126, 0.38);
+  --category-solid: #ca8295;
+  --category-text: #ebbdc9;
+}
+
+:is(.dark, html[data-theme="dark"]) [data-category-tone="violet"] {
+  --category-bg: rgba(71, 51, 105, 0.46);
+  --category-border: rgba(139, 116, 177, 0.4);
+  --category-solid: #9a87bc;
+  --category-text: #d2c5e5;
+}
+
+:is(.dark, html[data-theme="dark"]) [data-category-tone="slate"] {
+  --category-bg: #1e293b;
+  --category-border: #475569;
+  --category-solid: #94a3b8;
+  --category-text: #cbd5e1;
 }
 
 :is(.dark, html[data-theme="dark"]) .brand-mark {
@@ -1574,6 +1696,15 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   .section-card-padded,
   .section-header {
     padding: 1rem;
+  }
+
+  .empty-state {
+    grid-template-columns: 1fr;
+  }
+
+  .empty-state-graphic {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 
   .stat-value {

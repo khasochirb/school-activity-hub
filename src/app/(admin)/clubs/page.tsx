@@ -306,7 +306,7 @@ export default async function ClubsPage({
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {club.category ? (
-                          <CategoryBadge>
+                          <CategoryBadge category={club.category}>
                             {categoryLabel(club.category, t)}
                           </CategoryBadge>
                         ) : null}

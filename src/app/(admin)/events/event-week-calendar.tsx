@@ -278,7 +278,9 @@ function WeekEventCard({
       </span>
       <span className="mt-2 flex min-w-0 flex-wrap gap-1">
         {event.categoryLabel ? (
-          <CategoryBadge>{event.categoryLabel}</CategoryBadge>
+          <CategoryBadge category={event.categoryValue}>
+            {event.categoryLabel}
+          </CategoryBadge>
         ) : null}
         <StatusBadge status={event.status}>{event.statusLabel}</StatusBadge>
         {event.registrationStatus === "registered" ||

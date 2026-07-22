@@ -28,6 +28,7 @@ import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  CategoryBadge,
   DetailsDisclosure,
   EmptyState,
   FilterPanel,
@@ -265,7 +266,9 @@ export default async function ApprovalsPage({
                     </Badge>
                   ) : null}
                   {event.category ? (
-                    <Badge>{categoryLabel(event.category, t)}</Badge>
+                    <CategoryBadge category={event.category}>
+                      {categoryLabel(event.category, t)}
+                    </CategoryBadge>
                   ) : null}
                   {event.club_id ? (
                     <Badge>

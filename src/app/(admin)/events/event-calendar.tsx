@@ -420,7 +420,9 @@ function CalendarAgenda({
             >
               <span className="flex min-w-0 flex-wrap items-center gap-2">
                 {event.categoryLabel ? (
-                  <CategoryBadge>{event.categoryLabel}</CategoryBadge>
+                  <CategoryBadge category={event.categoryValue}>
+                    {event.categoryLabel}
+                  </CategoryBadge>
                 ) : null}
                 <StatusBadge status={event.status}>
                   {event.statusLabel}

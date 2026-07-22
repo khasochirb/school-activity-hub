@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import type { DashboardActivitySummary } from "@/lib/dashboard/activity-summary";
 import { formatDateRange } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
@@ -110,6 +111,7 @@ function CategoryOpportunitiesChart({
 }) {
   const maximum = Math.max(...summary.categories.map((item) => item.count), 1);
   const rows = summary.categories.map((item) => ({
+    category: item.category,
     count: item.count,
     label: categoryLabel(item.category, t),
   }));
@@ -127,6 +129,7 @@ function CategoryOpportunitiesChart({
               <div
                 aria-label={`${row.label}: ${formatNumber(row.count, locale)}`}
                 className="dashboard-chart-point group rounded-md px-1 py-1"
+                data-category-tone={getActivityCategoryTone(row.category)}
                 key={row.label}
                 tabIndex={0}
                 title={`${row.label}: ${formatNumber(row.count, locale)}`}

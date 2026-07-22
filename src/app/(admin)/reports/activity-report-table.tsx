@@ -9,20 +9,24 @@ import type { ReportActivityRow } from "@/lib/reports/activity-report";
 import { CategoryBadge, EmptyState, StatusBadge } from "../_components/page-ui";
 
 type ActivitySort = "checkins" | "date" | "rate" | "registrations";
+type DisplayActivityRow = ReportActivityRow & { categoryValue?: string | null };
 
 export function ActivityReportTable({
   activities,
   labels,
   locale,
 }: {
-  activities: ReportActivityRow[];
+  activities: DisplayActivityRow[];
   labels: {
     attendanceNotRecorded: string;
     category: string;
     checkins: string;
+    clearFilters: string;
     date: string;
     emptyDescription: string;
     emptyTitle: string;
+    noResults: string;
+    noResultsDescription: string;
     rate: string;
     registrations: string;
     responsibleStaff: string;
@@ -118,7 +122,9 @@ export function ActivityReportTable({
                     <td>{formatDate(activity.startsAt, locale)}</td>
                     <td>
                       {activity.category ? (
-                        <CategoryBadge>{activity.category}</CategoryBadge>
+                        <CategoryBadge category={activity.categoryValue}>
+                          {activity.category}
+                        </CategoryBadge>
                       ) : (
                         "-"
                       )}
@@ -151,6 +157,23 @@ export function ActivityReportTable({
             </table>
           </div>
         </>
+      ) : activities.length && query ? (
+        <div className="p-4">
+          <EmptyState
+            action={
+              <button
+                className="btn btn-secondary"
+                onClick={() => setQuery("")}
+                type="button"
+              >
+                {labels.clearFilters}
+              </button>
+            }
+            description={labels.noResultsDescription}
+            title={labels.noResults}
+            visual="filter"
+          />
+        </div>
       ) : (
         <div className="p-4">
           <EmptyState
@@ -168,7 +191,7 @@ function ActivityCard({
   labels,
   locale,
 }: {
-  activity: ReportActivityRow;
+  activity: DisplayActivityRow;
   labels: Parameters<typeof ActivityReportTable>[0]["labels"];
   locale: Locale;
 }) {
@@ -179,7 +202,9 @@ function ActivityCard({
           {activity.title}
         </h3>
         {activity.category ? (
-          <CategoryBadge>{activity.category}</CategoryBadge>
+          <CategoryBadge category={activity.categoryValue}>
+            {activity.category}
+          </CategoryBadge>
         ) : null}
       </div>
       <p className="mt-1 text-sm text-slate-600">

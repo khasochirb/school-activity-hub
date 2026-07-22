@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AnimatedDisclosure } from "@/components/animated-disclosure";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import {
   CollapsibleFormSection as ClientCollapsibleFormSection,
   FormSectionToggleButton as ClientFormSectionToggleButton,
@@ -46,19 +47,57 @@ export function EmptyState({
   action,
   description,
   title,
+  visual = "empty",
 }: {
   action?: React.ReactNode;
   description: string;
   title: string;
+  visual?: "empty" | "filter" | "school";
 }) {
   return (
     <div className="empty-state">
-      <p className="text-sm font-bold text-slate-950">{title}</p>
-      <p className="mt-1.5 max-w-xl text-sm leading-6 text-slate-600">
-        {description}
-      </p>
-      {action ? <div className="mt-3 flex flex-wrap gap-2">{action}</div> : null}
+      <EmptyStateGraphic visual={visual} />
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-slate-950">{title}</p>
+        <p className="mt-1 max-w-xl text-sm leading-6 text-slate-600">
+          {description}
+        </p>
+        {action ? (
+          <div className="mt-3 flex flex-wrap gap-2">{action}</div>
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+function EmptyStateGraphic({
+  visual,
+}: {
+  visual: "empty" | "filter" | "school";
+}) {
+  return (
+    <span aria-hidden="true" className="empty-state-graphic">
+      <svg fill="none" focusable="false" viewBox="0 0 32 32">
+        {visual === "filter" ? (
+          <>
+            <path d="M7 9h18M10 16h12M13 23h6" />
+            <circle cx="10" cy="9" r="2" />
+            <circle cx="20" cy="16" r="2" />
+            <circle cx="15" cy="23" r="2" />
+          </>
+        ) : visual === "school" ? (
+          <>
+            <path d="m5 13 11-6 11 6-11 6-11-6Z" />
+            <path d="M9 16v7h14v-7M16 19v4M6 25h20" />
+          </>
+        ) : (
+          <>
+            <path d="M7 10.5h18v14H7z" />
+            <path d="M11 7.5h10M11 15h10M11 19.5h7" />
+          </>
+        )}
+      </svg>
+    </span>
   );
 }
 
@@ -259,6 +298,7 @@ export function NoResultsState({
       }
       description={description}
       title={title}
+      visual="filter"
     />
   );
 }
@@ -340,8 +380,21 @@ export function StatusBadge({
   );
 }
 
-export function CategoryBadge({ children }: { children: React.ReactNode }) {
-  return <span className="badge category-badge">{children}</span>;
+export function CategoryBadge({
+  category,
+  children,
+}: {
+  category?: string | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className="badge category-badge"
+      data-category-tone={getActivityCategoryTone(category)}
+    >
+      {children}
+    </span>
+  );
 }
 
 function variantForStatus(status: string | undefined): BadgeVariant {

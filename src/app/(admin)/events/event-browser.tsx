@@ -12,6 +12,7 @@ import {
   type EventQuickViewItem,
   type EventQuickViewLabels,
 } from "@/components/events/event-quick-view-modal";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { CategoryBadge, StatusBadge } from "../_components/page-ui";
 
 export type EventBrowserItem = EventQuickViewItem & {
@@ -89,7 +90,7 @@ function EventCard({
   onOpen: (trigger?: HTMLButtonElement | null) => void;
   registerTrigger: (node: HTMLButtonElement | null) => void;
 }) {
-  const accent = categoryAccent(item.categoryValue);
+  const categoryTone = getActivityCategoryTone(item.categoryValue);
 
   function handleCardClick(event: MouseEvent<HTMLElement>) {
     const target = event.target as HTMLElement;
@@ -104,6 +105,7 @@ function EventCard({
   return (
     <article
       className="interactive-card group flex h-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] focus-within:border-[#f2af68]"
+      data-category-tone={categoryTone}
       onClick={handleCardClick}
     >
       <button
@@ -111,25 +113,17 @@ function EventCard({
         className="relative min-h-28 w-full overflow-hidden border-b border-[var(--border)] p-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#f2af68]"
         onClick={(event) => onOpen(event.currentTarget)}
         ref={registerTrigger}
-        style={{
-          backgroundColor: `color-mix(in srgb, ${accent} 16%, var(--card-soft))`,
-        }}
+        data-category-tone={categoryTone}
         type="button"
       >
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 w-1.5"
-          style={{ backgroundColor: accent }}
+          className="event-card-category-stripe absolute inset-y-0 left-0 w-1.5"
         />
         <span className="flex h-full items-start justify-between gap-4">
           <span
             aria-hidden="true"
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border text-lg font-black tracking-[0.04em]"
-            style={{
-              backgroundColor: "var(--card-overlay)",
-              borderColor: accent,
-              color: accent,
-            }}
+            className="event-card-category-mark flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border text-lg font-black tracking-[0.04em]"
           >
             {item.visualInitials}
           </span>
@@ -145,7 +139,9 @@ function EventCard({
       <div className="flex flex-1 flex-col p-4">
         <div className="flex flex-wrap gap-2">
           {item.categoryLabel ? (
-            <CategoryBadge>{item.categoryLabel}</CategoryBadge>
+            <CategoryBadge category={item.categoryValue}>
+              {item.categoryLabel}
+            </CategoryBadge>
           ) : null}
           <StatusBadge status={item.status}>{item.statusLabel}</StatusBadge>
           {item.registrationStatus === "registered" ||
@@ -231,21 +227,4 @@ function EventCard({
       </div>
     </article>
   );
-}
-
-function categoryAccent(category: string | null) {
-  const accents: Record<string, string> = {
-    Academic: "#4f7cac",
-    Arts: "#c06c84",
-    Career: "#6672a8",
-    Culture: "#8b6fa9",
-    Leadership: "#c9853f",
-    "Mental Health": "#658f8b",
-    Outdoor: "#648b65",
-    Social: "#b26f5b",
-    Sports: "#d47b42",
-    Volunteering: "#5b8f78",
-  };
-
-  return category ? accents[category] ?? "#b7793f" : "#b7793f";
 }

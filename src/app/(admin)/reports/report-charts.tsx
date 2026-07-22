@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { formatDateRange } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
 import { EmptyState } from "../_components/page-ui";
@@ -27,7 +28,11 @@ export function ReportCharts({
   locale,
   weeks,
 }: {
-  categories: Array<{ category: string; count: number }>;
+  categories: Array<{
+    category: string;
+    categoryValue?: string;
+    count: number;
+  }>;
   events: Array<{
     checkins: number;
     id: string;
@@ -198,7 +203,11 @@ function CategoryChart({
   labels,
   locale,
 }: {
-  categories: Array<{ category: string; count: number }>;
+  categories: Array<{
+    category: string;
+    categoryValue?: string;
+    count: number;
+  }>;
   labels: ChartLabels;
   locale: Locale;
 }) {
@@ -210,7 +219,12 @@ function CategoryChart({
         <>
           <div className="space-y-3 p-3 sm:p-4">
             {categories.map((row) => (
-              <div className="dashboard-chart-point rounded-md p-1" key={row.category} tabIndex={0}>
+              <div
+                className="dashboard-chart-point rounded-md p-1"
+                data-category-tone={getActivityCategoryTone(row.categoryValue)}
+                key={row.category}
+                tabIndex={0}
+              >
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <span className="min-w-0 break-words text-sm font-bold text-slate-800">
                     {row.category}
