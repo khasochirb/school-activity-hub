@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentEventActor } from "@/lib/auth/event-access";
 import {
   DetailsDisclosure,
   EmptyState,
@@ -15,6 +15,11 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import { getActivityCategoryTranslationKey } from "@/lib/activity-categories";
+import {
+  buildDashboardActivitySummary,
+  getDashboardActivityRange,
+  type DashboardActivityEvent,
+} from "@/lib/dashboard/activity-summary";
 import type { EventQuickViewItem } from "@/components/events/event-quick-view-modal";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
@@ -34,12 +39,24 @@ import { timeServer } from "@/lib/server-timing";
 import { getServerBaseUrl } from "@/lib/server-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { DashboardCharts } from "./dashboard-charts";
 import { StudentUpcomingEvents } from "./student-upcoming-events";
 
 type Profile = {
   id: string;
   school_id: string;
   role: "school_admin" | "teacher" | "student";
+};
+
+type DashboardSearchParams = {
+  school?: string | string[];
+};
+
+type PlatformSchoolOption = {
+  id: string;
+  name: string;
+  slug: string;
+  status: "active" | "archived";
 };
 
 type StudentRoster = {
@@ -114,28 +131,52 @@ type RecentCheckin = {
   } | null;
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<DashboardSearchParams>;
+}) {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const tf = (key: string, values: Record<string, string | number>) =>
     formatTranslation(dictionary, key, values);
-  const supabase = await createClient();
-  const user = await timeServer("dashboard.query.auth-get-user", () =>
-    getCurrentUser(),
+  const actor = await timeServer("dashboard.query.actor", () =>
+    getCurrentEventActor(),
   );
 
-  if (!user) {
+  if (!actor) {
     redirect("/login");
   }
 
-  const { data: profile } = await timeServer("dashboard.query.profile", () =>
-    supabase
-      .from("profiles")
-      .select("id, school_id, role")
-      .eq("id", user.id)
-      .maybeSingle<Profile>(),
-  );
+  const admin = createAdminClient();
+
+  if (actor.isPlatformAdmin) {
+    const supabase = await createClient();
+    const params = await searchParams;
+    const requestedSchoolId = getSearchValue(params.school);
+    const platformSchoolResult = await getPlatformDashboardSchools(supabase);
+    const selectedSchool = platformSchoolResult.schools.find(
+      (school) => school.id === requestedSchoolId,
+    );
+    const analytics = selectedSchool
+      ? await getPlatformSchoolAnalytics(admin, selectedSchool.id)
+      : null;
+
+    return (
+      <PlatformDashboard
+        analytics={analytics}
+        locale={locale}
+        schoolLoadFailed={Boolean(platformSchoolResult.errorCode)}
+        schools={platformSchoolResult.schools}
+        selectedSchool={selectedSchool ?? null}
+        t={t}
+        tf={tf}
+      />
+    );
+  }
+
+  const profile = actor.profile as Profile | null;
 
   if (!profile) {
     return (
@@ -152,8 +193,6 @@ export default async function DashboardPage() {
       </DashboardShell>
     );
   }
-
-  const admin = createAdminClient();
 
   if (isSchoolStaff(profile)) {
     const analytics = await getStaffAnalytics(admin, profile.school_id);
@@ -172,6 +211,143 @@ export default async function DashboardPage() {
       profile={profile}
       t={t}
     />
+  );
+}
+
+function PlatformDashboard({
+  analytics,
+  locale,
+  schoolLoadFailed,
+  schools,
+  selectedSchool,
+  t,
+  tf,
+}: {
+  analytics: Awaited<ReturnType<typeof getPlatformSchoolAnalytics>> | null;
+  locale: Locale;
+  schoolLoadFailed: boolean;
+  schools: PlatformSchoolOption[];
+  selectedSchool: PlatformSchoolOption | null;
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+}) {
+  return (
+    <DashboardShell
+      description={t("dashboard.platform.description")}
+      eyebrow={t("dashboard.platform.eyebrow")}
+      title={t("dashboard.title")}
+    >
+      <section className="section-card section-card-padded min-w-0">
+        <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <h2 className="section-title">
+              {t("dashboard.platform.schoolContext")}
+            </h2>
+            <p className="section-description max-w-2xl">
+              {t("dashboard.platform.selectSchool")}
+            </p>
+          </div>
+          <form
+            action="/dashboard"
+            className="grid w-full max-w-xl gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          >
+            <label className="min-w-0 text-sm font-semibold text-slate-800">
+              <span className="mb-2 block">{t("events.platform.school")}</span>
+              <select
+                className="h-11 w-full min-w-0 rounded-md border px-3"
+                defaultValue={selectedSchool?.id ?? ""}
+                name="school"
+              >
+                <option value="">{t("dashboard.platform.schoolPlaceholder")}</option>
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn btn-primary min-h-11" type="submit">
+              {t("common.open")}
+            </button>
+          </form>
+        </div>
+        {selectedSchool ? (
+          <p className="mt-3 break-words text-sm font-semibold text-slate-700">
+            {tf("dashboard.platform.selectedSchool", {
+              school: selectedSchool.name,
+            })}
+          </p>
+        ) : null}
+      </section>
+
+      {schoolLoadFailed ? (
+        <section className="notice-box notice-warning" role="status">
+          <p>{t("dashboard.platform.schoolsUnavailable")}</p>
+        </section>
+      ) : null}
+
+      {!selectedSchool || !analytics ? (
+        !schoolLoadFailed ? (
+          <section className="section-card p-4">
+            <EmptyState
+              description={t("dashboard.platform.emptyDescription")}
+              title={t("dashboard.platform.selectSchool")}
+            />
+          </section>
+        ) : null
+      ) : (
+        <>
+          <section aria-labelledby="platform-dashboard-overview" className="space-y-3">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
+                <h2 className="section-title" id="platform-dashboard-overview">
+                  {t("dashboard.analytics.overview")}
+                </h2>
+                <p className="section-description break-words">
+                  {selectedSchool.name}
+                </p>
+              </div>
+              <Link
+                className="btn btn-secondary w-full sm:w-auto"
+                href={`/events?school=${selectedSchool.id}`}
+                prefetch={false}
+              >
+                {t("dashboard.analytics.viewDetails")}
+                <PendingLinkIndicator />
+              </Link>
+            </div>
+            <MetricGrid>
+              <MetricCard
+                href={`/events?school=${selectedSchool.id}`}
+                label={t("dashboard.stats.upcomingEvents")}
+                locale={locale}
+                value={analytics.upcomingApprovedEvents}
+              />
+              <MetricCard
+                label={t("dashboard.stats.activeClubs")}
+                locale={locale}
+                value={analytics.activeClubs}
+              />
+              <MetricCard
+                label={t("dashboard.stats.upcomingRegistrations")}
+                locale={locale}
+                value={analytics.upcomingRegistrations}
+              />
+              <MetricCard
+                label={t("dashboard.stats.recentParticipation")}
+                locale={locale}
+                value={analytics.recentParticipation}
+              />
+            </MetricGrid>
+          </section>
+          <DashboardCharts
+            locale={locale}
+            summary={analytics.activitySummary}
+            t={t}
+          />
+        </>
+      )}
+    </DashboardShell>
   );
 }
 
@@ -194,36 +370,48 @@ function StaffDashboard({
       actions={<DashboardHeaderActions t={t} />}
     >
       <WelcomeOverview t={t} />
-      <NeedsAttention analytics={analytics} t={t} />
+      <NeedsAttention analytics={analytics} locale={locale} t={t} />
       <NextSteps analytics={analytics} t={t} tf={tf} />
       <QuickActions t={t} />
-      <MetricGrid>
-        <MetricCard
-          href="/students"
-          label={t("dashboard.stats.activeStudents")}
-          value={analytics.activeStudents}
-        />
-        <MetricCard
-          href="/clubs"
-          label={t("dashboard.stats.activeClubs")}
-          value={analytics.activeClubs}
-        />
-        <MetricCard
-          href="/events"
-          label={t("dashboard.stats.upcomingEvents")}
-          value={analytics.upcomingApprovedEvents}
-        />
-        <MetricCard
-          href="/reports"
-          label={t("dashboard.stats.eventRegistrations")}
-          value={analytics.totalEventRegistrations}
-        />
-        <MetricCard
-          href="/reports"
-          label={t("dashboard.stats.attendanceCheckins")}
-          value={analytics.totalAttendanceCheckins}
-        />
-      </MetricGrid>
+      <section aria-labelledby="dashboard-overview-title" className="space-y-3">
+        <div>
+          <h2 className="section-title" id="dashboard-overview-title">
+            {t("dashboard.analytics.overview")}
+          </h2>
+        </div>
+        <MetricGrid>
+          <MetricCard
+            href="/clubs"
+            locale={locale}
+            label={t("dashboard.stats.activeClubs")}
+            value={analytics.activeClubs}
+          />
+          <MetricCard
+            href="/events"
+            locale={locale}
+            label={t("dashboard.stats.upcomingEvents")}
+            value={analytics.upcomingApprovedEvents}
+          />
+          <MetricCard
+            href="/reports"
+            locale={locale}
+            label={t("dashboard.stats.upcomingRegistrations")}
+            value={analytics.upcomingRegistrations}
+          />
+          <MetricCard
+            href="/reports"
+            locale={locale}
+            label={t("dashboard.stats.recentParticipation")}
+            value={analytics.recentParticipation}
+          />
+        </MetricGrid>
+      </section>
+
+      <DashboardCharts
+        locale={locale}
+        summary={analytics.activitySummary}
+        t={t}
+      />
 
       <div className="grid gap-3 lg:grid-cols-2">
         <UpcomingEventsSection
@@ -275,23 +463,38 @@ function StudentDashboard({
         </section>
       ) : null}
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label={t("dashboard.studentStats.joinedClubs")}
+          locale={locale}
           value={analytics.joinedClubs}
           href="/clubs"
         />
         <MetricCard
           label={t("dashboard.studentStats.registeredUpcomingEvents")}
+          locale={locale}
           value={analytics.registeredUpcomingEvents}
           href="/events?filter=registered"
         />
         <MetricCard
-          label={t("dashboard.studentStats.attendedEvents")}
-          value={analytics.attendedEvents}
+          label={t("dashboard.stats.recentParticipation")}
+          locale={locale}
+          value={analytics.recentParticipation}
           href="/events?filter=registered"
         />
+        <MetricCard
+          label={t("dashboard.studentStats.availableOpportunities")}
+          locale={locale}
+          value={analytics.activitySummary.total}
+          href="/events"
+        />
       </section>
+
+      <DashboardCharts
+        locale={locale}
+        summary={analytics.activitySummary}
+        t={t}
+      />
 
       {quickViewEvents.length ? (
         <StudentUpcomingEvents
@@ -427,7 +630,7 @@ function NextSteps({
       description: t("dashboard.nextSteps.steps.studentsJoin.description"),
       href: "/invite-codes",
       status:
-        analytics.activeInviteCodes > 0 || analytics.totalEventRegistrations > 0
+        analytics.activeInviteCodes > 0 || analytics.upcomingRegistrations > 0
           ? "ready"
           : "locked",
     },
@@ -458,7 +661,7 @@ function NextSteps({
       description: t("dashboard.nextSteps.steps.trackAttendance.description"),
       href: "/events",
       status:
-        analytics.totalAttendanceCheckins > 0
+        analytics.recentParticipation > 0
           ? "complete"
           : analytics.upcomingApprovedEvents > 0
             ? "next"
@@ -469,8 +672,8 @@ function NextSteps({
       description: t("dashboard.nextSteps.steps.viewReports.description"),
       href: "/reports",
       status:
-        analytics.totalEventRegistrations > 0 ||
-        analytics.totalAttendanceCheckins > 0
+        analytics.upcomingRegistrations > 0 ||
+        analytics.recentParticipation > 0
           ? "ready"
           : "locked",
     },
@@ -562,9 +765,11 @@ function StepStatusBadge({
 
 function NeedsAttention({
   analytics,
+  locale,
   t,
 }: {
   analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+  locale: Locale;
   t: (key: string) => string;
 }) {
   const attentionItems = [
@@ -649,7 +854,7 @@ function NeedsAttention({
                   </p>
                 </div>
                 <StatusBadge variant={item.variant}>
-                  {formatNumber(item.count)}
+                  {formatNumber(item.count, locale)}
                 </StatusBadge>
               </div>
               <p className="mt-3 flex items-center gap-2 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
@@ -783,16 +988,20 @@ function MetricGrid({ children }: { children: React.ReactNode }) {
 function MetricCard({
   href,
   label,
+  locale,
   value,
 }: {
   href?: string;
   label: string;
+  locale: Locale;
   value: number;
 }) {
   const content = (
     <article className="stat-card">
       <p className="stat-label">{label}</p>
-      <p className="stat-value">{formatNumber(value)}</p>
+      <p className="stat-value dashboard-metric-value-enter">
+        {formatNumber(value, locale)}
+      </p>
     </article>
   );
 
@@ -802,7 +1011,7 @@ function MetricCard({
 
   return (
     <Link
-      aria-label={`${label}: ${formatNumber(value)}`}
+      aria-label={`${label}: ${formatNumber(value, locale)}`}
       className="interactive-card group relative block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
       href={href}
       prefetch={false}
@@ -918,14 +1127,19 @@ async function getStaffAnalytics(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
 ) {
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const range = getDashboardActivityRange(nowDate);
+  const recentSince = new Date(
+    nowDate.getTime() - 30 * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const [
     activeStudents,
     activeInviteCodes,
     activeClubs,
-    upcomingApprovedEvents,
-    totalEventRegistrations,
-    totalAttendanceCheckins,
+    upcomingRegistrations,
+    recentParticipation,
+    activityEvents,
     upcomingEvents,
     recentCheckins,
     pendingApprovals,
@@ -933,13 +1147,14 @@ async function getStaffAnalytics(
     getActiveStudentCount(admin, schoolId),
     getActiveInviteCodeCount(admin, schoolId, now),
     getActiveClubCount(admin, schoolId),
-    getUpcomingApprovedEventCount(admin, schoolId, now),
-    getTotalEventRegistrationCount(admin, schoolId),
-    getTotalAttendanceCheckinCount(admin, schoolId),
+    getUpcomingRegistrationCount(admin, schoolId, now),
+    getRecentParticipationCount(admin, schoolId, recentSince),
+    getDashboardActivityEvents(admin, schoolId, range.startsAt, range.endsAt),
     getUpcomingEvents(admin, schoolId, now),
     getRecentCheckins(admin, schoolId),
     getPendingApprovalEventCount(admin, schoolId),
   ]);
+  const activitySummary = buildDashboardActivitySummary(activityEvents, nowDate);
   const studentsWithoutInviteCodes = Math.max(
     activeStudents - activeInviteCodes,
     0,
@@ -949,11 +1164,12 @@ async function getStaffAnalytics(
     activeInviteCodes,
     activeStudents,
     activeClubs,
+    activitySummary,
     pendingApprovals,
+    recentParticipation,
     studentsWithoutInviteCodes,
-    upcomingApprovedEvents,
-    totalEventRegistrations,
-    totalAttendanceCheckins,
+    upcomingApprovedEvents: activitySummary.total,
+    upcomingRegistrations,
     upcomingEvents,
     recentCheckins,
   };
@@ -963,11 +1179,23 @@ async function getStudentAnalytics(
   admin: ReturnType<typeof createAdminClient>,
   profile: Profile,
 ) {
-  const now = new Date().toISOString();
-  const [currentStudent, upcomingEvents] = await Promise.all([
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const range = getDashboardActivityRange(nowDate);
+  const recentSince = new Date(
+    nowDate.getTime() - 30 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const [currentStudent, upcomingEvents, activityEvents] = await Promise.all([
     getCurrentStudent(admin, profile),
     getUpcomingEvents(admin, profile.school_id, now),
+    getDashboardActivityEvents(
+      admin,
+      profile.school_id,
+      range.startsAt,
+      range.endsAt,
+    ),
   ]);
+  const activitySummary = buildDashboardActivitySummary(activityEvents, nowDate);
   const eventContextPromise = getStudentUpcomingEventContext(
     admin,
     profile.school_id,
@@ -978,10 +1206,11 @@ async function getStudentAnalytics(
     const eventContext = await eventContextPromise;
 
     return {
-      attendedEvents: 0,
+      activitySummary,
       currentStudent,
       ...eventContext,
       joinedClubs: 0,
+      recentParticipation: 0,
       registeredUpcomingEvents: 0,
       upcomingEvents,
     };
@@ -990,7 +1219,7 @@ async function getStudentAnalytics(
   const [
     joinedClubs,
     registeredUpcomingEvents,
-    attendedEvents,
+    recentParticipation,
     eventContext,
   ] = await Promise.all([
     getJoinedClubCount(admin, profile.school_id, currentStudent.id),
@@ -1000,17 +1229,76 @@ async function getStudentAnalytics(
       currentStudent.id,
       now,
     ),
-    getAttendedEventCount(admin, profile.school_id, currentStudent.id),
+    getStudentRecentParticipationCount(admin, profile.id, recentSince),
     eventContextPromise,
   ]);
 
   return {
-    attendedEvents,
+    activitySummary,
     currentStudent,
     ...eventContext,
     joinedClubs,
+    recentParticipation,
     registeredUpcomingEvents,
     upcomingEvents,
+  };
+}
+
+async function getPlatformSchoolAnalytics(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const range = getDashboardActivityRange(nowDate);
+  const recentSince = new Date(
+    nowDate.getTime() - 30 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const [activeClubs, upcomingRegistrations, recentParticipation, activityEvents] =
+    await Promise.all([
+      getActiveClubCount(admin, schoolId),
+      getUpcomingRegistrationCount(admin, schoolId, now),
+      getRecentParticipationCount(admin, schoolId, recentSince),
+      getDashboardActivityEvents(
+        admin,
+        schoolId,
+        range.startsAt,
+        range.endsAt,
+      ),
+    ]);
+  const activitySummary = buildDashboardActivitySummary(activityEvents, nowDate);
+
+  return {
+    activeClubs,
+    activitySummary,
+    recentParticipation,
+    upcomingApprovedEvents: activitySummary.total,
+    upcomingRegistrations,
+  };
+}
+
+async function getPlatformDashboardSchools(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
+  const { data, error } = await timeServer(
+    "dashboard.query.platform-schools",
+    () => supabase.rpc("get_platform_event_school_options"),
+  );
+
+  if (error) {
+    console.error("dashboard.query.platform-schools failed", {
+      code: error.code,
+    });
+
+    return {
+      errorCode: error.code,
+      schools: [] as PlatformSchoolOption[],
+    };
+  }
+
+  return {
+    errorCode: null,
+    schools: (data ?? []) as PlatformSchoolOption[],
   };
 }
 
@@ -1159,23 +1447,27 @@ async function getActiveInviteCodeCount(
   return count ?? 0;
 }
 
-async function getUpcomingApprovedEventCount(
+async function getDashboardActivityEvents(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
-  now: string,
+  startsAt: string,
+  endsAt: string,
 ) {
-  const { count } = await timeServer(
-    "dashboard.query.upcoming-approved-event-count",
+  const { data } = await timeServer(
+    "dashboard.query.activity-summary-events",
     () =>
       admin
         .from("events")
-        .select("id", { count: "exact", head: true })
+        .select("starts_at, category, status")
         .eq("school_id", schoolId)
         .eq("status", "approved")
-        .gte("starts_at", now),
+        .gte("starts_at", startsAt)
+        .lt("starts_at", endsAt)
+        .order("starts_at", { ascending: true })
+        .returns<DashboardActivityEvent[]>(),
   );
 
-  return count ?? 0;
+  return data ?? [];
 }
 
 async function getPendingApprovalEventCount(
@@ -1195,35 +1487,43 @@ async function getPendingApprovalEventCount(
   return count ?? 0;
 }
 
-async function getTotalEventRegistrationCount(
+async function getUpcomingRegistrationCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
+  now: string,
 ) {
   const { count } = await timeServer(
-    "dashboard.query.event-registration-count",
+    "dashboard.query.upcoming-registration-count",
     () =>
       admin
         .from("event_attendees")
-        .select("id", { count: "exact", head: true })
+        .select("id, events!event_attendees_event_school_fk!inner(id)", {
+          count: "exact",
+          head: true,
+        })
         .eq("school_id", schoolId)
-        .in("status", ["registered", "attended"]),
+        .in("status", ["registered", "attended"])
+        .eq("events.status", "approved")
+        .gte("events.starts_at", now),
   );
 
   return count ?? 0;
 }
 
-async function getTotalAttendanceCheckinCount(
+async function getRecentParticipationCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
+  since: string,
 ) {
   const { count } = await timeServer(
-    "dashboard.query.attendance-checkin-count",
+    "dashboard.query.recent-participation-count",
     () =>
       admin
         .from("attendance_checkins")
         .select("id", { count: "exact", head: true })
         .eq("school_id", schoolId)
-        .eq("result", "success"),
+        .eq("result", "success")
+        .gte("checked_in_at", since),
   );
 
   return count ?? 0;
@@ -1275,18 +1575,20 @@ async function getRegisteredUpcomingEventCount(
   return count ?? 0;
 }
 
-async function getAttendedEventCount(
+async function getStudentRecentParticipationCount(
   admin: ReturnType<typeof createAdminClient>,
-  schoolId: string,
-  studentRosterId: string,
+  profileId: string,
+  since: string,
 ) {
-  const { count } = await timeServer("dashboard.query.attended-event-count", () =>
-    admin
-      .from("event_attendees")
-      .select("id", { count: "exact", head: true })
-      .eq("school_id", schoolId)
-      .eq("student_roster_id", studentRosterId)
-      .eq("status", "attended"),
+  const { count } = await timeServer(
+    "dashboard.query.student-recent-participation-count",
+    () =>
+      admin
+        .from("attendance_checkins")
+        .select("id", { count: "exact", head: true })
+        .eq("attendee_profile_id", profileId)
+        .eq("result", "success")
+        .gte("checked_in_at", since),
   );
 
   return count ?? 0;
@@ -1549,6 +1851,12 @@ function checkInMethodLabel(method: string, t: (key: string) => string) {
   return method;
 }
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en").format(value);
+function formatNumber(value: number, locale: Locale) {
+  return new Intl.NumberFormat(locale === "mn" ? "mn-MN" : "en-CA").format(
+    value,
+  );
+}
+
+function getSearchValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }

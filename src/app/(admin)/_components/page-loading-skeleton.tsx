@@ -37,10 +37,19 @@ function DashboardSkeleton() {
         aria-hidden="true"
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
       >
-        {Array.from({ length: 5 }, (_, index) => (
+        {Array.from({ length: 4 }, (_, index) => (
           <div className="section-card section-card-padded space-y-3" key={index}>
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-8 w-16" />
+          </div>
+        ))}
+      </section>
+      <section aria-hidden="true" className="grid gap-3 xl:grid-cols-2">
+        {Array.from({ length: 2 }, (_, index) => (
+          <div className="section-card section-card-padded space-y-4" key={index}>
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-full max-w-sm" />
+            <Skeleton className="h-32 w-full" />
           </div>
         ))}
       </section>

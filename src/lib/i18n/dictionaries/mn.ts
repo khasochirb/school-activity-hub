@@ -1256,6 +1256,22 @@ export const mn = {
     },
   },
   dashboard: {
+    analytics: {
+      count: "Тоо",
+      noActivityData: "Үйл ажиллагааны мэдээлэл хараахан алга",
+      noUpcomingActivities: "Удахгүй болох үйл ажиллагаа алга",
+      opportunitiesByCategory: {
+        description: "Удахгүй болох боломжуудыг ангиллаар харуулав",
+        title: "Ангиллаар харуулсан боломжууд",
+      },
+      overview: "Хяналтын самбарын тойм",
+      upcomingActivities: {
+        description: "Дараагийн зургаан долоо хоногт төлөвлөсөн үйл ажиллагаа",
+        title: "Удахгүй болох үйл ажиллагаа",
+      },
+      viewDetails: "Дэлгэрэнгүй харах",
+      week: "Долоо хоног",
+    },
     attention: {
       description: "Хяналт шаардлагатай байж болох зүйлсийг шалгана уу.",
       emptyDescription: "Одоогоор бүх зүйл хэвийн байна.",
@@ -1334,6 +1350,17 @@ export const mn = {
         "Таны бүртгэл нэвтэрсэн боловч сургуулийн профайлтай холбогдоогүй байна.",
       guidance: "Сургуулийн админаас профайлыг тань бүрэн тохируулахыг хүснэ үү.",
     },
+    platform: {
+      description: "Нэг удаад сонгосон нэг сургуулийн үйл ажиллагааг харна.",
+      emptyDescription:
+        "Сургууль сонгосны дараа үйл ажиллагааны товч мэдээлэл энд харагдана.",
+      eyebrow: "Платформын администраторын горим",
+      schoolContext: "Сургуулийн хяналтын самбарын орчин",
+      schoolPlaceholder: "Сургууль сонгох",
+      schoolsUnavailable: "Сургуулийн сонголтууд одоогоор боломжгүй байна.",
+      selectedSchool: "{school} сургуулийн хяналтын самбар",
+      selectSchool: "Хяналтын самбарыг харахын тулд сургуулиа сонгоно уу",
+    },
     quickActions: {
       title: "Шуурхай үйлдлүүд",
       addStudents: {
@@ -1375,6 +1402,8 @@ export const mn = {
       activeStudents: "Идэвхтэй сурагчид",
       attendanceCheckins: "Ирцийн бүртгэл",
       eventRegistrations: "Үйл ажиллагааны бүртгэл",
+      recentParticipation: "Сүүлийн үеийн оролцоо",
+      upcomingRegistrations: "Удахгүй болох бүртгэлүүд",
       upcomingEvents: "Удахгүй болох үйл ажиллагаа",
     },
     student: {
@@ -1402,6 +1431,7 @@ export const mn = {
     studentOverviewTitle: "Сургууль дээр юу болж байгааг олох.",
     studentStats: {
       attendedEvents: "Оролцсон үйл ажиллагаа",
+      availableOpportunities: "Удахгүй болох боломжууд",
       joinedClubs: "Элссэн клуб",
       registeredUpcomingEvents:
         "Бүртгүүлсэн удахгүй болох үйл ажиллагаа",

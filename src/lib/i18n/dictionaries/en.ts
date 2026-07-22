@@ -381,6 +381,22 @@ export const en = {
     },
   },
   dashboard: {
+    analytics: {
+      count: "Count",
+      noActivityData: "No activity data yet",
+      noUpcomingActivities: "No upcoming activities",
+      opportunitiesByCategory: {
+        description: "Current upcoming opportunities grouped by category",
+        title: "Opportunities by category",
+      },
+      overview: "Dashboard overview",
+      upcomingActivities: {
+        description: "Activities scheduled during the next six weeks",
+        title: "Upcoming activities",
+      },
+      viewDetails: "View details",
+      week: "Week",
+    },
     attention: {
       description: "Review items that may need a staff follow-up.",
       emptyDescription: "Everything looks good right now.",
@@ -459,6 +475,17 @@ export const en = {
         "Your account is signed in, but it is not connected to a school profile yet.",
       guidance: "Ask a school admin to finish setting up your profile.",
     },
+    platform: {
+      description: "Review activity for one selected school at a time.",
+      emptyDescription:
+        "School-level activity summaries will appear after you select a school.",
+      eyebrow: "Platform administrator mode",
+      schoolContext: "School dashboard context",
+      schoolPlaceholder: "Select a school",
+      schoolsUnavailable: "School options are not available right now.",
+      selectedSchool: "Dashboard for {school}",
+      selectSchool: "Select a school to view its dashboard",
+    },
     quickActions: {
       title: "Quick actions",
       addStudents: {
@@ -498,6 +525,8 @@ export const en = {
       activeStudents: "Active students",
       attendanceCheckins: "Attendance check-ins",
       eventRegistrations: "Event registrations",
+      recentParticipation: "Recent participation",
+      upcomingRegistrations: "Upcoming registrations",
       upcomingEvents: "Upcoming events",
     },
     student: {
@@ -524,6 +553,7 @@ export const en = {
     studentOverviewTitle: "Find what's happening at school.",
     studentStats: {
       attendedEvents: "Attended events",
+      availableOpportunities: "Available upcoming opportunities",
       joinedClubs: "Joined clubs",
       registeredUpcomingEvents: "Registered upcoming events",
     },

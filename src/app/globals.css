@@ -40,6 +40,7 @@
   --motion-fast: 120ms;
   --motion-normal: 180ms;
   --motion-large: 240ms;
+  --motion-data: 420ms;
   --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -469,6 +470,133 @@ a:hover .stat-card {
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1;
+}
+
+.dashboard-metric-value-enter {
+  animation: dashboard-data-reveal var(--motion-data) var(--motion-ease-out)
+    both;
+}
+
+.dashboard-week-chart {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.dashboard-chart-point {
+  min-width: 0;
+  border-radius: 0.375rem;
+  outline: none;
+}
+
+.dashboard-chart-point:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.dashboard-chart-value {
+  display: block;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.dashboard-week-track {
+  display: flex;
+  block-size: clamp(5.5rem, 12vw, 8rem);
+  align-items: flex-end;
+  justify-content: center;
+  margin-top: 0.35rem;
+  overflow: hidden;
+  border-radius: 0.3rem;
+  background: var(--card-soft);
+}
+
+.dashboard-chart-bar-y {
+  display: block;
+  inline-size: min(2rem, 62%);
+  block-size: 100%;
+  border-radius: 0.3rem 0.3rem 0.15rem 0.15rem;
+  background: var(--primary);
+  box-shadow: 0 4px 12px rgba(201, 121, 52, 0.18);
+  transform: scaleY(var(--chart-scale));
+  transform-origin: bottom;
+  animation: dashboard-bar-grow-y var(--motion-data) var(--motion-ease-out)
+    both;
+}
+
+.dashboard-chart-label {
+  display: block;
+  margin-top: 0.45rem;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.dashboard-category-track {
+  block-size: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--card-soft);
+}
+
+.dashboard-chart-bar-x {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: inherit;
+  background: #c97934;
+  transform: scaleX(var(--chart-scale));
+  transform-origin: left;
+  animation: dashboard-bar-grow-x var(--motion-data) var(--motion-ease-out)
+    both;
+}
+
+.dashboard-chart-point:nth-child(5n + 2) .dashboard-chart-bar-x {
+  background: #497b85;
+}
+
+.dashboard-chart-point:nth-child(5n + 3) .dashboard-chart-bar-x {
+  background: #58749a;
+}
+
+.dashboard-chart-point:nth-child(5n + 4) .dashboard-chart-bar-x {
+  background: #7a6f9b;
+}
+
+.dashboard-chart-point:nth-child(5n) .dashboard-chart-bar-x {
+  background: #77835c;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-chart-point:hover .dashboard-chart-bar-x,
+  .dashboard-chart-point:hover .dashboard-chart-bar-y,
+  .dashboard-chart-point:focus-visible .dashboard-chart-bar-x,
+  .dashboard-chart-point:focus-visible .dashboard-chart-bar-y {
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes dashboard-data-reveal {
+  from {
+    opacity: 0.35;
+    transform: translateY(3px);
+  }
+}
+
+@keyframes dashboard-bar-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes dashboard-bar-grow-x {
+  from {
+    transform: scaleX(0);
+  }
 }
 
 .detail-card {
@@ -1351,9 +1479,13 @@ a:has(.pending-link-indicator[data-pending="true"]) {
     --motion-fast: 0ms;
     --motion-normal: 0ms;
     --motion-large: 0ms;
+    --motion-data: 0ms;
   }
 
   .mobile-drawer-panel,
+  .dashboard-chart-bar-x,
+  .dashboard-chart-bar-y,
+  .dashboard-metric-value-enter,
   .mobile-drawer-backdrop,
   .local-panel-enter,
   .local-step-panel,
