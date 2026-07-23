@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomepageActivityFlow } from "@/components/homepage-activity-flow";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentTheme } from "@/lib/get-theme";
@@ -75,13 +76,25 @@ export default async function HomePage() {
     t("landing.trustQrAttendance"),
     t("landing.trustBilingual"),
   ];
+  const activityFlowItems = [
+    { category: "Other", label: t("landing.activityStream.studentClubs") },
+    { category: "Sports", label: t("categories.sports") },
+    { category: "Arts", label: t("categories.arts") },
+    { category: "Volunteering", label: t("categories.volunteering") },
+    { category: "Academic", label: t("landing.activityStream.workshops") },
+    { category: "Leadership", label: t("landing.activityStream.competitions") },
+    {
+      category: "Social",
+      label: t("landing.activityStream.communityActivities"),
+    },
+  ];
 
   return (
     <main className="app-surface text-slate-950">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <Link
-            className="flex min-w-0 cursor-pointer items-center gap-3 transition hover:text-teal-800"
+            className="flex min-w-0 cursor-pointer items-center gap-3 transition hover:text-[var(--primary-strong)]"
             href="/"
           >
             <span className="brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-sm font-bold">
@@ -195,6 +208,17 @@ export default async function HomePage() {
         </aside>
       </section>
 
+      <HomepageActivityFlow
+        items={activityFlowItems}
+        labels={{
+          description: t("landing.activityStream.description"),
+          eyebrow: t("landing.activityStream.eyebrow"),
+          pause: t("landing.activityStream.pause"),
+          resume: t("landing.activityStream.resume"),
+          title: t("landing.activityStream.title"),
+        }}
+      />
+
       <section className="border-y border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
@@ -253,7 +277,7 @@ export default async function HomePage() {
 function AudienceCard({ body, title }: { body: string; title: string }) {
   return (
     <article className="section-card section-card-padded">
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md border border-teal-200 bg-teal-50 text-sm font-black text-teal-800">
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md border border-[#f4cfab] bg-[var(--primary-soft)] text-sm font-black text-[var(--primary-strong)]">
         SA
       </div>
       <h3 className="section-title">{title}</h3>
@@ -309,7 +333,7 @@ function WorkflowStep({
       {!isLast ? (
         <span className="absolute left-[calc(100%+0.1rem)] top-1/2 hidden h-px w-3 -translate-y-1/2 bg-[#F2AF68]/70 lg:block" />
       ) : null}
-      <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+      <p className="text-xs font-bold uppercase tracking-wide text-[var(--primary-strong)]">
         {label}
       </p>
       <p className="mt-3 text-base font-bold leading-snug text-slate-950">{title}</p>

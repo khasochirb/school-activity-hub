@@ -70,3 +70,27 @@ test("drawers and mobile navigation retain Phase 2 behavior while sharing motion
   assert.match(navigation, /className="disclosure-motion"/);
   assert.match(navigation, /inert={!open}/);
 });
+
+test("homepage flow and dashboard sequence stay lightweight and accessible", () => {
+  const css = read("src/app/globals.css");
+  const flow = read("src/components/homepage-activity-flow.tsx");
+  const homepage = read("src/app/page.tsx");
+  const dashboard = read("src/app/(admin)/dashboard/page.tsx");
+  const routeTransition = read(
+    "src/app/(admin)/_components/route-content-transition.tsx",
+  );
+  const reducedMotion = css.slice(
+    css.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
+  );
+
+  assert.match(homepage, /HomepageActivityFlow/);
+  assert.match(flow, /sessionStorage\.setItem/);
+  assert.match(flow, /aria-hidden="true" className="activity-flow-viewport/);
+  assert.match(flow, /<ul className="sr-only">/);
+  assert.match(css, /\.activity-flow-track[\s\S]{0,220}transform/);
+  assert.match(css, /animation-play-state: paused/);
+  assert.match(reducedMotion, /\.activity-flow-track/);
+  assert.match(reducedMotion, /\.activity-flow-group \+ \.activity-flow-group/);
+  assert.match(dashboard, /dashboard-sequence page-stack/);
+  assert.match(routeTransition, /pathname === "\/dashboard"/);
+});

@@ -41,6 +41,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardCharts } from "./dashboard-charts";
 import { StudentUpcomingEvents } from "./student-upcoming-events";
+import { AnimatedMetricValue } from "./animated-metric-value";
 
 type Profile = {
   id: string;
@@ -526,7 +527,7 @@ function DashboardShell({
   title: string;
 }) {
   return (
-    <div className="page-stack">
+    <div className="dashboard-sequence page-stack">
       <PageHeader
         actions={actions}
         description={description}
@@ -1001,7 +1002,7 @@ function MetricCard({
     <article className="stat-card">
       <p className="stat-label">{label}</p>
       <p className="stat-value dashboard-metric-value-enter">
-        {formatNumber(value, locale)}
+        <AnimatedMetricValue key={value} locale={locale} value={value} />
       </p>
     </article>
   );
@@ -1041,7 +1042,7 @@ function UpcomingEventsSection({
         </p>
       </div>
       {events.length ? (
-        <ul className="divide-y divide-slate-200">
+        <ul className="dashboard-upcoming-list divide-y divide-slate-200">
           {events.map((event) => (
             <li className="p-4" key={event.id}>
               <p className="font-semibold text-slate-950">{event.title}</p>

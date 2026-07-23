@@ -10,7 +10,10 @@ export function RouteContentTransition({
   const pathname = usePathname();
 
   return (
-    <div className="route-content-enter" key={pathname}>
+    <div
+      className={pathname === "/dashboard" ? "dashboard-route-content" : "route-content-enter"}
+      key={pathname}
+    >
       {children}
     </div>
   );

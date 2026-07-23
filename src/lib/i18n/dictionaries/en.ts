@@ -570,6 +570,18 @@ export const en = {
     viewRegisteredEvents: "My registered events",
   },
   landing: {
+    activityStream: {
+      communityActivities: "Community activities",
+      competitions: "Competitions",
+      description:
+        "Find clubs, events, workshops, volunteering opportunities, and communities to join.",
+      eyebrow: "Activities happening in your school community",
+      pause: "Pause animation",
+      resume: "Resume animation",
+      studentClubs: "Student clubs",
+      title: "Discover what is happening at your school",
+      workshops: "Workshops",
+    },
     activityLabelAttendance: "Attendance",
     activityLabelClubs: "Club events",
     activityLabelInvites: "Invite access",

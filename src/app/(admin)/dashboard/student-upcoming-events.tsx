@@ -38,7 +38,7 @@ export function StudentUpcomingEvents({
           <h2 className="section-title">{title}</h2>
           <p className="section-description">{description}</p>
         </div>
-        <ul className="divide-y divide-[var(--border)]">
+        <ul className="dashboard-upcoming-list divide-y divide-[var(--border)]">
           {events.map((event) => (
             <li key={event.id}>
               <button

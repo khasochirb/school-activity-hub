@@ -344,6 +344,128 @@ main > .flex.flex-col.gap-6 > section:first-child p {
   color: var(--foreground);
 }
 
+.homepage-activity-flow {
+  overflow: hidden;
+  border-block: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 82%, var(--primary-soft));
+}
+
+.activity-flow-viewport {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
+}
+
+.activity-flow-row {
+  min-width: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.activity-flow-row + .activity-flow-row {
+  margin-top: 0.75rem;
+}
+
+.activity-flow-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: activity-flow-scroll 38s linear infinite;
+}
+
+.activity-flow-track-reverse {
+  animation-direction: reverse;
+  animation-duration: 44s;
+}
+
+.activity-flow-group {
+  display: flex;
+  flex: none;
+  gap: 0.75rem;
+  padding-inline-end: 0.75rem;
+}
+
+.activity-flow-pill {
+  display: inline-flex;
+  min-height: 2.5rem;
+  max-width: min(20rem, 72vw);
+  flex: none;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid var(--category-border);
+  border-radius: 999px;
+  background: var(--category-bg);
+  padding: 0.55rem 0.85rem;
+  color: var(--category-text);
+  font-size: 0.875rem;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.activity-flow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 999px;
+  background: var(--category-solid);
+}
+
+.homepage-activity-flow[data-paused="true"] .activity-flow-track,
+.homepage-activity-flow:hover .activity-flow-track,
+.homepage-activity-flow:focus-within .activity-flow-track {
+  animation-play-state: paused;
+}
+
+.dashboard-sequence > * {
+  animation: dashboard-section-enter var(--motion-normal) var(--motion-ease-out)
+    both;
+}
+
+.dashboard-sequence > :nth-child(2) {
+  animation-delay: 30ms;
+}
+
+.dashboard-sequence > :nth-child(3) {
+  animation-delay: 60ms;
+}
+
+.dashboard-sequence > :nth-child(4) {
+  animation-delay: 90ms;
+}
+
+.dashboard-sequence > :nth-child(5) {
+  animation-delay: 120ms;
+}
+
+.dashboard-sequence > :nth-child(n + 6) {
+  animation-delay: 150ms;
+}
+
+.dashboard-upcoming-list > * {
+  animation: dashboard-item-enter var(--motion-normal) var(--motion-ease-out)
+    both;
+}
+
+.dashboard-upcoming-list > :nth-child(2) {
+  animation-delay: 35ms;
+}
+
+.dashboard-upcoming-list > :nth-child(3) {
+  animation-delay: 70ms;
+}
+
+.dashboard-upcoming-list > :nth-child(n + 4) {
+  animation-delay: 105ms;
+}
+
 .page-stack {
   display: flex;
   flex-direction: column;
@@ -1175,6 +1297,26 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   }
 }
 
+@keyframes activity-flow-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes dashboard-section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes dashboard-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
 @keyframes route-loading-reveal {
   to {
     opacity: 1;
@@ -1721,6 +1863,9 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   }
 
   .mobile-drawer-panel,
+  .activity-flow-track,
+  .dashboard-sequence > *,
+  .dashboard-upcoming-list > *,
   .report-drawer-panel,
   .report-drawer-panel-closing,
   .dashboard-chart-bar-x,
@@ -1740,6 +1885,30 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   .notice-box[role="status"],
   .toast-card {
     animation: none;
+  }
+
+  .activity-flow-control {
+    display: none;
+  }
+
+  .activity-flow-viewport,
+  .activity-flow-row {
+    overflow: visible;
+    mask-image: none;
+  }
+
+  .activity-flow-track {
+    width: auto;
+    transform: none;
+    will-change: auto;
+  }
+
+  .activity-flow-group {
+    flex-wrap: wrap;
+  }
+
+  .activity-flow-group + .activity-flow-group {
+    display: none;
   }
 
   .disclosure-motion,

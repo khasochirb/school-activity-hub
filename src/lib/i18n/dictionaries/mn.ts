@@ -1532,6 +1532,18 @@ export const mn = {
     viewRegisteredEvents: "Миний бүртгүүлсэн үйл ажиллагаа",
   },
   landing: {
+    activityStream: {
+      communityActivities: "Олон нийтийн үйл ажиллагаа",
+      competitions: "Тэмцээн",
+      description:
+        "Клуб, үйл ажиллагаа, сургалт, сайн дурын ажил болон нэгдэх боломжтой хамт олноо олоорой.",
+      eyebrow: "Сургуулийн хамт олны үйл ажиллагаа",
+      pause: "Хөдөлгөөнийг түр зогсоох",
+      resume: "Хөдөлгөөнийг үргэлжлүүлэх",
+      studentClubs: "Сурагчдын клуб",
+      title: "Сургууль дээрээ болж буй үйл ажиллагааг олж мэдээрэй",
+      workshops: "Сургалт",
+    },
     activityLabelAttendance: "Ирц",
     activityLabelClubs: "Клубын үйл ажиллагаа",
     activityLabelInvites: "Урилгын хандалт",
