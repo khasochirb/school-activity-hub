@@ -128,6 +128,7 @@ export async function archiveClub(formData: FormData) {
   );
 
   revalidatePath("/clubs");
+  revalidatePath(`/clubs/${clubId}`);
 }
 
 export async function joinClub(formData: FormData) {
@@ -198,6 +199,7 @@ export async function joinClub(formData: FormData) {
   }
 
   revalidatePath("/clubs");
+  revalidatePath(`/clubs/${clubId}`);
 }
 
 export async function leaveClub(formData: FormData) {
@@ -231,6 +233,7 @@ export async function leaveClub(formData: FormData) {
   );
 
   revalidatePath("/clubs");
+  revalidatePath(`/clubs/${clubId}`);
 }
 
 export async function assignClubLeader(formData: FormData) {

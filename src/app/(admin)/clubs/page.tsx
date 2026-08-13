@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
@@ -302,7 +304,17 @@ export default async function ClubsPage({
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <h3 className={isStudentView ? "text-xl font-semibold text-zinc-950" : "text-lg font-semibold text-zinc-950"}>
-                        {club.name}
+                        <Link
+                          aria-label={tf("clubs.profile.actions.viewNamedClub", {
+                            club: club.name,
+                          })}
+                          className="inline-flex min-w-0 items-center gap-2 break-words hover:text-[var(--primary-strong)]"
+                          href={`/clubs/${club.id}`}
+                          prefetch={false}
+                        >
+                          <span className="break-words">{club.name}</span>
+                          <PendingLinkIndicator />
+                        </Link>
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {club.category ? (

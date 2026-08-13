@@ -29,6 +29,8 @@ $announcementMigrationPath = Join-Path $repositoryRoot "supabase/migrations/2026
 $announcementHardeningMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130002_harden_announcement_creation_rls.sql"
 $announcementSelectMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130003_restore_announcement_select_rls.sql"
 $announcementTestPath = Join-Path $PSScriptRoot "announcement-creation-rls.sql"
+$clubProfileMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130004_add_club_profiles.sql"
+$clubProfileTestPath = Join-Path $PSScriptRoot "club-profiles-rls-rpc.sql"
 $postgrestEventTestPath = Join-Path $PSScriptRoot "postgrest-event-regression.mjs"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
@@ -376,6 +378,17 @@ grant all on schema public to postgres, service_role;
   }
   $announcementTestOutput |
     Where-Object { $_ -match 'ok - |ANNOUNCEMENT_CREATION_RLS_TESTS_PASSED' } |
+    Write-Output
+
+  Invoke-PsqlFile -database "postgres" -path $clubProfileMigrationPath
+  Write-Output "Applied only 202608130004_add_club_profiles.sql."
+
+  $clubProfileTestOutput = Invoke-PsqlFile -database "postgres" -path $clubProfileTestPath -Capture
+  if (($clubProfileTestOutput -join "`n") -notmatch 'CLUB_PROFILE_RLS_RPC_TESTS_PASSED') {
+    throw "Club profile RLS/RPC tests did not emit their success marker."
+  }
+  $clubProfileTestOutput |
+    Where-Object { $_ -match 'ok - |CLUB_PROFILE_RLS_RPC_TESTS_PASSED' } |
     Write-Output
 
   $previousPreference = $ErrorActionPreference
