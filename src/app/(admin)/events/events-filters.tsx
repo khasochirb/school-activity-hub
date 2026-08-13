@@ -42,6 +42,7 @@ export function EventsFilters({
   selectedTime,
   statusOptions,
   schoolOptions,
+  timeContextMessage,
   timeOptions,
   view,
   week,
@@ -61,6 +62,7 @@ export function EventsFilters({
   selectedTime: string;
   statusOptions: EventsFilterOption[];
   schoolOptions: EventsFilterOption[];
+  timeContextMessage?: string;
   timeOptions: EventsFilterOption[];
   view: "list" | "month" | "week";
   week: string;
@@ -97,12 +99,16 @@ export function EventsFilters({
               name="scope"
               options={audienceOptions}
             />
-            <SelectFilter
-              defaultValue={selectedTime}
-              label={labels.time}
-              name="time"
-              options={timeOptions}
-            />
+            {view === "month" ? (
+              <input name="time" type="hidden" value={selectedTime} />
+            ) : (
+              <SelectFilter
+                defaultValue={selectedTime}
+                label={labels.time}
+                name="time"
+                options={timeOptions}
+              />
+            )}
             {categoryOptions.length ? (
               <SelectFilter
                 defaultValue={selectedCategory}
@@ -162,6 +168,10 @@ export function EventsFilters({
             </Link>
           ))}
         </div>
+      ) : null}
+
+      {timeContextMessage ? (
+        <p className="mt-3 text-sm text-slate-600">{timeContextMessage}</p>
       ) : null}
 
       <p className="mt-3 text-sm font-semibold text-slate-600">

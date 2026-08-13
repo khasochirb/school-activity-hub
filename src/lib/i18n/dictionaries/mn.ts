@@ -513,6 +513,7 @@ export const mn = {
       nextMonth: "Дараагийн сар",
       noEventsOnDate: "Энэ өдөр үйл ажиллагаа байхгүй.",
       noMatchingEventsOnDate: "Энэ өдөр тохирох үйл ажиллагаа байхгүй.",
+      pastAndUpcoming: "Сарын харагдацад өнгөрсөн болон удахгүй болох үйл ажиллагааг харуулна.",
       previousMonth: "Өмнөх сар",
       schoolCalendar: "Сургуулийн хуанли",
       selectedDate: "Сонгосон өдөр",

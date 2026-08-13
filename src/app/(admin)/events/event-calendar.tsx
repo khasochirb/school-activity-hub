@@ -19,6 +19,12 @@ import {
   formatWeekdayShort,
 } from "@/lib/i18n/date-format";
 import type { Locale } from "@/lib/i18n/locales";
+import {
+  calendarDateFromDayKey,
+  calendarDateKey,
+  eventCalendarDayKey,
+  getMonthCalendarGridDateKeys,
+} from "@/lib/events/event-calendar-range";
 import { CategoryBadge, StatusBadge } from "../_components/page-ui";
 import type { EventBrowserItem, EventBrowserLabels } from "./event-browser";
 
@@ -48,19 +54,31 @@ export function EventCalendar({
   locale,
   month,
   navigation,
+  timeZone,
 }: {
   items: EventBrowserItem[];
   labels: EventCalendarLabels;
   locale: Locale;
   month: string;
   navigation: CalendarNavigation;
+  timeZone: string;
 }) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const monthDate = useMemo(() => parseMonth(month), [month]);
-  const today = useMemo(() => new Date(), []);
-  const gridDates = useMemo(() => getCalendarGridDates(monthDate), [monthDate]);
-  const monthDates = useMemo(() => getMonthDates(monthDate), [monthDate]);
+  const monthDate = useMemo(
+    () => calendarDateFromDayKey(`${month}-01`),
+    [month],
+  );
+  const todayKey = useMemo(
+    () => eventCalendarDayKey(new Date(), timeZone),
+    [timeZone],
+  );
+  const today = useMemo(() => calendarDateFromDayKey(todayKey), [todayKey]);
+  const gridDates = useMemo(
+    () =>
+      getMonthCalendarGridDateKeys(month).map(calendarDateFromDayKey),
+    [month],
+  );
   const [selectedDateKey, setSelectedDateKey] = useState(() =>
     isSameMonth(today, monthDate) ? dateKey(today) : dateKey(monthDate),
   );
@@ -68,14 +86,20 @@ export function EventCalendar({
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const mobileDateStripRef = useRef<HTMLDivElement | null>(null);
   const selectedMobileDateRef = useRef<HTMLButtonElement | null>(null);
-  const eventsByDate = useMemo(() => groupEventsByDate(items), [items]);
+  const eventsByDate = useMemo(
+    () => groupEventsByDate(items, timeZone),
+    [items, timeZone],
+  );
   const selectedEvents = eventsByDate.get(selectedDateKey) ?? [];
   const selectedDate = dateFromKey(selectedDateKey);
   const selectedEvent =
     items.find((item) => item.id === selectedEventId) ?? null;
   const closeModal = useCallback(() => setSelectedEventId(null), []);
   const weekdayDates = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(new Date(2024, 0, 1, 12), index)),
+    () =>
+      Array.from({ length: 7 }, (_, index) =>
+        addDays(new Date(Date.UTC(2024, 0, 1, 12)), index),
+      ),
     [],
   );
 
@@ -107,7 +131,7 @@ export function EventCalendar({
 
   function goToToday() {
     if (month === navigation.todayMonth) {
-      setSelectedDateKey(dateKey(new Date()));
+      setSelectedDateKey(eventCalendarDayKey(new Date(), timeZone));
       return;
     }
 
@@ -127,7 +151,7 @@ export function EventCalendar({
 
     return (
       <div
-        aria-label={formatLongDate(date, locale)}
+        aria-label={formatLongDate(date, locale, "UTC")}
         aria-selected={isSelected}
         className={[
           "min-h-36 min-w-0 border-b border-r border-[var(--border)] p-1.5",
@@ -152,7 +176,7 @@ export function EventCalendar({
           onClick={() => setSelectedDateKey(key)}
           type="button"
         >
-          {date.getDate()}
+          {date.getUTCDate()}
         </button>
 
         <div className="mt-1 space-y-1">
@@ -163,6 +187,8 @@ export function EventCalendar({
               labels={labels}
               locale={locale}
               onOpen={openEvent}
+              isPast={key < todayKey}
+              timeZone={timeZone}
             />
           ))}
           {hiddenCount ? (
@@ -208,7 +234,7 @@ export function EventCalendar({
                   key={date.toISOString()}
                   role="columnheader"
                 >
-                  {formatWeekdayShort(date, locale)}
+                  {formatWeekdayShort(date, locale, "UTC")}
                 </div>
               ))}
             </div>
@@ -231,6 +257,7 @@ export function EventCalendar({
             locale={locale}
             onOpen={openEvent}
             selectedDate={selectedDate}
+            timeZone={timeZone}
           />
         </div>
 
@@ -240,21 +267,24 @@ export function EventCalendar({
             className="flex max-w-full gap-2 overflow-x-auto overscroll-x-contain border-y border-[var(--border)] bg-[var(--card-soft)] p-3"
             ref={mobileDateStripRef}
           >
-            {monthDates.map((date) => {
+            {gridDates.map((date) => {
               const key = dateKey(date);
               const isSelected = key === selectedDateKey;
               const isToday = isSameDay(date, today);
+              const isCurrentMonth = isSameMonth(date, monthDate);
 
               return (
                 <button
                   aria-current={isToday ? "date" : undefined}
-                  aria-label={formatLongDate(date, locale)}
+                  aria-label={formatLongDate(date, locale, "UTC")}
                   aria-pressed={isSelected}
                   className={[
                     "flex min-h-16 min-w-14 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]",
                     isSelected
                       ? "border-[#f2af68] bg-[var(--primary-soft)] text-[var(--primary-strong)] shadow-sm"
-                      : "border-[var(--border)] bg-[var(--card)] text-slate-700",
+                      : isCurrentMonth
+                        ? "border-[var(--border)] bg-[var(--card)] text-slate-700"
+                        : "border-[var(--border)] bg-[var(--card-soft)] text-slate-500",
                   ].join(" ")}
                   key={key}
                   onClick={() => setSelectedDateKey(key)}
@@ -262,9 +292,11 @@ export function EventCalendar({
                   type="button"
                 >
                   <span className="text-xs font-bold uppercase">
-                    {formatWeekdayShort(date, locale)}
+                    {formatWeekdayShort(date, locale, "UTC")}
                   </span>
-                  <span className="mt-1 text-lg font-black">{date.getDate()}</span>
+                  <span className="mt-1 text-lg font-black">
+                    {date.getUTCDate()}
+                  </span>
                 </button>
               );
             })}
@@ -277,6 +309,7 @@ export function EventCalendar({
             locale={locale}
             onOpen={openEvent}
             selectedDate={selectedDate}
+            timeZone={timeZone}
           />
         </div>
       </section>
@@ -315,7 +348,7 @@ function CalendarToolbar({
           {labels.schoolCalendar}
         </p>
         <h3 className="mt-1 break-words text-xl font-bold capitalize text-slate-950">
-          {formatMonthYear(monthDate, locale)}
+          {formatMonthYear(monthDate, locale, "UTC")}
         </h3>
       </div>
       <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] gap-2 sm:flex sm:w-auto">
@@ -352,24 +385,31 @@ function CalendarToolbar({
 
 function CalendarEventChip({
   event,
+  isPast,
   labels,
   locale,
   onOpen,
+  timeZone,
 }: {
   event: EventBrowserItem;
+  isPast: boolean;
   labels: EventCalendarLabels;
   locale: Locale;
   onOpen: (eventId: string, trigger: HTMLElement) => void;
+  timeZone: string;
 }) {
   return (
     <button
       aria-label={`${labels.viewEvent}: ${event.title}`}
-      className="interactive-chip block min-h-11 w-full cursor-pointer overflow-hidden rounded-md border border-[var(--border)] border-l-[#f2af68] bg-[var(--card-soft)] px-2 py-1.5 text-left hover:border-[#f2af68] hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]"
+      className={[
+        "interactive-chip block min-h-11 w-full cursor-pointer overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card-soft)] px-2 py-1.5 text-left hover:border-[#f2af68] hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]",
+        isPast ? "border-l-slate-400 opacity-80" : "border-l-[#f2af68]",
+      ].join(" ")}
       onClick={(clickEvent) => onOpen(event.id, clickEvent.currentTarget)}
       type="button"
     >
       <span className="block truncate text-[11px] font-bold text-slate-600">
-        {formatTime(event.startsAt, locale)} ·{" "}
+        {formatTime(event.startsAt, locale, timeZone)} ·{" "}
         {calendarIndicatorLabel(event, labels)}
       </span>
       <span className="mt-0.5 block truncate text-xs font-bold text-slate-950">
@@ -390,12 +430,14 @@ function CalendarAgenda({
   locale,
   onOpen,
   selectedDate,
+  timeZone,
 }: {
   events: EventBrowserItem[];
   labels: EventCalendarLabels;
   locale: Locale;
   onOpen: (eventId: string, trigger: HTMLElement) => void;
   selectedDate: Date;
+  timeZone: string;
 }) {
   return (
     <section className="local-panel-enter border-t border-[var(--border)] p-3 sm:p-4">
@@ -403,7 +445,7 @@ function CalendarAgenda({
         {labels.selectedDate}
       </p>
       <h3 className="mt-1 break-words text-base font-bold capitalize text-slate-950 sm:text-lg">
-        {formatLongDate(selectedDate, locale)}
+        {formatLongDate(selectedDate, locale, "UTC")}
       </h3>
 
       {events.length ? (
@@ -445,7 +487,7 @@ function CalendarAgenda({
                 {event.title}
               </span>
               <span className="mt-1 block text-sm font-semibold text-slate-700">
-                {formatTime(event.startsAt, locale)}–{formatTime(event.endsAt, locale)}
+                {formatTime(event.startsAt, locale, timeZone)}–{formatTime(event.endsAt, locale, timeZone)}
               </span>
               <span className="mt-1 block break-words text-sm text-slate-600">
                 {event.location || "-"}
@@ -474,55 +516,16 @@ function CalendarAgenda({
   );
 }
 
-function parseMonth(month: string) {
-  const match = /^(\d{4})-(\d{2})$/.exec(month);
-  const year = match ? Number(match[1]) : new Date().getFullYear();
-  const monthIndex = match ? Number(match[2]) - 1 : new Date().getMonth();
-
-  return new Date(year, monthIndex, 1, 12);
-}
-
-function getCalendarGridDates(monthDate: Date) {
-  const firstDay = new Date(
-    monthDate.getFullYear(),
-    monthDate.getMonth(),
-    1,
-    12,
-  );
-  const daysSinceMonday = (firstDay.getDay() + 6) % 7;
-  const firstGridDate = addDays(firstDay, -daysSinceMonday);
-
-  return Array.from({ length: 42 }, (_, index) =>
-    addDays(firstGridDate, index),
-  );
-}
-
-function getMonthDates(monthDate: Date) {
-  const dayCount = new Date(
-    monthDate.getFullYear(),
-    monthDate.getMonth() + 1,
-    0,
-    12,
-  ).getDate();
-
-  return Array.from(
-    { length: dayCount },
-    (_, index) =>
-      new Date(monthDate.getFullYear(), monthDate.getMonth(), index + 1, 12),
-  );
-}
-
-function groupEventsByDate(items: EventBrowserItem[]) {
+function groupEventsByDate(items: EventBrowserItem[], timeZone: string) {
   const eventsByDate = new Map<string, EventBrowserItem[]>();
 
   items.forEach((event) => {
-    const startsAt = new Date(event.startsAt);
+    const key = eventCalendarDayKey(event.startsAt, timeZone);
 
-    if (Number.isNaN(startsAt.getTime())) {
+    if (!key) {
       return;
     }
 
-    const key = dateKey(startsAt);
     const events = eventsByDate.get(key) ?? [];
     events.push(event);
     eventsByDate.set(key, events);
@@ -539,26 +542,16 @@ function groupEventsByDate(items: EventBrowserItem[]) {
 }
 
 function dateKey(date: Date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+  return calendarDateKey(date);
 }
 
 function dateFromKey(key: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
-
-  if (!match) {
-    return new Date();
-  }
-
-  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12);
+  return calendarDateFromDayKey(key);
 }
 
 function addDays(date: Date, days: number) {
   const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
   return nextDate;
 }
 
@@ -568,8 +561,8 @@ function isSameDay(first: Date, second: Date) {
 
 function isSameMonth(first: Date, second: Date) {
   return (
-    first.getFullYear() === second.getFullYear() &&
-    first.getMonth() === second.getMonth()
+    first.getUTCFullYear() === second.getUTCFullYear() &&
+    first.getUTCMonth() === second.getUTCMonth()
   );
 }
 

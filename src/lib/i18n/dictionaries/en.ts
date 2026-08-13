@@ -1092,6 +1092,7 @@ export const en = {
       nextMonth: "Next month",
       noEventsOnDate: "No events on this date.",
       noMatchingEventsOnDate: "No matching events on this date.",
+      pastAndUpcoming: "Month view shows past and upcoming events.",
       previousMonth: "Previous month",
       schoolCalendar: "School calendar",
       selectedDate: "Selected date",

@@ -21,6 +21,16 @@ import {
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import {
+  currentCalendarMonth,
+  DEFAULT_EVENT_TIME_ZONE,
+  getMonthCalendarQueryRange,
+  isEventTimeFilterActive,
+  offsetCalendarMonth,
+  parseCalendarMonth,
+  resolveEventTimeZone,
+  shouldApplyEventTimeFilter,
+} from "@/lib/events/event-calendar-range";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
 import { isEventSchemaError } from "@/lib/events/event-errors";
 import {
@@ -226,17 +236,7 @@ export default async function EventsPage({
   const selectedCategory = parseActivityCategory(getSearchValue(params.category));
   const selectedTime = parseEventTime(getSearchParam(params.time));
   const selectedView = parseEventBrowseView(getSearchParam(params.view));
-  const selectedMonth = parseCalendarMonth(
-    getSearchParam(params.month),
-    new Date(),
-  );
   const selectedWeek = parseWeekStart(getSearchParam(params.week), new Date());
-  const calendarRange =
-    selectedView === "month"
-      ? getCalendarQueryRange(selectedMonth)
-      : selectedView === "week"
-        ? getWeekQueryRange(selectedWeek)
-        : null;
   const page = getPageParam(params.page);
   const range = pageRange(page, EVENTS_PAGE_SIZE);
   const actor = await timeServer("events.query.actor", () => getCurrentEventActor());
@@ -271,6 +271,21 @@ export default async function EventsPage({
   };
   const isPlatformAdmin = actor.isPlatformAdmin;
   const isStaff = isPlatformAdmin || profile.role === "school_admin" || profile.role === "teacher";
+  const calendarTimeZone = await getEventCalendarTimeZone(
+    admin,
+    selectedPlatformSchool?.id ?? profile.school_id,
+  );
+  const selectedMonth = parseCalendarMonth(
+    getSearchParam(params.month),
+    new Date(),
+    calendarTimeZone,
+  );
+  const calendarRange =
+    selectedView === "month"
+      ? getMonthCalendarQueryRange(selectedMonth, calendarTimeZone)
+      : selectedView === "week"
+        ? getWeekQueryRange(selectedWeek)
+        : null;
   const selectedAudience = isPlatformAdmin
     ? "all"
     : parseEventAudience(
@@ -342,6 +357,7 @@ export default async function EventsPage({
     selectedCategory,
     selectedStatus,
     selectedTime,
+    applyTimeFilter: shouldApplyEventTimeFilter(selectedView),
     sharedEventIds,
     isStaff,
     now,
@@ -431,7 +447,7 @@ export default async function EventsPage({
       selectedCategory ||
       selectedAudience !== defaultAudience ||
       selectedStatus !== "approved" ||
-      selectedTime !== "upcoming",
+      isEventTimeFilterActive(selectedView, selectedTime),
   );
   const emptyTitle =
     selectedTime === "past"
@@ -884,6 +900,11 @@ export default async function EventsPage({
         selectedView={selectedView}
         selectedMonth={selectedMonth}
         selectedWeek={selectedWeek}
+        timeContextMessage={
+          selectedView === "month"
+            ? t("events.calendar.pastAndUpcoming")
+            : undefined
+        }
         t={t}
         tf={tf}
       />
@@ -925,6 +946,7 @@ export default async function EventsPage({
             labels={eventCalendarLabels}
             locale={locale}
             month={selectedMonth}
+            timeZone={calendarTimeZone}
             navigation={{
               nextHref: buildEventsMonthHref(
                 filterUrlState,
@@ -936,9 +958,9 @@ export default async function EventsPage({
               ),
               todayHref: buildEventsMonthHref(
                 filterUrlState,
-                currentCalendarMonth(new Date()),
+                currentCalendarMonth(new Date(), calendarTimeZone),
               ),
-              todayMonth: currentCalendarMonth(new Date()),
+              todayMonth: currentCalendarMonth(new Date(), calendarTimeZone),
             }}
           />
         ) : selectedView === "week" ? (
@@ -1032,6 +1054,7 @@ function EventFilters({
   selectedView,
   selectedMonth,
   selectedWeek,
+  timeContextMessage,
   t,
   tf,
 }: {
@@ -1050,6 +1073,7 @@ function EventFilters({
   selectedView: EventBrowseView;
   selectedMonth: string;
   selectedWeek: string;
+  timeContextMessage?: string;
   t: Translate;
   tf: FormatTranslate;
 }) {
@@ -1086,7 +1110,7 @@ function EventFilters({
       ]}
       clearHref={
         selectedView === "month"
-          ? `/events?view=month&month=${selectedMonth}${selectedSchoolId ? `&school=${selectedSchoolId}` : ""}`
+          ? `/events?view=month&month=${selectedMonth}&time=${selectedTime}${selectedSchoolId ? `&school=${selectedSchoolId}` : ""}`
           : selectedView === "week"
             ? `/events?view=week&week=${selectedWeek}${selectedSchoolId ? `&school=${selectedSchoolId}` : ""}`
             : selectedSchoolId
@@ -1143,6 +1167,7 @@ function EventFilters({
         { label: t("filters.upcoming"), value: "upcoming" },
         { label: t("filters.past"), value: "past" },
       ]}
+      timeContextMessage={timeContextMessage}
       view={selectedView}
       week={selectedWeek}
     />
@@ -1297,6 +1322,7 @@ function sharingLabel(
 async function getFilteredEvents(
   client: SupabaseClient,
   {
+    applyTimeFilter,
     audience,
     calendarRange,
     connectedSchoolIds,
@@ -1315,6 +1341,7 @@ async function getFilteredEvents(
     sharedEventIds,
     range,
   }: {
+    applyTimeFilter: boolean;
     audience: EventAudience;
     calendarRange: { from: string; to: string } | null;
     connectedSchoolIds: string[];
@@ -1375,10 +1402,12 @@ async function getFilteredEvents(
     query = query.eq("status", selectedStatus);
   }
 
-  query =
-    selectedTime === "past"
-      ? query.lt("starts_at", now)
-      : query.gte("starts_at", now);
+  if (applyTimeFilter) {
+    query =
+      selectedTime === "past"
+        ? query.lt("starts_at", now)
+        : query.gte("starts_at", now);
+  }
 
   if (calendarRange) {
     query = query
@@ -1412,7 +1441,7 @@ async function getFilteredEvents(
       : "events.query.filtered-events",
     () => {
       const orderedQuery = query.order("starts_at", {
-        ascending: selectedTime !== "past",
+        ascending: !applyTimeFilter || selectedTime !== "past",
       });
 
       return calendarRange
@@ -1591,6 +1620,34 @@ async function getSchoolsById(
   );
 
   return schools ?? [];
+}
+
+async function getEventCalendarTimeZone(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+) {
+  if (!schoolId) {
+    return DEFAULT_EVENT_TIME_ZONE;
+  }
+
+  const { data: school, error } = await timeServer(
+    "events.query.school-timezone",
+    () =>
+      admin
+        .from("schools")
+        .select("timezone")
+        .eq("id", schoolId)
+        .maybeSingle<{ timezone: string | null }>(),
+  );
+
+  if (error) {
+    console.error("events.query.school-timezone failed", {
+      code: error.code,
+      schoolId,
+    });
+  }
+
+  return resolveEventTimeZone(school?.timezone);
 }
 
 async function getEligibleResponsibleStaff(
@@ -1923,44 +1980,6 @@ function parseEventBrowseView(value: string): EventBrowseView {
     : "list";
 }
 
-function parseCalendarMonth(value: string, fallbackDate: Date) {
-  const match = /^(\d{4})-(\d{2})$/.exec(value);
-
-  if (!match) {
-    return currentCalendarMonth(fallbackDate);
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-
-  return month >= 1 && month <= 12
-    ? `${year}-${String(month).padStart(2, "0")}`
-    : currentCalendarMonth(fallbackDate);
-}
-
-function currentCalendarMonth(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function offsetCalendarMonth(month: string, offset: number) {
-  const date = calendarMonthDate(month);
-  date.setMonth(date.getMonth() + offset);
-
-  return currentCalendarMonth(date);
-}
-
-function getCalendarQueryRange(month: string) {
-  const monthStart = calendarMonthDate(month);
-  const daysSinceMonday = (monthStart.getDay() + 6) % 7;
-  const gridStart = addCalendarDays(monthStart, -daysSinceMonday - 1);
-  const gridEnd = addCalendarDays(gridStart, 44);
-
-  return {
-    from: gridStart.toISOString(),
-    to: gridEnd.toISOString(),
-  };
-}
-
 function parseWeekStart(value: string, fallbackDate: Date) {
   const parsedDate = dateFromDayKey(value);
   return parsedDate ? currentWeekStart(parsedDate) : currentWeekStart(fallbackDate);
@@ -2007,14 +2026,6 @@ function dateFromDayKey(value: string) {
 
 function dayKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function calendarMonthDate(month: string) {
-  const match = /^(\d{4})-(\d{2})$/.exec(month);
-
-  return match
-    ? new Date(Number(match[1]), Number(match[2]) - 1, 1, 12)
-    : new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
 }
 
 function addCalendarDays(date: Date, days: number) {
@@ -2167,7 +2178,7 @@ function getActiveEventFilters(
     });
   }
 
-  if (state.time !== "upcoming") {
+  if (isEventTimeFilterActive(state.view, state.time)) {
     filters.push({
       href: buildEventsHref(state, ["time"]),
       label: t("filters.past"),

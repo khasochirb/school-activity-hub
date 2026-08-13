@@ -31,31 +31,50 @@ export function formatDateTime(value: DateInput, locale: Locale) {
   });
 }
 
-export function formatTime(value: DateInput, locale: Locale) {
+export function formatTime(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
   return formatWithLocale(value, locale, {
     hour: "numeric",
     minute: "2-digit",
+    timeZone,
   });
 }
 
-export function formatLongDate(value: DateInput, locale: Locale) {
+export function formatLongDate(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
   return formatWithLocale(value, locale, {
     day: "numeric",
     month: "long",
+    timeZone,
     weekday: "long",
     year: "numeric",
   });
 }
 
-export function formatMonthYear(value: DateInput, locale: Locale) {
+export function formatMonthYear(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
   return formatWithLocale(value, locale, {
     month: "long",
+    timeZone,
     year: "numeric",
   });
 }
 
-export function formatWeekdayShort(value: DateInput, locale: Locale) {
-  return formatWithLocale(value, locale, { weekday: "short" });
+export function formatWeekdayShort(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
+  return formatWithLocale(value, locale, { timeZone, weekday: "short" });
 }
 
 export function formatDateRange(
