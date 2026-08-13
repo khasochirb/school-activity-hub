@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  canCreateAnnouncementForSchool,
+  normalizeAnnouncementValues,
+  type AnnouncementFormValues,
+  type AnnouncementValidationErrors,
+  validateAnnouncementValues,
+} from "@/lib/announcements/announcement-create";
+import {
   formatTranslation,
   getDictionary,
   translate,
@@ -15,11 +22,14 @@ type Profile = {
   id: string;
   school_id: string;
   role: "school_admin" | "teacher" | "student";
+  status: "active" | "inactive";
 };
 
 export type CreateAnnouncementState = {
+  fieldErrors: Partial<Record<keyof AnnouncementFormValues, string>>;
   message: string;
   success: boolean;
+  values: AnnouncementFormValues;
 };
 
 type ServerI18n = {
@@ -32,37 +42,32 @@ export async function createAnnouncement(
   formData: FormData,
 ): Promise<CreateAnnouncementState> {
   const i18n = await getServerI18n();
+  const values = normalizeAnnouncementValues({
+    body: formData.get("body"),
+    status: formData.get("status"),
+    title: formData.get("title"),
+  });
   const profile = await getCurrentProfile();
 
-  if (!profile || !isStaff(profile)) {
+  if (!profile || !canCreateAnnouncementForSchool(profile, profile.school_id)) {
     return {
+      fieldErrors: {},
       message: i18n.t("announcements.errors.staffOnlyCreate"),
       success: false,
+      values,
     };
   }
 
-  const title = String(formData.get("title") ?? "").trim();
-  const body = String(formData.get("body") ?? "").trim();
-  const status = String(formData.get("status") ?? "active").trim();
+  const validationErrors = validateAnnouncementValues(values);
+  const fieldErrors = translateValidationErrors(validationErrors, i18n);
+  const firstError = Object.values(fieldErrors)[0];
 
-  if (!title) {
+  if (firstError) {
     return {
-      message: i18n.t("announcements.errors.titleRequired"),
+      fieldErrors,
+      message: firstError,
       success: false,
-    };
-  }
-
-  if (!body) {
-    return {
-      message: i18n.t("announcements.errors.bodyRequired"),
-      success: false,
-    };
-  }
-
-  if (!["active", "archived"].includes(status)) {
-    return {
-      message: i18n.t("announcements.errors.invalidStatus"),
-      success: false,
+      values,
     };
   }
 
@@ -71,30 +76,45 @@ export async function createAnnouncement(
     supabase.from("announcements").insert({
       school_id: profile.school_id,
       created_by_profile_id: profile.id,
-      title,
-      body,
-      status,
+      title: values.title,
+      body: values.body,
+      status: values.status,
     }),
   );
 
   if (error) {
+    console.error("Announcement creation failed", {
+      code: error.code,
+      profileRole: profile.role,
+      profileStatus: profile.status,
+      schoolId: profile.school_id,
+      status: values.status,
+    });
+
     return {
+      fieldErrors: {},
       message: i18n.tf("announcements.errors.createFailed", {
         error: i18n.t("common.somethingWentWrong"),
       }),
       success: false,
+      values,
     };
   }
 
   revalidatePath("/announcements");
 
-  return { message: i18n.t("announcements.success.created"), success: true };
+  return {
+    fieldErrors: {},
+    message: i18n.t("announcements.success.created"),
+    success: true,
+    values: { body: "", status: "active", title: "" },
+  };
 }
 
 export async function archiveAnnouncement(formData: FormData) {
   const profile = await getCurrentProfile();
 
-  if (!profile || !isStaff(profile)) {
+  if (!profile || !canCreateAnnouncementForSchool(profile, profile.school_id)) {
     redirect("/announcements");
   }
 
@@ -135,16 +155,12 @@ async function getCurrentProfile(): Promise<Profile | null> {
     () =>
       supabase
         .from("profiles")
-        .select("id, school_id, role")
+        .select("id, school_id, role, status")
         .eq("id", user.id)
         .maybeSingle<Profile>(),
   );
 
   return profile;
-}
-
-function isStaff(profile: Profile) {
-  return profile.role === "school_admin" || profile.role === "teacher";
 }
 
 async function getServerI18n(): Promise<ServerI18n> {
@@ -155,4 +171,16 @@ async function getServerI18n(): Promise<ServerI18n> {
     formatTranslation(dictionary, key, values);
 
   return { t, tf };
+}
+
+function translateValidationErrors(
+  errors: AnnouncementValidationErrors,
+  i18n: ServerI18n,
+) {
+  return Object.fromEntries(
+    Object.entries(errors).map(([field, error]) => [
+      field,
+      i18n.t(`announcements.errors.${error}`),
+    ]),
+  ) as Partial<Record<keyof AnnouncementFormValues, string>>;
 }

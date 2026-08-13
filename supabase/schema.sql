@@ -1216,6 +1216,8 @@ alter table public.platform_audit_logs enable row level security;
 alter table public.school_connections enable row level security;
 alter table public.student_rosters enable row level security;
 alter table public.announcements enable row level security;
+
+grant select, insert, update on table public.announcements to authenticated;
 alter table public.invite_codes enable row level security;
 alter table public.clubs enable row level security;
 alter table public.club_memberships enable row level security;
@@ -1415,6 +1417,7 @@ create policy "School staff can create announcements"
   to authenticated
   with check (
     public.current_user_can_manage_school(school_id)
+    and created_by_profile_id = auth.uid()
     and status in ('active', 'archived')
   );
 

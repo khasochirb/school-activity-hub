@@ -38,6 +38,7 @@ type Profile = {
   id: string;
   school_id: string;
   role: "school_admin" | "teacher" | "student";
+  status: "active" | "inactive";
 };
 
 type Announcement = {
@@ -83,7 +84,7 @@ export default async function AnnouncementsPage({
   const { data: profile } = await timeServer("announcements.query.profile", () =>
     supabase
       .from("profiles")
-      .select("id, school_id, role")
+      .select("id, school_id, role, status")
       .eq("id", user.id)
       .maybeSingle<Profile>(),
   );
@@ -336,7 +337,10 @@ function ArchiveForm({
 }
 
 function isSchoolStaff(profile: Profile) {
-  return profile.role === "school_admin" || profile.role === "teacher";
+  return (
+    profile.status === "active" &&
+    (profile.role === "school_admin" || profile.role === "teacher")
+  );
 }
 
 function statusLabel(status: string, t: (key: string) => string) {
