@@ -101,17 +101,16 @@ export function ClubMediaManager({
         size: file.size,
       });
 
-      if (!prepared.ok || !prepared.path) {
+      if (!prepared.ok || !prepared.path || !prepared.uploadToken) {
         showError(prepared.ok ? "uploadFailed" : prepared.code);
         return;
       }
 
       const { error: uploadError } = await supabase.storage
         .from(CLUB_MEDIA_BUCKET)
-        .upload(prepared.path, file, {
+        .uploadToSignedUrl(prepared.path, prepared.uploadToken, file, {
           cacheControl: "3600",
           contentType: inspection.mimeType,
-          upsert: false,
         });
 
       if (uploadError) {

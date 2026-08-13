@@ -29,7 +29,13 @@ export type ClubMediaActionCode =
   | "uploadFailed";
 
 export type ClubMediaActionResult =
-  | { code?: never; ok: true; path?: string; version?: string }
+  | {
+      code?: never;
+      ok: true;
+      path?: string;
+      uploadToken?: string;
+      version?: string;
+    }
   | { code: ClubMediaActionCode; ok: false };
 
 type ClubMediaAccess = {
@@ -69,16 +75,32 @@ export async function prepareClubMediaUpload(input: {
 
   await removeStaleClubMedia(access, input.kind);
 
-  return {
-    ok: true,
-    path: buildClubMediaPath(
-      access.schoolId,
-      access.clubId,
-      input.kind,
-      input.mimeType,
-      randomUUID(),
-    ),
-  };
+  const path = buildClubMediaPath(
+    access.schoolId,
+    access.clubId,
+    input.kind,
+    input.mimeType,
+    randomUUID(),
+  );
+  const admin = createAdminClient();
+  const { data: signedUpload, error: signedUploadError } = await admin.storage
+    .from(CLUB_MEDIA_BUCKET)
+    .createSignedUploadUrl(path, { upsert: false });
+
+  if (signedUploadError || !signedUpload?.token) {
+    logServerError(
+      "Club media signed upload preparation failed",
+      signedUploadError,
+      {
+        clubId: access.clubId,
+        kind: input.kind,
+        role: access.role,
+      },
+    );
+    return { code: "uploadFailed", ok: false };
+  }
+
+  return { ok: true, path, uploadToken: signedUpload.token };
 }
 
 export async function finalizeClubMediaUpload(input: {

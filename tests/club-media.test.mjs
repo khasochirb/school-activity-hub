@@ -153,6 +153,8 @@ test("club media UI uses protected media routes, fallbacks, and bilingual guidan
   assert.match(editPage, /<ClubMediaManager/);
   assert.match(manager, /accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(manager, /inspectClubImage/);
+  assert.match(manager, /uploadToSignedUrl\(/);
+  assert.doesNotMatch(manager, /\.upload\(prepared\.path/);
   assert.match(manager, /router\.refresh\(\)/);
   assert.match(english, /Use a club logo, artwork, or activity image/);
   assert.match(mongolian, /Сургууль нийтлэхийг зөвшөөрсөн клубын лого/);
@@ -175,6 +177,18 @@ test("replacement validates before switching references and cleans only safe obj
   assert.match(actions, /media_path: null/);
   assert.match(actions, /revalidatePath\("\/clubs"\)/);
   assert.match(actions, /revalidatePath\(`\/clubs\/\$\{clubId\}`\)/);
+});
+
+test("club media uploads use a server-authorized, path-scoped signed token", () => {
+  const actions = read(
+    "src/app/(admin)/clubs/[clubId]/edit/media-actions.ts",
+  );
+
+  assert.match(actions, /getClubMediaAccess\(input\.clubId\)/);
+  assert.match(actions, /buildClubMediaPath\(/);
+  assert.match(actions, /\.createSignedUploadUrl\(path, \{ upsert: false \}\)/);
+  assert.match(actions, /uploadToken: signedUpload\.token/);
+  assert.doesNotMatch(actions, /signedUrl:/);
 });
 
 function makePng(width, height, animated = false) {
