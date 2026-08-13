@@ -420,6 +420,16 @@ export const en = {
       rosterStudent: "Roster student",
     },
     joinClubs: "Join clubs",
+    latestAnnouncements: {
+      description: "Recent notices from your school",
+      emptyDescription: "New school announcements will appear here.",
+      emptyTitle: "No active announcements",
+      postedAt: "Posted {date}",
+      title: "Latest announcements",
+      unavailableDescription: "Open Announcements to try again.",
+      unavailableTitle: "Announcements are unavailable",
+      viewAll: "View all announcements",
+    },
     nextSteps: {
       activeInviteCodes: "active invite code(s)",
       description:

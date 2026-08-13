@@ -154,6 +154,22 @@ test("announcement database suite covers the authorization boundary", () => {
   }
 });
 
+test("announcement SELECT migration restores established same-school visibility", () => {
+  const migration = read(
+    "supabase/migrations/202608130003_restore_announcement_select_rls.sql",
+  );
+  const selectPolicy = migration.match(
+    /create policy "Announcements are visible to school members"[\s\S]*?\n\s*\);/,
+  )?.[0];
+
+  assert.ok(selectPolicy);
+  assert.match(migration, /grant select on table public\.announcements to authenticated;/);
+  assert.match(selectPolicy, /school_id = public\.current_profile_school_id\(\)/);
+  assert.match(selectPolicy, /status = 'active'/);
+  assert.match(selectPolicy, /public\.current_user_can_manage_school\(school_id\)/);
+  assert.doesNotMatch(selectPolicy, /current_user_is_platform_admin/);
+});
+
 test("failed creation keeps fields controlled and hides database details", () => {
   const form = read(
     "src/app/(admin)/announcements/create-announcement-form.tsx",

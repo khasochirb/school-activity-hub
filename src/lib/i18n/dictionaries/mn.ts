@@ -1379,6 +1379,16 @@ export const mn = {
       rosterStudent: "Жагсаалтын сурагч",
     },
     joinClubs: "Клубт элсэх",
+    latestAnnouncements: {
+      description: "Танай сургуулийн сүүлийн үеийн зарлалууд",
+      emptyDescription: "Сургуулиас шинэ зарлал нийтлэхэд энд харагдана.",
+      emptyTitle: "Идэвхтэй зарлал алга",
+      postedAt: "Нийтэлсэн: {date}",
+      title: "Сүүлийн зарлалууд",
+      unavailableDescription: "Зарлал хэсгийг нээж дахин оролдоно уу.",
+      unavailableTitle: "Зарлалуудыг харах боломжгүй байна",
+      viewAll: "Бүх зарлалыг харах",
+    },
     nextSteps: {
       activeInviteCodes: "идэвхтэй урилгын код(ууд)",
       description:

@@ -27,6 +27,7 @@ $phase4b2aPostflightPath = Join-Path $repositoryRoot "supabase/production-readin
 $phase4b2aTestPath = Join-Path $PSScriptRoot "phase4b2a-event-supervision-schedule.sql"
 $announcementMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130001_fix_announcement_creation_privileges.sql"
 $announcementHardeningMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130002_harden_announcement_creation_rls.sql"
+$announcementSelectMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130003_restore_announcement_select_rls.sql"
 $announcementTestPath = Join-Path $PSScriptRoot "announcement-creation-rls.sql"
 $postgrestEventTestPath = Join-Path $PSScriptRoot "postgrest-event-regression.mjs"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
@@ -365,6 +366,9 @@ grant all on schema public to postgres, service_role;
 
   Invoke-PsqlFile -database "postgres" -path $announcementHardeningMigrationPath
   Write-Output "Applied only 202608130002_harden_announcement_creation_rls.sql."
+
+  Invoke-PsqlFile -database "postgres" -path $announcementSelectMigrationPath
+  Write-Output "Applied only 202608130003_restore_announcement_select_rls.sql."
 
   $announcementTestOutput = Invoke-PsqlFile -database "postgres" -path $announcementTestPath -Capture
   if (($announcementTestOutput -join "`n") -notmatch 'ANNOUNCEMENT_CREATION_RLS_TESTS_PASSED') {

@@ -132,6 +132,18 @@ type RecentCheckin = {
   } | null;
 };
 
+type DashboardAnnouncement = {
+  body: string;
+  created_at: string;
+  id: string;
+  title: string;
+};
+
+type DashboardAnnouncementsResult = {
+  announcements: DashboardAnnouncement[];
+  failed: boolean;
+};
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -196,21 +208,45 @@ export default async function DashboardPage({
   }
 
   if (isSchoolStaff(profile)) {
-    const analytics = await getStaffAnalytics(admin, profile.school_id);
+    const announcementPromise =
+      profile.role === "teacher"
+        ? getLatestDashboardAnnouncements(
+            await createClient(),
+            profile.school_id,
+          )
+        : Promise.resolve(null);
+    const [analytics, latestAnnouncements] = await Promise.all([
+      getStaffAnalytics(admin, profile.school_id),
+      announcementPromise,
+    ]);
 
-    return <StaffDashboard analytics={analytics} locale={locale} t={t} tf={tf} />;
+    return (
+      <StaffDashboard
+        analytics={analytics}
+        latestAnnouncements={latestAnnouncements}
+        locale={locale}
+        t={t}
+        tf={tf}
+      />
+    );
   }
 
-  const analytics = await getStudentAnalytics(admin, profile);
-  const baseUrl = await getServerBaseUrl();
+  const supabase = await createClient();
+  const [analytics, baseUrl, latestAnnouncements] = await Promise.all([
+    getStudentAnalytics(admin, profile),
+    getServerBaseUrl(),
+    getLatestDashboardAnnouncements(supabase, profile.school_id),
+  ]);
 
   return (
     <StudentDashboard
       analytics={analytics}
       baseUrl={baseUrl}
+      latestAnnouncements={latestAnnouncements}
       locale={locale}
       profile={profile}
       t={t}
+      tf={tf}
     />
   );
 }
@@ -355,11 +391,13 @@ function PlatformDashboard({
 
 function StaffDashboard({
   analytics,
+  latestAnnouncements,
   locale,
   t,
   tf,
 }: {
   analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+  latestAnnouncements: DashboardAnnouncementsResult | null;
   locale: Locale;
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
@@ -375,6 +413,15 @@ function StaffDashboard({
       <NeedsAttention analytics={analytics} locale={locale} t={t} />
       <NextSteps analytics={analytics} t={t} tf={tf} />
       <QuickActions t={t} />
+      {latestAnnouncements ? (
+        <LatestAnnouncementsSection
+          locale={locale}
+          result={latestAnnouncements}
+          showCreateAction
+          t={t}
+          tf={tf}
+        />
+      ) : null}
       <section aria-labelledby="dashboard-overview-title" className="space-y-3">
         <div>
           <h2 className="section-title" id="dashboard-overview-title">
@@ -434,15 +481,19 @@ function StaffDashboard({
 function StudentDashboard({
   analytics,
   baseUrl,
+  latestAnnouncements,
   locale,
   profile,
   t,
+  tf,
 }: {
   analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
   baseUrl: string;
+  latestAnnouncements: DashboardAnnouncementsResult;
   locale: Locale;
   profile: Profile;
   t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
 }) {
   const quickViewEvents = buildStudentQuickViewEvents(
     analytics,
@@ -464,6 +515,14 @@ function StudentDashboard({
           <p>{t("dashboard.student.noRosterWarning")}</p>
         </section>
       ) : null}
+
+      <LatestAnnouncementsSection
+        locale={locale}
+        result={latestAnnouncements}
+        showCreateAction={false}
+        t={t}
+        tf={tf}
+      />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
@@ -510,6 +569,91 @@ function StudentDashboard({
         <UpcomingEventsSection events={[]} locale={locale} t={t} />
       )}
     </DashboardShell>
+  );
+}
+
+function LatestAnnouncementsSection({
+  locale,
+  result,
+  showCreateAction,
+  t,
+  tf,
+}: {
+  locale: Locale;
+  result: DashboardAnnouncementsResult;
+  showCreateAction: boolean;
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+}) {
+  return (
+    <section
+      aria-labelledby="dashboard-latest-announcements-title"
+      className="section-card"
+    >
+      <div className="section-header">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2
+              className="section-title break-words"
+              id="dashboard-latest-announcements-title"
+            >
+              {t("dashboard.latestAnnouncements.title")}
+            </h2>
+            <p className="section-description break-words">
+              {t("dashboard.latestAnnouncements.description")}
+            </p>
+          </div>
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            {showCreateAction ? (
+              <HeaderActionLink href="/announcements">
+                {t("announcements.actions.create")}
+              </HeaderActionLink>
+            ) : null}
+            <HeaderActionLink href="/announcements" variant="secondary">
+              {t("dashboard.latestAnnouncements.viewAll")}
+            </HeaderActionLink>
+          </div>
+        </div>
+      </div>
+
+      {result.failed ? (
+        <div className="p-3 sm:p-4">
+          <div className="notice-box notice-warning">
+            <p className="font-bold text-slate-950">
+              {t("dashboard.latestAnnouncements.unavailableTitle")}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-700">
+              {t("dashboard.latestAnnouncements.unavailableDescription")}
+            </p>
+          </div>
+        </div>
+      ) : result.announcements.length ? (
+        <ul className="divide-y divide-slate-200">
+          {result.announcements.map((announcement) => (
+            <li className="min-w-0 p-3 sm:p-4" key={announcement.id}>
+              <h3 className="break-words text-base font-bold leading-snug text-slate-950">
+                {announcement.title}
+              </h3>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                {tf("dashboard.latestAnnouncements.postedAt", {
+                  date: formatDateTime(announcement.created_at, locale),
+                })}
+              </p>
+              <p className="mt-2 line-clamp-3 whitespace-pre-line break-words text-sm leading-6 text-slate-700">
+                {announcement.body}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="p-3 sm:p-4">
+          <EmptyState
+            description={t("dashboard.latestAnnouncements.emptyDescription")}
+            title={t("dashboard.latestAnnouncements.emptyTitle")}
+          />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1175,6 +1319,34 @@ async function getStaffAnalytics(
     upcomingEvents,
     recentCheckins,
   };
+}
+
+async function getLatestDashboardAnnouncements(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+): Promise<DashboardAnnouncementsResult> {
+  const { data, error } = await timeServer(
+    "dashboard.query.latest-announcements",
+    () =>
+      supabase
+        .from("announcements")
+        .select("id, title, body, created_at")
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(3)
+        .returns<DashboardAnnouncement[]>(),
+  );
+
+  if (error) {
+    console.error("dashboard.query.latest-announcements failed", {
+      code: error.code,
+    });
+
+    return { announcements: [], failed: true };
+  }
+
+  return { announcements: data ?? [], failed: false };
 }
 
 async function getStudentAnalytics(
