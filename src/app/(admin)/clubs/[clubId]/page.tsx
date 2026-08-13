@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -33,14 +34,17 @@ type Club = {
 type ClubProfileRow = {
   about: string | null;
   accessibility_notes: string | null;
+  banner_path: string | null;
   commitment_notes: string | null;
   cost_notes: string | null;
   eligibility_notes: string | null;
   materials_notes: string | null;
   meeting_location: string | null;
   meeting_schedule: string | null;
+  logo_path: string | null;
   tagline: string | null;
   theme_key: ClubProfileTheme | null;
+  updated_at: string;
 };
 
 type MyMembership = {
@@ -143,7 +147,7 @@ export default async function ClubProfilePage({
       supabase
         .from("club_profiles")
         .select(
-          "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key",
+          "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key, logo_path, banner_path, updated_at",
         )
         .eq("club_id", club.id)
         .maybeSingle<ClubProfileRow>(),
@@ -183,50 +187,93 @@ export default async function ClubProfilePage({
   const profileUpdated = getFirst((await searchParams).updated) === "1";
   const canManageProfile = canEdit === true || isLeader || isOwnSchoolStaff;
   const themeClass = getThemeClass(profile?.theme_key ?? "warm");
+  const bannerUrl = getMediaUrl(club.id, "banner", profile);
+  const logoUrl = getMediaUrl(club.id, "logo", profile);
 
   return (
     <div className="page-stack">
-      <section className={`overflow-hidden rounded-xl border p-4 shadow-sm sm:p-6 ${themeClass}`}>
+      <section className={`overflow-hidden rounded-xl border shadow-sm ${themeClass}`}>
         <Link
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary-strong)]"
+          className="m-4 mb-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary-strong)] sm:m-6 sm:mb-0"
           href="/clubs"
           prefetch={false}
         >
           {t("clubs.profile.actions.backToClubs")}
           <PendingLinkIndicator />
         </Link>
-        <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="page-eyebrow">{t("clubs.profile.clubPage")}</p>
-            <h1 className="break-words text-3xl font-black tracking-normal text-slate-950 sm:text-4xl">
-              {club.name}
-            </h1>
-            {profile?.tagline ? (
-              <p className="mt-2 max-w-3xl whitespace-pre-wrap text-base leading-7 text-slate-700">
-                {profile.tagline}
-              </p>
-            ) : null}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {club.category ? (
-                <CategoryBadge category={club.category}>
-                  {categoryLabel(club.category, t)}
-                </CategoryBadge>
+        <div
+          aria-label={tf("clubs.profile.media.bannerAlt", { club: club.name })}
+          className="relative mx-4 mt-4 aspect-[3/1] min-h-28 max-h-72 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card-soft)] sm:mx-6"
+          role={bannerUrl ? undefined : "img"}
+        >
+          {bannerUrl ? (
+            <Image
+              alt={tf("clubs.profile.media.bannerAlt", { club: club.name })}
+              className="object-cover"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 1200px"
+              src={bannerUrl}
+              unoptimized
+            />
+          ) : (
+            <div className="h-full w-full bg-[linear-gradient(135deg,var(--card-soft),var(--primary-soft))]" />
+          )}
+        </div>
+        <div className="flex flex-col gap-5 p-4 pt-0 sm:p-6 sm:pt-0 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-4">
+            <div
+              aria-label={tf("clubs.profile.media.logoAlt", { club: club.name })}
+              className="relative -mt-8 h-20 w-20 shrink-0 overflow-hidden rounded-xl border-4 border-[var(--card)] bg-[var(--primary-soft)] shadow-md sm:-mt-10 sm:h-24 sm:w-24"
+              role={logoUrl ? undefined : "img"}
+            >
+              {logoUrl ? (
+                <Image
+                  alt={tf("clubs.profile.media.logoAlt", { club: club.name })}
+                  className="object-cover"
+                  fill
+                  sizes="96px"
+                  src={logoUrl}
+                  unoptimized
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-xl font-black text-slate-900">
+                  {club.name.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 pt-3">
+              <p className="page-eyebrow">{t("clubs.profile.clubPage")}</p>
+              <h1 className="break-words text-3xl font-black tracking-normal text-slate-950 sm:text-4xl">
+                {club.name}
+              </h1>
+              {profile?.tagline ? (
+                <p className="mt-2 max-w-3xl whitespace-pre-wrap text-base leading-7 text-slate-700">
+                  {profile.tagline}
+                </p>
               ) : null}
-              <StatusBadge status={club.status}>
-                {club.status === "active"
-                  ? t("status.active")
-                  : t("status.archived")}
-              </StatusBadge>
-              {activeMembership ? (
-                <StatusBadge variant="success">
-                  {isLeader
-                    ? t("clubs.memberRoles.leader")
-                    : t("clubs.profile.membership.joined")}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {club.category ? (
+                  <CategoryBadge category={club.category}>
+                    {categoryLabel(club.category, t)}
+                  </CategoryBadge>
+                ) : null}
+                <StatusBadge status={club.status}>
+                  {club.status === "active"
+                    ? t("status.active")
+                    : t("status.archived")}
                 </StatusBadge>
-              ) : null}
+                {activeMembership ? (
+                  <StatusBadge variant="success">
+                    {isLeader
+                      ? t("clubs.memberRoles.leader")
+                      : t("clubs.profile.membership.joined")}
+                  </StatusBadge>
+                ) : null}
+              </div>
             </div>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap lg:justify-end">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap lg:pt-3 lg:justify-end">
             {actor.profile?.role === "student" && club.status === "active" ? (
               <MembershipAction
                 clubId={club.id}
@@ -519,6 +566,18 @@ function getThemeClass(theme: ClubProfileTheme) {
   return themes[theme];
 }
 
+function getMediaUrl(
+  clubId: string,
+  kind: "banner" | "logo",
+  profile: ClubProfileRow | null,
+) {
+  const path = kind === "logo" ? profile?.logo_path : profile?.banner_path;
+
+  return path
+    ? `/clubs/${clubId}/media/${kind}?v=${encodeURIComponent(profile?.updated_at ?? "")}`
+    : null;
+}
+
 function categoryLabel(category: string, t: (key: string) => string) {
   const key = getActivityCategoryTranslationKey(category);
 
@@ -528,4 +587,3 @@ function categoryLabel(category: string, t: (key: string) => string) {
 function getFirst(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
-

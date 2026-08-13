@@ -30,6 +30,8 @@ $announcementHardeningMigrationPath = Join-Path $repositoryRoot "supabase/migrat
 $announcementSelectMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130003_restore_announcement_select_rls.sql"
 $announcementTestPath = Join-Path $PSScriptRoot "announcement-creation-rls.sql"
 $clubProfileMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130004_add_club_profiles.sql"
+$clubProfilePrivilegeMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130005_restrict_club_profile_table_privileges.sql"
+$clubProfileMediaMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130006_add_club_profile_media.sql"
 $clubProfileTestPath = Join-Path $PSScriptRoot "club-profiles-rls-rpc.sql"
 $postgrestEventTestPath = Join-Path $PSScriptRoot "postgrest-event-regression.mjs"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
@@ -382,6 +384,12 @@ grant all on schema public to postgres, service_role;
 
   Invoke-PsqlFile -database "postgres" -path $clubProfileMigrationPath
   Write-Output "Applied only 202608130004_add_club_profiles.sql."
+
+  Invoke-PsqlFile -database "postgres" -path $clubProfilePrivilegeMigrationPath
+  Write-Output "Applied only 202608130005_restrict_club_profile_table_privileges.sql."
+
+  Invoke-PsqlFile -database "postgres" -path $clubProfileMediaMigrationPath
+  Write-Output "Applied only 202608130006_add_club_profile_media.sql."
 
   $clubProfileTestOutput = Invoke-PsqlFile -database "postgres" -path $clubProfileTestPath -Capture
   if (($clubProfileTestOutput -join "`n") -notmatch 'CLUB_PROFILE_RLS_RPC_TESTS_PASSED') {

@@ -150,9 +150,150 @@ values
   ('abababab-0000-4000-8000-000000004001', 'abababab-0000-4000-8000-000000000001', 'Other school profile', 'forest');
 
 select club_profile_test.assert_true(
+  exists (
+    select 1
+    from storage.buckets b
+    where b.id = 'club-media'
+      and b.public is false
+      and b.file_size_limit = 5242880
+      and b.allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']::text[]
+  ),
+  'club media bucket is private and restricts size and MIME types'
+);
+
+select club_profile_test.assert_true(
+  has_function_privilege(
+    'authenticated', 'public.current_user_can_upload_club_media(text)', 'EXECUTE'
+  )
+    and has_function_privilege(
+      'authenticated', 'public.current_user_can_read_club_media(text)', 'EXECUTE'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'public.set_club_profile_media(uuid,text,text,uuid)',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'service_role',
+      'public.set_club_profile_media(uuid,text,text,uuid)',
+      'EXECUTE'
+    ),
+  'club media helpers expose only the narrow authenticated and service operations'
+);
+
+select club_profile_test.assert_true(
+  public.club_media_upload_metadata_is_valid(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png',
+    '{"size":"1024","mimetype":"image/png"}'::jsonb
+  )
+    and not public.club_media_upload_metadata_is_valid(
+      'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.svg',
+      '{"size":"1024","mimetype":"image/svg+xml"}'::jsonb
+    )
+    and not public.club_media_upload_metadata_is_valid(
+      'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png',
+      '{"size":"1024","mimetype":"image/jpeg"}'::jsonb
+    )
+    and not public.club_media_upload_metadata_is_valid(
+      'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png',
+      '{"size":"2097153","mimetype":"image/png"}'::jsonb
+    ),
+  'club media metadata rejects unsupported, disguised, and oversized uploads'
+);
+
+insert into storage.objects (bucket_id, name, metadata)
+values (
+  'club-media',
+  'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png',
+  '{"size":"1024","mimetype":"image/png"}'::jsonb
+);
+
+select club_profile_test.assert_lives(
+  $$select public.set_club_profile_media(
+      'cccccccc-0000-4000-8000-000000004001',
+      'logo',
+      'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png',
+      'cccccccc-0000-4000-8000-000000001003'
+    )$$,
+  'assigned club leader can attach a controlled club media object'
+);
+
+select club_profile_test.assert_throws(
+  $$select public.set_club_profile_media(
+      'cccccccc-0000-4000-8000-000000004001',
+      'logo',
+      null,
+      'cccccccc-0000-4000-8000-000000001004'
+    )$$,
+  'ordinary club member cannot change a club media reference'
+);
+
+select club_profile_test.assert_throws(
+  $$select public.set_club_profile_media(
+      'cccccccc-0000-4000-8000-000000004001',
+      'logo',
+      null,
+      'cccccccc-0000-4000-8000-000000001005'
+    )$$,
+  'another club leader cannot change this club media reference'
+);
+
+select club_profile_test.assert_throws(
+  $$select public.set_club_profile_media(
+      'cccccccc-0000-4000-8000-000000004001',
+      'logo',
+      'abababab-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png',
+      'cccccccc-0000-4000-8000-000000001003'
+    )$$,
+  'club media setter rejects paths outside the club school prefix'
+);
+
+select club_profile_test.assert_true(
   has_table_privilege('authenticated', 'public.club_profiles', 'SELECT')
-    and not has_table_privilege('authenticated', 'public.club_profiles', 'INSERT,UPDATE,DELETE'),
+    and not has_table_privilege('authenticated', 'public.club_profiles', 'INSERT')
+    and not has_table_privilege('authenticated', 'public.club_profiles', 'UPDATE')
+    and not has_table_privilege('authenticated', 'public.club_profiles', 'DELETE')
+    and not has_table_privilege('authenticated', 'public.club_profiles', 'TRUNCATE')
+    and not has_table_privilege('authenticated', 'public.club_profiles', 'TRIGGER')
+    and not has_table_privilege('authenticated', 'public.club_profiles', 'REFERENCES'),
   'club profile table is read-only to authenticated clients'
+);
+
+select club_profile_test.assert_true(
+  not has_table_privilege('anon', 'public.club_profiles', 'SELECT')
+    and not has_table_privilege('anon', 'public.club_profiles', 'INSERT')
+    and not has_table_privilege('anon', 'public.club_profiles', 'UPDATE')
+    and not has_table_privilege('anon', 'public.club_profiles', 'DELETE')
+    and not has_table_privilege('anon', 'public.club_profiles', 'TRUNCATE')
+    and not has_table_privilege('anon', 'public.club_profiles', 'TRIGGER')
+    and not has_table_privilege('anon', 'public.club_profiles', 'REFERENCES'),
+  'club profile table has no anonymous privileges'
+);
+
+select club_profile_test.assert_true(
+  has_function_privilege(
+    'authenticated',
+    'public.upsert_club_profile(uuid,text,text,text,text,text,text,text,text,text,text)',
+    'EXECUTE'
+  )
+    and has_function_privilege(
+      'authenticated', 'public.get_club_member_count(uuid)', 'EXECUTE'
+    )
+    and has_function_privilege(
+      'authenticated', 'public.get_my_club_membership(uuid)', 'EXECUTE'
+    )
+    and not has_function_privilege(
+      'anon',
+      'public.upsert_club_profile(uuid,text,text,text,text,text,text,text,text,text,text)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'anon', 'public.get_club_member_count(uuid)', 'EXECUTE'
+    )
+    and not has_function_privilege(
+      'anon', 'public.get_my_club_membership(uuid)', 'EXECUTE'
+    ),
+  'club profile RPC execution privileges remain scoped to authenticated clients'
 );
 
 set role authenticated;
@@ -164,8 +305,29 @@ select club_profile_test.assert_query_count(
   'ordinary student sees only active same-school club profiles'
 );
 select club_profile_test.assert_throws(
+  $$insert into public.club_profiles (club_id, school_id, tagline)
+    values (
+      'cccccccc-0000-4000-8000-000000004003',
+      'cccccccc-0000-4000-8000-000000000001',
+      'Direct member insert'
+    )$$,
+  'authenticated clients cannot directly insert club profiles'
+);
+select club_profile_test.assert_throws(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_tagline => 'Member edit')$$,
   'ordinary member cannot edit a club profile'
+);
+select club_profile_test.assert_true(
+  not public.current_user_can_upload_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000002.png'
+  ),
+  'ordinary member cannot upload club media'
+);
+select club_profile_test.assert_true(
+  public.current_user_can_read_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png'
+  ),
+  'ordinary same-school member can read only referenced active-club media'
 );
 select club_profile_test.assert_lives(
   $$select public.get_club_member_count('cccccccc-0000-4000-8000-000000004001')$$,
@@ -184,9 +346,19 @@ select club_profile_test.assert_lives(
     )$$,
   'assigned active leader updates approved profile fields'
 );
+select club_profile_test.assert_true(
+  public.current_user_can_upload_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/banner/dddddddd-0000-4000-8000-000000000002.webp'
+  ),
+  'assigned active leader can upload media for the exact club'
+);
 select club_profile_test.assert_throws(
   $$update public.club_profiles set tagline = 'Direct update' where club_id = 'cccccccc-0000-4000-8000-000000004001'$$,
-  'leader cannot directly update the club profile table'
+  'authenticated clients cannot directly update club profiles'
+);
+select club_profile_test.assert_throws(
+  $$delete from public.club_profiles where club_id = 'cccccccc-0000-4000-8000-000000004001'$$,
+  'authenticated clients cannot directly delete club profiles'
 );
 select club_profile_test.assert_throws(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_theme_key => 'arbitrary-css')$$,
@@ -213,6 +385,12 @@ select club_profile_test.assert_throws(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_tagline => 'Other leader edit')$$,
   'leader of another club cannot edit this profile'
 );
+select club_profile_test.assert_true(
+  not public.current_user_can_upload_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000002.png'
+  ),
+  'leader of another club cannot upload media here'
+);
 reset role;
 
 set role authenticated;
@@ -226,6 +404,18 @@ select club_profile_test.assert_throws(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_tagline => 'Cross-school edit')$$,
   'cross-school leader cannot edit another school club profile'
 );
+select club_profile_test.assert_true(
+  not public.current_user_can_upload_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000002.png'
+  ),
+  'cross-school leader cannot upload another school club media'
+);
+select club_profile_test.assert_true(
+  not public.current_user_can_read_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png'
+  ),
+  'cross-school user cannot read referenced club media'
+);
 reset role;
 
 set role authenticated;
@@ -234,6 +424,12 @@ select club_profile_test.assert_throws(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_tagline => 'Inactive edit')$$,
   'inactive leader cannot edit a club profile'
 );
+select club_profile_test.assert_true(
+  not public.current_user_can_upload_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000002.png'
+  ),
+  'inactive leader cannot upload club media'
+);
 reset role;
 
 set role authenticated;
@@ -241,6 +437,12 @@ select set_config('request.jwt.claim.sub', 'cccccccc-0000-4000-8000-000000001002
 select club_profile_test.assert_lives(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_meeting_schedule => 'Wednesdays after school')$$,
   'active same-school teacher can edit a club profile'
+);
+select club_profile_test.assert_true(
+  public.current_user_can_upload_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000002.jpg'
+  ),
+  'active same-school teacher can upload club media'
 );
 select club_profile_test.assert_query_count(
   $$select club_id from public.club_profiles where club_id = 'cccccccc-0000-4000-8000-000000004002'$$,
@@ -254,6 +456,12 @@ select set_config('request.jwt.claim.sub', 'cccccccc-0000-4000-8000-000000001001
 select club_profile_test.assert_lives(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_meeting_location => 'Library')$$,
   'active same-school school admin can edit a club profile'
+);
+select club_profile_test.assert_true(
+  public.current_user_can_upload_club_media(
+    'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/banner/dddddddd-0000-4000-8000-000000000002.png'
+  ),
+  'active same-school school admin can upload club media'
 );
 reset role;
 
@@ -271,6 +479,12 @@ select club_profile_test.assert_lives(
   $$select public.upsert_club_profile('abababab-0000-4000-8000-000000004001', profile_tagline => 'Platform oversight edit')$$,
   'active platform administrator can edit the selected active-school club profile'
 );
+select club_profile_test.assert_true(
+  public.current_user_can_upload_club_media(
+    'abababab-0000-4000-8000-000000000001/abababab-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000002.png'
+  ),
+  'active platform administrator can upload media under established club access rules'
+);
 reset role;
 
 set role anon;
@@ -279,6 +493,12 @@ select set_config('request.jwt.claim.role', 'anon', false);
 select club_profile_test.assert_throws(
   $$select public.upsert_club_profile('cccccccc-0000-4000-8000-000000004001', profile_tagline => 'Anonymous edit')$$,
   'unauthenticated club profile editing is rejected'
+);
+select club_profile_test.assert_throws(
+  $$select public.current_user_can_read_club_media(
+      'cccccccc-0000-4000-8000-000000000001/cccccccc-0000-4000-8000-000000004001/logo/dddddddd-0000-4000-8000-000000000001.png'
+    )$$,
+  'anonymous users cannot execute club media read authorization'
 );
 select club_profile_test.assert_throws(
   $$select club_id from public.club_profiles$$,

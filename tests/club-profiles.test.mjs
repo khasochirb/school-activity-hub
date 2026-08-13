@@ -6,6 +6,8 @@ import test from "node:test";
 const root = process.cwd();
 const migrationPath =
   "supabase/migrations/202608130004_add_club_profiles.sql";
+const privilegeMigrationPath =
+  "supabase/migrations/202608130005_restrict_club_profile_table_privileges.sql";
 
 function read(path) {
   return readFileSync(join(root, path), "utf8");
@@ -53,6 +55,29 @@ test("club profile editing uses a narrow authenticated RPC", () => {
     signature,
     /school_id|name|category|status|advisor|membership|created_by/,
   );
+});
+
+test("club profile table privileges allow authenticated reads only", () => {
+  const migration = read(privilegeMigrationPath);
+  const executableSql = migration.replace(/^--.*$/gm, "");
+
+  assert.match(
+    executableSql,
+    /revoke all privileges on table public\.club_profiles from anon/,
+  );
+  assert.match(
+    executableSql,
+    /revoke insert, update, delete, truncate, trigger, references\s+on table public\.club_profiles\s+from authenticated/,
+  );
+  assert.match(
+    executableSql,
+    /grant select on table public\.club_profiles to authenticated/,
+  );
+  assert.doesNotMatch(
+    executableSql,
+    /create\s+(table|policy|function)|alter\s+(table|function)|drop\s+|insert\s+into|update\s+public\.|delete\s+from/,
+  );
+  assert.doesNotMatch(executableSql, /(grant|revoke)[\s\S]*on function/);
 });
 
 test("club profile visibility and aggregates do not expose member rows", () => {

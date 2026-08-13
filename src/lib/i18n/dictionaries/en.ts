@@ -340,6 +340,48 @@ export const en = {
         status: "Your membership",
         title: "Membership",
       },
+      media: {
+        actions: {
+          remove: "Remove image",
+          removing: "Removing...",
+          replace: "Replace image",
+          upload: "Upload image",
+          uploading: "Uploading...",
+        },
+        banner: "Club banner",
+        bannerAlt: "{club} banner",
+        bannerRequirements:
+          "JPEG, PNG, or WebP. Maximum 5 MB and at least 1200 x 400 pixels. A 3:1 shape works best.",
+        confirmDescription:
+          "The current image will be removed from this club page.",
+        confirmRemove: "Remove image",
+        description:
+          "Add one logo and one banner to help students recognize this club.",
+        errors: {
+          animated: "Animated images are not supported.",
+          dimensions: "This image is too small for this placement.",
+          invalidImage: "Choose a valid JPEG, PNG, or WebP image.",
+          invalidType: "Only JPEG, PNG, and WebP images are supported.",
+          mimeMismatch: "The file contents do not match its image type.",
+          removeFailed: "The image could not be removed. Try again.",
+          saveFailed: "The uploaded image could not be saved. Try again.",
+          tooLarge: "This image is larger than the allowed size.",
+          uploadFailed: "The image could not be uploaded. Try again.",
+        },
+        guidance:
+          "Use a club logo, artwork, or activity image that your school is permitted to display. Avoid identifiable student photos unless appropriate permission has been confirmed.",
+        logo: "Club logo",
+        logoAlt: "{club} logo",
+        logoRequirements:
+          "JPEG, PNG, or WebP. Maximum 2 MB and at least 256 x 256 pixels.",
+        ratioWarning:
+          "This banner will work, but an image close to a 3:1 shape will fit better.",
+        success: {
+          removed: "Club image removed.",
+          uploaded: "Club image saved.",
+        },
+        title: "Club appearance",
+      },
       sections: {
         about: "About this club",
         accessibility: "Accessibility",
