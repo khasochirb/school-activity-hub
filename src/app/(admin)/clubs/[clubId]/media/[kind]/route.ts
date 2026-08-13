@@ -5,6 +5,8 @@ import {
   isControlledClubMediaPath,
 } from "@/lib/clubs/club-media";
 import { isUuid } from "@/lib/clubs/club-profile";
+import { logServerError } from "@/lib/errors/server-error";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type ClubMediaProfile = {
@@ -30,7 +32,10 @@ export async function GET(
   }
 
   const supabase = await createClient();
-  const [{ data: canView }, { data: profile }] = await Promise.all([
+  const [
+    { data: canView, error: canViewError },
+    { data: profile, error: profileError },
+  ] = await Promise.all([
     supabase.rpc("current_user_can_view_club_profile", {
       target_club_id: clubId,
     }),
@@ -40,6 +45,15 @@ export async function GET(
       .eq("club_id", clubId)
       .maybeSingle<ClubMediaProfile>(),
   ]);
+
+  if (canViewError || profileError) {
+    logServerError(
+      "Club media reference lookup failed",
+      canViewError ?? profileError,
+      { clubId, kind },
+    );
+    return notFoundResponse();
+  }
 
   const path = kind === "logo" ? profile?.logo_path : profile?.banner_path;
 
@@ -52,17 +66,19 @@ export async function GET(
     return notFoundResponse();
   }
 
-  const { data: image, error } = await supabase.storage
+  const admin = createAdminClient();
+  const { data: image, error } = await admin.storage
     .from(CLUB_MEDIA_BUCKET)
     .download(path);
 
   if (error || !image) {
+    logServerError("Club media download failed", error, { clubId, kind });
     return notFoundResponse();
   }
 
   return new Response(await image.arrayBuffer(), {
     headers: {
-      "Cache-Control": "private, max-age=3600",
+      "Cache-Control": "private, no-store",
       "Content-Disposition": "inline",
       "Content-Security-Policy": "default-src 'none'; sandbox",
       "Content-Type": getContentType(path),

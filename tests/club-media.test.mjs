@@ -155,6 +155,8 @@ test("club media UI uses protected media routes, fallbacks, and bilingual guidan
   assert.match(manager, /inspectClubImage/);
   assert.match(manager, /uploadToSignedUrl\(/);
   assert.doesNotMatch(manager, /\.upload\(prepared\.path/);
+  assert.match(manager, /setLogoUrlOverride\(\{ propUrl: logoUrl, value: nextUrl \}\)/);
+  assert.match(manager, /setBannerUrlOverride\(\{ propUrl: bannerUrl, value: nextUrl \}\)/);
   assert.match(manager, /router\.refresh\(\)/);
   assert.match(english, /Use a club logo, artwork, or activity image/);
   assert.match(mongolian, /Сургууль нийтлэхийг зөвшөөрсөн клубын лого/);
@@ -189,6 +191,19 @@ test("club media uploads use a server-authorized, path-scoped signed token", () 
   assert.match(actions, /\.createSignedUploadUrl\(path, \{ upsert: false \}\)/);
   assert.match(actions, /uploadToken: signedUpload\.token/);
   assert.doesNotMatch(actions, /signedUrl:/);
+});
+
+test("protected media routes authorize reads before server-only object download", () => {
+  const route = read("src/app/(admin)/clubs/[clubId]/media/[kind]/route.ts");
+  const authorizationIndex = route.indexOf("canView !== true");
+  const adminDownloadIndex = route.indexOf("createAdminClient()");
+
+  assert.ok(
+    authorizationIndex >= 0 && authorizationIndex < adminDownloadIndex,
+  );
+  assert.match(route, /isControlledClubMediaPath\(/);
+  assert.match(route, /admin\.storage[\s\S]*\.download\(path\)/);
+  assert.match(route, /"Cache-Control": "private, no-store"/);
 });
 
 function makePng(width, height, animated = false) {

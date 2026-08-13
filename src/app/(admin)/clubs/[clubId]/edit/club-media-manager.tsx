@@ -43,6 +43,11 @@ type ClubMediaLabels = {
   uploading: string;
 };
 
+type MediaUrlOverride = {
+  propUrl: string | null;
+  value: string | null;
+};
+
 export function ClubMediaManager({
   bannerUrl,
   clubId,
@@ -67,8 +72,18 @@ export function ClubMediaManager({
   >(null);
   const [confirmKind, setConfirmKind] = useState<ClubMediaKind | null>(null);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [bannerUrlOverride, setBannerUrlOverride] =
+    useState<MediaUrlOverride | null>(null);
+  const [logoUrlOverride, setLogoUrlOverride] =
+    useState<MediaUrlOverride | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const currentBannerUrl =
+    bannerUrlOverride?.propUrl === bannerUrl
+      ? bannerUrlOverride.value
+      : bannerUrl;
+  const currentLogoUrl =
+    logoUrlOverride?.propUrl === logoUrl ? logoUrlOverride.value : logoUrl;
 
   async function upload(kind: ClubMediaKind, file: File | undefined) {
     if (!file || pendingKind) {
@@ -130,11 +145,29 @@ export function ClubMediaManager({
         return;
       }
 
+      if (!finalized.version) {
+        showError("saveFailed");
+        return;
+      }
+
       toast.notify({
         message: labels.uploaded,
         title: toast.labels.success,
         variant: "success",
       });
+      const nextUrl = `/clubs/${clubId}/media/${kind}?v=${encodeURIComponent(
+        finalized.version,
+      )}`;
+      setFailedImages((current) => {
+        const next = new Set(current);
+        next.delete(nextUrl);
+        return next;
+      });
+      if (kind === "logo") {
+        setLogoUrlOverride({ propUrl: logoUrl, value: nextUrl });
+      } else {
+        setBannerUrlOverride({ propUrl: bannerUrl, value: nextUrl });
+      }
       router.refresh();
     } catch {
       showError("uploadFailed");
@@ -168,6 +201,11 @@ export function ClubMediaManager({
         title: toast.labels.success,
         variant: "success",
       });
+      if (kind === "logo") {
+        setLogoUrlOverride({ propUrl: logoUrl, value: null });
+      } else {
+        setBannerUrlOverride({ propUrl: bannerUrl, value: null });
+      }
       router.refresh();
     } catch {
       showError("removeFailed");
@@ -211,8 +249,10 @@ export function ClubMediaManager({
         <MediaEditorCard
           alt={labels.logoAlt}
           confirmKind={confirmKind}
-          failed={Boolean(logoUrl && failedImages.has(logoUrl))}
-          imageUrl={logoUrl}
+          failed={Boolean(
+            currentLogoUrl && failedImages.has(currentLogoUrl),
+          )}
+          imageUrl={currentLogoUrl}
           inputRef={logoInputRef}
           kind="logo"
           labels={labels}
@@ -233,8 +273,10 @@ export function ClubMediaManager({
         <MediaEditorCard
           alt={labels.bannerAlt}
           confirmKind={confirmKind}
-          failed={Boolean(bannerUrl && failedImages.has(bannerUrl))}
-          imageUrl={bannerUrl}
+          failed={Boolean(
+            currentBannerUrl && failedImages.has(currentBannerUrl),
+          )}
+          imageUrl={currentBannerUrl}
           inputRef={bannerInputRef}
           kind="banner"
           labels={labels}
