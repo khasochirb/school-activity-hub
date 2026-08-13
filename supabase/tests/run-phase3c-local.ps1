@@ -25,6 +25,9 @@ $phase4b2aPreflightPath = Join-Path $repositoryRoot "supabase/production-readine
 $phase4b2aMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202607180005_add_event_supervision_schedule_updates.sql"
 $phase4b2aPostflightPath = Join-Path $repositoryRoot "supabase/production-readiness/phase4b2a-postflight.sql"
 $phase4b2aTestPath = Join-Path $PSScriptRoot "phase4b2a-event-supervision-schedule.sql"
+$announcementMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130001_fix_announcement_creation_privileges.sql"
+$announcementHardeningMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130002_harden_announcement_creation_rls.sql"
+$announcementTestPath = Join-Path $PSScriptRoot "announcement-creation-rls.sql"
 $postgrestEventTestPath = Join-Path $PSScriptRoot "postgrest-event-regression.mjs"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
@@ -355,6 +358,20 @@ grant all on schema public to postgres, service_role;
   }
   $phase4b2aTestOutput |
     Where-Object { $_ -match 'ok - |PHASE4B2A_EVENT_SUPERVISION_SCHEDULE_TESTS_PASSED' } |
+    Write-Output
+
+  Invoke-PsqlFile -database "postgres" -path $announcementMigrationPath
+  Write-Output "Applied only 202608130001_fix_announcement_creation_privileges.sql."
+
+  Invoke-PsqlFile -database "postgres" -path $announcementHardeningMigrationPath
+  Write-Output "Applied only 202608130002_harden_announcement_creation_rls.sql."
+
+  $announcementTestOutput = Invoke-PsqlFile -database "postgres" -path $announcementTestPath -Capture
+  if (($announcementTestOutput -join "`n") -notmatch 'ANNOUNCEMENT_CREATION_RLS_TESTS_PASSED') {
+    throw "Announcement creation RLS tests did not emit their success marker."
+  }
+  $announcementTestOutput |
+    Where-Object { $_ -match 'ok - |ANNOUNCEMENT_CREATION_RLS_TESTS_PASSED' } |
     Write-Output
 
   $previousPreference = $ErrorActionPreference

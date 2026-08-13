@@ -112,7 +112,7 @@ test("announcement values are normalized without losing valid content", () => {
 test("announcement RLS grants and insert checks stay school-scoped", () => {
   const schema = read("supabase/schema.sql");
   const migration = read(
-    "supabase/migrations/202608130001_fix_announcement_creation_privileges.sql",
+    "supabase/migrations/202608130002_harden_announcement_creation_rls.sql",
   );
 
   for (const source of [schema, migration]) {
@@ -133,6 +133,24 @@ test("announcement RLS grants and insert checks stay school-scoped", () => {
     assert.match(insertPolicy, /created_by_profile_id = auth\.uid\(\)/);
     assert.match(insertPolicy, /status in \('active', 'archived'\)/);
     assert.doesNotMatch(insertPolicy, /current_user_is_platform_admin/);
+  }
+});
+
+test("announcement database suite covers the authorization boundary", () => {
+  const rlsTest = read("supabase/tests/announcement-creation-rls.sql");
+
+  for (const expectedCase of [
+    "active teacher creates an announcement for their own school",
+    "active school admin creates an announcement for their own school",
+    "student cannot create an announcement",
+    "inactive teacher cannot create an announcement",
+    "teacher cannot create an announcement for another school",
+    "created_by_profile_id must match the authenticated profile",
+    "unauthenticated announcement creation is rejected",
+    "student SELECT behavior remains active-only and same-school",
+    "staff SELECT behavior remains same-school with archived visibility",
+  ]) {
+    assert.match(rlsTest, new RegExp(expectedCase));
   }
 });
 
