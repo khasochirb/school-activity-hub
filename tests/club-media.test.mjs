@@ -11,6 +11,8 @@ import {
 const root = process.cwd();
 const migrationPath =
   "supabase/migrations/202608130006_add_club_profile_media.sql";
+const uploadReturnMigrationPath =
+  "supabase/migrations/202608130007_allow_club_media_upload_return.sql";
 const schoolId = "aaaaaaaa-0000-4000-8000-000000000001";
 const clubId = "cccccccc-0000-4000-8000-000000000001";
 const fileId = "dddddddd-0000-4000-8000-000000000001";
@@ -33,6 +35,7 @@ test("club media migration stores controlled nullable paths in a private bucket"
 
 test("storage policies allow controlled uploads and referenced reads without listing", () => {
   const migration = read(migrationPath);
+  const uploadReturnMigration = read(uploadReturnMigrationPath);
 
   assert.match(migration, /for insert[\s\S]*current_user_can_upload_club_media\(name\)/);
   assert.match(migration, /club_media_upload_metadata_is_valid\(name, metadata\)/);
@@ -42,6 +45,19 @@ test("storage policies allow controlled uploads and referenced reads without lis
     migration,
     /create policy "[^"]+"\s+on storage\.objects\s+for (update|delete)/i,
   );
+  assert.match(
+    uploadReturnMigration,
+    /storage\.allow_only_operation\('storage\.object\.upload'\)/,
+  );
+  assert.match(
+    uploadReturnMigration,
+    /current_user_can_upload_club_media\(name\)[\s\S]*club_media_upload_metadata_is_valid\(name, metadata\)/,
+  );
+  assert.match(
+    uploadReturnMigration,
+    /storage\.allow_only_operation\('storage\.object\.get_authenticated'\)[\s\S]*current_user_can_read_club_media\(name\)/,
+  );
+  assert.doesNotMatch(uploadReturnMigration, /storage\.object\.list/);
 });
 
 test("media reference changes are service-only and recheck the exact actor and club", () => {

@@ -2090,8 +2090,17 @@ create policy "Authorized users can read referenced club media"
   to authenticated
   using (
     bucket_id = 'club-media'
-    and storage.allow_only_operation('storage.object.get_authenticated')
-    and public.current_user_can_read_club_media(name)
+    and (
+      (
+        storage.allow_only_operation('storage.object.get_authenticated')
+        and public.current_user_can_read_club_media(name)
+      )
+      or (
+        storage.allow_only_operation('storage.object.upload')
+        and public.current_user_can_upload_club_media(name)
+        and public.club_media_upload_metadata_is_valid(name, metadata)
+      )
+    )
   );
 
 drop policy if exists "Authorized club editors can upload club media"

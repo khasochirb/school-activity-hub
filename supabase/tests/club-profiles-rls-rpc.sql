@@ -162,6 +162,22 @@ select club_profile_test.assert_true(
 );
 
 select club_profile_test.assert_true(
+  exists (
+    select 1
+    from pg_policies p
+    where p.schemaname = 'storage'
+      and p.tablename = 'objects'
+      and p.policyname = 'Authorized users can read referenced club media'
+      and p.cmd = 'SELECT'
+      and p.roles = array['authenticated']::name[]
+      and p.qual like '%storage.object.get_authenticated%'
+      and p.qual like '%storage.object.upload%'
+      and p.qual not like '%storage.object.list%'
+  ),
+  'club media SELECT policy permits exact downloads and upload returns without listing'
+);
+
+select club_profile_test.assert_true(
   has_function_privilege(
     'authenticated', 'public.current_user_can_upload_club_media(text)', 'EXECUTE'
   )
