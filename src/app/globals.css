@@ -750,15 +750,6 @@ a:hover .stat-card {
     both;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .dashboard-chart-point:hover .dashboard-chart-bar-x,
-  .dashboard-chart-point:hover .dashboard-chart-bar-y,
-  .dashboard-chart-point:focus-visible .dashboard-chart-bar-x,
-  .dashboard-chart-point:focus-visible .dashboard-chart-bar-y {
-    filter: brightness(1.08);
-  }
-}
-
 @keyframes dashboard-data-reveal {
   from {
     opacity: 0.35;
@@ -1093,6 +1084,12 @@ a:hover .stat-card {
   color: var(--category-solid);
 }
 
+.event-card-poster-fallback {
+  background: color-mix(in srgb, var(--category-solid) 16%, var(--card-soft));
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--category-solid) 20%, transparent);
+}
+
 button[data-category-tone] {
   background: color-mix(in srgb, var(--category-solid) 15%, var(--card-soft));
 }
@@ -1144,6 +1141,13 @@ button[data-category-tone] {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .dashboard-chart-point:hover .dashboard-chart-bar-x,
+  .dashboard-chart-point:hover .dashboard-chart-bar-y,
+  .dashboard-chart-point:focus-visible .dashboard-chart-bar-x,
+  .dashboard-chart-point:focus-visible .dashboard-chart-bar-y {
+    filter: brightness(1.08);
+  }
+
   .btn:not(:disabled):hover {
     transform: translateY(-1px);
   }

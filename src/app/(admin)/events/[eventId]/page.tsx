@@ -5,6 +5,7 @@ import { getCurrentEventActor } from "@/lib/auth/event-access";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { AccessibilityOptionsField } from "@/components/events/accessibility-options-field";
 import { EventCalendarActions } from "@/components/events/event-calendar-actions";
+import { EventPosterUploader } from "@/components/events/event-poster-uploader";
 import {
   EventCompletenessChecklist,
   type EventCompletenessLabels,
@@ -25,6 +26,8 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import { getEventPosterLabels } from "@/lib/events/event-poster-labels";
+import { getEventPosterDeliveryUrl } from "@/lib/events/event-poster";
 import {
   getEventCompletenessItemLabels,
   getEventListingCompleteness,
@@ -98,6 +101,7 @@ type EventRecord = {
   required_materials: string | null;
   expected_commitment: string | null;
   cancellation_notice: string | null;
+  poster_path: string | null;
 };
 
 type StudentRoster = {
@@ -208,6 +212,7 @@ export default async function EventDetailPage({
     connectedSchools,
     responsibleStaff,
     eligibleResponsibleStaff,
+    canEditPosterResult,
   ] = await Promise.all([
     getEventAttendees(isPlatformAdmin ? supabase : admin, [event.id]),
     event.club_id ? getClubById(admin, event.school_id, event.club_id) : null,
@@ -225,7 +230,11 @@ export default async function EventDetailPage({
         ? getPlatformResponsibleStaff(supabase, event.school_id)
         : getEligibleResponsibleStaff(admin, profile, event.responsible_staff_id)
       : Promise.resolve([]),
+    supabase.rpc("current_user_can_edit_event_poster", {
+      target_event_id: event.id,
+    }),
   ]);
+  const canEditPoster = canEditPosterResult.data === true;
   const registeredCount = attendees.length;
   const isFull =
     event.capacity !== null && registeredCount >= event.capacity;
@@ -362,6 +371,21 @@ export default async function EventDetailPage({
               </DetailItem>
             </dl>
           </article>
+
+          {canEditPoster ? (
+            <div className="order-3 lg:order-none">
+              <EventPosterUploader
+                currentPosterUrl={
+                  event.poster_path
+                    ? getEventPosterDeliveryUrl(event.id, event.poster_path)
+                    : null
+                }
+                eventId={event.id}
+                eventTitle={event.title}
+                labels={getEventPosterLabels(t)}
+              />
+            </div>
+          ) : null}
 
           {canManageEvent ? (
             <div className="order-4 lg:order-none">

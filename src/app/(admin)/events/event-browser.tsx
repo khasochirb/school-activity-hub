@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import {
   useCallback,
   useRef,
@@ -21,13 +23,18 @@ export type EventBrowserItem = EventQuickViewItem & {
   endsAt: string;
   isMyClubEvent: boolean;
   isPartnerEvent: boolean;
+  posterDay: string;
+  posterMonth: string;
+  posterUrl: string | null;
   startsAt: string;
   visualInitials: string;
 };
 
 export type EventBrowserLabels = EventQuickViewLabels & {
   myClub: string;
+  noPoster: string;
   partnerSchool: string;
+  posterAlt: string;
   registered: string;
 };
 
@@ -51,7 +58,7 @@ export function EventBrowser({
 
   return (
     <>
-      <div className="grid gap-4 p-3 sm:p-4 lg:grid-cols-2">
+      <div className="space-y-4 p-3 sm:p-4">
         {items.map((item) => (
           <EventCard
             item={item}
@@ -59,11 +66,8 @@ export function EventBrowser({
             labels={labels}
             onOpen={(trigger) => openModal(item.id, trigger)}
             registerTrigger={(node) => {
-              if (node) {
-                triggerRefs.current.set(item.id, node);
-              } else {
-                triggerRefs.current.delete(item.id);
-              }
+              if (node) triggerRefs.current.set(item.id, node);
+              else triggerRefs.current.delete(item.id);
             }}
           />
         ))}
@@ -90,54 +94,86 @@ function EventCard({
   onOpen: (trigger?: HTMLButtonElement | null) => void;
   registerTrigger: (node: HTMLButtonElement | null) => void;
 }) {
+  const [posterFailed, setPosterFailed] = useState(false);
   const categoryTone = getActivityCategoryTone(item.categoryValue);
+  const hasPoster = Boolean(item.posterUrl && !posterFailed);
 
   function handleCardClick(event: MouseEvent<HTMLElement>) {
     const target = event.target as HTMLElement;
-
-    if (target.closest("a, button, form, input, select, textarea")) {
-      return;
-    }
-
+    if (target.closest("a, button, form, input, select, textarea")) return;
     onOpen();
   }
 
   return (
     <article
-      className="interactive-card group flex h-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] focus-within:border-[#f2af68]"
+      className="interactive-card group grid min-w-0 cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] focus-within:border-[#f2af68] md:grid-cols-[minmax(13rem,0.85fr)_minmax(0,2fr)]"
       data-category-tone={categoryTone}
       onClick={handleCardClick}
     >
-      <button
-        aria-label={`${labels.viewEvent}: ${item.title}`}
-        className="relative min-h-28 w-full overflow-hidden border-b border-[var(--border)] p-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#f2af68]"
-        onClick={(event) => onOpen(event.currentTarget)}
-        ref={registerTrigger}
+      <div
+        className="relative aspect-[16/10] min-h-0 min-w-0 overflow-hidden border-b border-[var(--border)] bg-[var(--card-soft)] md:aspect-[4/5] md:border-b-0 md:border-r"
         data-category-tone={categoryTone}
-        type="button"
       >
-        <span
-          aria-hidden="true"
-          className="event-card-category-stripe absolute inset-y-0 left-0 w-1.5"
-        />
-        <span className="flex h-full items-start justify-between gap-4">
-          <span
-            aria-hidden="true"
-            className="event-card-category-mark flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border text-lg font-black tracking-[0.04em]"
+        {hasPoster && item.posterUrl ? (
+          <Image
+            alt={labels.posterAlt.replace("{event}", item.title)}
+            className="object-cover"
+            fill
+            onError={() => setPosterFailed(true)}
+            sizes="(max-width: 767px) 100vw, (max-width: 1200px) 34vw, 320px"
+            src={item.posterUrl}
+            unoptimized
+          />
+        ) : (
+          <div
+            aria-label={labels.noPoster}
+            className="event-card-poster-fallback flex h-full w-full flex-col items-center justify-center gap-3 px-5 text-center"
+            role="img"
           >
-            {item.visualInitials}
-          </span>
-          <span className="rounded-lg border border-[var(--border)] bg-[var(--card-overlay)] px-3 py-2 text-right text-xs font-bold leading-tight text-slate-700 shadow-sm">
-            {item.dateBadgeLabel}
-          </span>
-        </span>
-        <span className="mt-3 block break-words text-lg font-bold leading-tight text-slate-950 group-hover:text-[var(--primary-strong)]">
-          {item.title}
-        </span>
-      </button>
+            <span
+              aria-hidden="true"
+              className="event-card-category-mark flex h-16 w-16 items-center justify-center rounded-2xl border text-xl font-black"
+            >
+              {item.visualInitials}
+            </span>
+            <span className="max-w-48 break-words text-sm font-semibold text-slate-700">
+              {labels.noPoster}
+            </span>
+          </div>
+        )}
 
-      <div className="flex flex-1 flex-col p-4">
-        <div className="flex flex-wrap gap-2">
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-4 pb-4 pt-12 text-white"
+        >
+          <span className="text-4xl font-black leading-none drop-shadow-sm">
+            {item.posterDay}
+          </span>
+          <span className="rounded-md bg-black/45 px-2 py-1 text-sm font-bold uppercase backdrop-blur-sm">
+            {item.posterMonth}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-col p-4 sm:p-5">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
+          <span className="min-w-0 break-words">{item.hostName}</span>
+          <span aria-hidden="true">&middot;</span>
+          <span className="break-words">{item.dateTimeLabel}</span>
+        </div>
+
+        <Link
+          className="mt-2 w-fit max-w-full break-words text-xl font-black leading-tight text-slate-950 hover:text-[var(--primary-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68] sm:text-2xl"
+          href={`/events/${item.id}`}
+        >
+          {item.title}
+        </Link>
+
+        <p className="mt-2 line-clamp-3 break-words text-sm leading-6 text-slate-600">
+          {item.description || labels.noDescription}
+        </p>
+
+        <div className="mt-3 flex flex-wrap gap-2">
           {item.categoryLabel ? (
             <CategoryBadge category={item.categoryValue}>
               {item.categoryLabel}
@@ -155,11 +191,9 @@ function EventCard({
             <StatusBadge variant="info">{labels.partnerSchool}</StatusBadge>
           ) : null}
           {item.permissionRequired ? (
-            <StatusBadge variant="warning">
-              {labels.permissionRequired}
-            </StatusBadge>
+            <StatusBadge variant="warning">{labels.permissionRequired}</StatusBadge>
           ) : null}
-          {item.experienceLevel ? (
+          {item.experienceLabel ? (
             <StatusBadge variant="info">{item.experienceLabel}</StatusBadge>
           ) : null}
           {item.hasEligibilityInfo ? (
@@ -168,63 +202,57 @@ function EventCard({
           {item.cancellationNotice ? (
             <StatusBadge variant="warning">{labels.scheduleUpdate}</StatusBadge>
           ) : null}
-          <StatusBadge
-            variant={
-              item.costType === "free"
-                ? "success"
-                : item.costType === "variable"
-                  ? "warning"
-                  : undefined
-            }
-          >
-            {item.costLabel}
-          </StatusBadge>
         </div>
 
-        <div className="mt-3 space-y-1.5 text-sm text-slate-600">
-          <p className="font-semibold text-slate-800">{item.dateTimeLabel}</p>
-          <p className="min-w-0 break-words">{item.location || "-"}</p>
-          <p className="min-w-0 break-words">
-            {item.schoolName}
-          </p>
-          {item.isPartnerEvent ? (
-            <p className="min-w-0 break-words">
-              {labels.hostedBy}: {item.hostName}
-            </p>
-          ) : null}
-        </div>
+        <dl className="mt-4 grid min-w-0 gap-3 border-y border-[var(--border)] py-3 text-sm sm:grid-cols-3">
+          <CardDetail label={labels.location} value={item.location || "-"} />
+          <CardDetail label={labels.cost} value={item.costLabel} />
+          <CardDetail
+            label={labels.registration}
+            value={`${item.attendeeCount}${
+              item.capacity === null ? "" : ` / ${item.capacity}`
+            }`}
+          />
+        </dl>
 
-        <p className="mt-3 line-clamp-3 min-h-[3.75rem] break-words text-sm leading-5 text-slate-600">
-          {item.description || labels.noDescription}
-        </p>
-
-        <div className="mt-auto border-t border-[var(--border)] pt-3">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-600">
-            <span>
-              {labels.registration}: {item.attendeeCount}
-              {item.capacity === null ? "" : ` / ${item.capacity}`}
-            </span>
+        <div className="mt-auto pt-4">
+          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-slate-600">
             {item.remainingSpaces !== null ? (
-              <span>
+              <span className="break-words">
                 {labels.spacesRemaining}: {item.remainingSpaces}
               </span>
             ) : null}
+            {item.registrationStateLabel ? (
+              <span className="break-words">{item.registrationStateLabel}</span>
+            ) : null}
           </div>
           <div
-            className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+            className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
             onClick={(event) => event.stopPropagation()}
           >
             <button
               className="btn btn-secondary min-h-11 w-full sm:w-auto"
               onClick={(event) => onOpen(event.currentTarget)}
+              ref={registerTrigger}
               type="button"
             >
               {labels.viewEvent}
             </button>
-            <EventPrimaryAction item={item} labels={labels} />
+            <div className="w-full sm:w-auto">
+              <EventPrimaryAction item={item} labels={labels} />
+            </div>
           </div>
         </div>
       </div>
     </article>
+  );
+}
+
+function CardDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs font-bold uppercase text-slate-500">{label}</dt>
+      <dd className="mt-1 break-words font-semibold text-slate-800">{value}</dd>
+    </div>
   );
 }

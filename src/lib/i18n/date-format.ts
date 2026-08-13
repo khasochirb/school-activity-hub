@@ -77,6 +77,17 @@ export function formatWeekdayShort(
   return formatWithLocale(value, locale, { timeZone, weekday: "short" });
 }
 
+export function formatCalendarDateBadge(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
+  return {
+    day: formatWithLocale(value, locale, { day: "2-digit", timeZone }),
+    month: formatWithLocale(value, locale, { month: "short", timeZone }),
+  };
+}
+
 export function formatDateRange(
   startsAt: DateInput,
   endsAt: DateInput,

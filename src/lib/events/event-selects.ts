@@ -26,6 +26,7 @@ const EVENT_QUICK_VIEW_COLUMNS = [
   "required_materials",
   "expected_commitment",
   "cancellation_notice",
+  "poster_path",
 ] as const;
 
 export const EVENT_QUICK_VIEW_SELECT = EVENT_QUICK_VIEW_COLUMNS.join(", ");

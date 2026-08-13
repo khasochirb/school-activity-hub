@@ -39,7 +39,7 @@ export type ClubMediaInspection =
     }
   | { code: ClubMediaValidationCode; ok: false };
 
-type DetectedImage = {
+export type DetectedStaticImage = {
   animated: boolean;
   height: number;
   mimeType: ClubMediaMimeType;
@@ -96,7 +96,7 @@ export function inspectClubImage(
     return { code: "tooLarge", ok: false };
   }
 
-  const detected = detectImage(bytes);
+  const detected = detectStaticImage(bytes);
 
   if (!detected) {
     return { code: "invalidImage", ok: false };
@@ -124,11 +124,13 @@ export function inspectClubImage(
   };
 }
 
-function detectImage(bytes: Uint8Array): DetectedImage | null {
+export function detectStaticImage(
+  bytes: Uint8Array,
+): DetectedStaticImage | null {
   return detectPng(bytes) ?? detectJpeg(bytes) ?? detectWebp(bytes);
 }
 
-function detectPng(bytes: Uint8Array): DetectedImage | null {
+function detectPng(bytes: Uint8Array): DetectedStaticImage | null {
   const signature = [137, 80, 78, 71, 13, 10, 26, 10];
 
   if (
@@ -177,7 +179,7 @@ function detectPng(bytes: Uint8Array): DetectedImage | null {
   return null;
 }
 
-function detectJpeg(bytes: Uint8Array): DetectedImage | null {
+function detectJpeg(bytes: Uint8Array): DetectedStaticImage | null {
   if (
     bytes.length < 4 ||
     bytes[0] !== 0xff ||
@@ -241,7 +243,7 @@ function detectJpeg(bytes: Uint8Array): DetectedImage | null {
   return null;
 }
 
-function detectWebp(bytes: Uint8Array): DetectedImage | null {
+function detectWebp(bytes: Uint8Array): DetectedStaticImage | null {
   if (
     bytes.length < 30 ||
     ascii(bytes, 0, 4) !== "RIFF" ||

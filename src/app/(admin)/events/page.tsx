@@ -14,12 +14,15 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import {
+  formatCalendarDateBadge,
   formatDate,
   formatDateTime,
   formatTime,
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
+import { getEventPosterLabels } from "@/lib/events/event-poster-labels";
+import { getEventPosterDeliveryUrl } from "@/lib/events/event-poster";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import {
   currentCalendarMonth,
@@ -141,6 +144,7 @@ type Event = {
   required_materials: string | null;
   expected_commitment: string | null;
   cancellation_notice: string | null;
+  poster_path: string | null;
 };
 
 type EventAttendeeCountRow = {
@@ -454,6 +458,11 @@ export default async function EventsPage({
       ? t("events.empty.noPastTitle")
       : t("events.empty.noUpcomingTitle");
   const eventBrowserItems: EventBrowserItem[] = events.map((event) => {
+    const posterDate = formatCalendarDateBadge(
+      event.starts_at,
+      locale,
+      calendarTimeZone,
+    );
     const attendeeCount = attendeeCounts.get(event.id) ?? 0;
     const isFull =
       event.capacity !== null &&
@@ -561,6 +570,11 @@ export default async function EventsPage({
         : t("events.permission.notRequired"),
       registrationStateLabel,
       registrationStatus: registrationStatus?.status ?? null,
+      posterDay: posterDate.day,
+      posterMonth: posterDate.month,
+      posterUrl: event.poster_path
+        ? getEventPosterDeliveryUrl(event.id, event.poster_path)
+        : null,
       remainingSpaces:
         event.capacity === null
           ? null
@@ -586,7 +600,9 @@ export default async function EventsPage({
   const eventBrowserLabels: EventBrowserLabels = {
     ...getEventQuickViewLabels(t),
     myClub: t("events.filters.myClubEvents"),
+    noPoster: t("events.poster.noPoster"),
     partnerSchool: t("events.filters.partnerSchool"),
+    posterAlt: t("events.poster.alt"),
     registered: t("events.filters.registered"),
   };
   const eventCalendarLabels: EventCalendarLabels = {
@@ -719,6 +735,7 @@ export default async function EventsPage({
             isStaff={isStaff}
             locale={locale}
             platformSchool={selectedPlatformSchool}
+            posterLabels={getEventPosterLabels(t)}
             labels={{
               accessibilityGuidance: t(
                 "events.decisionInfo.accessibilityGuidance",

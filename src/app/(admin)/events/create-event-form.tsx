@@ -16,6 +16,10 @@ import {
 } from "@/components/events/accessibility-options-field";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
+  EventPosterUploader,
+  type EventPosterLabels,
+} from "@/components/events/event-poster-uploader";
+import {
   EventCompletenessChecklist,
   type EventCompletenessLabels,
 } from "@/components/events/event-listing-completeness";
@@ -205,6 +209,7 @@ export function CreateEventForm({
   labels,
   locale,
   platformSchool,
+  posterLabels,
   staffOptions,
 }: {
   canCreate: boolean;
@@ -215,6 +220,7 @@ export function CreateEventForm({
   labels: CreateEventFormLabels;
   locale: Locale;
   platformSchool?: { id: string; name: string } | null;
+  posterLabels: EventPosterLabels;
   staffOptions: StaffOption[];
 }) {
   const [state, formAction] = useActionState(createEvent, initialState);
@@ -889,6 +895,15 @@ export function CreateEventForm({
               showStep(EVENT_COMPLETENESS_STEP_BY_ITEM[item])
             }
             result={completeness}
+          />
+        </div>
+        <div className="mt-3">
+          <EventPosterUploader
+            currentPosterUrl={null}
+            deferUntilEventCreated
+            eventId={state.eventId ?? null}
+            eventTitle={values.title || labels.title}
+            labels={posterLabels}
           />
         </div>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">

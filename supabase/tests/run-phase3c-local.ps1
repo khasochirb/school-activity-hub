@@ -34,6 +34,8 @@ $clubProfilePrivilegeMigrationPath = Join-Path $repositoryRoot "supabase/migrati
 $clubProfileMediaMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130006_add_club_profile_media.sql"
 $clubProfileMediaUploadReturnMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130007_allow_club_media_upload_return.sql"
 $clubProfileTestPath = Join-Path $PSScriptRoot "club-profiles-rls-rpc.sql"
+$eventPosterMigrationPath = Join-Path $repositoryRoot "supabase/migrations/202608130008_add_event_posters.sql"
+$eventPosterTestPath = Join-Path $PSScriptRoot "event-posters-rls-storage.sql"
 $postgrestEventTestPath = Join-Path $PSScriptRoot "postgrest-event-regression.mjs"
 $testPath = Join-Path $PSScriptRoot "phase3c-rls-rpc.sql"
 $phase4aTestPath = Join-Path $PSScriptRoot "phase4a-event-decision-info.sql"
@@ -401,6 +403,17 @@ grant all on schema public to postgres, service_role;
   }
   $clubProfileTestOutput |
     Where-Object { $_ -match 'ok - |CLUB_PROFILE_RLS_RPC_TESTS_PASSED' } |
+    Write-Output
+
+  Invoke-PsqlFile -database "postgres" -path $eventPosterMigrationPath
+  Write-Output "Applied only 202608130008_add_event_posters.sql."
+
+  $eventPosterTestOutput = Invoke-PsqlFile -database "postgres" -path $eventPosterTestPath -Capture
+  if (($eventPosterTestOutput -join "`n") -notmatch 'EVENT_POSTER_RLS_STORAGE_TESTS_PASSED') {
+    throw "Event poster RLS/Storage tests did not emit their success marker."
+  }
+  $eventPosterTestOutput |
+    Where-Object { $_ -match 'ok - |EVENT_POSTER_RLS_STORAGE_TESTS_PASSED' } |
     Write-Output
 
   $previousPreference = $ErrorActionPreference
