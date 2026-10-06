@@ -5,6 +5,7 @@ import { HomepageActivityFlow } from "@/components/homepage-activity-flow";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentTheme } from "@/lib/get-theme";
+import { formatLongDate } from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +19,7 @@ export default async function HomePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const today = formatLongDate(new Date(), locale, "Asia/Ulaanbaatar");
 
   const features = [
     {
@@ -94,6 +96,13 @@ export default async function HomePage() {
 
   return (
     <main className="landing min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <div className="landing-dateline">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <span>{today}</span>
+          <span className="hidden sm:inline">{t("app.subtitle")}</span>
+          <span>№ 01</span>
+        </div>
+      </div>
       <header className="landing-header sticky top-0 z-30">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link className="flex shrink-0 items-center gap-3" href="/">
@@ -136,13 +145,13 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:px-8 lg:pb-24">
+      <section className="landing-hero mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:px-8 lg:pb-24">
         <div className="min-w-0">
           <p className="page-eyebrow">{t("landing.platformEyebrow")}</p>
           <h1 className="landing-headline mt-5 font-display">
             {t("landing.headline")}
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-[var(--muted)]">
+          <p className="landing-intro mt-6 max-w-xl text-lg leading-8 text-[var(--muted)]">
             {t("landing.intro")}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -201,6 +210,7 @@ export default async function HomePage() {
         <SectionIntro
           description={t("landing.intro")}
           eyebrow={t("landing.whatThisAppDoes")}
+          number="01"
           title={t("landing.clubsAndEvents")}
         />
         <ol className="landing-features mt-10 grid gap-3 md:grid-cols-6">
@@ -224,6 +234,7 @@ export default async function HomePage() {
         <SectionIntro
           description={t("landing.audienceDescription")}
           eyebrow={t("landing.audienceEyebrow")}
+          number="02"
           title={t("landing.whoIsThisFor")}
         />
         <div className="mt-10 grid gap-3 md:grid-cols-3">
@@ -250,6 +261,7 @@ export default async function HomePage() {
           <SectionIntro
             description={t("landing.workflowDescription")}
             eyebrow={t("landing.pilotWorkflow")}
+            number="03"
             title={t("landing.workflowTitle")}
           />
           <ol className="landing-steps mt-12 grid gap-8 md:grid-cols-5 md:gap-4">
@@ -266,7 +278,10 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="landing-trust grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
           <div>
-            <p className="page-eyebrow">{t("landing.trustEyebrow")}</p>
+            <p className="page-eyebrow">
+              <span className="landing-section-number">04</span>
+              {t("landing.trustEyebrow")}
+            </p>
             <h2 className="mt-4 font-display text-3xl font-semibold leading-tight sm:text-4xl">
               {t("landing.privateByDesign")}
             </h2>
@@ -303,16 +318,21 @@ export default async function HomePage() {
 function SectionIntro({
   description,
   eyebrow,
+  number,
   title,
 }: {
   description: string;
   eyebrow: string;
+  number: string;
   title: string;
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 md:items-end">
+    <div className="landing-section-intro grid gap-4 md:grid-cols-2 md:items-end">
       <div>
-        <p className="page-eyebrow">{eyebrow}</p>
+        <p className="page-eyebrow">
+          <span className="landing-section-number">{number}</span>
+          {eyebrow}
+        </p>
         <h2 className="mt-4 font-display text-3xl font-semibold leading-tight sm:text-4xl">
           {title}
         </h2>
