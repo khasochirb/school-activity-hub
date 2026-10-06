@@ -12,10 +12,12 @@ import {
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 export function LanguageSwitcher({
+  className = "w-full max-w-full",
   currentLocale,
   label,
   labels,
 }: {
+  className?: string;
   currentLocale: Locale;
   label: string;
   labels?: Partial<Record<Locale, string>>;
@@ -40,7 +42,7 @@ export function LanguageSwitcher({
   return (
     <div
       aria-label={label}
-      className="grid w-full max-w-full grid-cols-2 gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm"
+      className={`grid ${className} grid-cols-2 gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm`}
     >
       {SUPPORTED_LOCALES.map((option) => {
         const active = option === locale;

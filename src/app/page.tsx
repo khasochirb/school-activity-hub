@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { HomepageActivityFlow } from "@/components/homepage-activity-flow";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -48,14 +49,17 @@ export default async function HomePage() {
 
   const audienceCards = [
     {
+      icon: "admin" as const,
       title: t("landing.audienceAdmins"),
       body: t("landing.audienceAdminsBody"),
     },
     {
+      icon: "teacher" as const,
       title: t("landing.audienceTeachers"),
       body: t("landing.audienceTeachersBody"),
     },
     {
+      icon: "student" as const,
       title: t("landing.audienceStudents"),
       body: t("landing.audienceStudentsBody"),
     },
@@ -92,20 +96,21 @@ export default async function HomePage() {
   return (
     <main className="app-surface text-slate-950">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
-            className="flex min-w-0 cursor-pointer items-center gap-3 transition hover:text-[var(--primary-strong)]"
+            className="flex shrink-0 cursor-pointer items-center gap-3 transition hover:text-[var(--primary-strong)]"
             href="/"
           >
             <span className="brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-sm font-bold">
               {t("app.shortName")}
             </span>
-            <span className="min-w-0 break-words font-bold leading-tight tracking-tight">
+            <span className="whitespace-nowrap font-bold leading-tight tracking-tight">
               {t("app.name")}
             </span>
           </Link>
-          <nav className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <nav className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
             <LanguageSwitcher
+              className="w-auto"
               currentLocale={locale}
               label={t("language.label")}
               labels={{
@@ -133,7 +138,7 @@ export default async function HomePage() {
                 <Link className="btn btn-secondary" href="/login">
                   {t("landing.signIn")}
                 </Link>
-                <Link className="btn btn-primary hidden sm:inline-flex" href="/join">
+                <Link className="btn btn-primary max-sm:hidden!" href="/join">
                   {t("landing.joinWithInviteCode")}
                 </Link>
               </>
@@ -228,7 +233,12 @@ export default async function HomePage() {
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             {audienceCards.map((card) => (
-              <AudienceCard body={card.body} key={card.title} title={card.title} />
+              <AudienceCard
+                body={card.body}
+                icon={card.icon}
+                key={card.title}
+                title={card.title}
+              />
             ))}
           </div>
         </div>
@@ -274,11 +284,21 @@ export default async function HomePage() {
   );
 }
 
-function AudienceCard({ body, title }: { body: string; title: string }) {
+type AudienceIcon = "admin" | "teacher" | "student";
+
+function AudienceCard({
+  body,
+  icon,
+  title,
+}: {
+  body: string;
+  icon: AudienceIcon;
+  title: string;
+}) {
   return (
     <article className="section-card section-card-padded">
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md border border-[#f4cfab] bg-[var(--primary-soft)] text-sm font-black text-[var(--primary-strong)]">
-        SA
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md border border-[#f4cfab] bg-[var(--primary-soft)] text-[var(--primary-strong)]">
+        <AudienceIconGlyph icon={icon} />
       </div>
       <h3 className="section-title">{title}</h3>
       <p className="section-description">{body}</p>
@@ -338,5 +358,43 @@ function WorkflowStep({
       </p>
       <p className="mt-3 text-base font-bold leading-snug text-slate-950">{title}</p>
     </article>
+  );
+}
+
+function AudienceIconGlyph({ icon }: { icon: AudienceIcon }) {
+  const paths: Record<AudienceIcon, ReactNode> = {
+    admin: (
+      <>
+        <path d="M4 21V9l8-6 8 6v12" />
+        <path d="M9 21v-6h6v6" />
+      </>
+    ),
+    teacher: (
+      <>
+        <rect height="12" rx="1" width="18" x="3" y="4" />
+        <path d="M8 20h8M12 16v4" />
+      </>
+    ),
+    student: (
+      <>
+        <path d="M2 9l10-5 10 5-10 5z" />
+        <path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      {paths[icon]}
+    </svg>
   );
 }

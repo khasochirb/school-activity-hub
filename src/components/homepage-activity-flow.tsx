@@ -84,7 +84,9 @@ export function HomepageActivityFlow({
             onClick={togglePaused}
             type="button"
           >
-            <span aria-hidden="true">{isPaused ? "▶" : "Ⅱ"}</span>
+            <span aria-hidden="true" className="mr-2 inline-flex w-3 justify-center">
+              {isPaused ? "▶" : "❚❚"}
+            </span>
             {isPaused ? labels.resume : labels.pause}
           </button>
         </div>
