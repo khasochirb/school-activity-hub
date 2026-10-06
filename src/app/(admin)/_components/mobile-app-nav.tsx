@@ -128,10 +128,10 @@ function MobileNavLink({
     <ProtectedAppLink
       aria-current={active ? "page" : undefined}
       className={[
-        "nav-link-motion flex min-h-12 min-w-0 items-center gap-3 rounded-lg border px-3 py-2.5 text-sm leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]",
+        "nav-link-motion flex min-h-12 min-w-0 items-center gap-3 rounded-lg border px-3 py-2.5 text-sm leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
         secondary ? "ml-1" : "",
         active
-          ? "border-[#f2af68]/60 bg-[var(--primary-soft)] font-extrabold text-slate-950 shadow-sm"
+          ? "border-[var(--primary)]/60 bg-[var(--primary-soft)] font-extrabold text-slate-950 shadow-sm"
           : "border-transparent font-bold text-slate-700 hover:border-[var(--border)] hover:bg-[var(--card-soft)] hover:text-slate-950",
       ].join(" ")}
       href={item.href}
@@ -143,7 +143,7 @@ function MobileNavLink({
         className={[
           "h-2 w-2 shrink-0 rounded-full border",
           active
-            ? "border-[#f2af68] bg-[#f2af68]"
+            ? "border-[var(--primary)] bg-[var(--primary)]"
             : "border-slate-300 bg-transparent",
         ].join(" ")}
       />

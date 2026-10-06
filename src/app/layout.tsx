@@ -8,6 +8,8 @@ import {
   SUPPORTED_THEMES,
   THEME_COOKIE,
 } from "@/lib/theme";
+import "@fontsource-variable/onest";
+import "@fontsource-variable/unbounded";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {

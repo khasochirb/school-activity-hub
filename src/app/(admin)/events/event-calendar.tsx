@@ -159,7 +159,7 @@ export function EventCalendar({
           isCurrentMonth
             ? "bg-[var(--card)]"
             : "bg-[var(--card-soft)] opacity-65",
-          isSelected ? "ring-2 ring-inset ring-[#f2af68]" : "",
+          isSelected ? "ring-2 ring-inset ring-[var(--primary)]" : "",
         ].join(" ")}
         key={key}
         role="gridcell"
@@ -168,9 +168,9 @@ export function EventCalendar({
           aria-current={isToday ? "date" : undefined}
           aria-pressed={isSelected}
           className={[
-            "flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-md px-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]",
+            "flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-md px-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]",
             isToday
-              ? "bg-[#f2af68] text-slate-950"
+              ? "bg-[var(--primary)] text-slate-950"
               : "text-slate-700 hover:bg-[var(--primary-soft)]",
           ].join(" ")}
           onClick={() => setSelectedDateKey(key)}
@@ -193,7 +193,7 @@ export function EventCalendar({
           ))}
           {hiddenCount ? (
             <button
-              className="min-h-8 w-full cursor-pointer rounded px-1.5 text-left text-xs font-bold text-[var(--primary-strong)] transition hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]"
+              className="min-h-8 w-full cursor-pointer rounded px-1.5 text-left text-xs font-bold text-[var(--primary-strong)] transition hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               onClick={() => setSelectedDateKey(key)}
               type="button"
             >
@@ -279,9 +279,9 @@ export function EventCalendar({
                   aria-label={formatLongDate(date, locale, "UTC")}
                   aria-pressed={isSelected}
                   className={[
-                    "flex min-h-16 min-w-14 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]",
+                    "flex min-h-16 min-w-14 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
                     isSelected
-                      ? "border-[#f2af68] bg-[var(--primary-soft)] text-[var(--primary-strong)] shadow-sm"
+                      ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-strong)] shadow-sm"
                       : isCurrentMonth
                         ? "border-[var(--border)] bg-[var(--card)] text-slate-700"
                         : "border-[var(--border)] bg-[var(--card-soft)] text-slate-500",
@@ -402,8 +402,8 @@ function CalendarEventChip({
     <button
       aria-label={`${labels.viewEvent}: ${event.title}`}
       className={[
-        "interactive-chip block min-h-11 w-full cursor-pointer overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card-soft)] px-2 py-1.5 text-left hover:border-[#f2af68] hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]",
-        isPast ? "border-l-slate-400 opacity-80" : "border-l-[#f2af68]",
+        "interactive-chip block min-h-11 w-full cursor-pointer overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card-soft)] px-2 py-1.5 text-left hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]",
+        isPast ? "border-l-slate-400 opacity-80" : "border-l-[var(--primary)]",
       ].join(" ")}
       onClick={(clickEvent) => onOpen(event.id, clickEvent.currentTarget)}
       type="button"
@@ -453,7 +453,7 @@ function CalendarAgenda({
           {events.map((event) => (
             <button
               aria-label={`${labels.viewEvent}: ${event.title}`}
-              className="interactive-card min-w-0 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]"
+              className="interactive-card min-w-0 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
               key={event.id}
               onClick={(clickEvent) =>
                 onOpen(event.id, clickEvent.currentTarget)

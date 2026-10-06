@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandGlyph } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -411,7 +412,6 @@ export async function AppShell({
           <Brand
             dashboardLabel={t("nav.dashboard")}
             name={t("app.name")}
-            shortName={t("app.shortName")}
             subtitle={t("app.subtitle")}
           />
         </div>
@@ -440,7 +440,6 @@ export async function AppShell({
               compact
               dashboardLabel={t("nav.dashboard")}
               name={t("app.name")}
-              shortName={t("app.shortName")}
               subtitle={t("app.subtitle")}
             />
             <MobileMenuDrawer
@@ -450,7 +449,6 @@ export async function AppShell({
                   appName={t("app.name")}
                   roleLabel={formattedRole}
                   schoolName={profile?.schoolName ?? null}
-                  shortName={t("app.shortName")}
                 />
               }
               menuLabel={t("nav.menu")}
@@ -494,13 +492,11 @@ function Brand({
   compact = false,
   dashboardLabel,
   name,
-  shortName,
   subtitle,
 }: {
   compact?: boolean;
   dashboardLabel: string;
   name: string;
-  shortName: string;
   subtitle: string;
 }) {
   return (
@@ -509,13 +505,13 @@ function Brand({
         aria-label={`${name} ${dashboardLabel}`}
         className={
           compact
-            ? "brand-mark flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md text-xs font-bold shadow-sm transition"
-            : "brand-mark flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-sm font-bold shadow-sm transition"
+            ? "brand-mark flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl transition"
+            : "brand-mark flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl transition"
         }
         href="/dashboard"
         prefetch={false}
       >
-        {shortName}
+        <BrandGlyph />
       </Link>
       <div className="min-w-0 max-w-full">
         <Link
@@ -671,17 +667,15 @@ function MobileDrawerBrand({
   appName,
   roleLabel,
   schoolName,
-  shortName,
 }: {
   appName: string;
   roleLabel: string;
   schoolName: string | null;
-  shortName: string;
 }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <span className="brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-xs font-black shadow-sm">
-        {shortName}
+      <span className="brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+        <BrandGlyph />
       </span>
       <div className="min-w-0">
         <p className="break-words text-sm font-extrabold leading-snug text-slate-950">

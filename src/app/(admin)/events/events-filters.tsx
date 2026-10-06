@@ -158,7 +158,7 @@ export function EventsFilters({
           {activeFilters.map((filter) => (
             <Link
               aria-label={`${labels.clear}: ${filter.label}`}
-              className="interactive-chip inline-flex min-h-9 max-w-full items-center gap-1 rounded-full border border-[#f2af68]/60 bg-[var(--primary-soft)] px-3 py-1 text-sm font-bold text-[var(--primary-strong)] hover:border-[#f2af68] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]"
+              className="interactive-chip inline-flex min-h-9 max-w-full items-center gap-1 rounded-full border border-[var(--primary)]/60 bg-[var(--primary-soft)] px-3 py-1 text-sm font-bold text-[var(--primary-strong)] hover:border-[var(--primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
               href={filter.href}
               key={`${filter.label}-${filter.href}`}
               prefetch={false}

@@ -275,7 +275,8 @@ function ChartBar({
           style={
             {
               "--chart-scale": value / maximum,
-              backgroundColor: variant === "secondary" ? "#64748b" : "#d68a43",
+              backgroundColor:
+                variant === "secondary" ? "var(--accent)" : "var(--primary)",
             } as CSSProperties
           }
         />

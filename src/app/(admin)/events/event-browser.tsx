@@ -106,7 +106,7 @@ function EventCard({
 
   return (
     <article
-      className="interactive-card group grid min-w-0 cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] focus-within:border-[#f2af68] md:grid-cols-[minmax(13rem,0.85fr)_minmax(0,2fr)]"
+      className="interactive-card group grid min-w-0 cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] focus-within:border-[var(--primary)] md:grid-cols-[minmax(13rem,0.85fr)_minmax(0,2fr)]"
       data-category-tone={categoryTone}
       onClick={handleCardClick}
     >
@@ -163,7 +163,7 @@ function EventCard({
         </div>
 
         <Link
-          className="mt-2 w-fit max-w-full break-words text-xl font-black leading-tight text-slate-950 hover:text-[var(--primary-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68] sm:text-2xl"
+          className="mt-2 w-fit max-w-full break-words text-xl font-black leading-tight text-slate-950 hover:text-[var(--primary-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] sm:text-2xl"
           href={`/events/${item.id}`}
         >
           {item.title}
