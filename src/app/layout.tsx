@@ -10,7 +10,13 @@ import {
 } from "@/lib/theme";
 import "@fontsource-variable/onest";
 import "@fontsource-variable/unbounded";
+import "@fontsource-variable/playfair-display";
+import "@fontsource-variable/inter-tight";
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource-variable/manrope";
+import { cookies } from "next/headers";
 import "./globals.css";
+import "./style-variants.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getCurrentLocale();
@@ -32,12 +38,15 @@ export default async function RootLayout({
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const theme = await getCurrentTheme();
+  // Design-direction preview: pick a variant with the sah_style cookie.
+  const styleVariant = (await cookies()).get("sah_style")?.value;
   const htmlClassName =
     theme === "dark" ? "dark h-full antialiased" : "h-full antialiased";
 
   return (
     <html
       className={htmlClassName}
+      data-style={styleVariant}
       data-theme={theme}
       lang={locale}
       suppressHydrationWarning
