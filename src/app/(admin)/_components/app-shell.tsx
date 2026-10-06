@@ -85,6 +85,7 @@ const navSections: Array<{
         roles: ["school_admin", "teacher"],
       },
       { href: "/announcements", labelKey: "nav.announcements" },
+      { href: "/news", labelKey: "nav.news" },
       {
         href: "/safety",
         intentPrefetch: false,
