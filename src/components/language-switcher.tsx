@@ -11,13 +11,20 @@ import {
 
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
+const SHORT_LOCALE_LABELS: Record<Locale, string> = {
+  en: "EN",
+  mn: "МН",
+};
+
 export function LanguageSwitcher({
   className = "w-full max-w-full",
+  compact = false,
   currentLocale,
   label,
   labels,
 }: {
   className?: string;
+  compact?: boolean;
   currentLocale: Locale;
   label: string;
   labels?: Partial<Record<Locale, string>>;
@@ -49,6 +56,7 @@ export function LanguageSwitcher({
 
         return (
           <button
+            aria-label={compact ? localeLabels[option] : undefined}
             aria-pressed={active}
             className={
               active
@@ -58,9 +66,10 @@ export function LanguageSwitcher({
             disabled={isPending}
             key={option}
             onClick={() => selectLocale(option)}
+            title={compact ? localeLabels[option] : undefined}
             type="button"
           >
-            {localeLabels[option]}
+            {compact ? SHORT_LOCALE_LABELS[option] : localeLabels[option]}
           </button>
         );
       })}

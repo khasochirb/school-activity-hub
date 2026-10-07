@@ -9,8 +9,8 @@ import {
   THEME_COOKIE,
 } from "@/lib/theme";
 import "@fontsource-variable/onest";
-import "@fontsource-variable/playfair/standard.css";
-import "@fontsource-variable/playfair/standard-italic.css";
+import "@fontsource-variable/noto-serif-display/standard.css";
+import "@fontsource-variable/noto-serif-display/standard-italic.css";
 import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 

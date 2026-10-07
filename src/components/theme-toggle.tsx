@@ -12,12 +12,14 @@ const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 type ThemeLabels = Record<ThemePreference, string>;
 
 export function ThemeToggle({
+  compact = false,
   currentTheme,
   label,
   labels,
   showLabel = true,
   switchLabel,
 }: {
+  compact?: boolean;
   currentTheme: ThemePreference;
   label: string;
   labels: ThemeLabels;
@@ -70,6 +72,7 @@ export function ThemeToggle({
 
           return (
             <button
+              aria-label={compact ? labels[option] : undefined}
               aria-pressed={active}
               className={
                 active
@@ -81,12 +84,41 @@ export function ThemeToggle({
               title={labels[option]}
               type="button"
             >
-              {labels[option]}
+              {compact ? <ThemeIcon theme={option} /> : labels[option]}
             </button>
           );
         })}
       </div>
     </div>
+  );
+}
+
+function ThemeIcon({ theme }: { theme: ThemePreference }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="mx-auto h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+    >
+      {theme === "light" ? (
+        <>
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </>
+      ) : theme === "dark" ? (
+        <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+      ) : (
+        <>
+          <rect height="12" rx="1.5" width="18" x="3" y="4" />
+          <path d="M8 20h8M12 16v4" />
+        </>
+      )}
+    </svg>
   );
 }
 

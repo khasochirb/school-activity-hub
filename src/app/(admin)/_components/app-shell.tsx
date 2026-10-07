@@ -566,33 +566,38 @@ function AccountPanel({
   themeLabels: Record<ThemePreference, string>;
 }) {
   return (
-    <div className="min-w-0 max-w-full overflow-hidden border-t border-slate-200 bg-slate-50/70 p-4">
-      <div className="mb-4 grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="min-w-0 max-w-full space-y-2 overflow-hidden border-t border-slate-200 bg-slate-50/70 px-4 py-3">
+      <div className="grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2">
         <LanguageSwitcher
+          compact
           currentLocale={locale}
           label={languageLabel}
           labels={languageLabels}
         />
         <ThemeToggle
+          compact
           currentTheme={theme}
           label={themeLabel}
           labels={themeLabels}
+          showLabel={false}
           switchLabel={switchThemeLabel}
         />
       </div>
-      <div className="min-w-0 max-w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 shadow-sm">
-        <p className="break-all">{email}</p>
-        <p className="mt-1 break-words font-semibold leading-snug text-slate-900">{roleLabel}</p>
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="min-w-0 flex-1 text-xs leading-snug text-slate-600">
+          <p className="truncate" title={email ?? undefined}>{email}</p>
+          <p className="truncate font-semibold text-slate-900">{roleLabel}</p>
+        </div>
+        <form action={logout} className="shrink-0">
+          <PendingSubmitButton
+            className="btn btn-secondary min-h-8! px-3! py-1.5! text-xs!"
+            pendingLabel={logoutPendingLabel}
+            toastMessage={logoutPendingLabel}
+          >
+            {logoutLabel}
+          </PendingSubmitButton>
+        </form>
       </div>
-      <form action={logout} className="mt-3">
-        <PendingSubmitButton
-          className="btn btn-secondary w-full"
-          pendingLabel={logoutPendingLabel}
-          toastMessage={logoutPendingLabel}
-        >
-          {logoutLabel}
-        </PendingSubmitButton>
-      </form>
     </div>
   );
 }
