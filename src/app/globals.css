@@ -53,7 +53,7 @@
   --motion-data: 420ms;
   --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --font-body-stack: "Onest Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display-stack: "Playfair Display Variable", Georgia, "Times New Roman", serif;
+  --font-display-stack: "Playfair Variable", Georgia, "Times New Roman", serif;
   --font-mono-stack: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-geist-sans: var(--font-body-stack);
   --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
