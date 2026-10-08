@@ -2317,16 +2317,16 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 }
 
 :root .landing-headline {
-  max-width: 12ch;
-  font-size: clamp(2.7rem, 6.6vw, 5.4rem);
+  max-width: 16ch;
+  font-size: clamp(2.1rem, 4.4vw, 3.6rem);
   font-weight: 500;
-  letter-spacing: -0.025em;
-  line-height: 0.98;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 
 :root:lang(mn) .landing-headline {
-  max-width: 15ch;
-  font-size: clamp(2.3rem, 5.4vw, 4.4rem);
+  max-width: 19ch;
+  font-size: clamp(1.9rem, 3.8vw, 3.1rem);
 }
 
 :root .btn-primary {
