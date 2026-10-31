@@ -1,13 +1,22 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import {
+  loadStudentProfileData,
+  type StudentProfileData,
+} from "@/lib/students/student-profile-data";
 import { createClient } from "@/lib/supabase/server";
 import {
   DetailsDisclosure,
   PageHeader,
 } from "../_components/page-ui";
 import { ProfileForm } from "./profile-form";
+import { StudentProfile } from "./student-profile";
 
 type Profile = {
   id: string;
@@ -22,6 +31,7 @@ type School = {
 };
 
 type StudentRoster = {
+  id: string;
   first_name: string;
   last_name: string;
   preferred_name: string | null;
@@ -35,6 +45,8 @@ export default async function ProfilePage() {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
   const supabase = await createClient();
   const user = await getCurrentUser();
 
@@ -50,6 +62,7 @@ export default async function ProfilePage() {
 
   let school: School | null = null;
   let studentRoster: StudentRoster | null = null;
+  let studentData: StudentProfileData | null = null;
 
   if (profile) {
     const { data: schoolData } = await supabase
@@ -64,13 +77,22 @@ export default async function ProfilePage() {
       const { data: rosterData } = await supabase
         .from("student_rosters")
         .select(
-          "first_name, last_name, preferred_name, grade_level, homeroom, student_number, status",
+          "id, first_name, last_name, preferred_name, grade_level, homeroom, student_number, status",
         )
         .eq("school_id", profile.school_id)
         .eq("profile_id", profile.id)
         .maybeSingle<StudentRoster>();
 
       studentRoster = rosterData;
+
+      if (profile.status === "active") {
+        studentData = await loadStudentProfileData(
+          supabase,
+          profile,
+          studentRoster?.status === "active" ? studentRoster.id : null,
+          new Date(),
+        );
+      }
     }
   }
 
@@ -80,6 +102,17 @@ export default async function ProfilePage() {
         description={t("profile.description")}
         title={t("profile.title")}
       />
+
+      {profile && studentData ? (
+        <StudentProfile
+          data={studentData}
+          displayName={studentDisplayName(studentRoster, profile.full_name)}
+          gradeLine={studentGradeLine(studentRoster, t)}
+          locale={locale}
+          t={t}
+          tf={tf}
+        />
+      ) : null}
 
       <section className="section-card section-card-padded">
         <h2 className="section-title">{t("profile.accountDetails")}</h2>
@@ -183,6 +216,34 @@ function studentRosterName(student: StudentRoster) {
   return student.preferred_name
     ? `${student.first_name} ${student.last_name} (${student.preferred_name})`
     : `${student.first_name} ${student.last_name}`;
+}
+
+function studentDisplayName(student: StudentRoster | null, fullName: string) {
+  if (!student) {
+    return fullName;
+  }
+
+  return student.preferred_name || `${student.first_name} ${student.last_name}`;
+}
+
+function studentGradeLine(
+  student: StudentRoster | null,
+  t: (key: string) => string,
+) {
+  if (!student) {
+    return null;
+  }
+
+  const parts = [
+    student.grade_level
+      ? `${t("profile.roster.grade")}: ${student.grade_level}`
+      : null,
+    student.homeroom
+      ? `${t("profile.roster.classGroup")}: ${student.homeroom}`
+      : null,
+  ].filter(Boolean);
+
+  return parts.length ? parts.join(" · ") : null;
 }
 
 function roleLabel(role: Profile["role"], t: (key: string) => string) {

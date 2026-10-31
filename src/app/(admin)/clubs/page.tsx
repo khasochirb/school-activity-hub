@@ -22,6 +22,11 @@ import {
   pageRows,
 } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
+import { loadStudentInterests } from "@/lib/students/student-interests";
+import {
+  matchClubsToInterests,
+  type ClubsForInterests,
+} from "@/lib/students/student-journey";
 import { createClient } from "@/lib/supabase/server";
 import {
   archiveClub,
@@ -61,6 +66,13 @@ type Club = {
 
 type StudentRoster = {
   id: string;
+};
+
+type ClubPracticalDetails = {
+  club_id: string;
+  cost_notes: string | null;
+  meeting_location: string | null;
+  meeting_schedule: string | null;
 };
 
 type ClubMembership = {
@@ -178,6 +190,47 @@ export default async function ClubsPage({
       )
     : { data: [] };
 
+  const isStudent = profile.role === "student";
+  const hasActiveFilters = Boolean(searchQuery || selectedCategory || page > 1);
+  const [studentInterests, schoolClubsResult] = isStudent
+    ? await Promise.all([
+        timeServer("clubs.query.student-interests", () =>
+          loadStudentInterests(supabase, profile.id),
+        ),
+        hasActiveFilters
+          ? Promise.resolve({ data: [] as Club[] })
+          : timeServer("clubs.query.clubs-for-you", () =>
+              supabase
+                .from("clubs")
+                .select("id, name, description, category, status")
+                .eq("school_id", profile.school_id)
+                .eq("status", "active")
+                .returns<Club[]>(),
+            ),
+      ])
+    : [null, { data: [] as Club[] }];
+  const clubsForYou =
+    studentInterests && !hasActiveFilters
+      ? matchClubsToInterests(schoolClubsResult.data ?? [], studentInterests.interests)
+      : null;
+  const detailClubIds = Array.from(
+    new Set([
+      ...clubIds,
+      ...(clubsForYou?.forYou.map(({ club }) => club.id) ?? []),
+    ]),
+  );
+  const { data: practicalDetails } = detailClubIds.length
+    ? await timeServer("clubs.query.practical-details", () =>
+        supabase
+          .from("club_profiles")
+          .select("club_id, meeting_schedule, meeting_location, cost_notes")
+          .in("club_id", detailClubIds)
+          .returns<ClubPracticalDetails[]>(),
+      )
+    : { data: [] as ClubPracticalDetails[] };
+  const detailsByClub = new Map(
+    (practicalDetails ?? []).map((details) => [details.club_id, details]),
+  );
   const membershipsByClub = groupMembershipsByClub(memberships ?? []);
   const currentStudentMemberships = new Set(
     (memberships ?? [])
@@ -227,6 +280,19 @@ export default async function ClubsPage({
             }}
           />
         </CollapsibleFormSection>
+      ) : null}
+
+      {isStudent && studentInterests && clubsForYou ? (
+        <ClubsForYouSection
+          clubIdsWithKnownMembership={new Set(clubIds)}
+          currentStudent={currentStudent ?? null}
+          currentStudentMemberships={currentStudentMemberships}
+          detailsByClub={detailsByClub}
+          interestsAvailable={studentInterests.available}
+          matches={clubsForYou}
+          t={t}
+          tf={tf}
+        />
       ) : null}
 
       <FilterPanel
@@ -358,6 +424,10 @@ export default async function ClubsPage({
                       {club.description}
                     </p>
                   ) : null}
+                  <ClubPracticalFacts
+                    details={detailsByClub.get(club.id)}
+                    t={t}
+                  />
                   {isStaff ? (
                     <DetailsDisclosure label={t("common.viewDetails")}>
                       <h4 className="text-sm font-medium text-zinc-950">
@@ -530,6 +600,171 @@ function ClubActions({
         {isJoined ? labels.leave : labels.join}
       </PendingSubmitButton>
     </form>
+  );
+}
+
+function ClubsForYouSection({
+  clubIdsWithKnownMembership,
+  currentStudent,
+  currentStudentMemberships,
+  detailsByClub,
+  interestsAvailable,
+  matches,
+  t,
+  tf,
+}: {
+  clubIdsWithKnownMembership: Set<string>;
+  currentStudent: StudentRoster | null;
+  currentStudentMemberships: Set<string>;
+  detailsByClub: Map<string, ClubPracticalDetails>;
+  interestsAvailable: boolean;
+  matches: ClubsForInterests<Club>;
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+}) {
+  const hasInterests =
+    matches.forYou.length > 0 || matches.interestsWithoutClubs.length > 0;
+
+  if (!hasInterests) {
+    if (!interestsAvailable) {
+      return null;
+    }
+
+    return (
+      <section className="section-card section-card-padded flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="section-title">{t("studentProfile.clubsForYou.promptTitle")}</h2>
+          <p className="section-description">
+            {t("studentProfile.clubsForYou.promptDescription")}
+          </p>
+        </div>
+        <Link
+          className="btn btn-primary min-h-12 w-full px-5 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+          href="/profile/interests?from=clubs"
+          prefetch={false}
+        >
+          {t("studentProfile.interests.pick")}
+        </Link>
+      </section>
+    );
+  }
+
+  return (
+    <section className="section-card">
+      <div className="section-header flex flex-wrap items-center justify-between gap-2">
+        <h2 className="section-title">{t("studentProfile.clubsForYou.title")}</h2>
+        <Link
+          className="text-sm font-semibold text-[var(--primary-strong)] hover:underline"
+          href="/profile/interests?from=clubs"
+          prefetch={false}
+        >
+          {t("studentProfile.interests.edit")}
+        </Link>
+      </div>
+      {matches.forYou.length ? (
+        <div className="grid gap-3 p-3 md:grid-cols-2">
+          {matches.forYou.map(({ club, matchedInterest }) => {
+            const membershipKnown = clubIdsWithKnownMembership.has(club.id);
+            const isJoined = currentStudentMemberships.has(club.id);
+
+            return (
+              <article
+                className="rounded-xl border border-[var(--primary-border)] bg-white p-4 shadow-sm"
+                key={club.id}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-semibold text-zinc-950">
+                      <Link
+                        className="break-words hover:text-[var(--primary-strong)]"
+                        href={`/clubs/${club.id}`}
+                        prefetch={false}
+                      >
+                        {club.name}
+                      </Link>
+                    </h3>
+                    <p className="mt-1 text-sm text-zinc-600">
+                      {tf("studentProfile.clubsForYou.reason", {
+                        interest: categoryLabel(matchedInterest, t),
+                      })}
+                    </p>
+                  </div>
+                  {isJoined ? (
+                    <StatusBadge variant="success">
+                      {t("clubs.memberRoles.member")}
+                    </StatusBadge>
+                  ) : currentStudent && membershipKnown ? (
+                    <form action={joinClub} className="w-full sm:w-auto">
+                      <input name="club_id" type="hidden" value={club.id} />
+                      <PendingSubmitButton
+                        className="btn btn-primary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+                        pendingLabel={t("clubs.actions.joining")}
+                        toastMessage={t("clubs.actions.joining")}
+                      >
+                        {t("clubs.actions.join")}
+                      </PendingSubmitButton>
+                    </form>
+                  ) : null}
+                </div>
+                <ClubPracticalFacts details={detailsByClub.get(club.id)} t={t} />
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+      {matches.interestsWithoutClubs.length ? (
+        <ul className="flex flex-col gap-2 p-3 pt-0">
+          {matches.interestsWithoutClubs.map((interest) => (
+            <li
+              className="flex flex-col gap-2 rounded-md border border-dashed border-[var(--border-strong)] p-3 sm:flex-row sm:items-center sm:justify-between"
+              key={interest}
+            >
+              <span className="text-sm text-zinc-700">
+                {tf("studentProfile.clubsForYou.noClubYet", {
+                  interest: categoryLabel(interest, t),
+                })}
+              </span>
+              <Link
+                className="btn btn-secondary min-h-10 px-3 text-sm"
+                href="/club-requests"
+                prefetch={false}
+              >
+                {t("studentProfile.clubsForYou.propose")}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function ClubPracticalFacts({
+  details,
+  t,
+}: {
+  details: ClubPracticalDetails | undefined;
+  t: (key: string) => string;
+}) {
+  const facts = [
+    { label: t("studentProfile.clubFacts.when"), value: details?.meeting_schedule },
+    { label: t("studentProfile.clubFacts.where"), value: details?.meeting_location },
+    { label: t("studentProfile.clubFacts.cost"), value: details?.cost_notes },
+  ].filter((fact): fact is { label: string; value: string } => Boolean(fact.value));
+
+  if (!facts.length) {
+    return null;
+  }
+
+  return (
+    <dl className="mt-3 grid gap-1 text-sm">
+      {facts.map((fact) => (
+        <div className="flex gap-2" key={fact.label}>
+          <dt className="shrink-0 font-semibold text-zinc-700">{fact.label}</dt>
+          <dd className="min-w-0 break-words text-zinc-600">{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
