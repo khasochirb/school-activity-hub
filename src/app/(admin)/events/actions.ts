@@ -890,6 +890,7 @@ async function getCurrentProfile(): Promise<Profile | null> {
         .from("profiles")
         .select("id, school_id, role")
         .eq("id", user.id)
+        .eq("status", "active")
         .maybeSingle<Profile>(),
   );
 
