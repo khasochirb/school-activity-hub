@@ -110,6 +110,7 @@ export async function getCurrentStaffProfile() {
       .from("profiles")
       .select("id, school_id, role")
       .eq("id", user.id)
+      .eq("status", "active")
       .maybeSingle<StaffProfile>(),
   );
 
