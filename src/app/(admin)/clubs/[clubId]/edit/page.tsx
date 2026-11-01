@@ -27,9 +27,11 @@ type Club = {
 type ClubProfileRow = {
   about: string | null;
   accessibility_notes: string | null;
+  beginners_welcome: boolean | null;
   commitment_notes: string | null;
   cost_notes: string | null;
   eligibility_notes: string | null;
+  first_visit_free: boolean | null;
   banner_path: string | null;
   logo_path: string | null;
   materials_notes: string | null;
@@ -85,7 +87,7 @@ export default async function EditClubProfilePage({
   const { data: clubProfile } = await supabase
     .from("club_profiles")
     .select(
-      "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key, logo_path, banner_path, updated_at",
+      "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key, beginners_welcome, first_visit_free, logo_path, banner_path, updated_at",
     )
     .eq("club_id", club.id)
     .maybeSingle<ClubProfileRow>();
@@ -163,18 +165,22 @@ export default async function EditClubProfilePage({
             characterCount: t("clubs.profile.form.charactersRemaining"),
             fields: {
               about: t("clubs.profile.fields.about"),
+              beginnersWelcome: t("clubs.profile.fields.beginnersWelcome"),
               accessibilityNotes: t(
                 "clubs.profile.fields.accessibilityNotes",
               ),
               commitmentNotes: t("clubs.profile.fields.commitmentNotes"),
               costNotes: t("clubs.profile.fields.costNotes"),
               eligibilityNotes: t("clubs.profile.fields.eligibilityNotes"),
+              firstVisitFree: t("clubs.profile.fields.firstVisitFree"),
               materialsNotes: t("clubs.profile.fields.materialsNotes"),
               meetingLocation: t("clubs.profile.fields.meetingLocation"),
               meetingSchedule: t("clubs.profile.fields.meetingSchedule"),
               tagline: t("clubs.profile.fields.tagline"),
               themeKey: t("clubs.profile.fields.themeKey"),
             },
+            firstVisitDescription: t("clubs.profile.form.firstVisitDescription"),
+            firstVisitTitle: t("clubs.profile.form.firstVisitTitle"),
             save: t("clubs.profile.actions.save"),
             saving: t("clubs.profile.actions.saving"),
             themeDescription: t("clubs.profile.form.themeDescription"),
@@ -222,9 +228,11 @@ function toFormValues(profile: ClubProfileRow | null): ClubProfileValues {
   return {
     about: profile.about ?? "",
     accessibilityNotes: profile.accessibility_notes ?? "",
+    beginnersWelcome: profile.beginners_welcome ?? false,
     commitmentNotes: profile.commitment_notes ?? "",
     costNotes: profile.cost_notes ?? "",
     eligibilityNotes: profile.eligibility_notes ?? "",
+    firstVisitFree: profile.first_visit_free ?? false,
     materialsNotes: profile.materials_notes ?? "",
     meetingLocation: profile.meeting_location ?? "",
     meetingSchedule: profile.meeting_schedule ?? "",

@@ -105,10 +105,12 @@ export async function updateClubProfile(
 
   const { error } = await supabase.rpc("upsert_club_profile", {
     profile_about: values.about || null,
+    profile_beginners_welcome: values.beginnersWelcome,
     profile_accessibility_notes: values.accessibilityNotes || null,
     profile_commitment_notes: values.commitmentNotes || null,
     profile_cost_notes: values.costNotes || null,
     profile_eligibility_notes: values.eligibilityNotes || null,
+    profile_first_visit_free: values.firstVisitFree,
     profile_materials_notes: values.materialsNotes || null,
     profile_meeting_location: values.meetingLocation || null,
     profile_meeting_schedule: values.meetingSchedule || null,

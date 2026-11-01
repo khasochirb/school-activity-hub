@@ -3,11 +3,13 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ShareClubButton } from "@/components/share-club-button";
 import { getCurrentClubActor } from "@/lib/auth/club-access";
 import {
   getActivityCategoryTranslationKey,
 } from "@/lib/activity-categories";
 import { type ClubProfileTheme, isUuid } from "@/lib/clubs/club-profile";
+import { buildClubShareText } from "@/lib/clubs/club-share";
 import {
   formatTranslation,
   getDictionary,
@@ -35,9 +37,11 @@ type ClubProfileRow = {
   about: string | null;
   accessibility_notes: string | null;
   banner_path: string | null;
+  beginners_welcome: boolean | null;
   commitment_notes: string | null;
   cost_notes: string | null;
   eligibility_notes: string | null;
+  first_visit_free: boolean | null;
   materials_notes: string | null;
   meeting_location: string | null;
   meeting_schedule: string | null;
@@ -147,7 +151,7 @@ export default async function ClubProfilePage({
       supabase
         .from("club_profiles")
         .select(
-          "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key, logo_path, banner_path, updated_at",
+          "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key, beginners_welcome, first_visit_free, logo_path, banner_path, updated_at",
         )
         .eq("club_id", club.id)
         .maybeSingle<ClubProfileRow>(),
@@ -263,6 +267,16 @@ export default async function ClubProfilePage({
                     ? t("status.active")
                     : t("status.archived")}
                 </StatusBadge>
+                {profile?.beginners_welcome ? (
+                  <StatusBadge variant="info">
+                    {t("clubs.profile.fields.beginnersWelcome")}
+                  </StatusBadge>
+                ) : null}
+                {profile?.first_visit_free ? (
+                  <StatusBadge variant="info">
+                    {t("clubs.profile.fields.firstVisitFree")}
+                  </StatusBadge>
+                ) : null}
                 {activeMembership ? (
                   <StatusBadge variant="success">
                     {isLeader
@@ -284,6 +298,32 @@ export default async function ClubProfilePage({
                   leave: t("clubs.actions.leave"),
                   leaving: t("clubs.actions.leaving"),
                 }}
+              />
+            ) : null}
+            {club.status === "active" ? (
+              <ShareClubButton
+                clubId={club.id}
+                labels={{
+                  copied: t("clubs.share.copied"),
+                  failed: t("clubs.share.failed"),
+                  share: t("clubs.share.action"),
+                }}
+                text={buildClubShareText(
+                  {
+                    beginnersWelcome: Boolean(profile?.beginners_welcome),
+                    firstVisitFree: Boolean(profile?.first_visit_free),
+                    meetingLocation: profile?.meeting_location ?? null,
+                    meetingSchedule: profile?.meeting_schedule ?? null,
+                    name: club.name,
+                  },
+                  {
+                    beginnersWelcome: t("clubs.profile.fields.beginnersWelcome"),
+                    firstVisitFree: t("clubs.profile.fields.firstVisitFree"),
+                    meetingLocation: t("studentProfile.clubFacts.where"),
+                    meetingSchedule: t("studentProfile.clubFacts.when"),
+                  },
+                )}
+                title={club.name}
               />
             ) : null}
             {canManageProfile ? (
