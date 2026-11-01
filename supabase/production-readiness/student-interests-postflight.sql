@@ -1,4 +1,5 @@
--- Read-only postflight for 202610310001_add_student_interests.sql.
+-- Read-only postflight for 202610310001_add_student_interests.sql and
+-- 202611010001_restrict_student_interests_privileges.sql.
 with expected_policies(policy_name, command) as (
   values
     ('Students and their school staff can view interests', 'SELECT'),
@@ -51,12 +52,14 @@ with expected_policies(policy_name, command) as (
     then 'PASS' else 'FAIL' end,
     'anon'
   union all
-  select 'authenticated cannot update',
+  select 'authenticated cannot update or truncate',
     case when to_regclass('public.student_interests') is not null
-      and has_table_privilege('authenticated', 'public.student_interests', 'SELECT, INSERT, DELETE')
-      and not has_table_privilege('authenticated', 'public.student_interests', 'UPDATE')
+      and has_table_privilege('authenticated', 'public.student_interests', 'SELECT')
+      and has_table_privilege('authenticated', 'public.student_interests', 'INSERT')
+      and has_table_privilege('authenticated', 'public.student_interests', 'DELETE')
+      and not has_table_privilege('authenticated', 'public.student_interests', 'UPDATE, TRUNCATE, TRIGGER, REFERENCES')
     then 'PASS' else 'FAIL' end,
-    'authenticated: select, insert, delete only'
+    'authenticated: select, insert, delete only; needs 202611010001'
 )
 select check_name, result, detail from checks
 union all

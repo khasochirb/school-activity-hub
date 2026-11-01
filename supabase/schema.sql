@@ -3805,6 +3805,10 @@ create policy "Students can remove their own interests"
 revoke all on table public.student_interests from public, anon;
 grant select, insert, delete on table public.student_interests to authenticated;
 
+revoke update, truncate, trigger, references
+  on table public.student_interests
+  from authenticated;
+
 
 -- Fake seed data only. These rows are for local/demo development and should be
 -- removed or replaced before production. No auth.users are created here because

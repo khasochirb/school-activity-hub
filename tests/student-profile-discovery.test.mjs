@@ -134,6 +134,15 @@ test("student interests table is limited to the platform categories and protecte
   assert.doesNotMatch(migration, /for update/);
 });
 
+test("authenticated loses the default update and truncate privileges on student interests", () => {
+  const migration = read("supabase/migrations/202611010001_restrict_student_interests_privileges.sql");
+  const schema = read("supabase/schema.sql").replaceAll("\r\n", "\n");
+  const revoke = /revoke update, truncate, trigger, references\s+on table public\.student_interests\s+from authenticated;/;
+
+  assert.match(migration, revoke);
+  assert.match(schema, revoke);
+});
+
 test("schema.sql carries the student interests table from the migration", () => {
   const schema = read("supabase/schema.sql").replaceAll("\r\n", "\n");
   const migration = read("supabase/migrations/202610310001_add_student_interests.sql").replaceAll("\r\n", "\n");
