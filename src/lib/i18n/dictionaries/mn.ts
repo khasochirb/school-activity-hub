@@ -283,6 +283,11 @@ export const mn = {
       leader: "Ахлагч",
       member: "Гишүүн",
     },
+    share: {
+      action: "Хуваалцах",
+      copied: "Холбоосыг хууллаа",
+      failed: "Холбоосыг хуулж чадсангүй",
+    },
     profile: {
       actions: {
         backToClub: "Клубын танилцуулга руу буцах",
@@ -306,10 +311,12 @@ export const mn = {
         validation: "Тодруулсан клубын мэдээллийг шалгана уу.",
       },
       fields: {
+        beginnersWelcome: "Туршлага шаардахгүй",
         about: "Клубын тухай",
         accessibilityNotes: "Хүртээмж",
         commitmentNotes: "Оролцоо ба хүлээх үүрэг",
         costNotes: "Төлбөр",
+        firstVisitFree: "Эхний удаа үнэгүй",
         eligibilityNotes: "Хэн элсэж болох вэ",
         materialsNotes: "Хэрэгсэл",
         meetingLocation: "Уулзалтын байршил",
@@ -319,6 +326,9 @@ export const mn = {
       },
       form: {
         charactersRemaining: "{count} тэмдэгт үлдсэн",
+        firstVisitDescription:
+          "Зөвхөн бодит мэдээллийг чагтална уу. Сонгосон шошго клубын карт болон хуваалцсан зурваст харагдана.",
+        firstVisitTitle: "Шинэ сурагчдад",
         themeDescription:
           "Даруухан бэлэн загвар сонгоно уу. Сайтын загвар болон уншигдах байдал өөрчлөгдөхгүй.",
       },

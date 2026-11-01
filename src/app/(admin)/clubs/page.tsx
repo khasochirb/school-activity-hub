@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ShareClubButton } from "@/components/share-club-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { buildClubShareText } from "@/lib/clubs/club-share";
 import {
   ACTIVITY_CATEGORIES,
   getActivityCategoryTranslationKey,
@@ -69,8 +71,10 @@ type StudentRoster = {
 };
 
 type ClubPracticalDetails = {
+  beginners_welcome: boolean | null;
   club_id: string;
   cost_notes: string | null;
+  first_visit_free: boolean | null;
   meeting_location: string | null;
   meeting_schedule: string | null;
 };
@@ -223,7 +227,9 @@ export default async function ClubsPage({
     ? await timeServer("clubs.query.practical-details", () =>
         supabase
           .from("club_profiles")
-          .select("club_id, meeting_schedule, meeting_location, cost_notes")
+          .select(
+            "club_id, meeting_schedule, meeting_location, cost_notes, beginners_welcome, first_visit_free",
+          )
           .in("club_id", detailClubIds)
           .returns<ClubPracticalDetails[]>(),
       )
@@ -707,6 +713,17 @@ function ClubsForYouSection({
                   ) : null}
                 </div>
                 <ClubPracticalFacts details={detailsByClub.get(club.id)} t={t} />
+                <ShareClubButton
+                  className="btn btn-secondary mt-3 min-h-10 px-3 text-sm"
+                  clubId={club.id}
+                  labels={{
+                    copied: t("clubs.share.copied"),
+                    failed: t("clubs.share.failed"),
+                    share: t("clubs.share.action"),
+                  }}
+                  text={clubShareText(club, detailsByClub.get(club.id), t)}
+                  title={club.name}
+                />
               </article>
             );
           })}
@@ -739,6 +756,28 @@ function ClubsForYouSection({
   );
 }
 
+function clubShareText(
+  club: Club,
+  details: ClubPracticalDetails | undefined,
+  t: (key: string) => string,
+) {
+  return buildClubShareText(
+    {
+      beginnersWelcome: Boolean(details?.beginners_welcome),
+      firstVisitFree: Boolean(details?.first_visit_free),
+      meetingLocation: details?.meeting_location ?? null,
+      meetingSchedule: details?.meeting_schedule ?? null,
+      name: club.name,
+    },
+    {
+      beginnersWelcome: t("clubs.profile.fields.beginnersWelcome"),
+      firstVisitFree: t("clubs.profile.fields.firstVisitFree"),
+      meetingLocation: t("studentProfile.clubFacts.where"),
+      meetingSchedule: t("studentProfile.clubFacts.when"),
+    },
+  );
+}
+
 function ClubPracticalFacts({
   details,
   t,
@@ -746,25 +785,42 @@ function ClubPracticalFacts({
   details: ClubPracticalDetails | undefined;
   t: (key: string) => string;
 }) {
+  const flags = [
+    details?.beginners_welcome ? t("clubs.profile.fields.beginnersWelcome") : null,
+    details?.first_visit_free ? t("clubs.profile.fields.firstVisitFree") : null,
+  ].filter((flag): flag is string => Boolean(flag));
   const facts = [
     { label: t("studentProfile.clubFacts.when"), value: details?.meeting_schedule },
     { label: t("studentProfile.clubFacts.where"), value: details?.meeting_location },
     { label: t("studentProfile.clubFacts.cost"), value: details?.cost_notes },
   ].filter((fact): fact is { label: string; value: string } => Boolean(fact.value));
 
-  if (!facts.length) {
+  if (!facts.length && !flags.length) {
     return null;
   }
 
   return (
-    <dl className="mt-3 grid gap-1 text-sm">
-      {facts.map((fact) => (
-        <div className="flex gap-2" key={fact.label}>
-          <dt className="shrink-0 font-semibold text-zinc-700">{fact.label}</dt>
-          <dd className="min-w-0 break-words text-zinc-600">{fact.value}</dd>
+    <>
+      {flags.length ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {flags.map((flag) => (
+            <StatusBadge key={flag} variant="info">
+              {flag}
+            </StatusBadge>
+          ))}
         </div>
-      ))}
-    </dl>
+      ) : null}
+      {facts.length ? (
+        <dl className="mt-3 grid gap-1 text-sm">
+          {facts.map((fact) => (
+            <div className="flex gap-2" key={fact.label}>
+              <dt className="shrink-0 font-semibold text-zinc-700">{fact.label}</dt>
+              <dd className="min-w-0 break-words text-zinc-600">{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+    </>
   );
 }
 

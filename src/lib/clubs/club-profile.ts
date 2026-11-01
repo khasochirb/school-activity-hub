@@ -17,9 +17,11 @@ export const CLUB_PROFILE_LIMITS = {
 export type ClubProfileValues = {
   accessibilityNotes: string;
   about: string;
+  beginnersWelcome: boolean;
   commitmentNotes: string;
   costNotes: string;
   eligibilityNotes: string;
+  firstVisitFree: boolean;
   materialsNotes: string;
   meetingLocation: string;
   meetingSchedule: string;
@@ -28,6 +30,13 @@ export type ClubProfileValues = {
 };
 
 export type ClubProfileField = keyof ClubProfileValues;
+
+export type ClubProfileFlagField = "beginnersWelcome" | "firstVisitFree";
+
+export type ClubProfileTextField = Exclude<
+  ClubProfileField,
+  ClubProfileFlagField | "themeKey"
+>;
 
 export type ClubProfileValidationIssue = {
   field: ClubProfileField;
@@ -38,9 +47,11 @@ export type ClubProfileValidationIssue = {
 export const EMPTY_CLUB_PROFILE_VALUES: ClubProfileValues = {
   accessibilityNotes: "",
   about: "",
+  beginnersWelcome: false,
   commitmentNotes: "",
   costNotes: "",
   eligibilityNotes: "",
+  firstVisitFree: false,
   materialsNotes: "",
   meetingLocation: "",
   meetingSchedule: "",
@@ -48,7 +59,7 @@ export const EMPTY_CLUB_PROFILE_VALUES: ClubProfileValues = {
   themeKey: "warm",
 };
 
-const fieldLimits: Partial<Record<ClubProfileField, number>> = {
+const fieldLimits: Partial<Record<ClubProfileTextField, number>> = {
   accessibilityNotes: CLUB_PROFILE_LIMITS.accessibilityNotes,
   about: CLUB_PROFILE_LIMITS.about,
   commitmentNotes: CLUB_PROFILE_LIMITS.commitmentNotes,
@@ -66,9 +77,11 @@ export function getClubProfileValues(formData: FormData): ClubProfileValues {
   return {
     accessibilityNotes: readValue(formData, "accessibility_notes"),
     about: readValue(formData, "about"),
+    beginnersWelcome: formData.get("beginners_welcome") === "on",
     commitmentNotes: readValue(formData, "commitment_notes"),
     costNotes: readValue(formData, "cost_notes"),
     eligibilityNotes: readValue(formData, "eligibility_notes"),
+    firstVisitFree: formData.get("first_visit_free") === "on",
     materialsNotes: readValue(formData, "materials_notes"),
     meetingLocation: readValue(formData, "meeting_location"),
     meetingSchedule: readValue(formData, "meeting_schedule"),
@@ -81,7 +94,7 @@ export function validateClubProfileValues(values: ClubProfileValues) {
   const issues: ClubProfileValidationIssue[] = [];
 
   for (const [field, maximum] of Object.entries(fieldLimits) as Array<
-    [ClubProfileField, number]
+    [ClubProfileTextField, number]
   >) {
     const value = values[field];
 

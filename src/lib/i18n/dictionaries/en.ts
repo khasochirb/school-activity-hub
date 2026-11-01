@@ -292,6 +292,11 @@ export const en = {
       leader: "Leader",
       member: "Member",
     },
+    share: {
+      action: "Share",
+      copied: "Link copied",
+      failed: "Could not copy the link",
+    },
     profile: {
       actions: {
         backToClub: "Back to club page",
@@ -315,10 +320,12 @@ export const en = {
         validation: "Review the highlighted club page details.",
       },
       fields: {
+        beginnersWelcome: "Beginners welcome",
         about: "About this club",
         accessibilityNotes: "Accessibility",
         commitmentNotes: "Participation and commitment",
         costNotes: "Cost",
+        firstVisitFree: "First visit free",
         eligibilityNotes: "Who can join",
         materialsNotes: "Materials",
         meetingLocation: "Meeting location",
@@ -328,6 +335,9 @@ export const en = {
       },
       form: {
         charactersRemaining: "{count} characters remaining",
+        firstVisitDescription:
+          "Tick only what is true for this club. These labels appear on club cards and in shared messages.",
+        firstVisitTitle: "For new students",
         themeDescription:
           "Choose a subtle preset. The site theme and readable contrast stay unchanged.",
       },
