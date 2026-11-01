@@ -2092,6 +2092,78 @@ export const en = {
       title: "Your school",
     },
   },
+  studentProfile: {
+    clubFacts: {
+      cost: "Cost",
+      when: "When",
+      where: "Where",
+    },
+    clubs: {
+      empty: "You haven't joined a club yet.",
+      find: "Find a club",
+      title: "My clubs",
+    },
+    clubsForYou: {
+      noClubYet: "No club for {interest} yet",
+      promptDescription:
+        "Pick what you're into and clubs that fit you will show first.",
+      promptTitle: "Find clubs that fit you",
+      propose: "Propose a club",
+      reason: "Matches your interest: {interest}",
+      title: "Clubs for you",
+    },
+    interests: {
+      edit: "Edit interests",
+      empty: "Pick your interests and clubs that fit you will show first.",
+      pick: "Pick interests",
+      title: "My interests",
+    },
+    interestsPage: {
+      description:
+        "Pick as many as you like. You can change them any time.",
+      notNow: "Not now",
+      notReady:
+        "Choosing interests is not switched on for your school yet.",
+      save: "Save interests",
+      saveFailed: "Your interests could not be saved. Try again.",
+      title: "What are you into?",
+    },
+    journey: {
+      categoriesTried: "Kinds of activity tried",
+      clubsJoined: "Clubs joined",
+      description:
+        "Only what you do in person counts here. This page does not compare you with other students.",
+      ideasProposed: "Club ideas proposed",
+      sessionsAttended: "Activities attended",
+      title: "My participation",
+    },
+    milestones: {
+      done: "Done",
+      explorer: {
+        hint: "Take part in 3 different kinds of activity",
+        title: "3 kinds of activity",
+      },
+      firstClub: {
+        hint: "Join one club",
+        title: "First club",
+      },
+      ideaMaker: {
+        hint: "Propose a club your school doesn't have yet",
+        title: "First club idea",
+      },
+      progress: "{progress} / {target}",
+      regular: {
+        hint: "Attend 5 activities",
+        title: "5 activities attended",
+      },
+      title: "Goals",
+    },
+    privacyNote: "Only you and your school's staff can see your interests.",
+    upcoming: {
+      empty: "Nothing coming up from your clubs yet.",
+      title: "Coming up",
+    },
+  },
   superAdmin: {
     accessRequired: "Platform access required",
     actions: {
