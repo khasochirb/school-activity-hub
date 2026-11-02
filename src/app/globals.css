@@ -3086,3 +3086,15 @@ a:has(.pending-link-indicator[data-pending="true"]) {
     transform: none !important;
   }
 }
+
+/* Printable pages (/print/*): always dark ink on white paper, whatever the theme. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+}

@@ -253,9 +253,19 @@ export default async function ClubsPage({
       <PageHeader
         actions={
           isStaff ? (
-            <FormSectionToggleButton targetId="create-club">
-              {t("clubs.actions.create")}
-            </FormSectionToggleButton>
+            <>
+              <Link
+                className="btn btn-secondary min-h-11"
+                href="/print/clubs"
+                prefetch={false}
+                target="_blank"
+              >
+                {t("clubs.print.action")}
+              </Link>
+              <FormSectionToggleButton targetId="create-club">
+                {t("clubs.actions.create")}
+              </FormSectionToggleButton>
+            </>
           ) : undefined
         }
         description={t("clubs.description")}

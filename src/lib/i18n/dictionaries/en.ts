@@ -292,6 +292,15 @@ export const en = {
       leader: "Leader",
       member: "Member",
     },
+    print: {
+      action: "Print club sheet",
+      empty: "No active clubs are registered here yet.",
+      footer: "{count} clubs · Printed: {date}",
+      printButton: "Print",
+      qrLabel: "QR code that opens the club list",
+      scanHint: "Scan the QR code to see every club and sign up.",
+      title: "Club list · {school}",
+    },
     share: {
       action: "Share",
       copied: "Link copied",
