@@ -340,6 +340,30 @@ export default async function ClubProfilePage({
         </div>
       </section>
 
+      {actor.profile?.role === "student" &&
+      club.status === "active" &&
+      !activeMembership ? (
+        <div className="fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-20 border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-lg items-center gap-3">
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-950">
+              {club.name}
+            </p>
+            <div className="shrink-0">
+              <MembershipAction
+                clubId={club.id}
+                isJoined={false}
+                labels={{
+                  join: t("clubs.actions.join"),
+                  joining: t("clubs.actions.joining"),
+                  leave: t("clubs.actions.leave"),
+                  leaving: t("clubs.actions.leaving"),
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {profileUpdated ? (
         <p className="notice-box notice-success" role="status">
           {t("clubs.profile.success.saved")}
@@ -518,6 +542,11 @@ export default async function ClubProfilePage({
           </section>
         </aside>
       </div>
+      {actor.profile?.role === "student" &&
+      club.status === "active" &&
+      !activeMembership ? (
+        <div aria-hidden="true" className="h-16 lg:hidden" />
+      ) : null}
     </div>
   );
 }

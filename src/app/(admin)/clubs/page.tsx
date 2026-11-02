@@ -301,6 +301,31 @@ export default async function ClubsPage({
         />
       ) : null}
 
+      <CategoryChips
+        label={t("filters.category")}
+        links={[
+          {
+            active: !selectedCategory,
+            href: clubsPageHref(1, {
+              category: "",
+              q: searchQuery,
+              status: selectedStatus,
+            }),
+            label: t("filters.all"),
+          },
+          ...ACTIVITY_CATEGORIES.map((category) => ({
+            active: selectedCategory === category,
+            category,
+            href: clubsPageHref(1, {
+              category,
+              q: searchQuery,
+              status: selectedStatus,
+            }),
+            label: categoryLabel(category, t),
+          })),
+        ]}
+      />
+
       <FilterPanel
         action="/clubs"
         clearHref="/clubs"
@@ -315,18 +340,9 @@ export default async function ClubsPage({
           label={t("filters.search")}
           placeholder={t("filters.searchClubs")}
         />
-        <SelectFilter
-          defaultValue={selectedCategory ?? ""}
-          label={t("filters.category")}
-          name="category"
-          options={[
-            { label: t("filters.all"), value: "" },
-            ...ACTIVITY_CATEGORIES.map((category) => ({
-              label: categoryLabel(category, t),
-              value: category,
-            })),
-          ]}
-        />
+        {selectedCategory ? (
+          <input name="category" type="hidden" value={selectedCategory} />
+        ) : null}
         {isStaff ? (
           <SelectFilter
             defaultValue={selectedStatus}
@@ -753,6 +769,45 @@ function ClubsForYouSection({
         </ul>
       ) : null}
     </section>
+  );
+}
+
+// One tap per category: the chips scroll sideways on phones instead of
+// wrapping, and the selected one is marked for screen readers.
+function CategoryChips({
+  label,
+  links,
+}: {
+  label: string;
+  links: Array<{
+    active: boolean;
+    category?: string;
+    href: string;
+    label: string;
+  }>;
+}) {
+  return (
+    <nav aria-label={label} className="-mx-4 w-0 min-w-[calc(100%+2rem)] overflow-x-auto px-4 sm:mx-0 sm:min-w-full sm:px-0">
+      <ul className="flex w-max gap-2 pb-1 sm:w-auto sm:flex-wrap">
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link
+              aria-current={link.active ? "page" : undefined}
+              className={[
+                "inline-flex min-h-10 items-center whitespace-nowrap rounded-full border px-4 text-sm font-semibold",
+                link.active
+                  ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                  : "border-[var(--border)] bg-[var(--card)] text-slate-700 hover:border-[var(--primary-border)]",
+              ].join(" ")}
+              href={link.href}
+              prefetch={false}
+            >
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 

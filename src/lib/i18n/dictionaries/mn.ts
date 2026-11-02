@@ -1524,7 +1524,6 @@ export const mn = {
       emptyTitle: "Яаралтай зүйл алга",
       title: "Анхаарал шаардсан зүйлс",
     },
-    browseEvents: "Үйл ажиллагаа үзэх",
     checkins: {
       description:
         "Батлагдсан үйл ажиллагааны хамгийн сүүлийн амжилттай ирцийн бүртгэлүүд.",
@@ -1540,7 +1539,6 @@ export const mn = {
       event: "Үйл ажиллагаа",
       rosterStudent: "Жагсаалтын сурагч",
     },
-    joinClubs: "Клубт элсэх",
     latestAnnouncements: {
       description: "Танай сургуулийн сүүлийн үеийн зарлалууд",
       emptyDescription: "Сургуулиас шинэ зарлал нийтлэхэд энд харагдана.",
@@ -1681,17 +1679,6 @@ export const mn = {
     },
     studentDescription:
       "Элссэн клуб, удахгүй болох үйл ажиллагааны бүртгэл болон ирцийн мэдээллээ харахын тулд энэ хяналтын самбарыг ашиглана уу.",
-    studentEyebrow: "Сурагчийн үйл ажиллагааны төв",
-    studentOverviewDescription:
-      "Элссэн клуб, удахгүй болох үйл ажиллагааны бүртгэл болон ирцийн мэдээллээ харахын тулд энэ хяналтын самбарыг ашиглана уу.",
-    studentOverviewTitle: "Сургууль дээр юу болж байгааг олох.",
-    studentStats: {
-      attendedEvents: "Оролцсон үйл ажиллагаа",
-      availableOpportunities: "Удахгүй болох боломжууд",
-      joinedClubs: "Элссэн клуб",
-      registeredUpcomingEvents:
-        "Бүртгүүлсэн удахгүй болох үйл ажиллагаа",
-    },
     title: "Хяналтын самбар",
     welcomeBack: "Тавтай морилно уу",
     upcoming: {
@@ -1703,7 +1690,6 @@ export const mn = {
       locationNotSet: "Байршил тохируулаагүй",
       title: "Удахгүй болох батлагдсан үйл ажиллагаа",
     },
-    viewRegisteredEvents: "Миний бүртгүүлсэн үйл ажиллагаа",
   },
   landing: {
     activityStream: {
@@ -1874,6 +1860,13 @@ export const mn = {
     staff: "Ажилтны бүртгэл",
     students: "Сурагчид",
     superAdmin: "Платформын админ",
+    tabs: {
+      activities: "Үйл ажиллагаа",
+      clubs: "Клуб",
+      home: "Нүүр",
+      label: "Үндсэн цэс",
+      profile: "Профайл",
+    },
   },
   news: {
     advertKicker: "Гишүүн элсүүлж байна",
@@ -2110,6 +2103,7 @@ export const mn = {
       title: "Миний клуб",
     },
     clubsForYou: {
+      noneLeft: "Сонирхолд тань тохирох бүх клубт нэгджээ.",
       noClubYet: "{interest} чиглэлийн клуб одоогоор байхгүй",
       promptDescription:
         "Сонирхлоо сонговол танд тохирох клуб эхэнд харагдана.",
