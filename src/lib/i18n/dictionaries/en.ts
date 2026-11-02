@@ -525,7 +525,6 @@ export const en = {
       emptyTitle: "No urgent items",
       title: "Needs attention",
     },
-    browseEvents: "Browse events",
     checkins: {
       description:
         "The latest successful attendance check-ins for approved events.",
@@ -541,7 +540,6 @@ export const en = {
       event: "Event",
       rosterStudent: "Roster student",
     },
-    joinClubs: "Join clubs",
     latestAnnouncements: {
       description: "Recent notices from your school",
       emptyDescription: "New school announcements will appear here.",
@@ -679,16 +677,6 @@ export const en = {
     },
     studentDescription:
       "Use this dashboard to keep track of clubs you joined, upcoming event registrations, and attendance activity.",
-    studentEyebrow: "Student activity hub",
-    studentOverviewDescription:
-      "Use this dashboard to keep track of clubs you joined, upcoming event registrations, and attendance activity.",
-    studentOverviewTitle: "Find what's happening at school.",
-    studentStats: {
-      attendedEvents: "Attended events",
-      availableOpportunities: "Available upcoming opportunities",
-      joinedClubs: "Joined clubs",
-      registeredUpcomingEvents: "Registered upcoming events",
-    },
     title: "Dashboard",
     welcomeBack: "Welcome back",
     upcoming: {
@@ -699,7 +687,6 @@ export const en = {
       locationNotSet: "Location not set",
       title: "Upcoming approved events",
     },
-    viewRegisteredEvents: "My registered events",
   },
   landing: {
     activityStream: {
@@ -865,6 +852,13 @@ export const en = {
     staff: "Staff Accounts",
     students: "Students",
     superAdmin: "Platform Admin",
+    tabs: {
+      activities: "Activities",
+      clubs: "Clubs",
+      home: "Home",
+      label: "Main",
+      profile: "Profile",
+    },
   },
   news: {
     advertKicker: "Now recruiting",
@@ -2114,6 +2108,7 @@ export const en = {
       title: "My clubs",
     },
     clubsForYou: {
+      noneLeft: "You have joined every club that matches your interests.",
       noClubYet: "No club for {interest} yet",
       promptDescription:
         "Pick what you're into and clubs that fit you will show first.",

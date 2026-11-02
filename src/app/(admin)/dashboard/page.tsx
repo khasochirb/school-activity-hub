@@ -39,6 +39,11 @@ import { timeServer } from "@/lib/server-timing";
 import { getServerBaseUrl } from "@/lib/server-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { loadStudentInterests } from "@/lib/students/student-interests";
+import {
+  matchClubsToInterests,
+  type ClubsForInterests,
+} from "@/lib/students/student-journey";
 import { DashboardCharts } from "./dashboard-charts";
 import { StudentUpcomingEvents } from "./student-upcoming-events";
 import { AnimatedMetricValue } from "./animated-metric-value";
@@ -232,16 +237,18 @@ export default async function DashboardPage({
   }
 
   const supabase = await createClient();
-  const [analytics, baseUrl, latestAnnouncements] = await Promise.all([
+  const [analytics, baseUrl, latestAnnouncements, clubsForYou] = await Promise.all([
     getStudentAnalytics(admin, profile),
     getServerBaseUrl(),
     getLatestDashboardAnnouncements(supabase, profile.school_id),
+    getStudentClubsForYou(supabase, profile),
   ]);
 
   return (
     <StudentDashboard
       analytics={analytics}
       baseUrl={baseUrl}
+      clubsForYou={clubsForYou}
       latestAnnouncements={latestAnnouncements}
       locale={locale}
       profile={profile}
@@ -481,6 +488,7 @@ function StaffDashboard({
 function StudentDashboard({
   analytics,
   baseUrl,
+  clubsForYou,
   latestAnnouncements,
   locale,
   profile,
@@ -489,6 +497,7 @@ function StudentDashboard({
 }: {
   analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
   baseUrl: string;
+  clubsForYou: StudentClubsForYou;
   latestAnnouncements: DashboardAnnouncementsResult;
   locale: Locale;
   profile: Profile;
@@ -509,53 +518,11 @@ function StudentDashboard({
       eyebrow={t("dashboard.welcomeBack")}
       title={t("dashboard.title")}
     >
-      <StudentWelcomeOverview t={t} />
       {!analytics.currentStudent ? (
         <section className="notice-box notice-warning">
           <p>{t("dashboard.student.noRosterWarning")}</p>
         </section>
       ) : null}
-
-      <LatestAnnouncementsSection
-        locale={locale}
-        result={latestAnnouncements}
-        showCreateAction={false}
-        t={t}
-        tf={tf}
-      />
-
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label={t("dashboard.studentStats.joinedClubs")}
-          locale={locale}
-          value={analytics.joinedClubs}
-          href="/clubs"
-        />
-        <MetricCard
-          label={t("dashboard.studentStats.registeredUpcomingEvents")}
-          locale={locale}
-          value={analytics.registeredUpcomingEvents}
-          href="/events?filter=registered"
-        />
-        <MetricCard
-          label={t("dashboard.stats.recentParticipation")}
-          locale={locale}
-          value={analytics.recentParticipation}
-          href="/events?filter=registered"
-        />
-        <MetricCard
-          label={t("dashboard.studentStats.availableOpportunities")}
-          locale={locale}
-          value={analytics.activitySummary.total}
-          href="/events"
-        />
-      </section>
-
-      <DashboardCharts
-        locale={locale}
-        summary={analytics.activitySummary}
-        t={t}
-      />
 
       {quickViewEvents.length ? (
         <StudentUpcomingEvents
@@ -568,8 +535,204 @@ function StudentDashboard({
       ) : (
         <UpcomingEventsSection events={[]} locale={locale} t={t} />
       )}
+
+      <StudentClubsForYouSection clubsForYou={clubsForYou} t={t} tf={tf} />
+
+      <LatestAnnouncementsSection
+        locale={locale}
+        result={latestAnnouncements}
+        showCreateAction={false}
+        t={t}
+        tf={tf}
+      />
     </DashboardShell>
   );
+}
+
+type StudentClubsForYou = {
+  available: boolean;
+  // Every club matching the student's interests is one they already joined.
+  allMatchesJoined: boolean;
+  forYou: ClubsForInterests<StudentHomeClub>["forYou"];
+  hasInterests: boolean;
+  // Interests with no club at all at the school, joined or not.
+  interestsWithoutClubs: string[];
+};
+
+type StudentHomeClub = {
+  category: string | null;
+  id: string;
+  name: string;
+};
+
+// Runs as the signed-in student, under RLS. Clubs the student already belongs
+// to are left out, so home only suggests something new.
+async function getStudentClubsForYou(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profile: Profile,
+): Promise<StudentClubsForYou> {
+  const [{ available, interests }, { data: clubs }, { data: roster }] =
+    await Promise.all([
+      loadStudentInterests(supabase, profile.id),
+      supabase
+        .from("clubs")
+        .select("id, name, category")
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .order("name")
+        .returns<StudentHomeClub[]>(),
+      supabase
+        .from("student_rosters")
+        .select("id")
+        .eq("school_id", profile.school_id)
+        .eq("profile_id", profile.id)
+        .eq("status", "active")
+        .maybeSingle<{ id: string }>(),
+    ]);
+  const { data: memberships } = roster
+    ? await supabase
+        .from("club_memberships")
+        .select("club_id")
+        .eq("school_id", profile.school_id)
+        .eq("student_roster_id", roster.id)
+        .eq("status", "active")
+        .returns<{ club_id: string }[]>()
+    : { data: [] };
+  const joined = new Set((memberships ?? []).map((row) => row.club_id));
+  const allClubs = clubs ?? [];
+  const everyMatch = matchClubsToInterests(allClubs, interests, allClubs.length);
+  const notJoined = matchClubsToInterests(
+    allClubs.filter((club) => !joined.has(club.id)),
+    interests,
+    3,
+  );
+
+  return {
+    allMatchesJoined:
+      everyMatch.forYou.length > 0 && notJoined.forYou.length === 0,
+    available,
+    forYou: notJoined.forYou,
+    hasInterests: interests.length > 0,
+    interestsWithoutClubs: everyMatch.interestsWithoutClubs,
+  };
+}
+
+function StudentClubsForYouSection({
+  clubsForYou,
+  t,
+  tf,
+}: {
+  clubsForYou: StudentClubsForYou;
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+}) {
+  const {
+    allMatchesJoined,
+    available,
+    forYou,
+    hasInterests,
+    interestsWithoutClubs,
+  } = clubsForYou;
+
+  if (!hasInterests) {
+    if (!available) {
+      return null;
+    }
+
+    return (
+      <section className="section-card section-card-padded flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="section-title">{t("studentProfile.clubsForYou.promptTitle")}</h2>
+          <p className="section-description">
+            {t("studentProfile.clubsForYou.promptDescription")}
+          </p>
+        </div>
+        <Link
+          className="btn btn-primary min-h-12 w-full px-5 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+          href="/profile/interests"
+          prefetch={false}
+        >
+          {t("studentProfile.interests.pick")}
+          <PendingLinkIndicator />
+        </Link>
+      </section>
+    );
+  }
+
+  return (
+    <section className="section-card">
+      <div className="section-header flex flex-wrap items-center justify-between gap-2">
+        <h2 className="section-title">{t("studentProfile.clubsForYou.title")}</h2>
+        <Link
+          className="text-sm font-semibold text-[var(--primary-strong)] hover:underline"
+          href="/clubs"
+          prefetch={false}
+        >
+          {t("common.viewAll")}
+        </Link>
+      </div>
+      {forYou.length ? (
+        <ul className="divide-y divide-slate-200">
+          {forYou.map(({ club, matchedInterest }) => (
+            <li key={club.id}>
+              <Link
+                className="flex min-h-16 items-center justify-between gap-3 p-3 hover:bg-[var(--card-soft)] sm:p-4"
+                href={`/clubs/${club.id}`}
+                prefetch={false}
+              >
+                <span className="min-w-0">
+                  <span className="block break-words font-semibold text-slate-950">
+                    {club.name}
+                  </span>
+                  <span className="mt-0.5 block text-sm text-slate-600">
+                    {tf("studentProfile.clubsForYou.reason", {
+                      interest: studentCategoryLabel(matchedInterest, t),
+                    })}
+                  </span>
+                </span>
+                <span aria-hidden="true" className="shrink-0 text-xl text-slate-400">
+                  ›
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : allMatchesJoined ? (
+        <p className="p-3 text-sm text-slate-600 sm:p-4">
+          {t("studentProfile.clubsForYou.noneLeft")}
+        </p>
+      ) : null}
+      {!forYou.length && interestsWithoutClubs.length ? (
+        <ul className="flex flex-col gap-2 p-3">
+          {interestsWithoutClubs.map((interest) => (
+            <li
+              className="flex flex-col gap-2 rounded-md border border-dashed border-[var(--border-strong)] p-3 sm:flex-row sm:items-center sm:justify-between"
+              key={interest}
+            >
+              <span className="text-sm text-slate-700">
+                {tf("studentProfile.clubsForYou.noClubYet", {
+                  interest: studentCategoryLabel(interest, t),
+                })}
+              </span>
+              <Link
+                className="btn btn-secondary min-h-10 px-3 text-sm"
+                href="/club-requests"
+                prefetch={false}
+              >
+                {t("studentProfile.clubsForYou.propose")}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function studentCategoryLabel(category: string, t: (key: string) => string) {
+  const key = getActivityCategoryTranslationKey(category);
+
+  return key ? t(key) : category;
 }
 
 function LatestAnnouncementsSection({
@@ -1018,48 +1181,6 @@ function NeedsAttention({
           />
         </div>
       )}
-    </section>
-  );
-}
-
-function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
-  return (
-    <section className="section-card overflow-hidden">
-      <div className="p-4 sm:p-5">
-        <p className="page-eyebrow">{t("dashboard.studentEyebrow")}</p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-xl">
-          {t("dashboard.studentOverviewTitle")}
-        </h2>
-        <p className="mt-2 max-w-3xl text-base leading-7 text-slate-600 sm:text-sm sm:leading-6">
-          {t("dashboard.studentOverviewDescription")}
-        </p>
-      </div>
-      <div className="grid gap-3 border-t border-slate-200 p-4 sm:grid-cols-3">
-        <Link
-          className="btn btn-primary min-h-12 w-full text-base sm:text-sm"
-          href="/events"
-          prefetch={false}
-        >
-          {t("dashboard.browseEvents")}
-          <PendingLinkIndicator />
-        </Link>
-        <Link
-          className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
-          href="/clubs"
-          prefetch={false}
-        >
-          {t("dashboard.joinClubs")}
-          <PendingLinkIndicator />
-        </Link>
-        <Link
-          className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
-          href="/events?filter=registered"
-          prefetch={false}
-        >
-          {t("dashboard.viewRegisteredEvents")}
-          <PendingLinkIndicator />
-        </Link>
-      </div>
     </section>
   );
 }
