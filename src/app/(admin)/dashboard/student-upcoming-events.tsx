@@ -1,11 +1,18 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import {
   EventQuickViewModal,
   type EventQuickViewItem,
   type EventQuickViewLabels,
 } from "@/components/events/event-quick-view-modal";
+
+export type StudentUpcomingEvent = EventQuickViewItem & {
+  posterUrl: string | null;
+  tileDay: string;
+  tileMonth: string;
+};
 
 export function StudentUpcomingEvents({
   description,
@@ -15,7 +22,7 @@ export function StudentUpcomingEvents({
   title,
 }: {
   description: string;
-  events: EventQuickViewItem[];
+  events: StudentUpcomingEvent[];
   labels: EventQuickViewLabels;
   locationNotSet: string;
   title: string;
@@ -38,37 +45,49 @@ export function StudentUpcomingEvents({
           <h2 className="section-title">{title}</h2>
           <p className="section-description">{description}</p>
         </div>
-        <ul className="dashboard-upcoming-list divide-y divide-[var(--border)]">
+        <ul className="dashboard-upcoming-list upcoming-cards">
           {events.map((event) => (
-            <li key={event.id}>
+            <li className="min-w-0" key={event.id}>
               <button
                 aria-label={`${labels.viewEvent}: ${event.title}`}
-                className="group flex min-h-24 w-full cursor-pointer items-center justify-between gap-4 px-4 py-4 text-left transition hover:bg-[var(--card-soft)] active:bg-[var(--card-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--primary)]"
+                className="upcoming-card group"
                 onClick={(clickEvent) =>
                   openEvent(event, clickEvent.currentTarget)
                 }
                 type="button"
               >
-                <span className="min-w-0">
-                  <span className="block break-words font-semibold text-slate-950 transition group-hover:text-[var(--primary-strong)]">
-                    {event.title}
-                  </span>
-                  <span className="mt-1 block text-sm text-slate-600">
-                    {event.dateTimeLabel}
-                  </span>
-                  <span className="mt-1 block break-words text-sm text-slate-600">
-                    {event.location || locationNotSet}
-                  </span>
-                  {event.cancellationNotice ? (
-                    <span className="badge badge-warning mt-2 w-fit">
-                      {labels.scheduleUpdate}
+                <span className="upcoming-card-cover" data-category-tone={getActivityCategoryTone(event.categoryValue)}>
+                  {event.posterUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img alt="" src={event.posterUrl} />
+                  ) : (
+                    <span aria-hidden="true" className="event-card-poster-fallback upcoming-card-fallback">
+                      <span className="event-card-category-mark flex h-12 w-12 items-center justify-center rounded-xl border text-base font-black">
+                        {event.hostName.slice(0, 2).toUpperCase()}
+                      </span>
                     </span>
-                  ) : null}
+                  )}
                 </span>
-                <span className="flex shrink-0 items-center gap-2 text-sm font-bold text-[var(--primary-strong)]">
-                  <span className="hidden sm:inline">{labels.viewEvent}</span>
-                  <span aria-hidden="true" className="motion-directional text-lg">
-                    &rarr;
+                <span className="upcoming-card-body">
+                  <span aria-hidden="true" className="event-date-tile">
+                    <span>{event.tileMonth}</span>
+                    <b>{event.tileDay}</b>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block break-words font-semibold leading-snug text-slate-950 transition group-hover:text-[var(--primary-strong)]">
+                      {event.title}
+                    </span>
+                    <span className="mt-1 block text-sm text-slate-600">
+                      {event.dateTimeLabel}
+                    </span>
+                    <span className="mt-0.5 block break-words text-sm text-slate-600">
+                      {event.location || locationNotSet}
+                    </span>
+                    {event.cancellationNotice ? (
+                      <span className="badge badge-warning mt-2 w-fit">
+                        {labels.scheduleUpdate}
+                      </span>
+                    ) : null}
                   </span>
                 </span>
               </button>

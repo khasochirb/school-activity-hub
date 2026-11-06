@@ -20,7 +20,6 @@ import {
   getDashboardActivityRange,
   type DashboardActivityEvent,
 } from "@/lib/dashboard/activity-summary";
-import type { EventQuickViewItem } from "@/components/events/event-quick-view-modal";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
 import {
@@ -30,9 +29,11 @@ import {
 import { EVENT_QUICK_VIEW_SELECT } from "@/lib/events/event-selects";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import {
+  formatCalendarDateBadge,
   formatDateTime,
   formatTime,
 } from "@/lib/i18n/date-format";
+import { getEventPosterDeliveryUrl } from "@/lib/events/event-poster";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
 import { timeServer } from "@/lib/server-timing";
@@ -45,7 +46,10 @@ import {
   type ClubsForInterests,
 } from "@/lib/students/student-journey";
 import { DashboardCharts } from "./dashboard-charts";
-import { StudentUpcomingEvents } from "./student-upcoming-events";
+import {
+  StudentUpcomingEvents,
+  type StudentUpcomingEvent,
+} from "./student-upcoming-events";
 import { AnimatedMetricValue } from "./animated-metric-value";
 
 type Profile = {
@@ -96,6 +100,7 @@ type UpcomingEvent = {
   required_materials: string | null;
   expected_commitment: string | null;
   cancellation_notice: string | null;
+  poster_path: string | null;
 };
 
 type DashboardEventAttendee = {
@@ -1917,7 +1922,7 @@ function buildStudentQuickViewEvents(
   locale: Locale,
   t: (key: string) => string,
   baseUrl: string,
-): EventQuickViewItem[] {
+): StudentUpcomingEvent[] {
   const clubNameById = new Map(
     analytics.upcomingEventClubs.map((club) => [club.id, club.name]),
   );
@@ -1957,7 +1962,14 @@ function buildStudentQuickViewEvents(
       ? responsibleStaffById.get(event.responsible_staff_id)
       : null;
 
+    const tile = formatCalendarDateBadge(event.starts_at, locale);
+
     return {
+      posterUrl: event.poster_path
+        ? getEventPosterDeliveryUrl(event.id, event.poster_path)
+        : null,
+      tileDay: String(Number(tile.day)),
+      tileMonth: tile.month,
       accessibilityLabel:
         event.accessibility_notes ??
         t("events.decisionInfo.accessibilityNotProvided"),
