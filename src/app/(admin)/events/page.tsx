@@ -17,7 +17,10 @@ import {
   formatCalendarDateBadge,
   formatDate,
   formatDateTime,
+  formatDayKey,
   formatTime,
+  formatTimelineDay,
+  formatWeekdayLong,
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
@@ -537,6 +540,14 @@ export default async function EventsPage({
       costNotes: event.cost_notes,
       costType: event.cost_type,
       dateBadgeLabel: formatDate(event.starts_at, locale),
+      dayKey: formatDayKey(event.starts_at, calendarTimeZone),
+      dayLabel: formatTimelineDay(event.starts_at, locale, calendarTimeZone),
+      weekdayLabel: formatWeekdayLong(event.starts_at, locale, calendarTimeZone),
+      timeRangeLabel: `${formatTime(event.starts_at, locale, calendarTimeZone)} \u2013 ${formatTime(
+        event.ends_at,
+        locale,
+        calendarTimeZone,
+      )}`,
       dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
         event.ends_at,
         locale,

@@ -77,6 +77,33 @@ export function formatWeekdayShort(
   return formatWithLocale(value, locale, { timeZone, weekday: "short" });
 }
 
+/** Day grouping key (YYYY-MM-DD) in the given time zone, for timeline lists. */
+export function formatDayKey(value: DateInput, timeZone?: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+/** "Nov 8" style heading for a day in a timeline. */
+export function formatTimelineDay(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
+  return formatWithLocale(value, locale, { day: "numeric", month: "short", timeZone });
+}
+
+export function formatWeekdayLong(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
+  return formatWithLocale(value, locale, { timeZone, weekday: "long" });
+}
+
 export function formatCalendarDateBadge(
   value: DateInput,
   locale: Locale,
