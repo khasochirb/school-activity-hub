@@ -135,11 +135,13 @@ test("poster inspection rejects disguised, animated, undersized, and oversized f
   assert.match(posterHelper, /code: "tooLarge"/);
 });
 
-test("event list uses poster-led responsive cards without wrapping card actions", () => {
+test("event list uses a day timeline with square poster covers without wrapping card actions", () => {
   const browser = read("src/app/(admin)/events/event-browser.tsx");
+  const css = read("src/app/globals.css");
 
-  assert.match(browser, /md:grid-cols-\[minmax\(13rem,0\.85fr\)_minmax\(0,2fr\)\]/);
-  assert.match(browser, /aspect-\[16\/10\][\s\S]*md:aspect-\[4\/5\]/);
+  assert.match(browser, /groupByDay\(items\)/);
+  assert.match(browser, /className="event-tl-cover"/);
+  assert.match(css, /\.event-tl-cover \{[^}]*aspect-ratio: 1;/);
   assert.match(browser, /src=\{item\.posterUrl\}/);
   assert.match(browser, /event-card-poster-fallback/);
   assert.match(browser, /href=\{`\/events\/\$\{item\.id\}`\}/);
