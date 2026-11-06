@@ -20,10 +20,13 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import {
+  formatCalendarDateBadge,
   formatDate,
   formatDateTime,
+  formatLongDate,
   formatTime,
 } from "@/lib/i18n/date-format";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import { getEventPosterLabels } from "@/lib/events/event-poster-labels";
@@ -299,31 +302,75 @@ export default async function EventDetailPage({
 
   return (
     <div className="page-stack">
-      <section className="section-card section-card-padded">
-        <div className="max-w-4xl space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <HeaderActionLink href="/events" variant="secondary">
-              {t("common.backToEvents")}
-            </HeaderActionLink>
-            <span className="page-eyebrow">{t("events.detail.overview")}</span>
-            {isPlatformAdmin ? (
-              <StatusBadge variant="warning">
-                {t("events.platform.mode")}: {ownerSchoolName}
-              </StatusBadge>
-            ) : null}
+      <section className="event-hero">
+        <div className="event-hero-top">
+          <HeaderActionLink href="/events" variant="secondary">
+            {t("common.backToEvents")}
+          </HeaderActionLink>
+          <span className="page-eyebrow">{t("events.detail.overview")}</span>
+          {isPlatformAdmin ? (
+            <StatusBadge variant="warning">
+              {t("events.platform.mode")}: {ownerSchoolName}
+            </StatusBadge>
+          ) : null}
+        </div>
+        <div className="event-hero-grid">
+          <div
+            className="event-hero-cover"
+            data-category-tone={getActivityCategoryTone(event.category)}
+          >
+            {event.poster_path ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={t("events.poster.alt").replace("{event}", event.title)}
+                src={getEventPosterDeliveryUrl(event.id, event.poster_path)}
+              />
+            ) : (
+              <span
+                aria-label={t("events.poster.noPoster")}
+                className="event-card-poster-fallback event-hero-fallback"
+                role="img"
+              >
+                <span
+                  aria-hidden="true"
+                  className="event-card-category-mark flex h-20 w-20 items-center justify-center rounded-2xl border text-2xl font-black"
+                >
+                  {getHeroInitials(club?.name ?? ownerSchoolName ?? event.title)}
+                </span>
+              </span>
+            )}
           </div>
-          <div className="min-w-0 space-y-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-normal text-zinc-950 sm:text-3xl">
-                {event.title}
-              </h1>
-              <p className="mt-2 text-sm font-medium text-zinc-700">
-                {formatDateTime(event.starts_at, locale)} -{" "}
-                {formatTime(event.ends_at, locale)}
-              </p>
-              {event.location ? (
-                <p className="mt-1 text-sm text-zinc-600">{event.location}</p>
-              ) : null}
+          <div className="min-w-0 space-y-4">
+            <h1 className="event-hero-title">{event.title}</h1>
+            <div className="event-hero-meta">
+              <span aria-hidden="true" className="event-date-tile">
+                <span>{formatCalendarDateBadge(event.starts_at, locale).month}</span>
+                <b>{Number(formatCalendarDateBadge(event.starts_at, locale).day)}</b>
+              </span>
+              <div className="min-w-0">
+                <p className="event-hero-meta-main">
+                  {formatLongDate(event.starts_at, locale)}
+                </p>
+                <p className="event-hero-meta-sub">
+                  {formatTime(event.starts_at, locale)} &ndash;{" "}
+                  {formatTime(event.ends_at, locale)}
+                </p>
+              </div>
+            </div>
+            <div className="event-hero-meta">
+              <span aria-hidden="true" className="event-icon-tile">
+                <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 24 24">
+                  <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" />
+                  <circle cx="12" cy="9.5" r="2.5" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <p className="event-hero-meta-main">{event.location || "-"}</p>
+                <p className="event-hero-meta-sub">
+                  {club ? `${club.name} \u00b7 ` : ""}
+                  {ownerSchoolName}
+                </p>
+              </div>
             </div>
             <EventBadges
               clubName={club?.name ?? null}
@@ -1489,4 +1536,9 @@ function categoryLabel(category: string, t: Translate) {
   const key = getActivityCategoryTranslationKey(category);
 
   return key ? t(key) : category;
+}
+
+function getHeroInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  return (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
 }
