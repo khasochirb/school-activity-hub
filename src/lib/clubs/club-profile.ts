@@ -112,8 +112,11 @@ export function validateClubProfileValues(values: ClubProfileValues) {
   return issues;
 }
 
+// Shape check only. Postgres accepts any 8-4-4-4-12 hex value as a uuid, and the
+// seeded clubs and events use ids without RFC version bits, so a stricter check
+// turns every one of their pages into a 404.
 export function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     value,
   );
 }

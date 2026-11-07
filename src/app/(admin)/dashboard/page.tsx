@@ -540,6 +540,8 @@ function StudentDashboard({
         <UpcomingEventsSection events={[]} locale={locale} t={t} />
       )}
 
+      <StudentMyClubsSection clubs={clubsForYou.joined} t={t} />
+
       <StudentClubsForYouSection clubsForYou={clubsForYou} t={t} tf={tf} />
 
       <LatestAnnouncementsSection
@@ -561,6 +563,9 @@ type StudentClubsForYou = {
   hasInterests: boolean;
   // Interests with no club at all at the school, joined or not.
   interestsWithoutClubs: string[];
+  joined: StudentHomeClub[];
+  // Active clubs the student has not joined, shown before interests are picked.
+  open: StudentHomeClub[];
 };
 
 type StudentHomeClub = {
@@ -618,7 +623,86 @@ async function getStudentClubsForYou(
     forYou: notJoined.forYou,
     hasInterests: interests.length > 0,
     interestsWithoutClubs: everyMatch.interestsWithoutClubs,
+    joined: allClubs.filter((club) => joined.has(club.id)),
+    open: allClubs.filter((club) => !joined.has(club.id)),
   };
+}
+
+function StudentClubRow({
+  club,
+  detail,
+}: {
+  club: StudentHomeClub;
+  detail: string | null;
+}) {
+  return (
+    <li>
+      <Link
+        className="flex min-h-16 items-center justify-between gap-3 p-3 hover:bg-[var(--card-soft)] sm:p-4"
+        href={`/clubs/${club.id}`}
+        prefetch={false}
+      >
+        <span className="min-w-0">
+          <span className="block break-words font-semibold text-slate-950">
+            {club.name}
+          </span>
+          {detail ? (
+            <span className="mt-0.5 block text-sm text-slate-600">{detail}</span>
+          ) : null}
+        </span>
+        <span aria-hidden="true" className="shrink-0 text-xl text-slate-400">
+          ›
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+function StudentMyClubsSection({
+  clubs,
+  t,
+}: {
+  clubs: StudentHomeClub[];
+  t: (key: string) => string;
+}) {
+  return (
+    <section className="section-card">
+      <div className="section-header flex flex-wrap items-center justify-between gap-2">
+        <h2 className="section-title">{t("studentProfile.clubs.title")}</h2>
+        {clubs.length ? (
+          <Link
+            className="text-sm font-semibold text-[var(--primary-strong)] hover:underline"
+            href="/clubs"
+            prefetch={false}
+          >
+            {t("common.viewAll")}
+          </Link>
+        ) : null}
+      </div>
+      {clubs.length ? (
+        <ul className="divide-y divide-slate-200">
+          {clubs.map((club) => (
+            <StudentClubRow
+              club={club}
+              detail={club.category ? studentCategoryLabel(club.category, t) : null}
+              key={club.id}
+            />
+          ))}
+        </ul>
+      ) : (
+        <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+          <p className="text-sm text-slate-600">{t("studentProfile.clubs.empty")}</p>
+          <Link
+            className="btn btn-secondary min-h-11 px-4 text-sm"
+            href="/clubs"
+            prefetch={false}
+          >
+            {t("studentProfile.clubs.find")}
+          </Link>
+        </div>
+      )}
+    </section>
+  );
 }
 
 function StudentClubsForYouSection({
@@ -636,29 +720,64 @@ function StudentClubsForYouSection({
     forYou,
     hasInterests,
     interestsWithoutClubs,
+    open,
   } = clubsForYou;
 
+  // Before interests are picked, list the open clubs so a student always
+  // sees what they can join.
   if (!hasInterests) {
-    if (!available) {
+    if (!available && !open.length) {
       return null;
     }
 
     return (
-      <section className="section-card section-card-padded flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="section-title">{t("studentProfile.clubsForYou.promptTitle")}</h2>
-          <p className="section-description">
-            {t("studentProfile.clubsForYou.promptDescription")}
-          </p>
+      <section className="section-card">
+        <div className="section-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="section-title">
+              {available
+                ? t("studentProfile.clubsForYou.promptTitle")
+                : t("clubs.title")}
+            </h2>
+            {available ? (
+              <p className="section-description">
+                {t("studentProfile.clubsForYou.promptDescription")}
+              </p>
+            ) : null}
+          </div>
+          {available ? (
+            <Link
+              className="btn btn-primary min-h-12 w-full px-5 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+              href="/profile/interests"
+              prefetch={false}
+            >
+              {t("studentProfile.interests.pick")}
+              <PendingLinkIndicator />
+            </Link>
+          ) : null}
         </div>
-        <Link
-          className="btn btn-primary min-h-12 w-full px-5 text-base sm:min-h-10 sm:w-auto sm:text-sm"
-          href="/profile/interests"
-          prefetch={false}
-        >
-          {t("studentProfile.interests.pick")}
-          <PendingLinkIndicator />
-        </Link>
+        {open.length ? (
+          <>
+            <ul className="divide-y divide-slate-200">
+              {open.slice(0, 5).map((club) => (
+                <StudentClubRow
+                  club={club}
+                  detail={club.category ? studentCategoryLabel(club.category, t) : null}
+                  key={club.id}
+                />
+              ))}
+            </ul>
+            <div className="border-t border-slate-200 p-3 sm:px-4">
+              <Link
+                className="text-sm font-semibold text-[var(--primary-strong)] hover:underline"
+                href="/clubs"
+                prefetch={false}
+              >
+                {t("common.viewAll")}
+              </Link>
+            </div>
+          </>
+        ) : null}
       </section>
     );
   }

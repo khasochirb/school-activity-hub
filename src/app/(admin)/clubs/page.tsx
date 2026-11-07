@@ -268,7 +268,7 @@ export default async function ClubsPage({
             </>
           ) : undefined
         }
-        description={t("clubs.description")}
+        description={isStaff ? t("clubs.description") : undefined}
         eyebrow={t("clubs.eyebrow")}
         title={t("clubs.title")}
       />
