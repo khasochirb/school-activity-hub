@@ -33,6 +33,16 @@ test("the sign-in panel is navy, not the black panel with the sun disc", () => {
   assert.match(panel, /linear-gradient\(160deg, #0b1120/);
 });
 
+test("sign-in pages use the compact pill switchers and a brand-blue action", () => {
+  const shell = read("src/components/auth-shell.tsx");
+  const css = read("src/app/globals.css");
+
+  assert.match(shell, /<LanguageSwitcher\s+className="w-auto"\s+compact/);
+  assert.match(shell, /<ThemeToggle\s+compact/);
+  assert.match(shell, /className="auth-controls /);
+  assert.match(css, /\.auth-card \.btn-primary \{[^}]*background: var\(--primary\);/);
+});
+
 test("password toggle text exists in English and Mongolian", () => {
   for (const path of [
     "src/lib/i18n/dictionaries/en.ts",

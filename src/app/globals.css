@@ -2477,8 +2477,65 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 }
 
 :root .auth-panel-headline {
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* Sign-in pages: pill switchers, brand-blue action, softer fields. */
+.auth-controls > div,
+.auth-controls [aria-label] {
+  border-radius: 999px;
+}
+
+.auth-controls button {
+  border-radius: 999px;
+  padding-inline: 0.65rem;
+}
+
+.auth-controls .choice-pill-active {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.12),
+    0 0 0 1px var(--border);
+}
+
+.auth-controls button:not(.choice-pill-active) {
+  background: transparent;
+  color: var(--muted);
+}
+
+.auth-controls > div > div,
+.auth-controls > div[aria-label] {
+  border-color: var(--border);
+  background: var(--card-soft);
+  box-shadow: none;
+}
+
+.auth-card input:not([type="checkbox"]):not([type="radio"]) {
+  border-radius: 0.75rem;
+  border-color: var(--border);
+  background: var(--input-bg);
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.auth-card input:not([type="checkbox"]):not([type="radio"]):focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.auth-card .btn {
+  border-radius: 0.75rem;
+}
+
+.auth-card .btn-primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.auth-card .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 :root .auth-card {
