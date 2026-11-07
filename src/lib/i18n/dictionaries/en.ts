@@ -650,17 +650,6 @@ export const en = {
         label: "View reports",
       },
     },
-    recommendedFlow: {
-      description:
-        "Students cannot self-register freely. Add them to the roster first, then generate one-time invite codes when they are ready to join.",
-      title: "Recommended flow",
-    },
-    staffWelcome: {
-      description:
-        "Start with a verified roster, issue invite codes, then help students find clubs, join events, and check in for attendance.",
-      eyebrow: "Today's workspace",
-      title: "Guide your school activity pilot from one place.",
-    },
     stats: {
       activeClubs: "Active clubs",
       activeStudents: "Active students",

@@ -584,7 +584,7 @@ function AccountPanel({
 }) {
   return (
     <div className="min-w-0 max-w-full space-y-2 overflow-hidden border-t border-slate-200 bg-slate-50/70 px-4 py-3">
-      <div className="grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2">
+      <div className="pill-controls grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2">
         <LanguageSwitcher
           compact
           currentLocale={locale}
