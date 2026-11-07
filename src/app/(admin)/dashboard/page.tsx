@@ -425,7 +425,7 @@ function StaffDashboard({
         <h2 className="sr-only" id="dashboard-overview-title">
           {t("dashboard.analytics.overview")}
         </h2>
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className="home-stats grid grid-cols-2 gap-3 xl:grid-cols-4">
           <MetricCard
             href="/clubs"
             locale={locale}
@@ -452,38 +452,38 @@ function StaffDashboard({
           />
         </div>
       </section>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <NeedsAttention analytics={analytics} locale={locale} t={t} />
-        <QuickActions t={t} />
-      </div>
-      <NextSteps analytics={analytics} t={t} tf={tf} />
-      {latestAnnouncements ? (
-        <LatestAnnouncementsSection
-          locale={locale}
-          result={latestAnnouncements}
-          showCreateAction
-          t={t}
-          tf={tf}
-        />
-      ) : null}
-
-      <DashboardCharts
-        locale={locale}
-        summary={analytics.activitySummary}
-        t={t}
-      />
-
-      <div className="grid gap-3 lg:grid-cols-2">
-        <UpcomingEventsSection
-          events={analytics.upcomingEvents}
-          locale={locale}
-          t={t}
-        />
-        <RecentCheckinsSection
-          checkins={analytics.recentCheckins}
-          locale={locale}
-          t={t}
-        />
+      <div className="home-split">
+        <div className="home-main">
+          <NeedsAttention analytics={analytics} locale={locale} t={t} />
+          <UpcomingEventsSection
+            events={analytics.upcomingEvents}
+            locale={locale}
+            t={t}
+          />
+          {latestAnnouncements ? (
+            <LatestAnnouncementsSection
+              locale={locale}
+              result={latestAnnouncements}
+              showCreateAction
+              t={t}
+              tf={tf}
+            />
+          ) : null}
+          <DashboardCharts
+            locale={locale}
+            summary={analytics.activitySummary}
+            t={t}
+          />
+        </div>
+        <aside className="home-side">
+          <QuickActions t={t} />
+          <NextSteps analytics={analytics} t={t} tf={tf} />
+          <RecentCheckinsSection
+            checkins={analytics.recentCheckins}
+            locale={locale}
+            t={t}
+          />
+        </aside>
       </div>
     </DashboardShell>
   );
@@ -528,29 +528,63 @@ function StudentDashboard({
         </section>
       ) : null}
 
-      {quickViewEvents.length ? (
-        <StudentUpcomingEvents
-          description={t("dashboard.upcoming.description")}
-          events={quickViewEvents}
-          labels={getEventQuickViewLabels(t)}
-          locationNotSet={t("dashboard.upcoming.locationNotSet")}
-          title={t("dashboard.upcoming.title")}
-        />
-      ) : (
-        <UpcomingEventsSection events={[]} locale={locale} t={t} />
-      )}
+      {analytics.currentStudent ? (
+        <p className="home-statline">
+          <span>
+            <b>{formatNumber(analytics.registeredUpcomingEvents, locale)}</b>
+            {t("dashboard.statline.going")}
+          </span>
+          <span>
+            <b>{formatNumber(analytics.joinedClubs, locale)}</b>
+            {t("dashboard.statline.clubs")}
+          </span>
+          <span>
+            <b>{formatNumber(analytics.recentParticipation, locale)}</b>
+            {t("dashboard.statline.attended")}
+          </span>
+        </p>
+      ) : null}
 
-      <StudentMyClubsSection clubs={clubsForYou.joined} t={t} />
+      <div className="home-split">
+        <div className="home-main">
+          {quickViewEvents.length ? (
+            <StudentUpcomingEvents
+              description={t("dashboard.upcoming.description")}
+              events={quickViewEvents}
+              labels={getEventQuickViewLabels(t)}
+              locationNotSet={t("dashboard.upcoming.locationNotSet")}
+              title={t("dashboard.upcoming.title")}
+            />
+          ) : (
+            <UpcomingEventsSection events={[]} locale={locale} t={t} />
+          )}
 
-      <StudentClubsForYouSection clubsForYou={clubsForYou} t={t} tf={tf} />
+          <StudentMyClubsSection clubs={clubsForYou.joined} t={t} />
 
-      <LatestAnnouncementsSection
-        locale={locale}
-        result={latestAnnouncements}
-        showCreateAction={false}
-        t={t}
-        tf={tf}
-      />
+          <StudentClubsForYouSection clubsForYou={clubsForYou} t={t} tf={tf} />
+        </div>
+
+        <aside className="home-side">
+          <LatestAnnouncementsSection
+            locale={locale}
+            result={latestAnnouncements}
+            showCreateAction={false}
+            t={t}
+            tf={tf}
+          />
+
+          <section className="section-card section-card-padded home-widget">
+            <h2 className="section-title">{t("dashboard.portfolioPrompt.title")}</h2>
+            <p className="section-description">
+              {t("dashboard.portfolioPrompt.description")}
+            </p>
+            <Link className="home-widget-link" href="/portfolio" prefetch={false}>
+              {t("dashboard.portfolioPrompt.action")}
+              <PendingLinkIndicator />
+            </Link>
+          </section>
+        </aside>
+      </div>
     </DashboardShell>
   );
 }
@@ -1297,10 +1331,10 @@ function QuickActions({ t }: { t: (key: string) => string }) {
       <div className="section-header">
         <h2 className="section-title">{t("dashboard.quickActions.title")}</h2>
       </div>
-      <div className="grid grid-cols-2 gap-2 p-3">
+      <div className="home-quick-actions">
         {actions.map((action) => (
           <Link
-            className="interactive-card group flex min-h-16 items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5"
+            className="home-quick-action group"
             href={action.href}
             key={action.href}
             prefetch={false}

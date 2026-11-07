@@ -675,6 +675,16 @@ export const en = {
         description: "Check the events you have already registered for.",
       },
     },
+    portfolioPrompt: {
+      action: "Open your portfolio",
+      description: "Add photos and reflections from clubs and events you take part in.",
+      title: "Your portfolio",
+    },
+    statline: {
+      attended: "attended in the last 30 days",
+      clubs: "clubs joined",
+      going: "events you're going to",
+    },
     studentDescription:
       "Use this dashboard to keep track of clubs you joined, upcoming event registrations, and attendance activity.",
     title: "Dashboard",
