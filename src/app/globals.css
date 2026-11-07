@@ -1299,9 +1299,9 @@ a:hover > .brand-mark {
 }
 
 .nav-link-active {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--ink-contrast);
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
   font-weight: 700;
 }
 
@@ -2483,17 +2483,21 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 }
 
 /* Sign-in pages: pill switchers, brand-blue action, softer fields. */
-.auth-controls > div,
-.auth-controls [aria-label] {
+:is(.auth-controls, .pill-controls) > div,
+:is(.auth-controls, .pill-controls) [aria-label] {
   border-radius: 999px;
+}
+
+:is(.auth-controls, .pill-controls) button {
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .auth-controls button {
-  border-radius: 999px;
   padding-inline: 0.65rem;
 }
 
-.auth-controls .choice-pill-active {
+:is(.auth-controls, .pill-controls) .choice-pill-active {
   background: var(--card);
   color: var(--foreground);
   box-shadow:
@@ -2501,13 +2505,13 @@ a:has(.pending-link-indicator[data-pending="true"]) {
     0 0 0 1px var(--border);
 }
 
-.auth-controls button:not(.choice-pill-active) {
+:is(.auth-controls, .pill-controls) button:not(.choice-pill-active) {
   background: transparent;
   color: var(--muted);
 }
 
-.auth-controls > div > div,
-.auth-controls > div[aria-label] {
+:is(.auth-controls, .pill-controls) > div > div,
+:is(.auth-controls, .pill-controls) > div[aria-label] {
   border-color: var(--border);
   background: var(--card-soft);
   box-shadow: none;
@@ -3162,6 +3166,41 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   :where(button, .btn, .interactive-card, .motion-choice, .interactive-chip, .motion-directional, .nav-link, .nav-link-motion, button[aria-pressed]) {
     transform: none !important;
   }
+}
+
+/* Signed-in app: plain, modern type. Titles and numbers in the sans face;
+   small labels in sentence case instead of spaced mono capitals. The public
+   landing page keeps its editorial treatment. */
+.app-surface .page-title,
+.app-surface .stat-value {
+  font-family: var(--font-body-stack);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.app-surface .page-eyebrow {
+  font-family: var(--font-body-stack);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.app-surface .page-eyebrow::before {
+  display: none;
+}
+
+.app-surface .page-header {
+  border-top: 1px solid var(--border);
+}
+
+.app-surface .stat-label,
+.app-surface thead th {
+  font-family: var(--font-body-stack);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 /* Printable pages (/print/*): always dark ink on white paper, whatever the theme. */

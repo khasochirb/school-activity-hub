@@ -421,26 +421,11 @@ function StaffDashboard({
       title={t("dashboard.title")}
       actions={<DashboardHeaderActions t={t} />}
     >
-      <WelcomeOverview t={t} />
-      <NeedsAttention analytics={analytics} locale={locale} t={t} />
-      <NextSteps analytics={analytics} t={t} tf={tf} />
-      <QuickActions t={t} />
-      {latestAnnouncements ? (
-        <LatestAnnouncementsSection
-          locale={locale}
-          result={latestAnnouncements}
-          showCreateAction
-          t={t}
-          tf={tf}
-        />
-      ) : null}
       <section aria-labelledby="dashboard-overview-title" className="space-y-3">
-        <div>
-          <h2 className="section-title" id="dashboard-overview-title">
-            {t("dashboard.analytics.overview")}
-          </h2>
-        </div>
-        <MetricGrid>
+        <h2 className="sr-only" id="dashboard-overview-title">
+          {t("dashboard.analytics.overview")}
+        </h2>
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <MetricCard
             href="/clubs"
             locale={locale}
@@ -465,8 +450,22 @@ function StaffDashboard({
             label={t("dashboard.stats.recentParticipation")}
             value={analytics.recentParticipation}
           />
-        </MetricGrid>
+        </div>
       </section>
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <NeedsAttention analytics={analytics} locale={locale} t={t} />
+        <QuickActions t={t} />
+      </div>
+      <NextSteps analytics={analytics} t={t} tf={tf} />
+      {latestAnnouncements ? (
+        <LatestAnnouncementsSection
+          locale={locale}
+          result={latestAnnouncements}
+          showCreateAction
+          t={t}
+          tf={tf}
+        />
+      ) : null}
 
       <DashboardCharts
         locale={locale}
@@ -853,54 +852,9 @@ function DashboardShell({
 
 function DashboardHeaderActions({ t }: { t: (key: string) => string }) {
   return (
-    <>
-      <HeaderActionLink
-        href="/students#add-student"
-        prefetch={false}
-        variant="secondary"
-      >
-        {t("dashboard.quickActions.addStudents.label")}
-      </HeaderActionLink>
-      <HeaderActionLink
-        href="/invite-codes#generate-invite"
-        prefetch={false}
-        variant="secondary"
-      >
-        {t("dashboard.quickActions.generateInviteCodes.label")}
-      </HeaderActionLink>
-      <HeaderActionLink
-        href="/events#create-event"
-        prefetch={false}
-      >
-        {t("dashboard.quickActions.createEvent.label")}
-      </HeaderActionLink>
-    </>
-  );
-}
-
-function WelcomeOverview({ t }: { t: (key: string) => string }) {
-  return (
-    <section className="section-card section-card-padded">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center">
-        <div>
-          <p className="page-eyebrow">{t("dashboard.staffWelcome.eyebrow")}</p>
-          <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
-            {t("dashboard.staffWelcome.title")}
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {t("dashboard.staffWelcome.description")}
-          </p>
-        </div>
-        <div className="rounded-md border border-teal-100 bg-teal-50 p-3">
-          <p className="text-sm font-bold text-teal-950">
-            {t("dashboard.recommendedFlow.title")}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-teal-900">
-            {t("dashboard.recommendedFlow.description")}
-          </p>
-        </div>
-      </div>
-    </section>
+    <HeaderActionLink href="/events#create-event" prefetch={false}>
+      {t("dashboard.quickActions.createEvent.label")}
+    </HeaderActionLink>
   );
 }
 
@@ -1150,34 +1104,34 @@ function NeedsAttention({
         </div>
       </div>
       {attentionItems.length ? (
-        <div className="grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-4">
+        <ul className="divide-y divide-[var(--border)]">
           {attentionItems.map((item) => (
-            <Link
-              className="interactive-card group rounded-md border border-slate-200 bg-white p-3 shadow-sm"
-              href={item.href}
-              key={item.title}
-              prefetch={false}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
-                    {item.title}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {item.description}
-                  </p>
-                </div>
+            <li key={item.title}>
+              <Link
+                aria-label={`${item.title}: ${formatNumber(item.count, locale)}. ${item.action}`}
+                className="group flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--card-soft)]"
+                href={item.href}
+                prefetch={false}
+              >
                 <StatusBadge variant={item.variant}>
                   {formatNumber(item.count, locale)}
                 </StatusBadge>
-              </div>
-              <p className="mt-3 flex items-center gap-2 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
-                {item.action}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-slate-950 group-hover:text-[var(--primary-strong)]">
+                    {item.title}
+                  </span>
+                  <span className="mt-0.5 block text-sm leading-6 text-slate-600">
+                    {item.description}
+                  </span>
+                </span>
+                <span aria-hidden="true" className="shrink-0 text-xl text-slate-400">
+                  ›
+                </span>
                 <PendingLinkIndicator />
-              </p>
-            </Link>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <div className="p-4">
           <EmptyState
@@ -1224,24 +1178,22 @@ function QuickActions({ t }: { t: (key: string) => string }) {
       <div className="section-header">
         <h2 className="section-title">{t("dashboard.quickActions.title")}</h2>
       </div>
-      <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 p-3">
         {actions.map((action) => (
           <Link
-            className="interactive-card group rounded-md border border-slate-200 bg-white p-3 shadow-sm"
+            className="interactive-card group flex min-h-16 items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5"
             href={action.href}
             key={action.href}
             prefetch={false}
+            title={action.description}
           >
-            <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
+            <span className="text-sm font-bold leading-snug text-slate-950 group-hover:text-[var(--primary-strong)]">
               {action.label}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {action.description}
-            </p>
-            <p className="mt-3 flex items-center gap-2 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
-              {t("common.open")}
-              <PendingLinkIndicator />
-            </p>
+            </span>
+            <span aria-hidden="true" className="text-lg text-[var(--primary-strong)]">
+              +
+            </span>
+            <PendingLinkIndicator />
           </Link>
         ))}
       </div>
