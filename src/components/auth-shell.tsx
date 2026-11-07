@@ -44,11 +44,11 @@ export async function AuthShell({
       <aside className="auth-panel hidden lg:flex">
         <Link className="flex w-fit items-center gap-3" href="/">
           <BrandMark />
-          <span className="font-display font-semibold">{t("app.name")}</span>
+          <span className="font-semibold">{t("app.name")}</span>
         </Link>
         <AuthPanelPreview t={t} tf={tf} />
         <div className="mt-auto">
-          <p className="auth-panel-headline font-display">{t("landing.headline")}</p>
+          <p className="auth-panel-headline">{t("landing.headline")}</p>
           <ul className="mt-8 grid gap-3">
             {highlights.map((item) => (
               <li className="flex items-center gap-3 text-sm font-semibold" key={item}>
@@ -61,7 +61,7 @@ export async function AuthShell({
       </aside>
 
       <div className="flex min-h-screen flex-col px-4 py-5 sm:px-8 lg:px-12">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 lg:justify-end">
           {backLink ? (
             <Link
               className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--muted)] transition hover:text-[var(--foreground)]"
@@ -71,16 +71,17 @@ export async function AuthShell({
               {backLink.label}
             </Link>
           ) : (
-            <Link className="flex items-center gap-3 lg:invisible" href="/">
+            <Link className="flex min-w-0 items-center gap-3 lg:hidden" href="/">
               <BrandMark className="h-9 w-9" />
-              <span className="whitespace-nowrap font-display text-sm font-semibold">
+              <span className="hidden min-w-0 text-sm font-semibold leading-tight sm:inline">
                 {t("app.name")}
               </span>
             </Link>
           )}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="auth-controls flex shrink-0 items-center gap-2">
             <LanguageSwitcher
               className="w-auto"
+              compact
               currentLocale={locale}
               label={t("language.label")}
               labels={{
@@ -89,6 +90,7 @@ export async function AuthShell({
               }}
             />
             <ThemeToggle
+              compact
               currentTheme={theme}
               label={t("theme.label")}
               labels={{
@@ -104,7 +106,7 @@ export async function AuthShell({
 
         <section className="mx-auto my-auto w-full max-w-md py-10">
           {eyebrow ? <p className="page-eyebrow mb-4">{eyebrow}</p> : null}
-          <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+          <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
             {title}
           </h1>
           <p className="mt-3 leading-7 text-[var(--muted)]">{description}</p>
