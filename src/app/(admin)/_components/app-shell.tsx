@@ -75,6 +75,7 @@ const navSections: Array<{
       { href: "/dashboard", labelKey: "nav.dashboard" },
       { href: "/events", labelKey: "nav.events" },
       { href: "/clubs", labelKey: "nav.clubs" },
+      { href: "/portfolio", labelKey: "nav.portfolio", roles: ["student"] },
       {
         href: "/club-requests",
         labelKey: "nav.clubIdeas",
@@ -192,6 +193,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
       intentPrefetch: false,
     },
     { href: "/clubs", labelKey: "nav.clubs" },
+    { href: "/portfolio", labelKey: "nav.portfolio" },
     { href: "/club-requests", labelKey: "nav.clubIdeas" },
     { href: "/announcements", labelKey: "nav.announcements" },
     { href: "/safety", intentPrefetch: false, labelKey: "nav.safety" },

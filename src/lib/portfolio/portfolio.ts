@@ -1,5 +1,3 @@
-import { detectStaticImage } from "@/lib/clubs/club-media";
-
 export const PORTFOLIO_MEDIA_BUCKET = "portfolio-media";
 export const PORTFOLIO_MAX_PHOTOS = 6;
 export const PORTFOLIO_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
@@ -114,37 +112,6 @@ export function portfolioPhotoContentType(path: string) {
   if (path.endsWith(".jpg")) return "image/jpeg";
   if (path.endsWith(".png")) return "image/png";
   return "image/webp";
-}
-
-export function inspectPortfolioPhoto(
-  input: ArrayBuffer | Uint8Array,
-  claimedMimeType: string,
-): { ok: true } | { code: PortfolioPhotoCheck; ok: false } {
-  if (!isPortfolioPhotoMimeType(claimedMimeType)) {
-    return { code: "invalidType", ok: false };
-  }
-
-  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
-
-  if (bytes.byteLength > PORTFOLIO_PHOTO_MAX_BYTES) {
-    return { code: "tooLarge", ok: false };
-  }
-
-  const detected = detectStaticImage(bytes);
-
-  if (!detected) return { code: "invalidImage", ok: false };
-  if (detected.mimeType !== claimedMimeType) {
-    return { code: "mimeMismatch", ok: false };
-  }
-  if (detected.animated) return { code: "animated", ok: false };
-  if (
-    detected.width < PORTFOLIO_PHOTO_MIN_SIDE ||
-    detected.height < PORTFOLIO_PHOTO_MIN_SIDE
-  ) {
-    return { code: "dimensions", ok: false };
-  }
-
-  return { ok: true };
 }
 
 /** Which entries a viewer would see; used for the "View as" preview. */

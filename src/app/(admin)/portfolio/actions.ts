@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { logServerError } from "@/lib/errors/server-error";
 import {
@@ -13,7 +14,6 @@ import {
   PORTFOLIO_PHOTO_MAX_BYTES,
   PORTFOLIO_TITLE_MAX,
   buildPortfolioMediaPath,
-  inspectPortfolioPhoto,
   isControlledPortfolioMediaPath,
   isPortfolioKind,
   isPortfolioPhotoMimeType,
@@ -24,6 +24,7 @@ import {
   type PortfolioPhotoCheck,
   type PortfolioPhotoMimeType,
 } from "@/lib/portfolio/portfolio";
+import { inspectPortfolioPhoto } from "@/lib/portfolio/portfolio-photo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -134,6 +135,13 @@ export async function deletePortfolioEntry(
 
   revalidatePortfolio(entryId);
   return { ok: true };
+}
+
+/** Form version of delete, used with the confirm dialog. */
+export async function deletePortfolioEntryFromForm(formData: FormData) {
+  const result = await deletePortfolioEntry(String(formData.get("entryId") ?? ""));
+
+  if (result.ok) redirect("/portfolio");
 }
 
 export async function setFeaturedPortfolioEntry(

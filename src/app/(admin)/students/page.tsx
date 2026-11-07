@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -277,7 +278,14 @@ export default async function StudentsPage({
                       <td className="px-4 py-3 text-zinc-700">
                         {formatDate(student.created_at, locale)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="flex flex-wrap items-center gap-2 px-4 py-3">
+                        <Link
+                          className="btn btn-secondary min-h-9 px-3"
+                          href={`/portfolio/students/${student.id}`}
+                          prefetch={false}
+                        >
+                          {t("portfolio.staff.viewPortfolio")}
+                        </Link>
                         <InactiveForm
                           labels={{
                             alreadyInactive: t(
@@ -331,7 +339,14 @@ export default async function StudentsPage({
                       </div>
                     </dl>
                   </DetailsDisclosure>
-                  <div className="mt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <Link
+                      className="btn btn-secondary min-h-9 px-3"
+                      href={`/portfolio/students/${student.id}`}
+                      prefetch={false}
+                    >
+                      {t("portfolio.staff.viewPortfolio")}
+                    </Link>
                     <InactiveForm
                       labels={{
                         alreadyInactive: t("students.actions.alreadyInactive"),
