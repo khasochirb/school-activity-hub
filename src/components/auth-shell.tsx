@@ -4,7 +4,11 @@ import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentTheme } from "@/lib/get-theme";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import {
+  formatTranslation,
+  getDictionary,
+  translate,
+} from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 
 // Shared frame for the signed-out account pages (sign in, join, password
@@ -19,13 +23,15 @@ export async function AuthShell({
   backLink?: { href: string; label: string };
   children: ReactNode;
   description: string;
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
 }) {
   const locale = await getCurrentLocale();
   const theme = await getCurrentTheme();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const tf = (key: string, values: Record<string, string | number>) =>
+    formatTranslation(dictionary, key, values);
 
   const highlights = [
     t("landing.trustInviteOnly"),
@@ -40,6 +46,7 @@ export async function AuthShell({
           <BrandMark />
           <span className="font-display font-semibold">{t("app.name")}</span>
         </Link>
+        <AuthPanelPreview t={t} tf={tf} />
         <div className="mt-auto">
           <p className="auth-panel-headline font-display">{t("landing.headline")}</p>
           <ul className="mt-8 grid gap-3">
@@ -96,8 +103,8 @@ export async function AuthShell({
         </div>
 
         <section className="mx-auto my-auto w-full max-w-md py-10">
-          <p className="page-eyebrow">{eyebrow}</p>
-          <h1 className="mt-4 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+          {eyebrow ? <p className="page-eyebrow mb-4">{eyebrow}</p> : null}
+          <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
             {title}
           </h1>
           <p className="mt-3 leading-7 text-[var(--muted)]">{description}</p>
@@ -105,5 +112,64 @@ export async function AuthShell({
         </section>
       </div>
     </main>
+  );
+}
+
+// A glimpse of what students find after signing in, built from the app's own
+// reviewed labels rather than marketing copy.
+function AuthPanelPreview({
+  t,
+  tf,
+}: {
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+}) {
+  const cards = [
+    {
+      category: t("categories.arts"),
+      flags: [
+        t("clubs.profile.fields.beginnersWelcome"),
+        t("clubs.profile.fields.firstVisitFree"),
+      ],
+      tilt: "-rotate-2",
+    },
+    {
+      category: t("categories.sports"),
+      flags: [t("clubs.profile.fields.beginnersWelcome")],
+      tilt: "rotate-1 translate-x-8",
+    },
+  ];
+
+  return (
+    <div aria-hidden="true" className="auth-panel-preview my-auto py-8">
+      <p className="mb-3 text-sm font-semibold opacity-80">
+        {t("studentProfile.clubsForYou.title")}
+      </p>
+      <div className="grid max-w-sm gap-3">
+        {cards.map((card) => (
+          <div
+            className={`auth-panel-card rounded-2xl p-4 shadow-xl ${card.tilt}`}
+            key={card.category}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-lg font-bold">{card.category}</span>
+              <span className="auth-panel-join rounded-full px-3 py-1 text-xs font-bold">
+                {t("clubs.actions.join")}
+              </span>
+            </div>
+            <p className="mt-1 text-sm opacity-75">
+              {tf("studentProfile.clubsForYou.reason", { interest: card.category })}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {card.flags.map((flag) => (
+                <span className="auth-panel-flag rounded-full px-2.5 py-1 text-xs font-semibold" key={flag}>
+                  {flag}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
