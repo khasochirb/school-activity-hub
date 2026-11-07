@@ -22,6 +22,7 @@ import {
   CategoryBadge,
   StatusBadge,
 } from "../../_components/page-ui";
+import { DetailTabs } from "../../_components/detail-tabs";
 import { joinClub, leaveClub } from "../actions";
 
 type Club = {
@@ -193,6 +194,17 @@ export default async function ClubProfilePage({
   const themeClass = getThemeClass(profile?.theme_key ?? "warm");
   const bannerUrl = getMediaUrl(club.id, "banner", profile);
   const logoUrl = getMediaUrl(club.id, "logo", profile);
+
+  const hasAboutDetails = Boolean(
+    details.about ||
+      profile?.meeting_schedule ||
+      profile?.meeting_location ||
+      profile?.eligibility_notes ||
+      profile?.commitment_notes ||
+      profile?.accessibility_notes ||
+      profile?.cost_notes ||
+      profile?.materials_notes,
+  );
 
   return (
     <div className="page-stack">
@@ -377,120 +389,143 @@ export default async function ClubProfilePage({
       ) : null}
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
-        <main className="flex min-w-0 flex-col gap-4">
-          {details.about ? (
-            <ProfileSection title={t("clubs.profile.sections.about")}>
-              {details.about}
-            </ProfileSection>
-          ) : null}
+        <div className="min-w-0">
+          <DetailTabs
+            label={t("clubs.profile.tabs.label")}
+            tabs={[
+              {
+                content: (
+                  <div className="detail-tab-stack">
+                    {details.about ? (
+                      <ProfileSection title={t("clubs.profile.sections.about")}>
+                        {details.about}
+                      </ProfileSection>
+                    ) : null}
 
-          {profile?.meeting_schedule || profile?.meeting_location ? (
-            <section className="grid gap-4 md:grid-cols-2">
-              {profile.meeting_schedule ? (
-                <ProfileSection title={t("clubs.profile.sections.meetingSchedule")}>
-                  {profile.meeting_schedule}
-                </ProfileSection>
-              ) : null}
-              {profile.meeting_location ? (
-                <ProfileSection title={t("clubs.profile.sections.meetingLocation")}>
-                  {profile.meeting_location}
-                </ProfileSection>
-              ) : null}
-            </section>
-          ) : null}
-
-          {profile?.eligibility_notes ? (
-            <ProfileSection title={t("clubs.profile.sections.eligibility")}>
-              {profile.eligibility_notes}
-            </ProfileSection>
-          ) : null}
-
-          {profile?.commitment_notes ? (
-            <ProfileSection title={t("clubs.profile.sections.commitment")}>
-              {profile.commitment_notes}
-            </ProfileSection>
-          ) : null}
-
-          {profile?.accessibility_notes ? (
-            <ProfileSection title={t("clubs.profile.sections.accessibility")}>
-              {profile.accessibility_notes}
-            </ProfileSection>
-          ) : null}
-
-          {profile?.cost_notes || profile?.materials_notes ? (
-            <section className="section-card section-card-padded">
-              <h2 className="section-title">
-                {t("clubs.profile.sections.costMaterials")}
-              </h2>
-              <dl className="mt-3 grid gap-4 sm:grid-cols-2">
-                {profile.cost_notes ? (
-                  <DetailItem
-                    label={t("clubs.profile.fields.costNotes")}
-                    value={profile.cost_notes}
-                  />
-                ) : null}
-                {profile.materials_notes ? (
-                  <DetailItem
-                    label={t("clubs.profile.fields.materialsNotes")}
-                    value={profile.materials_notes}
-                  />
-                ) : null}
-              </dl>
-            </section>
-          ) : null}
-
-          <section className="section-card">
-            <div className="section-header">
-              <h2 className="section-title">
-                {t("clubs.profile.sections.upcomingActivities")}
-              </h2>
-            </div>
-            {eventRows.length ? (
-              <ul className="divide-y divide-[var(--border)]">
-                {eventRows.map((event) => {
-                  const registration = registrationByEvent.get(event.id);
-
-                  return (
-                    <li className="p-4" key={event.id}>
-                      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <Link
-                            className="font-bold text-slate-950 hover:text-[var(--primary-strong)]"
-                            href={`/events/${event.id}`}
-                            prefetch={false}
-                          >
-                            <span className="break-words">{event.title}</span>
-                            <PendingLinkIndicator />
-                          </Link>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {formatDateTime(event.starts_at, locale)} -{" "}
-                            {formatTime(event.ends_at, locale)}
-                          </p>
-                          {event.location ? (
-                            <p className="mt-1 break-words text-sm text-slate-600">
-                              {event.location}
-                            </p>
-                          ) : null}
-                        </div>
-                        {registration ? (
-                          <StatusBadge variant="success">
-                            {registration === "attended"
-                              ? t("events.registration.checkedIn")
-                              : t("events.registration.youAreRegistered")}
-                          </StatusBadge>
+                    {profile?.meeting_schedule || profile?.meeting_location ? (
+                      <section className="grid gap-4 md:grid-cols-2">
+                        {profile.meeting_schedule ? (
+                          <ProfileSection title={t("clubs.profile.sections.meetingSchedule")}>
+                            {profile.meeting_schedule}
+                          </ProfileSection>
                         ) : null}
+                        {profile.meeting_location ? (
+                          <ProfileSection title={t("clubs.profile.sections.meetingLocation")}>
+                            {profile.meeting_location}
+                          </ProfileSection>
+                        ) : null}
+                      </section>
+                    ) : null}
+
+                    {profile?.eligibility_notes ? (
+                      <ProfileSection title={t("clubs.profile.sections.eligibility")}>
+                        {profile.eligibility_notes}
+                      </ProfileSection>
+                    ) : null}
+
+                    {profile?.commitment_notes ? (
+                      <ProfileSection title={t("clubs.profile.sections.commitment")}>
+                        {profile.commitment_notes}
+                      </ProfileSection>
+                    ) : null}
+
+                    {profile?.accessibility_notes ? (
+                      <ProfileSection title={t("clubs.profile.sections.accessibility")}>
+                        {profile.accessibility_notes}
+                      </ProfileSection>
+                    ) : null}
+
+                    {profile?.cost_notes || profile?.materials_notes ? (
+                      <section className="section-card section-card-padded">
+                        <h2 className="section-title">
+                          {t("clubs.profile.sections.costMaterials")}
+                        </h2>
+                        <dl className="mt-3 grid gap-4 sm:grid-cols-2">
+                          {profile.cost_notes ? (
+                            <DetailItem
+                              label={t("clubs.profile.fields.costNotes")}
+                              value={profile.cost_notes}
+                            />
+                          ) : null}
+                          {profile.materials_notes ? (
+                            <DetailItem
+                              label={t("clubs.profile.fields.materialsNotes")}
+                              value={profile.materials_notes}
+                            />
+                          ) : null}
+                        </dl>
+                      </section>
+                    ) : null}
+                    {!hasAboutDetails ? (
+                      <p className="section-card section-card-padded text-sm text-slate-600">
+                        {t("clubs.profile.tabs.noDetails")}
+                      </p>
+                    ) : null}
+                  </div>
+                ),
+                id: "about",
+                label: t("clubs.profile.tabs.about"),
+              },
+              {
+                content: (
+                    <section className="section-card">
+                      <div className="section-header">
+                        <h2 className="section-title">
+                          {t("clubs.profile.sections.upcomingActivities")}
+                        </h2>
                       </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="p-4 text-sm text-slate-600">
-                {t("clubs.profile.upcomingEmpty")}
-              </p>
-            )}
-          </section>
-        </main>
+                      {eventRows.length ? (
+                        <ul className="divide-y divide-[var(--border)]">
+                          {eventRows.map((event) => {
+                            const registration = registrationByEvent.get(event.id);
+
+                            return (
+                              <li className="p-4" key={event.id}>
+                                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                  <div className="min-w-0">
+                                    <Link
+                                      className="font-bold text-slate-950 hover:text-[var(--primary-strong)]"
+                                      href={`/events/${event.id}`}
+                                      prefetch={false}
+                                    >
+                                      <span className="break-words">{event.title}</span>
+                                      <PendingLinkIndicator />
+                                    </Link>
+                                    <p className="mt-1 text-sm text-slate-600">
+                                      {formatDateTime(event.starts_at, locale)} -{" "}
+                                      {formatTime(event.ends_at, locale)}
+                                    </p>
+                                    {event.location ? (
+                                      <p className="mt-1 break-words text-sm text-slate-600">
+                                        {event.location}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                  {registration ? (
+                                    <StatusBadge variant="success">
+                                      {registration === "attended"
+                                        ? t("events.registration.checkedIn")
+                                        : t("events.registration.youAreRegistered")}
+                                    </StatusBadge>
+                                  ) : null}
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="p-4 text-sm text-slate-600">
+                          {t("clubs.profile.upcomingEmpty")}
+                        </p>
+                      )}
+                    </section>
+                ),
+                id: "events",
+                label: tf("clubs.profile.tabs.events", { count: eventRows.length }),
+              },
+            ]}
+          />
+        </div>
 
         <aside className="flex min-w-0 flex-col gap-4 self-start">
           <section className="section-card section-card-padded">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
@@ -75,8 +76,10 @@ type ClubPracticalDetails = {
   club_id: string;
   cost_notes: string | null;
   first_visit_free: boolean | null;
+  logo_path: string | null;
   meeting_location: string | null;
   meeting_schedule: string | null;
+  updated_at: string | null;
 };
 
 type ClubMembership = {
@@ -228,7 +231,7 @@ export default async function ClubsPage({
         supabase
           .from("club_profiles")
           .select(
-            "club_id, meeting_schedule, meeting_location, cost_notes, beginners_welcome, first_visit_free",
+            "club_id, meeting_schedule, meeting_location, cost_notes, beginners_welcome, first_visit_free, logo_path, updated_at",
           )
           .in("club_id", detailClubIds)
           .returns<ClubPracticalDetails[]>(),
@@ -255,7 +258,7 @@ export default async function ClubsPage({
           isStaff ? (
             <>
               <Link
-                className="btn btn-secondary min-h-11"
+                className="btn btn-quiet min-h-11"
                 href="/print/clubs"
                 prefetch={false}
                 target="_blank"
@@ -384,82 +387,96 @@ export default async function ClubsPage({
           ) : null}
         </div>
         {clubRows.length ? (
-          <div className="grid gap-3 p-3 md:grid-cols-2">
+          <div className="club-grid">
             {clubRows.map((club) => {
               const clubMemberships = membershipsByClub.get(club.id) ?? [];
               const isJoined = currentStudentMemberships.has(club.id);
               const isStudentView = profile.role === "student";
 
               return (
-                <article
-                  className={
-                    isStudentView
-                      ? "rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-                      : "rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-                  }
-                  key={club.id}
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h3 className={isStudentView ? "text-xl font-semibold text-zinc-950" : "text-lg font-semibold text-zinc-950"}>
-                        <Link
-                          aria-label={tf("clubs.profile.actions.viewNamedClub", {
-                            club: club.name,
-                          })}
-                          className="inline-flex min-w-0 items-center gap-2 break-words hover:text-[var(--primary-strong)]"
-                          href={`/clubs/${club.id}`}
-                          prefetch={false}
-                        >
-                          <span className="break-words">{club.name}</span>
-                          <PendingLinkIndicator />
-                        </Link>
-                      </h3>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {club.category ? (
-                          <CategoryBadge category={club.category}>
-                            {categoryLabel(club.category, t)}
-                          </CategoryBadge>
-                        ) : null}
+                <article className="club-card" key={club.id}>
+                  <Link
+                    aria-hidden="true"
+                    className="club-card-cover"
+                    data-category-tone={getActivityCategoryTone(club.category)}
+                    href={`/clubs/${club.id}`}
+                    prefetch={false}
+                    tabIndex={-1}
+                  >
+                    {detailsByClub.get(club.id)?.logo_path ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt=""
+                        src={`/clubs/${club.id}/media/logo?v=${encodeURIComponent(
+                          detailsByClub.get(club.id)?.updated_at ?? "",
+                        )}`}
+                      />
+                    ) : (
+                      <span className="club-card-initials">
+                        {clubInitials(club.name)}
+                      </span>
+                    )}
+                  </Link>
+                  <div className="club-card-body">
+                    <h3 className="club-card-title">
+                      <Link
+                        aria-label={tf("clubs.profile.actions.viewNamedClub", {
+                          club: club.name,
+                        })}
+                        className="inline-flex min-w-0 items-center gap-2 break-words hover:text-[var(--primary-strong)]"
+                        href={`/clubs/${club.id}`}
+                        prefetch={false}
+                      >
+                        <span className="break-words">{club.name}</span>
+                        <PendingLinkIndicator />
+                      </Link>
+                    </h3>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {club.category ? (
+                        <CategoryBadge category={club.category}>
+                          {categoryLabel(club.category, t)}
+                        </CategoryBadge>
+                      ) : null}
+                      {isStaff || club.status !== "active" ? (
                         <StatusBadge status={club.status}>
                           {statusLabel(club.status, t)}
                         </StatusBadge>
-                        {isStudentView && isJoined ? (
-                          <StatusBadge variant="success">
-                            {t("clubs.memberRoles.member")}
-                          </StatusBadge>
-                        ) : null}
-                      </div>
+                      ) : null}
+                      {isStudentView && isJoined ? (
+                        <StatusBadge variant="success">
+                          {t("clubs.memberRoles.member")}
+                        </StatusBadge>
+                      ) : null}
                     </div>
-                    <ClubActions
-                      club={club}
-                      currentStudent={currentStudent}
-                      isJoined={isJoined}
-                      isStaff={isStaff}
-                      labels={{
-                        archive: t("clubs.actions.archive"),
-                        archived: t("status.archived"),
-                        archiving: t("clubs.actions.archiving"),
-                        cancel: t("common.cancel"),
-                        confirm: t("feedback.confirm"),
-                        confirmArchive: t("feedback.archiveClub"),
-                        confirmDescription: t("feedback.cannotBeUndone"),
-                        join: t("clubs.actions.join"),
-                        joining: t("clubs.actions.joining"),
-                        leave: t("clubs.actions.leave"),
-                        leaving: t("clubs.actions.leaving"),
-                      }}
-                      role={profile.role}
+                    {club.description ? (
+                      <p className="club-card-description">{club.description}</p>
+                    ) : null}
+                    <ClubPracticalFacts
+                      details={detailsByClub.get(club.id)}
+                      t={t}
                     />
-                  </div>
-                  {club.description ? (
-                    <p className="mt-3 text-base leading-7 text-zinc-600 sm:text-sm sm:leading-6">
-                      {club.description}
-                    </p>
-                  ) : null}
-                  <ClubPracticalFacts
-                    details={detailsByClub.get(club.id)}
-                    t={t}
-                  />
+                    <div className="club-card-foot">
+                      <ClubActions
+                        club={club}
+                        currentStudent={currentStudent}
+                        isJoined={isJoined}
+                        isStaff={isStaff}
+                        labels={{
+                          archive: t("clubs.actions.archive"),
+                          archived: t("status.archived"),
+                          archiving: t("clubs.actions.archiving"),
+                          cancel: t("common.cancel"),
+                          confirm: t("feedback.confirm"),
+                          confirmArchive: t("feedback.archiveClub"),
+                          confirmDescription: t("feedback.cannotBeUndone"),
+                          join: t("clubs.actions.join"),
+                          joining: t("clubs.actions.joining"),
+                          leave: t("clubs.actions.leave"),
+                          leaving: t("clubs.actions.leaving"),
+                        }}
+                        role={profile.role}
+                      />
+                    </div>
                   {isStaff ? (
                     <DetailsDisclosure label={t("common.viewDetails")}>
                       <h4 className="text-sm font-medium text-zinc-950">
@@ -509,6 +526,7 @@ export default async function ClubsPage({
                       )}
                     </DetailsDisclosure>
                   ) : null}
+                  </div>
                 </article>
               );
             })}
@@ -623,8 +641,8 @@ function ClubActions({
       <PendingSubmitButton
         className={
           isJoined
-            ? "btn btn-secondary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
-            : "btn btn-primary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+            ? "btn btn-quiet min-h-11 w-full px-4 sm:min-h-10 sm:w-auto"
+            : "btn btn-soft min-h-11 w-full px-4 sm:min-h-10 sm:w-auto"
         }
         pendingLabel={isJoined ? labels.leaving : labels.joining}
         toastMessage={isJoined ? labels.leaving : labels.joining}
@@ -920,6 +938,12 @@ function memberRoleLabel(
   }
 
   return t("clubs.memberRoles.member");
+}
+
+function clubInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+
+  return (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
 }
 
 function categoryLabel(category: string, t: (key: string) => string) {

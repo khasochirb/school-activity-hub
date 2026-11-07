@@ -423,6 +423,12 @@ export const en = {
         sky: "Calm blue",
         warm: "Warm amber",
       },
+      tabs: {
+        about: "About",
+        events: "Events · {count}",
+        label: "Club sections",
+        noDetails: "The club has not added details yet.",
+      },
       upcomingEmpty: "No approved upcoming activities for this club.",
     },
     student: {

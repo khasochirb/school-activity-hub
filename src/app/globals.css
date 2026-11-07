@@ -3956,3 +3956,102 @@ html[data-theme="dark"] {
   background: rgb(69 26 3 / 0.3);
   color: #fef3c7;
 }
+
+/* Clean redesign: soft secondary button (one blue primary per screen) */
+.btn-soft {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.btn-soft:hover {
+  border-color: var(--primary);
+}
+
+/* Clean redesign: club cards */
+.club-grid {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+.club-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  transition: border-color 0.15s ease;
+}
+.club-card:hover {
+  border-color: var(--primary-border);
+}
+.club-card-cover {
+  display: flex;
+  aspect-ratio: 16 / 7;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 20% 20%, var(--category-bg, var(--primary-soft)), transparent 70%),
+    linear-gradient(135deg, var(--category-bg, var(--card-soft)), var(--card-soft));
+}
+.club-card-cover img {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 1rem;
+  object-fit: cover;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.12);
+}
+.club-card-initials {
+  display: flex;
+  width: 4.5rem;
+  height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--category-border, var(--border));
+  border-radius: 1rem;
+  background: var(--card);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--category-text, var(--primary-strong));
+}
+.club-card-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 0.9rem 1rem 1rem;
+}
+.club-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.club-card-description {
+  display: -webkit-box;
+  margin-top: 0.6rem;
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.club-card-foot {
+  display: flex;
+  margin-top: auto;
+  padding-top: 0.8rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+.club-card-foot:empty {
+  display: none;
+}
+@media (max-width: 639px) {
+  .club-card-cover {
+    aspect-ratio: 16 / 5;
+  }
+}
