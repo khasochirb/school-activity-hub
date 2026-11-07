@@ -3329,3 +3329,179 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 .portfolio-note { padding: 10px 12px; border-radius: var(--radius-control); background: var(--card-soft); }
 .portfolio-cover:has(.portfolio-badge) .portfolio-words { padding-top: 44px; }
 @media (max-width: 520px) { .portfolio-words { padding: 12px; } .portfolio-words q { font-size: 13.5px; -webkit-line-clamp: 4; } .portfolio-cover:has(.portfolio-badge) .portfolio-words { padding-top: 40px; } .portfolio-cover:has(.portfolio-badge) .portfolio-words q { -webkit-line-clamp: 3; } }
+
+/* ---------- Signed-in app: product layer ----------
+   The editorial layer above (black ink buttons, black-bordered secondary
+   buttons, serif section titles, boxed page headers) suits the public landing
+   page, not a tool staff and students use every day. Inside the app shell:
+   brand-blue primary actions, light secondary actions, quiet destructive
+   actions, sans headings, a plain page header, full-width filter bars.
+   Colours and type only, never sizes, so Tailwind sizing on buttons still
+   applies. */
+.app-surface .btn {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.app-surface .btn-primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.app-surface .btn-primary:hover {
+  border-color: var(--primary-strong);
+  background: var(--primary-strong);
+  color: var(--primary-contrast);
+}
+
+.app-surface .btn-secondary {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.app-surface .btn-secondary:hover {
+  border-color: var(--border-strong);
+  background: var(--card-soft);
+  color: var(--foreground);
+}
+
+.btn-quiet {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.btn-quiet:hover {
+  background: var(--card-soft);
+  color: var(--foreground);
+}
+
+.app-surface .page-stack {
+  gap: 1.25rem;
+}
+
+.app-surface .page-header {
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  padding: 0.25rem 0 0;
+  box-shadow: none;
+}
+
+.app-surface .page-header::before {
+  display: none;
+}
+
+.app-surface .page-title {
+  margin-top: 0.25rem;
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+}
+
+.app-surface .page-description {
+  margin-top: 0.4rem;
+  max-width: 44rem;
+  line-height: 1.6;
+}
+
+.app-surface .section-card {
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.app-surface .section-title {
+  font-family: var(--font-body-stack);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.app-surface .section-header {
+  padding: 0.85rem 1rem;
+}
+
+.app-surface .details-panel {
+  background: transparent;
+}
+
+.app-surface .details-summary {
+  color: var(--primary-strong);
+  font-weight: 600;
+}
+
+.app-surface .details-summary:hover {
+  background: var(--card-soft);
+}
+
+.app-surface thead th {
+  background: var(--card-soft);
+  color: var(--muted);
+}
+
+.app-surface .compact-filter-card {
+  max-width: none;
+  padding: 0.75rem;
+}
+
+.app-surface .compact-filter-grid label {
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .app-surface .compact-filter-grid {
+    gap: 0.75rem;
+  }
+
+  .app-surface .filter-result-count {
+    margin-left: auto;
+    align-self: center;
+  }
+}
+
+.app-surface .nav-link {
+  min-height: 2.35rem;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+}
+
+.app-surface .nav-link-muted {
+  color: var(--muted);
+  font-weight: 550;
+}
+
+.app-surface .nav-link-muted:hover {
+  border-color: transparent;
+  background: var(--card-soft);
+  color: var(--foreground);
+}
+
+.app-surface .nav-link-active {
+  border-color: transparent;
+  font-weight: 650;
+}
+
+/* Events filters: a toggle on phones, always open from md up. The .btn
+   display rule outranks Tailwind's md:hidden, and a closed <details> hides
+   its content, so both are set here. */
+@media (min-width: 768px) {
+  .events-filter-details > summary {
+    display: none;
+  }
+
+  .events-filter-details::details-content {
+    block-size: auto;
+    content-visibility: visible;
+    opacity: 1;
+  }
+}
+
+/* Row actions in tables stay on one line. */
+.app-surface td .btn {
+  white-space: nowrap;
+}

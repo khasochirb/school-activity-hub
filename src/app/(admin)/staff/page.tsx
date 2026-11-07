@@ -384,7 +384,7 @@ function TeacherStatusForm({
       <input name="status" type="hidden" value={nextStatus} />
       <ConfirmSubmitButton
         cancelLabel={labels.cancel}
-        className="h-9 cursor-pointer rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+        className="btn btn-quiet min-h-9 px-3"
         confirmDescription={labels.confirmDescription}
         confirmLabel={labels.confirm}
         confirmTitle={

@@ -486,7 +486,7 @@ function RevokeForm({
       <input name="invite_code_id" type="hidden" value={invite.id} />
       <ConfirmSubmitButton
         cancelLabel={labels.cancel}
-        className="btn btn-secondary min-h-9 px-3"
+        className="btn btn-quiet min-h-9 px-3"
         confirmDescription={labels.confirmDescription}
         confirmLabel={labels.confirm}
         confirmTitle={labels.confirmRevoke}

@@ -411,15 +411,15 @@ export async function AppShell({
 
   return (
     <div className="app-surface min-h-screen lg:flex">
-      <aside className="hidden w-[19rem] min-w-0 shrink-0 overflow-hidden border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
-        <div className="min-w-0 border-b border-slate-200 px-5 py-6">
+      <aside className="hidden w-[17.5rem] min-w-0 shrink-0 overflow-hidden border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
+        <div className="min-w-0 border-b border-slate-200 px-4 py-4">
           <Brand
             dashboardLabel={t("nav.dashboard")}
             name={t("app.name")}
             subtitle={t("app.subtitle")}
           />
         </div>
-        <div className="min-w-0 min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div className="min-w-0 min-h-0 flex-1 overflow-y-auto px-3 py-4">
           <AppNav sections={visibleNavSections} />
         </div>
         <AccountPanel
@@ -437,7 +437,7 @@ export async function AppShell({
         />
       </aside>
 
-      <div className="min-w-0 flex-1 lg:pl-[19rem]">
+      <div className="min-w-0 flex-1 lg:pl-[17.5rem]">
         <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <Brand

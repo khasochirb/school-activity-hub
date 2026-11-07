@@ -324,7 +324,7 @@ function ArchiveForm({
       <input name="announcement_id" type="hidden" value={announcement.id} />
       <ConfirmSubmitButton
         cancelLabel={labels.cancel}
-        className="btn btn-secondary min-h-9 px-3"
+        className="btn btn-quiet min-h-9 px-3"
         confirmDescription={labels.confirmDescription}
         confirmLabel={labels.confirm}
         confirmTitle={labels.archive}
