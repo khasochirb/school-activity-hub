@@ -1196,6 +1196,12 @@ export const en = {
       submittedAt: "Submitted",
       timeline: "Timeline",
       youHaveCheckedIn: "You have checked in",
+      tabs: {
+        about: "About",
+        details: "Details",
+        label: "Event sections",
+        manage: "Manage",
+      },
     },
     empty: {
       noPastTitle: "No past events",

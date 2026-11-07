@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { SearchField, SelectFilter } from "../_components/page-ui";
 
 export type EventsFilterOption = {
   label: string;
   value: string;
+};
+
+export type EventsChipLink = {
+  active: boolean;
+  category?: string;
+  href: string;
+  label: string;
 };
 
 export type EventsActiveFilter = {
@@ -28,8 +36,8 @@ export type EventsFiltersLabels = {
 
 export function EventsFilters({
   activeFilters,
-  audienceOptions,
-  categoryOptions,
+  audienceLinks,
+  categoryLinks,
   clearHref,
   labels,
   month,
@@ -48,8 +56,8 @@ export function EventsFilters({
   week,
 }: {
   activeFilters: EventsActiveFilter[];
-  audienceOptions: EventsFilterOption[];
-  categoryOptions: EventsFilterOption[];
+  audienceLinks: EventsChipLink[];
+  categoryLinks: EventsChipLink[];
   clearHref: string;
   labels: EventsFiltersLabels;
   month: string;
@@ -68,23 +76,26 @@ export function EventsFilters({
   week: string;
 }) {
   return (
-    <section className="section-card section-card-padded min-w-0">
-      <details className="events-filter-details animated-native-details group min-w-0">
-        <summary className="btn btn-secondary min-h-11 w-full cursor-pointer list-none justify-between md:hidden">
-          <span className="group-open:hidden">{labels.showFilters}</span>
-          <span className="hidden group-open:inline">{labels.hideFilters}</span>
-          <span aria-hidden="true" className="text-lg leading-none">
-            +
-          </span>
-        </summary>
-
-        <div className="mt-3 hidden min-w-0 group-open:block md:mt-0 md:block">
-          <form action="/events" className="compact-filter-grid">
-            <SearchField
-              defaultValue={searchQuery}
-              label={labels.search}
-              placeholder={labels.searchEvents}
-            />
+    <section className="events-filters min-w-0">
+      <ChipRow label={labels.audience} links={audienceLinks} />
+      {categoryLinks.length > 1 ? (
+        <ChipRow label={labels.category} links={categoryLinks} />
+      ) : null}
+      <form action="/events" className="events-filter-form">
+        <SearchField
+          defaultValue={searchQuery}
+          label={labels.search}
+          placeholder={labels.searchEvents}
+        />
+        <details className="events-filter-details animated-native-details group min-w-0">
+          <summary className="events-filter-toggle">
+            <span className="group-open:hidden">{labels.showFilters}</span>
+            <span className="hidden group-open:inline">{labels.hideFilters}</span>
+            <span aria-hidden="true" className="text-lg leading-none">
+              +
+            </span>
+          </summary>
+          <div className="events-filter-more">
             {schoolOptions.length ? (
               <SelectFilter
                 defaultValue={selectedSchool}
@@ -93,12 +104,10 @@ export function EventsFilters({
                 options={schoolOptions}
               />
             ) : null}
-            <SelectFilter
-              defaultValue={selectedAudience}
-              label={labels.audience}
-              name="scope"
-              options={audienceOptions}
-            />
+            <input name="scope" type="hidden" value={selectedAudience} />
+            {selectedCategory ? (
+              <input name="category" type="hidden" value={selectedCategory} />
+            ) : null}
             {view === "month" ? (
               <input name="time" type="hidden" value={selectedTime} />
             ) : (
@@ -109,14 +118,6 @@ export function EventsFilters({
                 options={timeOptions}
               />
             )}
-            {categoryOptions.length ? (
-              <SelectFilter
-                defaultValue={selectedCategory}
-                label={labels.category}
-                name="category"
-                options={categoryOptions}
-              />
-            ) : null}
             {statusOptions.length ? (
               <SelectFilter
                 defaultValue={selectedStatus}
@@ -137,7 +138,7 @@ export function EventsFilters({
               </>
             ) : null}
             <div className="compact-filter-actions">
-              <button className="btn btn-primary min-h-11 md:min-h-10" type="submit">
+              <button className="btn btn-secondary min-h-11 md:min-h-10" type="submit">
                 {labels.filter}
               </button>
               <Link
@@ -149,12 +150,12 @@ export function EventsFilters({
                 <PendingLinkIndicator />
               </Link>
             </div>
-          </form>
-        </div>
-      </details>
+          </div>
+        </details>
+      </form>
 
       {activeFilters.length ? (
-        <div className="mt-3 flex min-w-0 flex-wrap gap-2" aria-label={labels.filter}>
+        <div className="flex min-w-0 flex-wrap gap-2" aria-label={labels.filter}>
           {activeFilters.map((filter) => (
             <Link
               aria-label={`${labels.clear}: ${filter.label}`}
@@ -171,12 +172,37 @@ export function EventsFilters({
       ) : null}
 
       {timeContextMessage ? (
-        <p className="mt-3 text-sm text-slate-600">{timeContextMessage}</p>
+        <p className="text-sm text-slate-600">{timeContextMessage}</p>
       ) : null}
 
-      <p className="mt-3 text-sm font-semibold text-slate-600">
+      <p className="text-sm font-semibold text-slate-600">
         {resultCountLabel}
       </p>
     </section>
+  );
+}
+
+function ChipRow({ label, links }: { label: string; links: EventsChipLink[] }) {
+  return (
+    <nav aria-label={label} className="events-chip-row">
+      <ul>
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link
+              aria-current={link.active ? "page" : undefined}
+              className="events-chip"
+              data-category-tone={
+                link.category ? getActivityCategoryTone(link.category) : undefined
+              }
+              href={link.href}
+              prefetch={false}
+            >
+              {link.category ? <i aria-hidden="true" /> : null}
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }

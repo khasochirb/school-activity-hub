@@ -586,6 +586,12 @@ export const mn = {
       submittedAt: "Илгээсэн",
       timeline: "Явцын мэдээлэл",
       youHaveCheckedIn: "Таны ирц бүртгэгдсэн байна",
+      tabs: {
+        about: "Тухай",
+        details: "Дэлгэрэнгүй",
+        label: "Үйл ажиллагааны хэсгүүд",
+        manage: "Удирдах",
+      },
     },
     empty: {
       noPastTitle: "Өнгөрсөн үйл ажиллагаа алга",

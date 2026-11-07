@@ -55,6 +55,7 @@ import {
   HeaderActionLink,
   StatusBadge,
 } from "../../_components/page-ui";
+import { DetailTabs } from "../../_components/detail-tabs";
 import {
   cancelEvent,
   cancelEventRegistration,
@@ -387,243 +388,308 @@ export default async function EventDetailPage({
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-        <div className="contents lg:col-start-1 lg:row-start-1 lg:flex lg:flex-col lg:gap-4">
-          <article className="section-card section-card-padded order-2 lg:order-none">
-            <h2 className="section-title">{t("events.detail.eventInformation")}</h2>
-            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-              <DetailItem label={t("events.form.startsAt")}>
-                {formatDateTime(event.starts_at, locale)}
-              </DetailItem>
-              <DetailItem label={t("events.form.endsAt")}>
-                {formatDateTime(event.ends_at, locale)}
-              </DetailItem>
-              <DetailItem label={t("events.card.location")}>
-                {event.location || "-"}
-              </DetailItem>
-              <DetailItem label={t("events.card.eventType")}>
-                {club ? t("events.fallback.clubEvent") : t("events.card.schoolEvent")}
-              </DetailItem>
-              {club ? (
-                <DetailItem label={t("events.form.club")}>{club.name}</DetailItem>
-              ) : null}
-              <DetailItem label={t("events.card.hostedBy")}>
-                {ownerSchoolName}
-              </DetailItem>
-              <DetailItem label={t("filters.category")}>
-                {event.category ? categoryLabel(event.category, t) : "-"}
-              </DetailItem>
-              <DetailItem label={t("filters.status")}>
-                {eventStatusLabel(event.status, t)}
-              </DetailItem>
-            </dl>
-          </article>
-
-          {canEditPoster ? (
-            <div className="order-3 lg:order-none">
-              <EventPosterUploader
-                currentPosterUrl={
-                  event.poster_path
-                    ? getEventPosterDeliveryUrl(event.id, event.poster_path)
-                    : null
-                }
-                eventId={event.id}
-                eventTitle={event.title}
-                labels={getEventPosterLabels(t)}
-              />
-            </div>
-          ) : null}
-
-          {canManageEvent ? (
-            <div className="order-4 lg:order-none">
-              <EventCompletenessChecklist
-                itemLabels={getEventCompletenessItemLabels(t)}
-                labels={completenessLabels}
-                result={completeness}
-              />
-            </div>
-          ) : null}
-
-          <article className="section-card section-card-padded order-4 lg:order-none">
-            <h2 className="section-title">{t("events.form.description")}</h2>
-            <p className="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-700">
-              {event.description || t("events.detail.noDescription")}
-            </p>
-          </article>
-
-          <article className="section-card section-card-padded order-5 lg:order-none">
-            <h2 className="section-title">
-              {t("events.supervisionSchedule.scheduleChangeNotice")}
-            </h2>
-            {event.cancellation_notice ? (
-              <div className="mt-3 rounded-md border border-amber-400/70 bg-amber-50 p-3 dark:bg-amber-950/25">
-                <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100">
-                  {t("events.supervisionSchedule.importantScheduleUpdate")}
-                </h3>
-                <p className="mt-2 whitespace-pre-line break-words text-sm leading-6 text-amber-900 dark:text-amber-100">
-                  {event.cancellation_notice}
-                </p>
-              </div>
-            ) : null}
-            {canManageEvent ? (
-              <div className="mt-4 border-t border-[var(--border)] pt-4">
-                <EventCancellationNoticeForm
-                  event={event}
-                  labels={{
-                    guidance: t(
-                      "events.supervisionSchedule.scheduleNoticeGuidance",
-                    ),
-                    label: t(
-                      "events.supervisionSchedule.scheduleChangeNotice",
-                    ),
-                    placeholder: t(
-                      "events.supervisionSchedule.scheduleNoticePlaceholder",
-                    ),
-                    save: t("common.save"),
-                    saving: t("common.saving"),
-                  }}
-                />
-              </div>
-            ) : null}
-          </article>
-
-          <article className="section-card section-card-padded order-6 lg:order-none">
-            <h2 className="section-title">
-              {t("events.formGroups.whoCanAttend")}
-            </h2>
-            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-              <DetailItem label={t("events.decisionInfo.responsibleAdult")}>
-                {responsibleStaff?.status === "active"
-                  ? `${responsibleStaff.full_name} (${staffRoleLabel(
-                      responsibleStaff.role,
-                      t,
-                    )})`
-                  : t("events.decisionInfo.responsibleNotSpecified")}
-              </DetailItem>
-              <DetailItem label={t("events.decisionInfo.experienceLevel")}>
-                {experienceLevelLabel(event.experience_level, t)}
-              </DetailItem>
-              <DetailItem label={t("events.decisionInfo.eligibility")}>
-                {event.eligibility_notes ??
-                  t("events.decisionInfo.eligibilityNotSpecified")}
-              </DetailItem>
-              <DetailItem
-                label={t("events.decisionInfo.accessibilityInformation")}
-              >
-                {event.accessibility_notes ??
-                  t("events.decisionInfo.accessibilityNotProvided")}
-              </DetailItem>
-            </dl>
-            {canManageEvent ? (
-              <div className="mt-4 border-t border-[var(--border)] pt-4">
-                <DecisionInfoForm
-                  event={event}
-                  responsibleStaffOptions={eligibleResponsibleStaff}
-                  t={t}
-                />
-              </div>
-            ) : null}
-          </article>
-
-          <article className="section-card section-card-padded order-7 lg:order-none">
-            <h2 className="section-title">
-              {t("events.formGroups.practicalDetails")}
-            </h2>
-            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-              <DetailItem label={t("events.practicalDetails.cost")}>
-                {costLabel}
-              </DetailItem>
-              <DetailItem
-                label={t("events.practicalDetails.requiredMaterials")}
-              >
-                {event.required_materials ??
-                  t("events.practicalDetails.materialsNotSpecified")}
-              </DetailItem>
-              <DetailItem
-                label={t("events.practicalDetails.expectedCommitment")}
-              >
-                {event.expected_commitment ??
-                  t("events.practicalDetails.commitmentNotSpecified")}
-              </DetailItem>
-              {event.cost_notes ? (
-                <DetailItem label={t("events.practicalDetails.costNotes")}>
-                  {event.cost_notes}
-                </DetailItem>
-              ) : null}
-            </dl>
-            {canManageEvent ? (
-              <div className="mt-4 border-t border-[var(--border)] pt-4">
-                <p className="mb-3 max-w-2xl text-xs leading-5 text-zinc-500">
-                  {t("events.practicalDetails.privacyGuidance")}
-                </p>
-                <EventPracticalDetailsForm
-                  event={event}
-                  labels={{
-                    amount: t("events.practicalDetails.amount"),
-                    cost: t("events.practicalDetails.cost"),
-                    costNotes: t("events.practicalDetails.costNotes"),
-                    costNotesPlaceholder: t(
-                      "events.practicalDetails.costNotesPlaceholder",
-                    ),
-                    currency: t("events.practicalDetails.currency"),
-                    expectedCommitment: t(
-                      "events.practicalDetails.expectedCommitment",
-                    ),
-                    expectedCommitmentPlaceholder: t(
-                      "events.practicalDetails.commitmentPlaceholder",
-                    ),
-                    free: t("events.practicalDetails.free"),
-                    notSpecified: t(
-                      "events.practicalDetails.costNotSpecified",
-                    ),
-                    paid: t("events.practicalDetails.paid"),
-                    requiredMaterials: t(
-                      "events.practicalDetails.requiredMaterials",
-                    ),
-                    requiredMaterialsPlaceholder: t(
-                      "events.practicalDetails.materialsPlaceholder",
-                    ),
-                    save: t("events.actions.savePracticalDetails"),
-                    saving: t("common.saving"),
-                    variable: t("events.practicalDetails.variableCost"),
-                  }}
-                />
-              </div>
-            ) : null}
-          </article>
-
-          <article className="section-card section-card-padded order-8 lg:order-none">
-            <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
-            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-              <DetailItem label={t("events.card.safety")}>
-                {riskLabel(event.risk_level, t)}
-              </DetailItem>
-              <DetailItem label={t("events.card.permission")}>
-                {event.permission_required
-                  ? t("events.permission.mayBeRequired")
-                  : t("events.permission.notRequired")}
-              </DetailItem>
-            </dl>
-            {event.permission_note ? (
-              <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
-                <h3 className="text-sm font-semibold text-zinc-950">
-                  {t("events.permission.note")}
-                </h3>
-                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700">
-                  {event.permission_note}
-                </p>
-              </div>
-            ) : null}
-            {canManageEvent ? (
-              <div className="mt-4 border-t border-[var(--border)] pt-4">
-                <SafetyForm event={event} t={t} />
-              </div>
-            ) : null}
-          </article>
+      <section className="event-detail-split">
+        <div className="min-w-0">
+          <DetailTabs
+            label={t("events.detail.tabs.label")}
+            tabs={[
+              {
+                content: (
+                  <div className="detail-tab-stack">
+                    {event.cancellation_notice ? (
+                      <div className="event-schedule-notice" role="status">
+                        <h2 className="text-sm font-semibold">
+                          {t("events.supervisionSchedule.importantScheduleUpdate")}
+                        </h2>
+                        <p className="mt-2 whitespace-pre-line break-words text-sm leading-6">
+                          {event.cancellation_notice}
+                        </p>
+                      </div>
+                    ) : null}
+                    <article className="section-card section-card-padded">
+                      <h2 className="section-title">{t("events.form.description")}</h2>
+                      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-700">
+                        {event.description || t("events.detail.noDescription")}
+                      </p>
+                    </article>
+                    <article className="section-card section-card-padded">
+                      <h2 className="section-title">{t("events.detail.eventInformation")}</h2>
+                      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        <DetailItem label={t("events.form.startsAt")}>
+                          {formatDateTime(event.starts_at, locale)}
+                        </DetailItem>
+                        <DetailItem label={t("events.form.endsAt")}>
+                          {formatDateTime(event.ends_at, locale)}
+                        </DetailItem>
+                        <DetailItem label={t("events.card.location")}>
+                          {event.location || "-"}
+                        </DetailItem>
+                        <DetailItem label={t("events.card.eventType")}>
+                          {club ? t("events.fallback.clubEvent") : t("events.card.schoolEvent")}
+                        </DetailItem>
+                        {club ? (
+                          <DetailItem label={t("events.form.club")}>{club.name}</DetailItem>
+                        ) : null}
+                        <DetailItem label={t("events.card.hostedBy")}>
+                          {ownerSchoolName}
+                        </DetailItem>
+                        <DetailItem label={t("filters.category")}>
+                          {event.category ? categoryLabel(event.category, t) : "-"}
+                        </DetailItem>
+                        <DetailItem label={t("filters.status")}>
+                          {eventStatusLabel(event.status, t)}
+                        </DetailItem>
+                      </dl>
+                    </article>
+                  </div>
+                ),
+                id: "about",
+                label: t("events.detail.tabs.about"),
+              },
+              {
+                content: (
+                  <div className="detail-tab-stack">
+                    <article className="section-card section-card-padded">
+                      <h2 className="section-title">{t("events.formGroups.whoCanAttend")}</h2>
+                      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        <DetailItem label={t("events.decisionInfo.responsibleAdult")}>
+                          {responsibleStaff?.status === "active"
+                            ? `${responsibleStaff.full_name} (${staffRoleLabel(
+                                responsibleStaff.role,
+                                t,
+                              )})`
+                            : t("events.decisionInfo.responsibleNotSpecified")}
+                        </DetailItem>
+                        <DetailItem label={t("events.decisionInfo.experienceLevel")}>
+                          {experienceLevelLabel(event.experience_level, t)}
+                        </DetailItem>
+                        <DetailItem label={t("events.decisionInfo.eligibility")}>
+                          {event.eligibility_notes ??
+                            t("events.decisionInfo.eligibilityNotSpecified")}
+                        </DetailItem>
+                        <DetailItem
+                          label={t("events.decisionInfo.accessibilityInformation")}
+                        >
+                          {event.accessibility_notes ??
+                            t("events.decisionInfo.accessibilityNotProvided")}
+                        </DetailItem>
+                      </dl>
+                    </article>
+                    <article className="section-card section-card-padded">
+                      <h2 className="section-title">{t("events.formGroups.practicalDetails")}</h2>
+                      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        <DetailItem label={t("events.practicalDetails.cost")}>
+                          {costLabel}
+                        </DetailItem>
+                        <DetailItem
+                          label={t("events.practicalDetails.requiredMaterials")}
+                        >
+                          {event.required_materials ??
+                            t("events.practicalDetails.materialsNotSpecified")}
+                        </DetailItem>
+                        <DetailItem
+                          label={t("events.practicalDetails.expectedCommitment")}
+                        >
+                          {event.expected_commitment ??
+                            t("events.practicalDetails.commitmentNotSpecified")}
+                        </DetailItem>
+                        {event.cost_notes ? (
+                          <DetailItem label={t("events.practicalDetails.costNotes")}>
+                            {event.cost_notes}
+                          </DetailItem>
+                        ) : null}
+                      </dl>
+                    </article>
+                    <article className="section-card section-card-padded">
+                      <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
+                      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        <DetailItem label={t("events.card.safety")}>
+                          {riskLabel(event.risk_level, t)}
+                        </DetailItem>
+                        <DetailItem label={t("events.card.permission")}>
+                          {event.permission_required
+                            ? t("events.permission.mayBeRequired")
+                            : t("events.permission.notRequired")}
+                        </DetailItem>
+                      </dl>
+                      {event.permission_note ? (
+                        <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
+                          <h3 className="text-sm font-semibold text-zinc-950">
+                            {t("events.permission.note")}
+                          </h3>
+                          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700">
+                            {event.permission_note}
+                          </p>
+                        </div>
+                      ) : null}
+                    </article>
+                    <article className="section-card section-card-padded">
+                      <h2 className="section-title">{t("events.detail.timeline")}</h2>
+                      <dl className="mt-3 grid gap-3 text-sm">
+                        <DetailItem label={t("filters.status")}>
+                          {eventStatusLabel(event.status, t)}
+                        </DetailItem>
+                        <DetailItem label={t("events.detail.createdAt")}>
+                          {formatDate(event.created_at, locale)}
+                        </DetailItem>
+                        <DetailItem label={t("events.detail.submittedAt")}>
+                          {event.submitted_at ? formatDate(event.submitted_at, locale) : "-"}
+                        </DetailItem>
+                        <DetailItem label={t("events.detail.approvedAt")}>
+                          {event.approved_at ? formatDate(event.approved_at, locale) : "-"}
+                        </DetailItem>
+                      </dl>
+                      {event.rejection_reason ? (
+                        <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
+                          <h3 className="text-sm font-semibold text-zinc-950">
+                            {t("events.detail.rejectionReason")}
+                          </h3>
+                          <p className="mt-2 text-sm leading-6 text-zinc-700">
+                            {event.rejection_reason}
+                          </p>
+                        </div>
+                      ) : null}
+                    </article>
+                  </div>
+                ),
+                id: "details",
+                label: t("events.detail.tabs.details"),
+              },
+              ...(canManageEvent
+                ? [
+                    {
+                      content: (
+                        <div className="detail-tab-stack">
+                          <EventCompletenessChecklist
+                            itemLabels={getEventCompletenessItemLabels(t)}
+                            labels={completenessLabels}
+                            result={completeness}
+                          />
+                          {canEditPoster ? (
+                            <EventPosterUploader
+                              currentPosterUrl={
+                                event.poster_path
+                                  ? getEventPosterDeliveryUrl(event.id, event.poster_path)
+                                  : null
+                              }
+                              eventId={event.id}
+                              eventTitle={event.title}
+                              labels={getEventPosterLabels(t)}
+                            />
+                          ) : null}
+                          <article className="section-card section-card-padded">
+                            <h2 className="section-title">{t("events.supervisionSchedule.scheduleChangeNotice")}</h2>
+                            <EventCancellationNoticeForm
+                              event={event}
+                              labels={{
+                                guidance: t(
+                                  "events.supervisionSchedule.scheduleNoticeGuidance",
+                                ),
+                                label: t(
+                                  "events.supervisionSchedule.scheduleChangeNotice",
+                                ),
+                                placeholder: t(
+                                  "events.supervisionSchedule.scheduleNoticePlaceholder",
+                                ),
+                                save: t("common.save"),
+                                saving: t("common.saving"),
+                              }}
+                            />
+                          </article>
+                          <article className="section-card section-card-padded">
+                            <h2 className="section-title">{t("events.formGroups.whoCanAttend")}</h2>
+                            <DecisionInfoForm
+                              event={event}
+                              responsibleStaffOptions={eligibleResponsibleStaff}
+                              t={t}
+                            />
+                          </article>
+                          <article className="section-card section-card-padded">
+                            <h2 className="section-title">{t("events.formGroups.practicalDetails")}</h2>
+                            <p className="mb-3 max-w-2xl text-xs leading-5 text-zinc-500">
+                              {t("events.practicalDetails.privacyGuidance")}
+                            </p>
+                            <EventPracticalDetailsForm
+                              event={event}
+                              labels={{
+                                amount: t("events.practicalDetails.amount"),
+                                cost: t("events.practicalDetails.cost"),
+                                costNotes: t("events.practicalDetails.costNotes"),
+                                costNotesPlaceholder: t(
+                                  "events.practicalDetails.costNotesPlaceholder",
+                                ),
+                                currency: t("events.practicalDetails.currency"),
+                                expectedCommitment: t(
+                                  "events.practicalDetails.expectedCommitment",
+                                ),
+                                expectedCommitmentPlaceholder: t(
+                                  "events.practicalDetails.commitmentPlaceholder",
+                                ),
+                                free: t("events.practicalDetails.free"),
+                                notSpecified: t(
+                                  "events.practicalDetails.costNotSpecified",
+                                ),
+                                paid: t("events.practicalDetails.paid"),
+                                requiredMaterials: t(
+                                  "events.practicalDetails.requiredMaterials",
+                                ),
+                                requiredMaterialsPlaceholder: t(
+                                  "events.practicalDetails.materialsPlaceholder",
+                                ),
+                                save: t("events.actions.savePracticalDetails"),
+                                saving: t("common.saving"),
+                                variable: t("events.practicalDetails.variableCost"),
+                              }}
+                            />
+                          </article>
+                          <article className="section-card section-card-padded">
+                            <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
+                            <SafetyForm event={event} t={t} />
+                          </article>
+                          <article className="section-card section-card-padded">
+                            <h2 className="section-title">{t("events.detail.sharing")}</h2>
+                            <p className="section-description">
+                              {sharingLabel(event, sharedSchoolIds, t, tf)}
+                            </p>
+                            <div className="mt-4 border-t border-[var(--border)] pt-4">
+                              <SharingForm
+                                connectedSchools={connectedSchools}
+                                event={event}
+                                sharedSchoolIds={sharedSchoolIds}
+                                t={t}
+                              />
+                            </div>
+                          </article>
+                          <article className="section-card section-card-padded">
+                            <h2 className="section-title">{t("events.detail.management")}</h2>
+                            <p className="section-description">{t("events.detail.staffTools")}</p>
+                            <form action={cancelEvent} className="mt-3">
+                              <input name="event_id" type="hidden" value={event.id} />
+                              <ConfirmSubmitButton
+                                cancelLabel={t("common.cancel")}
+                                className="btn btn-secondary min-h-10 w-full px-3"
+                                confirmDescription={t("feedback.cannotBeUndone")}
+                                confirmLabel={t("feedback.confirm")}
+                                confirmTitle={t("feedback.cancelEvent")}
+                                pendingLabel={t("events.actions.cancelling")}
+                              >
+                                {t("events.actions.cancel")}
+                              </ConfirmSubmitButton>
+                            </form>
+                          </article>
+                        </div>
+                      ),
+                      id: "manage",
+                      label: t("events.detail.tabs.manage"),
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </div>
 
-        <aside className="contents lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-4 lg:self-start">
-          <article className="section-card section-card-padded order-1 lg:order-none">
+        <aside className="event-detail-side">
+          <article className="section-card section-card-padded">
             <h2 className="section-title">{t("common.primaryAction")}</h2>
             <div className="mt-3">
               <PrimaryActionPanel
@@ -657,7 +723,7 @@ export default async function EventDetailPage({
             </div>
           </article>
 
-          <article className="section-card section-card-padded order-3 lg:order-none">
+          <article className="section-card section-card-padded">
             <h2 className="section-title">{t("events.detail.registrationSummary")}</h2>
             <dl className="mt-3 grid gap-3 text-sm">
               <DetailItem label={t("events.card.registration")}>
@@ -686,71 +752,6 @@ export default async function EventDetailPage({
                 </DetailItem>
               ) : null}
             </dl>
-          </article>
-
-          {canManageEvent ? (
-            <article className="section-card section-card-padded order-6 lg:order-none">
-              <h2 className="section-title">{t("events.detail.management")}</h2>
-              <p className="section-description">{t("events.detail.staffTools")}</p>
-              <form action={cancelEvent} className="mt-3">
-                <input name="event_id" type="hidden" value={event.id} />
-                <ConfirmSubmitButton
-                  cancelLabel={t("common.cancel")}
-                  className="btn btn-secondary min-h-10 w-full px-3"
-                  confirmDescription={t("feedback.cannotBeUndone")}
-                  confirmLabel={t("feedback.confirm")}
-                  confirmTitle={t("feedback.cancelEvent")}
-                  pendingLabel={t("events.actions.cancelling")}
-                >
-                  {t("events.actions.cancel")}
-                </ConfirmSubmitButton>
-              </form>
-            </article>
-          ) : null}
-
-          {canManageEvent ? (
-            <article className="section-card section-card-padded order-7 lg:order-none">
-              <h2 className="section-title">{t("events.detail.sharing")}</h2>
-              <p className="section-description">
-                {sharingLabel(event, sharedSchoolIds, t, tf)}
-              </p>
-              <div className="mt-4 border-t border-[var(--border)] pt-4">
-                <SharingForm
-                  connectedSchools={connectedSchools}
-                  event={event}
-                  sharedSchoolIds={sharedSchoolIds}
-                  t={t}
-                />
-              </div>
-            </article>
-          ) : null}
-
-          <article className="section-card section-card-padded order-8 lg:order-none">
-            <h2 className="section-title">{t("events.detail.timeline")}</h2>
-            <dl className="mt-3 grid gap-3 text-sm">
-              <DetailItem label={t("filters.status")}>
-                {eventStatusLabel(event.status, t)}
-              </DetailItem>
-              <DetailItem label={t("events.detail.createdAt")}>
-                {formatDate(event.created_at, locale)}
-              </DetailItem>
-              <DetailItem label={t("events.detail.submittedAt")}>
-                {event.submitted_at ? formatDate(event.submitted_at, locale) : "-"}
-              </DetailItem>
-              <DetailItem label={t("events.detail.approvedAt")}>
-                {event.approved_at ? formatDate(event.approved_at, locale) : "-"}
-              </DetailItem>
-            </dl>
-            {event.rejection_reason ? (
-              <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
-                <h3 className="text-sm font-semibold text-zinc-950">
-                  {t("events.detail.rejectionReason")}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-zinc-700">
-                  {event.rejection_reason}
-                </p>
-              </div>
-            ) : null}
           </article>
         </aside>
       </section>

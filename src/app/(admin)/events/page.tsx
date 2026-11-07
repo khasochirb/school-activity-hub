@@ -914,6 +914,7 @@ export default async function EventsPage({
 
       <EventFilters
         activeFilters={activeFilters}
+        urlState={filterUrlState}
         categoryOptions={categoryOptions}
         resultCount={events.length}
         isStaff={isStaff}
@@ -1085,6 +1086,7 @@ function EventFilters({
   timeContextMessage,
   t,
   tf,
+  urlState,
 }: {
   activeFilters: EventsActiveFilter[];
   categoryOptions: readonly string[];
@@ -1104,6 +1106,7 @@ function EventFilters({
   timeContextMessage?: string;
   t: Translate;
   tf: FormatTranslate;
+  urlState: EventsUrlState;
 }) {
   const audienceOptions: EventsFilterOption[] = isPlatformAdmin
     ? [{ label: t("events.filters.allEvents"), value: "all" }]
@@ -1128,12 +1131,25 @@ function EventFilters({
   return (
     <EventsFilters
       activeFilters={activeFilters}
-      audienceOptions={audienceOptions}
-      categoryOptions={[
-        { label: t("filters.all"), value: "" },
+      audienceLinks={audienceOptions.map((option) => ({
+        active: selectedAudience === option.value,
+        href: buildEventsHref({
+          ...urlState,
+          audience: option.value as EventAudience,
+        }),
+        label: option.label,
+      }))}
+      categoryLinks={[
+        {
+          active: !selectedCategory,
+          href: buildEventsHref({ ...urlState, category: null }),
+          label: t("filters.all"),
+        },
         ...categoryOptions.map((category) => ({
+          active: selectedCategory === category,
+          category,
+          href: buildEventsHref({ ...urlState, category }),
           label: categoryLabel(category, t),
-          value: category,
         })),
       ]}
       clearHref={
@@ -2185,24 +2201,11 @@ function getActiveEventFilters(
 ): EventsActiveFilter[] {
   const filters: EventsActiveFilter[] = [];
 
-  if (state.audience !== defaultAudience) {
-    filters.push({
-      href: buildEventsHref(state, ["scope"]),
-      label: eventAudienceLabel(state.audience, isStaff, t),
-    });
-  }
-
+  // Scope and category show as chips above, so they are not repeated here.
   if (state.searchQuery) {
     filters.push({
       href: buildEventsHref(state, ["q"]),
       label: `${t("filters.search")}: ${state.searchQuery}`,
-    });
-  }
-
-  if (state.category) {
-    filters.push({
-      href: buildEventsHref(state, ["category"]),
-      label: categoryLabel(state.category, t),
     });
   }
 
@@ -2221,36 +2224,6 @@ function getActiveEventFilters(
   }
 
   return filters;
-}
-
-function eventAudienceLabel(
-  audience: EventAudience,
-  isStaff: boolean,
-  t: Translate,
-) {
-  if (audience === "created") {
-    return t("events.filters.createdByMe");
-  }
-
-  if (audience === "my-clubs") {
-    return t("events.filters.myClubEvents");
-  }
-
-  if (audience === "partners") {
-    return t("events.filters.partnerEvents");
-  }
-
-  if (audience === "registered") {
-    return t("events.filters.myRegistered");
-  }
-
-  if (audience === "school") {
-    return t("events.filters.schoolEvents");
-  }
-
-  return isStaff
-    ? t("events.filters.allEvents")
-    : t("events.filters.allEvents");
 }
 
 function categoryLabel(category: string, t: Translate) {
