@@ -21,7 +21,7 @@ export function PageHeader({
   title,
 }: {
   actions?: React.ReactNode;
-  description: string;
+  description?: string;
   eyebrow?: string;
   title: string;
 }) {
@@ -31,7 +31,7 @@ export function PageHeader({
         <div>
           {eyebrow ? <p className="page-eyebrow">{eyebrow}</p> : null}
           <h1 className="page-title">{title}</h1>
-          <p className="page-description">{description}</p>
+          {description ? <p className="page-description">{description}</p> : null}
         </div>
         {actions ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
