@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Approvals · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Approvals: an inbox. Pick one on the left, decide on the right. Two buttons, nothing else.
+let sel = null;
+function render() {
+  if (!C.staff()) { C.shell("", '<div class="card empty">This page is for school staff.</div>'); return; }
+  const done = S.list("approvalDecisions", []);
+  const items = S.EVENTS.filter((e) => e.approval === "pending" && !done.some((d) => d.id === e.id));
+  const cur = items.find((e) => e.id === sel) || items[0];
+  C.shell("approvals", `
+    <div class="head"><div><h1>Approvals</h1><p>${items.length ? `${items.length} waiting for you` : "All caught up"}</p></div></div>
+    ${items.length ? `<div class="inbox">
+      <div class="card rows">${items.map((e) => `<button class="row click ${e === cur ? "sel" : ""}" data-sel="${e.id}" style="border:0;background:none;width:100%;text-align:left;font:inherit;cursor:pointer"><span class="grow"><span class="t" style="display:block">${esc(e.title)}</span><span class="s">${esc(e.createdBy)} · ${S.dayShort(e.start)}</span></span>${C.cat(e.category)}</button>`).join("")}</div>
+      <article class="card" style="padding:22px;display:flex;flex-direction:column;gap:16px">
+        <div class="apphead"><span class="cv">${S.art(cur.art)}</span><div>${C.cat(cur.category)}<h2 style="font-size:22px;margin-top:6px">${esc(cur.title)}</h2><p class="muted">${S.dayLong(cur.start)} · ${S.time(cur.start)} · ${esc(cur.location)}</p></div></div>
+        <div class="goal"><div><span>Listing completeness</span><b>${cur.permission ? "8/9" : "9/9"}</b></div><div class="bar" style="--c:var(--green)"><i style="width:${cur.permission ? 89 : 100}%"></i></div><span class="muted" style="font-size:12.5px">Title, time, place, description, adult, eligibility, cost, materials and safety are filled in.</span></div>
+        <p>${esc(cur.about)}</p>
+        <dl class="kv"><dt>Proposed by</dt><dd>${esc(cur.createdBy)}</dd><dt>Who can join</dt><dd>${esc(cur.eligibility)}</dd><dt>Capacity</dt><dd>${cur.capacity || "No limit"}</dd><dt>Risk</dt><dd>${esc(cur.risk)}</dd><dt>Responsible adult</dt><dd>${esc(cur.adult)}</dd></dl>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px"><button class="btn btn-primary" data-approve="${cur.id}">Approve</button><button class="btn" data-reject="${cur.id}">Decline…</button></div>
+      </article></div>` : '<div class="card empty" style="padding:48px"><b style="color:var(--fg)">Nothing to review</b><br>New event proposals from club leaders will show up here.</div>'}`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const s = e.target.closest("[data-sel]"); if (s) { sel = s.dataset.sel; render(); }
+  const done = S.list("approvalDecisions", []);
+  const a = e.target.closest("[data-approve]"); if (a) { done.push({ id: a.dataset.approve, d: "approved" }); S.saveLists(); sel = null; render(); S.toast("Approved. Students can see it now."); }
+  const r = e.target.closest("[data-reject]"); if (r) S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Decline this event?</h2><button class="close" data-close aria-label="Close">×</button></div><form class="sheet-body" id="rf"><label class="field"><span>Reason (the club leader sees this)</span><textarea class="textarea" name="why" rows="3" required></textarea></label><button class="btn btn-primary">Decline</button></form>`, { onMount: (d) => d.querySelector("#rf").addEventListener("submit", (ev) => { ev.preventDefault(); done.push({ id: r.dataset.reject, d: "rejected" }); S.saveLists(); d.close(); sel = null; render(); S.toast("Declined. The club leader was told why."); }) });
+});
+render();
+
+})();
+</script>
+</body>
+</html>

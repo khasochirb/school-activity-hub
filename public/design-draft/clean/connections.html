@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>School network · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: School network
+// School network (school admin): incoming requests first (Approve; Reject in ⋯), then partners, a directory of schools and the history in tabs.
+const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ARROW = I('<path d="M5 12h14M13 6l6 6-6 6"/>');
+const INFO = I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/>');
+const ME_SCHOOL = S.SCHOOL.name;
+const EXTRA = [{ name: "Riverside School", province: "Selenge", slug: "riverside", status: "Active", students: 340 }, { name: "Polytechnic School", province: "Khovd", slug: "polytechnic", status: "Active", students: 510 }];
+const PAL = ["#2340d9", "#12804a", "#e0447a", "#b25e00", "#6b4fd6", "#0f8a9a", "#f2643f"];
+const crestColor = (slug) => PAL[[...slug].reduce((a, c) => a + c.charCodeAt(0), 0) % PAL.length];
+const crestText = (n) => (n.match(/No\.\s*(\d+)/) || [])[1] || n.split(" ").filter((w) => !/^(School|No\.)$/.test(w)).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+const schools = () => [...S.SCHOOLS, ...EXTRA];
+const info = (name) => schools().find((s) => s.name === name) || { name, slug: name.toLowerCase(), province: "", students: 0 };
+const crest = (name, cls = "") => `<span class="gc-crest ${cls}" style="--c:${crestColor(info(name).slug)}">${esc(crestText(name))}</span>`;
+const fmt = (d) => new Date(d + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const conns = () => S.list("connections", S.CONNECTIONS);
+const other = (c) => (c.from === ME_SCHOOL ? c.to : c.from);
+let tab = "partners", hs = "All", hd = "All", q = "";
+function keep(fn) { const a = document.activeElement, id = a && a.id, p = a && a.selectionStart; fn(); if (id) { const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } } }
+const STAG = { Pending: "warn", Approved: "ok", Rejected: "bad", Blocked: "bad", Archived: "" };
+
+function net(list) {
+  const pts = [[44, 40], [256, 36], [258, 164], [42, 160], [150, 22], [150, 180]];
+  const nodes = [...list.map((c) => ({ n: other(c), st: c.status })), ...schools().filter((s) => s.status === "Active" && s.name !== ME_SCHOOL && !list.some((c) => other(c) === s.name)).map((s) => ({ n: s.name, st: "none" }))].slice(0, 6);
+  return `<div class="cn-net" aria-hidden="true"><svg viewBox="0 0 300 200">${nodes.map((p, i) => p.st === "none" ? "" : `<line x1="150" y1="100" x2="${pts[i][0]}" y2="${pts[i][1]}" stroke="var(--primary)" stroke-width="2.5" stroke-dasharray="${p.st === "Approved" ? "0" : "6 5"}" stroke-opacity="${p.st === "Approved" ? ".75" : ".45"}"/>`).join("")}
+    ${nodes.map((p, i) => `<g opacity="${p.st === "none" ? ".55" : "1"}"><circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="${p.st === "none" ? 17 : 24}" fill="${p.st === "Approved" ? crestColor(info(p.n).slug) : "var(--card-soft)"}" stroke="${p.st === "Pending" ? "var(--sun)" : "var(--card)"}" stroke-width="3"/><text x="${pts[i][0]}" y="${pts[i][1] + 4}" text-anchor="middle" font-size="${p.st === "none" ? 10 : 12}" font-weight="800" fill="${p.st === "Approved" ? "#fff" : "var(--muted)"}">${esc(crestText(p.n))}</text></g>`).join("")}
+    <circle cx="150" cy="100" r="38" fill="var(--primary)" stroke="var(--card)" stroke-width="5"/><text x="150" y="107" text-anchor="middle" font-size="19" font-weight="800" fill="var(--on-primary)">${esc(crestText(ME_SCHOOL))}</text></svg></div>`;
+}
+
+function render() {
+  if (C.role() !== "admin") { C.shell("", `<div class="head"><div><h1>School network</h1><p>Partner schools that share events</p></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">This page is for school admins</b><br>${C.role() === "platform" ? 'Platform admins manage every connection from <a class="gc-link" href="platform.html#connections">Connections</a>.' : C.staff() ? 'Partner-school events already show up on <a class="gc-link" href="events.html">Events</a>.' : 'Events shared by partner schools show up on <a class="gc-link" href="events.html">Events</a>.'}</div>`); S.startClock(); return; }
+  const all = conns(), incoming = all.filter((c) => c.status === "Pending" && c.direction === "Received"), partners = all.filter((c) => c.status === "Approved");
+  const sent = all.filter((c) => c.status === "Pending" && c.direction === "Sent");
+  const linkedNames = all.filter((c) => ["Pending", "Approved"].includes(c.status)).map(other);
+  const dir = schools().filter((s) => s.status === "Active" && s.name !== ME_SCHOOL && (!q || (s.name + s.province).toLowerCase().includes(q.toLowerCase())));
+  const hist = all.filter((c) => (hs === "All" || c.status === hs) && (hd === "All" || c.direction === hd)).sort((a, b) => b.updated.localeCompare(a.updated));
+  const TABS = [["partners", `Partner schools <span class="muted">${partners.length}</span>`], ["find", "Find schools"], ["history", "Connection history"]];
+  let pane;
+  if (tab === "partners") pane = partners.length ? `<div class="cn-partners">${partners.map((c) => { const s = info(other(c)), shared = S.EVENTS.filter((e) => e.partner === s.name).length; return `<article class="card cn-partner"><div class="top2">${crest(s.name)}<span class="grow"><span class="t">${esc(s.name)}</span><span class="s">${esc(s.province)} · since ${fmt(c.updated)}</span></span>${C.menu([{ label: "See shared events", href: "events.html" }, { label: "Copy school name", act: "copyname", id: s.name }])}</div><div class="statline" style="font-size:13px"><span><b>${s.students || "—"}</b>students</span><span><b>${shared}</b>shared event${shared === 1 ? "" : "s"}</span></div><span class="tag ok" style="align-self:flex-start">Connected</span></article>`; }).join("")}</div>` : '<div class="card empty" style="padding:40px"><b style="color:var(--fg)">No partner schools yet</b><br>Find a school and send a connection request.</div>';
+  if (tab === "find") pane = `<div class="filters"><span class="gc-count">Other active schools on Activity Hub</span><label class="search">${C.ICON.search}<span class="sr">Search schools</span><input id="q" type="search" placeholder="School or province" value="${esc(q)}"></label></div>
+    <div class="card rows">${dir.map((s) => { const c = all.find((x) => other(x) === s.name && ["Pending", "Approved"].includes(x.status)); return `<div class="row">${crest(s.name)}<span class="grow"><span class="t" style="display:block">${esc(s.name)}</span><span class="s">${esc(s.province)} · ${s.students} students</span></span><span class="end">${!c ? `<button class="btn btn-sm btn-soft" data-req="${esc(s.name)}">Request connection</button>` : c.status === "Approved" ? '<span class="tag ok">Connected</span>' : c.direction === "Sent" ? '<span class="tag warn">Request sent</span>' : '<span class="tag warn">Wants to connect</span>'}</span></div>`; }).join("") || `<p class="empty"><b style="color:var(--fg)">${q ? "No schools match" : "No other active schools yet"}</b></p>`}</div>`;
+  if (tab === "history") pane = `<div class="filters">${["All", "Pending", "Approved", "Rejected", "Blocked", "Archived"].map((s) => `<button class="chip" data-hs="${s}" aria-pressed="${hs === s}">${s === "All" ? "Any status" : s}</button>`).join("")}<span class="gc-sep" aria-hidden="true"></span>${["All", "Sent", "Received"].map((s) => `<button class="chip" data-hd="${s}" aria-pressed="${hd === s}">${s === "All" ? "Both directions" : s}</button>`).join("")}</div>
+    <div class="card rows">${hist.map((c) => `<div class="row gc-wrap"><span class="gc-pair">${crest(c.from, "sm")}${ARROW}${crest(c.to, "sm")}</span><span class="grow"><span class="t" style="display:block">${esc(other(c))}</span><span class="s">${c.direction} ${c.status.toLowerCase()} on ${fmt(c.updated)} · requested ${fmt(c.requested)}</span></span><span class="tag ${c.direction === "Sent" ? "blue" : ""}">${c.direction}</span><span class="tag ${STAG[c.status]}">${c.status}</span></div>`).join("") || '<p class="empty"><b style="color:var(--fg)">No school connections yet</b><br>Nothing matches these filters.</p>'}</div>`;
+  C.shell("", `
+    <div class="head"><div><h1>School network</h1><p>${partners.length} partner school${partners.length === 1 ? "" : "s"}${incoming.length ? ` · ${incoming.length} request${incoming.length === 1 ? "" : "s"} waiting` : ""}</p></div></div>
+    <section class="card cn-hero"><div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:12px;align-items:center">${crest(ME_SCHOOL)}<div><span class="muted" style="font-size:12.5px;font-weight:600">YOUR SCHOOL</span><h2>${esc(ME_SCHOOL)}</h2></div></div><p>Connected schools can share events with each other. You choose, per event, whether partner students can see it and register. Rosters and student records are never shared.</p><div class="statline"><span><b>${partners.length}</b>partners</span><span><b>${incoming.length + sent.length}</b>pending</span><span><b>${S.EVENTS.filter((e) => e.partner).length}</b>shared events</span></div></div>${net(all.filter((c) => ["Approved", "Pending"].includes(c.status)))}</section>
+    ${incoming.length ? `<section class="sec"><header><h2>Incoming requests</h2></header>${incoming.map((c) => { const s = info(c.from); return `<div class="card cn-req">${crest(c.from)}<span class="grow"><span class="t">${esc(c.from)}</span><span class="s">${esc(s.province)} · ${s.students} students · Requested ${fmt(c.requested)}</span></span><span class="end"><button class="btn btn-primary" data-approve="${esc(c.from)}">Approve</button>${C.menu([{ label: "Reject request", act: "reject", id: c.from, danger: true, hint: "They can ask again later" }])}</span></div>`; }).join("")}</section>` : ""}
+    <div class="split"><div class="gc-main"><div class="ptabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`).join("")}</div>${pane}</div>
+      <aside class="side">
+        <div class="card widget"><h3>What partners share</h3><div class="gc-steps"><div><span><b>Events you choose</b><span>Turn on sharing per event, from the event page.</span></span></div><div><span><b>Optional registration</b><span>Let partner students register, or show the event only.</span></span></div><div><span><b>Nothing else</b><span>Rosters, portfolios and safety reports stay private.</span></span></div></div></div>
+        <div class="card widget"><h3>Waiting on others</h3>${sent.map((c) => `<div class="row" style="padding:0;gap:10px">${crest(c.to, "sm")}<span class="grow"><span class="t" style="display:block;font-size:14px">${esc(c.to)}</span><span class="s">Sent ${fmt(c.requested)}</span></span></div>`).join("") || '<p class="muted" style="font-size:13.5px">No requests waiting for an answer.</p>'}</div>
+      </aside></div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; render(); }
+  const h = e.target.closest("[data-hs]"); if (h) { hs = h.dataset.hs; render(); }
+  const d = e.target.closest("[data-hd]"); if (d) { hd = d.dataset.hd; render(); }
+  const all = conns();
+  const ap = e.target.closest("[data-approve]"); if (ap) { const c = all.find((x) => x.from === ap.dataset.approve && x.status === "Pending"); c.status = "Approved"; c.updated = "2026-11-07"; S.saveLists(); tab = "partners"; render(); S.toast(`Connected with ${c.from}.`); }
+  const rq = e.target.closest("[data-req]"); if (rq) { const n = rq.dataset.req; all.unshift({ from: ME_SCHOOL, to: n, status: "Pending", requested: "2026-11-07", updated: "2026-11-07", direction: "Sent" }); S.saveLists(); render(); S.toast(`Request sent to ${n}. Nothing is shared until they approve.`); }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  if (a.dataset.act === "copyname") { try { navigator.clipboard.writeText(a.dataset.id); } catch (er) {} S.toast("Copied."); }
+  if (a.dataset.act === "reject") S.confirm(`Reject ${a.dataset.id}?`, "They won't be connected. You'll find this in the connection history.", "Reject request", () => { const c = all.find((x) => x.from === a.dataset.id && x.status === "Pending"); c.status = "Rejected"; c.updated = "2026-11-07"; S.saveLists(); render(); S.toast("Request rejected."); });
+});
+S.onSearch("q", (v) => { q = v; keep(render); });
+render();
+
+})();
+</script>
+</body>
+</html>

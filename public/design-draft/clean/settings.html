@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>School settings · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: School settings
+// School settings (school admin): a header with the school's details, a read-only information card and one edit form with one Save.
+const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const LOCK = I('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>');
+const CLOCK = I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>');
+const LINK = I('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>');
+const PROVINCES = ["Ulaanbaatar", "Arkhangai", "Bayan-Ölgii", "Bayankhongor", "Bulgan", "Darkhan-Uul", "Dornod", "Dornogovi", "Dundgovi", "Govi-Altai", "Govisümber", "Khentii", "Khovd", "Khövsgöl", "Ömnögovi", "Orkhon", "Övörkhangai", "Selenge", "Sükhbaatar", "Töv", "Uvs", "Zavkhan"];
+const sch = () => S.list("schoolSettings", [{ ...S.SCHOOL, created: "2026-08-12" }])[0];
+const crestText = (n) => (n.match(/No\.\s*(\d+)/) || [])[1] || n.split(" ").filter((w) => !/^(School|No\.)$/.test(w)).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+let dirty = false;
+
+function render() {
+  if (C.role() !== "admin") { C.shell("", `<div class="head"><div><h1>School settings</h1><p>Name, province and status of your school</p></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">This page is for school admins</b><br>${C.role() === "platform" ? 'Platform admins edit schools from <a class="gc-link" href="platform.html#schools">Schools</a>.' : "Ask your school admin if the school's details need to change."}</div>`); S.startClock(); return; }
+  const s = sch(), clubs = Object.keys(S.CLUBS).length, partners = S.list("connections", S.CONNECTIONS).filter((c) => c.status === "Approved").length;
+  const staff = S.list("staff", S.STAFF.map((x, i) => ({ id: "sf" + i, ...x })));
+  C.shell("", `
+    <section class="card set-hero"><div class="bn" aria-hidden="true"><svg viewBox="0 0 800 112" preserveAspectRatio="xMidYMid slice"><g fill="none" stroke="currentColor" stroke-opacity=".12" stroke-width="2" style="color:var(--fg)"><path d="M0 92 L120 40 L210 78 L320 22 L430 70 L520 34 L640 80 L800 30"/><path d="M0 104 L150 66 L260 96 L380 52 L500 92 L620 58 L800 98" stroke-opacity=".08"/></g><circle cx="690" cy="34" r="16" fill="var(--sun)" fill-opacity=".7"/></svg></div>
+      <div class="in"><span class="gc-crest lg" style="--c:#2340d9">${esc(crestText(s.name))}</span><div class="who"><h1>${esc(s.name)}</h1><p><span>${C.ICON.pin}${esc(s.province)}</span><span>${LINK}<span class="plat-slug">${esc(s.slug)}</span></span><span>${CLOCK}${esc(s.timezone)}</span><span class="tag ok">${esc(s.status)}</span></p></div>
+      ${C.menu([{ label: "Staff accounts", href: "staff.html" }, { label: "School network", href: "connections.html" }, { label: "Safety response team", href: "safety-team.html" }, "-", { label: "Print club sheet", href: "print-clubs.html" }])}</div></section>
+    <div class="facts"><div class="card"><span class="muted">Students on roster</span><b>${S.list("students", S.STUDENTS).filter((x) => x.status === "Active").length} active</b></div><div class="card"><span class="muted">Staff</span><b>${staff.filter((x) => x.status === "Active").length} active</b></div><div class="card"><span class="muted">Clubs</span><b>${clubs}</b></div><div class="card"><span class="muted">Partner schools</span><b>${partners}</b></div></div>
+    <div class="split"><div class="gc-main">
+      <form class="card gc-form" id="setf"><h2>Update school settings</h2>
+        <label class="field"><span>School name</span><input class="input" name="name" required maxlength="120" value="${esc(s.name)}"></label>
+        <label class="field"><span>Province</span><select class="input" name="province">${PROVINCES.map((p) => `<option ${p === s.province ? "selected" : ""}>${p}</option>`).join("")}</select></label>
+        <div class="gc-actions"><button class="btn btn-primary" ${dirty ? "" : "disabled"} style="${dirty ? "" : "opacity:.5;cursor:default"}">Save school settings</button><span class="muted" style="font-size:13px">${dirty ? "You have unsaved changes." : "Students and staff see the name on every page."}</span></div></form>
+      <section class="sec"><header><h2>School information</h2></header><div class="card" style="padding:18px"><dl class="kv"><dt>School name</dt><dd>${esc(s.name)}</dd><dt>Slug</dt><dd><span class="plat-slug">${esc(s.slug)}</span> <span class="tag lock" style="margin-left:6px">${LOCK}Set by the platform team</span></dd><dt>Province</dt><dd>${esc(s.province)}</dd><dt>Status</dt><dd><span class="tag ok">${esc(s.status)}</span></dd><dt>Timezone</dt><dd>${esc(s.timezone)}</dd><dt>On Activity Hub since</dt><dd>${new Date(s.created + "T12:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</dd></dl></div></section>
+    </div>
+    <aside class="side">
+      <div class="card widget"><h3>Setup checklist</h3>${[["School details", true], ["Teachers added", staff.length > 1], ["Students imported", true], ["Invite codes handed out", false], ["First club created", clubs > 0], ["A partner school", partners > 0]].map(([l, ok]) => `<div class="row" style="padding:0;gap:10px;font-size:14px"><span class="dot" style="background:${ok ? "var(--green)" : "var(--line-strong)"}"></span><span class="grow">${l}</span>${ok ? '<span class="tag ok">Done</span>' : '<a class="gc-link" href="invites.html">Next</a>'}</div>`).join("")}</div>
+      <div class="card widget"><h3>Partner schools</h3>${S.list("connections", S.CONNECTIONS).filter((c) => c.status === "Approved").map((c) => { const o = c.from === s.name || c.from === S.SCHOOL.name ? c.to : c.from; return `<div class="row" style="padding:0;gap:10px"><span class="gc-crest sm" style="--c:#12804a">${esc(crestText(o))}</span><span class="grow"><span class="t" style="display:block;font-size:14px">${esc(o)}</span><span class="s">Connected ${new Date(c.updated + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></span></div>`; }).join("") || '<p class="muted" style="font-size:13.5px">No partner schools yet.</p>'}<a class="gc-link" href="connections.html">School network →</a></div>
+    </aside></div>`);
+  S.startClock();
+}
+document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#setf") && !dirty) { dirty = true; const b = document.querySelector("#setf .btn-primary"); b.disabled = false; b.style.cssText = ""; b.nextElementSibling.textContent = "You have unsaved changes."; } });
+document.addEventListener("change", (e) => { if (e.target.tagName === "SELECT" && e.target.closest("#setf")) e.target.dispatchEvent(new Event("input", { bubbles: true })); });
+document.addEventListener("submit", (e) => { if (e.target.id !== "setf") return; e.preventDefault(); const v = S.formData(e.target), s = sch(); s.name = v.name.trim(); s.province = v.province; S.saveLists(); dirty = false; render(); S.toast("School settings saved."); });
+render();
+
+})();
+</script>
+</body>
+</html>

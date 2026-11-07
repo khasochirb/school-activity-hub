@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Join with invite code · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Join with invite code
+// Student registration with a one-time invite code. Error states for unknown, expired, used and already-linked codes.
+const I = S.ICON;
+const INV = S.list("invites", S.INVITES);
+const SAMPLES = { "MNGL-STDN-24": ["ok", "creates the account"], "EXPR-CODE-01": ["Invite code has expired. Ask your school for a new one.", "expired"], "USED-CODE-02": ["Invite code has already been used or is no longer active.", "already used"], "LINK-CODE-03": ["This student already has an account. Sign in instead.", "already linked"], "ABCD-EFGH-IJ": ["Invite code was not found. Check the code and try again.", "not found"] };
+let msg = null, vals = {}, done = false;
+const fmt = (v) => { const c = v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10); return [c.slice(0, 4), c.slice(4, 8), c.slice(8, 10)].filter(Boolean).join("-"); };
+const brand = `<a class="brand" href="landing.html"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5" fill="#ffc23d"/><path d="M2.5 20.5c2.6-4.2 5.9-6.3 9.5-6.3s6.9 2.1 9.5 6.3" stroke="#fff" stroke-linecap="round" stroke-width="3"/></svg></i>Activity Hub</a>`;
+const art = `<aside class="ga-art" aria-label="What you get">
+  <span class="ga-eyebrow">Verified students only</span>
+  <h2>Your school gave you a code. Here's what it opens.</h2>
+  <ul class="ck">
+    <li>${I.checkCircle}<span><b>Join clubs</b><small>${Object.keys(S.CLUBS).length} clubs at ${esc(S.SCHOOL.name)}, from robotics to morin khuur.</small></span></li>
+    <li>${I.checkCircle}<span><b>Register for events</b><small>See what's on this week and check in with a QR code.</small></span></li>
+    <li>${I.checkCircle}<span><b>Suggest a club</b><small>If other students support it, staff review it.</small></span></li>
+  </ul>
+  <div style="display:flex;gap:6px">${Object.keys(S.CLUBS).map((k) => S.clubAv(k, 36)).join("")}</div>
+  <p class="bottom-note">${I.lock.replace("<svg", '<svg width="16" height="16"')}<span>Only students and staff at your school can see your account.</span></p></aside>`;
+function render() {
+  const inner = done
+    ? `<div class="ga-form ga-done"><span class="ga-tile">${I.checkCircle}</span><div><p class="ga-eyebrow">Verified student registration</p><h1>You're in</h1></div>
+        <div class="ga-note ok" role="status" style="text-align:left">${I.checkCircle}<span>Account created. Please go to login and sign in.</span></div>
+        <dl class="prof-kv" style="text-align:left;width:100%"><dt>Email</dt><dd>${esc(vals.email)}</dd><dt>School</dt><dd>${esc(S.SCHOOL.name)}</dd><dt>Role</dt><dd>Student</dd></dl>
+        <a class="btn btn-primary" style="width:100%;min-height:48px" href="login.html">Go to sign in</a></div>`
+    : `<div class="ga-form"><span class="ga-tile" style="--c:var(--amber)">${I.key}</span>
+      <div><p class="ga-eyebrow">Verified student registration</p><h1>Join with invite code</h1><p class="d">Enter the one-time invite code from your school to activate your student account.</p></div>
+      ${msg ? `<div class="ga-note err" role="alert">${I.shield}<span>${esc(msg)}</span></div>` : ""}
+      <form id="joinForm" novalidate>
+        <label class="field"><span>Invite code</span><input class="input ga-codein" name="code" id="code" value="${esc(vals.code || "")}" placeholder="ABCD-EFGH-IJ" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12"></label>
+        <label class="field"><span>Email</span><input class="input" name="email" type="email" autocomplete="email" value="${esc(vals.email || "")}" placeholder="you@khangai.edu.mn"></label>
+        <label class="field"><span>Password</span><input class="input" name="password" type="password" autocomplete="new-password"><small>At least 8 characters.</small></label>
+        <button class="btn btn-primary" type="submit" id="go">Create student account</button>
+      </form>
+      <div class="ga-try"><b>Draft: try these codes</b><ul>${Object.entries(SAMPLES).map(([c, [, l]]) => `<li><button type="button" data-fill="${c}">${c}</button><span>${l}</span></li>`).join("")}<li>Active codes from Invite codes work too.</li></ul></div>
+      <p class="ga-alt">Already have an account? <a href="login.html">Sign in</a></p></div>`;
+  document.getElementById("app").innerHTML = C.authShell(inner);
+}
+document.addEventListener("input", (e) => { if (e.target.id === "code") { const end = e.target.selectionStart === e.target.value.length; e.target.value = fmt(e.target.value); if (end) e.target.selectionStart = e.target.selectionEnd = e.target.value.length; } });
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-mn]")) S.toast("The real build switches to Монгол here. This draft is English only.");
+  const f = e.target.closest("[data-fill]"); if (f) { document.getElementById("code").value = f.dataset.fill; document.querySelector("[name=email]").focus(); }
+});
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "joinForm") return;
+  e.preventDefault();
+  const f = S.formData(e.target), code = fmt(f.code || ""); vals = { ...f, code }; msg = null;
+  if (!code) msg = "Enter your invite code.";
+  else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((f.email || "").trim())) msg = "Enter a valid email address.";
+  else if ((f.password || "").length < 8) msg = "Password must be at least 8 characters.";
+  if (msg) { render(); return; }
+  const b = document.getElementById("go"); b.disabled = true; b.textContent = "Creating account...";
+  setTimeout(() => {
+    const inv = INV.find((x) => x.code === code);
+    let r = SAMPLES[code] && SAMPLES[code][0];
+    if (!r && inv) r = inv.status === "Active" ? "ok" : inv.status === "Expired" ? SAMPLES["EXPR-CODE-01"][0] : SAMPLES["USED-CODE-02"][0];
+    if (!r) r = SAMPLES["ABCD-EFGH-IJ"][0];
+    if (r !== "ok") { msg = r; render(); return; }
+    if (inv) { inv.status = "Redeemed"; inv.redeemed = C.NOW.toISOString().slice(0, 10); S.saveLists(); }
+    done = true; render();
+  }, 600);
+});
+render();
+
+})();
+</script>
+</body>
+</html>

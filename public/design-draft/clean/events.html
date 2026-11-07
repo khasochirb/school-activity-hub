@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Events · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Events v2: cover cards by day, colour-coded category chips, a month calendar and "your events" on the side.
+let f = "upcoming", cat = "All", q = "";
+const going = (e) => ["going", "registered", "pending"].includes(S.statusOf(e));
+function action(e) {
+  if (e.past) return S.statusOf(e) === "attended" ? '<span class="tag ok">Attended</span>' : "";
+  if (C.staff()) return C.menu([{ label: "Open event", href: `event.html#${e.id}` }, { label: "Attendance and QR", href: `attendance.html#${e.id}` }, { label: "Copy link", act: "copy" }]);
+  if (S.statusOf(e) === "pending") return "";
+  if (C.isGoing(e)) return `<button class="btn btn-sm btn-done" data-leave="${e.id}">${C.ICON.check} Going</button>`;
+  return `<button class="btn btn-sm btn-soft" data-join="${e.id}">${e.needs ? "Request" : "Join"}</button>`;
+}
+function render() {
+  const approved = S.EVENTS.filter((e) => (e.approval || "approved") === "approved");
+  const list = approved.filter((e) => (f === "past" ? e.past : !e.past) && (f !== "mine" || going(e)) && (cat === "All" || e.category === cat) && (!q || (e.title + S.clubName(e)).toLowerCase().includes(q.toLowerCase())))
+    .sort((a, b) => (f === "past" ? b.start.localeCompare(a.start) : a.start.localeCompare(b.start)));
+  const cats = ["All", ...new Set(approved.filter((e) => !e.past).map((e) => e.category))];
+  const days = [...new Set(list.map((e) => e.start.slice(0, 10)))];
+  const mine = approved.filter((e) => !e.past && going(e));
+  C.shell("events", `
+    <div class="head"><div><h1>Events</h1><p>${approved.filter((e) => !e.past).length} upcoming at Khangai High School · ${mine.length} on your list</p></div>${C.staff() ? '<a class="btn btn-primary" href="create-event.html">' + C.ICON.plus + " New event</a>" : ""}</div>
+    <div class="filters">${[["upcoming", "Upcoming"], ...(C.staff() ? [] : [["mine", "My events"]]), ["past", "Past"]].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${f === k}">${l}</button>`).join("")}<span style="width:1px;height:22px;background:var(--line-strong)"></span>${cats.map((c) => `<button class="chip" ${c === "All" ? "" : `data-c style="--c:${C.catColor(c)}"`} data-cat="${c}" aria-pressed="${cat === c}">${c}</button>`).join("")}</div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:26px;min-width:0">
+        <label class="search" style="max-width:none;margin:0">${C.ICON.search}<span class="sr">Search events</span><input id="q" type="search" placeholder="Search events or clubs" value="${esc(q)}"></label>
+        ${days.length ? `<div class="tl">${days.map((d) => { const first = list.find((e) => e.start.startsWith(d)); return `<section class="tlday"><p class="tlhead"><span class="dtile"><span>${S.mon(first.start).toUpperCase()}</span><b>${S.dom(first.start)}</b></span><small>${S.weekday(first.start)}</small></p><div style="display:flex;flex-direction:column;gap:12px;min-width:0">${list.filter((e) => e.start.startsWith(d)).map((e) => `<article class="card tlcard"><div style="min-width:0"><span class="time">${S.time(e.start)}</span><a class="t" href="event.html#${e.id}">${esc(e.title)}</a><p class="ri">${e.club ? S.clubAv(e.club, 18) : ""}By ${esc(S.clubName(e))}</p><p class="ri">${C.ICON.pin}${esc(e.location)}</p><div class="ft">${C.cat(e.category)}${S.avatars(e.going, 4)}<span class="muted" style="font-size:13px">${e.going} going${e.capacity ? ` · ${e.capacity - e.going} left` : ""}</span><span style="margin-left:auto">${action(e)}</span></div></div><a class="sq" href="event.html#${e.id}">${S.art(e.art)}</a></article>`).join("")}</div></section>`; }).join("")}</div>` : '<div class="card empty">No events match. Try another filter.</div>'}
+      </div>
+      <aside class="side">
+        <div class="card widget"><h3>${C.NOW.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h3>${C.miniCal(approved)}</div>
+        ${C.staff() ? "" : `<div class="card widget"><h3>Your events</h3>${mine.length ? mine.map((e) => `<a class="row" style="padding:6px 0" href="event.html#${e.id}"><span class="date" style="width:40px"><span>${S.mon(e.start)}</span><b style="font-size:16px">${S.dom(e.start)}</b></span><span class="grow"><span class="t" style="display:block;font-size:14px">${esc(e.title)}</span><span class="s">${S.time(e.start)}</span></span></a>`).join("") : '<p class="muted" style="font-size:14px">Nothing yet. Join something!</p>'}</div>`}
+        <div class="card widget"><h3>By category</h3>${cats.slice(1).map((c) => { const n = approved.filter((e) => !e.past && e.category === c).length; return `<div class="goal"><div><span>${c}</span><b>${n}</b></div><div class="bar" style="--c:${C.catColor(c)}"><i style="width:${(n / 3) * 100}%"></i></div></div>`; }).join("")}</div>
+      </aside>
+    </div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-f]"); if (c) { f = c.dataset.f; render(); }
+  const k = e.target.closest("[data-cat]"); if (k) { cat = k.dataset.cat; render(); }
+  const j = e.target.closest("[data-join]"); if (j) { const ev = S.EVENTS.find((x) => x.id === j.dataset.join); S.setStatus(ev, ev.needs ? "pending" : "going"); render(); S.toast(ev.needs ? "Request sent." : "You're in."); }
+  const l = e.target.closest("[data-leave]"); if (l) { S.setStatus(S.EVENTS.find((x) => x.id === l.dataset.leave), null); render(); S.toast("Registration cancelled."); }
+  if (e.target.closest('[data-act="copy"]')) S.toast("Link copied.");
+});
+S.onSearch("q", (v) => { q = v; render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

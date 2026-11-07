@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Invite codes · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Invite codes
+// Invite codes (staff): one "Generate codes" button opens a sheet with the three scopes. Codes are shown once, with Copy and a real CSV download.
+const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const INFO = I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/>');
+const WARN = I('<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.3"/>');
+let status = "All", q = "";
+const NOWD = "2026-11-07";
+const fmt = (d) => d ? new Date(d + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
+const daysLeft = (d) => Math.round((new Date(d + "T12:00") - new Date(NOWD + "T12:00")) / 864e5);
+const initials = (n) => n.split(" ").map((w) => w[0]).join("").slice(0, 2);
+const AVBG = ["#fff4d6", "#e9ecfb", "#fdeae4", "#e3f4ea", "#efe6fb"];
+const rand = (n) => Array.from({ length: n }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+const newCode = () => `${rand(4)}-${rand(4)}-${rand(2)}`;
+function students() { return S.list("students", S.STUDENTS); }
+function invites() {
+  return S.list("invites", S.INVITES.map((x, i) => ({ id: "inv" + i, ...x, tail: ["7K", "Q4", "M2", "XA", "9P", "HD"][i] || "00" })));
+}
+// A student is "linked" once they've redeemed a code (matches the Students screen: only Khulan and Odgerel haven't joined).
+const SEEDLINKED = S.STUDENTS.filter((s) => !["st3", "st8"].includes(s.id)).map((s) => s.id);
+const linked = (s) => SEEDLINKED.includes(s.id) || invites().some((v) => v.student === s.name && v.status === "Redeemed");
+const studentOf = (name) => students().find((s) => s.name === name);
+function keep(fn) { const a = document.activeElement, id = a && a.id, p = a && a.selectionStart; fn(); if (id) { const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } } }
+
+function render() {
+  if (!C.staff()) { C.shell("", `<div class="head"><div><h1>Invite codes</h1><p>Student sign-up codes</p></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">This page is for school staff</b><br>Your teacher gives you an invite code. You use it once on the <a class="gc-link" href="join.html">Join</a> page.</div>`); S.startClock(); return; }
+  const all = invites(), act = students().filter((s) => s.status === "Active");
+  const counts = { Active: 0, Redeemed: 0, Revoked: 0, Expired: 0 }; all.forEach((v) => counts[v.status]++);
+  const list = all.filter((v) => (status === "All" || v.status === status) && (!q || (v.student + " " + ((studentOf(v.student) || {}).group || "")).toLowerCase().includes(q.toLowerCase())));
+  const joined = act.filter(linked).length, pct = Math.round((joined / Math.max(1, act.length)) * 100);
+  const expiring = all.filter((v) => v.status === "Active" && daysLeft(v.expires) <= 10).sort((a, b) => a.expires.localeCompare(b.expires));
+  const unlinked = act.filter((s) => !linked(s));
+  const tag = (s) => ({ Active: '<span class="tag blue">Active</span>', Redeemed: '<span class="tag ok">Redeemed</span>', Revoked: '<span class="tag bad">Revoked</span>', Expired: '<span class="tag">Expired</span>' })[s];
+  C.shell("", `
+    <div class="head"><div><h1>Invite codes</h1><p>${counts.Active} active · ${counts.Redeemed} redeemed · ${unlinked.length} ${unlinked.length === 1 ? "student hasn't" : "students haven't"} joined yet</p></div>
+      <button class="btn btn-primary" data-gen>${C.ICON.plus} Generate codes</button></div>
+    ${unlinked.length ? `<section class="card inv-hero"><div><h2>${unlinked.length} ${unlinked.length === 1 ? "student is" : "students are"} still waiting for a code</h2><p>Each code works once and links one student to their roster record. Codes expire after 14 days.</p></div><div class="inv-tickets" aria-hidden="true"><span>K7QX-····</span><span>M2RA-H9TC-4E</span><span>····-PW3N</span></div></section>` : ""}
+    <div class="filters">${["All", "Active", "Redeemed", "Revoked", "Expired"].map((s) => `<button class="chip" data-st="${s}" aria-pressed="${status === s}">${s}${s !== "All" ? ` <span style="opacity:.6">${counts[s]}</span>` : ""}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search invite codes</span><input id="q" type="search" placeholder="Student or class" value="${esc(q)}"></label></div>
+    <div class="split"><section class="sec" style="align-self:start"><header><h2>Invite code history</h2><span class="gc-count">${list.length} of ${all.length}</span></header>
+      <div class="card rows">${list.map((v) => { const s = studentOf(v.student) || {}, i = students().indexOf(s); return `<div class="row"><span class="av" style="background:${AVBG[(i < 0 ? 0 : i) % 5]};color:#1b1a17">${initials(v.student)}</span><span class="grow"><span class="t" style="display:block">${esc(v.student)}</span><span class="s">${s.group ? `Class ${esc(s.group)} · ` : ""}code ending <span class="inv-code">${esc(v.tail)}</span></span></span>
+        <span class="gc-when">${v.status === "Redeemed" ? `Redeemed ${fmt(v.redeemed)}` : v.status === "Active" ? `Expires ${fmt(v.expires)}` : `Created ${fmt(v.created)}`}<br><span style="color:var(--faint)">${v.status === "Redeemed" || v.status === "Active" ? `Created ${fmt(v.created)}` : v.status === "Expired" ? `Expired ${fmt(v.expires)}` : "Revoked by staff"}</span></span>
+        ${tag(v.status)}<span class="end">${C.menu([{ label: "View student", href: "students.html" }, ...(v.status === "Redeemed" ? [] : [{ label: "Generate a new code", act: "one", id: s.id || "" }]), "-", v.status === "Active" ? { label: "Revoke code", act: "revoke", id: v.id, danger: true, hint: "The code stops working at once" } : { label: "Already used or inactive", act: "noop", hint: "Nothing to revoke" }])}</span></div>`; }).join("") || `<div class="empty"><b style="color:var(--fg)">${all.length ? "No codes match" : "No invite codes yet"}</b><br>${all.length ? "Try another status or search." : "Generate codes for students who haven't joined."}</div>`}</div></section>
+      <aside class="side">
+        <div class="card widget"><h3>Redemption progress</h3><div class="gc-ring"><span class="gc-donut" style="--p:${pct}"><b>${pct}%</b></span><p><b>${joined} of ${act.length}</b> active students have joined the app with their code.</p></div>
+          ${["9", "10", "11", "12"].map((g) => { const inG = act.filter((s) => s.grade === g), j = inG.filter(linked).length; return `<div class="goal"><div><span>Grade ${g}</span><b>${j}/${inG.length}</b></div><div class="bar" style="--c:${j === inG.length ? "var(--green)" : "var(--sun)"}"><i style="width:${inG.length ? (j / inG.length) * 100 : 0}%"></i></div></div>`; }).join("")}</div>
+        <div class="card widget"><h3>Expiring soon</h3>${expiring.map((v) => { const d = daysLeft(v.expires); return `<div class="row" style="padding:2px 0;gap:10px"><span class="dtile" style="width:44px"><span>${new Date(v.expires + "T12:00").toLocaleDateString("en-US", { month: "short" }).toUpperCase()}</span><b style="font-size:16px">${new Date(v.expires + "T12:00").getDate()}</b></span><span class="grow"><span class="t" style="display:block;font-size:14px">${esc(v.student)}</span><span class="s">${d <= 0 ? "Expires today" : `${d} day${d === 1 ? "" : "s"} left`}</span></span></div>`; }).join("") || '<p class="muted" style="font-size:13.5px">No codes expire in the next 10 days.</p>'}</div>
+        <div class="card widget"><h3>How codes work</h3><div class="gc-steps"><div><span><b>Generate</b><span>For one student, a grade or class, or a hand-picked list.</span></span></div><div><span><b>Hand them out</b><span>Copy the list or download the CSV. Codes are shown only once.</span></span></div><div><span><b>Students join</b><span>They enter the code on the Join page and choose a password.</span></span></div></div></div>
+      </aside></div>`);
+  S.startClock();
+}
+
+function genSheet(preset) {
+  const act = students().filter((s) => s.status === "Active");
+  const groups = [...new Set(act.map((s) => s.group))].sort((a, b) => parseInt(a) - parseInt(b) || a.localeCompare(b));
+  const scope = preset ? "one" : "group";
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Generate invite codes</h2><button class="close" data-close aria-label="Close">×</button></div>
+    <form class="sheet-body" id="genf">
+      <div class="inv-scope" role="radiogroup" aria-label="Who gets a code">
+        <label><input type="radio" name="scope" value="one" ${scope === "one" ? "checked" : ""}><span><b>One student</b><span>Pick a student from the roster.</span></span></label>
+        <label><input type="radio" name="scope" value="group" ${scope === "group" ? "checked" : ""}><span><b>By grade or class</b><span>Everyone in a grade or class group who hasn't joined yet.</span></span></label>
+        <label><input type="radio" name="scope" value="pick" ${scope === "pick" ? "checked" : ""}><span><b>Selected students</b><span>Tick the students you want.</span></span></label>
+      </div>
+      <div class="inv-pane" data-pane="one"><label class="field"><span>Active student</span><select class="input" name="student">${act.map((s) => `<option value="${s.id}" ${preset === s.id ? "selected" : ""}>${esc(s.name)} · ${esc(s.group)}${linked(s) ? " (already joined)" : ""}</option>`).join("")}</select></label></div>
+      <div class="inv-pane" data-pane="group"><div class="gc-two"><label class="field"><span>Grade</span><select class="input" name="grade"><option value="">All grades</option>${["9", "10", "11", "12"].map((g) => `<option>${g}</option>`).join("")}</select></label><label class="field"><span>Class group</span><select class="input" name="group"><option value="">All class groups</option>${groups.map((g) => `<option>${esc(g)}</option>`).join("")}</select></label></div><p class="muted" style="font-size:13px" id="grpn"></p></div>
+      <div class="inv-pane" data-pane="pick"><div class="inv-pick">${act.map((s) => `<label><input type="checkbox" name="pick" value="${s.id}" ${linked(s) ? "disabled" : ""}><span class="grow">${esc(s.name)} <span class="muted" style="font-size:13px">· ${esc(s.group)}</span></span>${linked(s) ? '<span class="tag ok">Joined</span>' : ""}</label>`).join("")}</div></div>
+      <div class="gc-note">${INFO}<span>Students who already joined are skipped. Each code works once and expires after 14 days.</span></div>
+      <button class="btn btn-primary">Generate codes</button>
+    </form>`, {
+    onMount: (d) => {
+      const f = d.querySelector("#genf");
+      const target = () => { const v = S.formData(f), sc = f.querySelector("[name=scope]:checked").value;
+        if (sc === "one") return { want: act.filter((s) => s.id === f.elements.student.value) };
+        if (sc === "pick") return { want: act.filter((s) => [...f.querySelectorAll("[name=pick]:checked")].some((c) => c.value === s.id)) };
+        return { want: act.filter((s) => (!v.grade || s.grade === v.grade) && (!v.group || s.group === v.group)) }; };
+      const sync = () => { const sc = f.querySelector("[name=scope]:checked").value; d.querySelectorAll("[data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== sc));
+        const w = target().want, n = w.filter((s) => !linked(s)).length; d.querySelector("#grpn").textContent = `${n} student${n === 1 ? "" : "s"} will get a code${w.length - n ? ` · ${w.length - n} already joined` : ""}.`; };
+      f.addEventListener("change", sync); sync();
+      f.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const want = target().want; if (!want.length) { S.toast("Pick at least one student."); return; }
+        const make = want.filter((s) => !linked(s)), skipped = want.length - make.length;
+        const all = invites(), out = make.map((s) => { const code = newCode(); all.unshift({ id: S.uid(), student: s.name, status: "Active", created: NOWD, expires: "2026-11-21", tail: code.slice(-2) }); return { s, code }; });
+        S.saveLists(); render();
+        const text = out.map((o) => `${o.s.name} (${o.s.group}): ${o.code}`).join("\n");
+        d.innerHTML = `<div class="sheet-head"><h2 style="font-size:1.2rem">Generated invite codes</h2><button class="close" data-close aria-label="Close">×</button></div>
+          <div class="sheet-body">
+            ${out.length ? `<div class="gc-note warn">${WARN}<span><b>Copy them now.</b> These codes will not be shown again. Students use them once on the Join page before Nov 21.</span></div>
+            <div class="inv-out">${out.map((o) => `<div><span style="min-width:0"><b style="display:block">${esc(o.s.name)}</b><span class="muted" style="font-size:13px">Class ${esc(o.s.group)} · ${esc(o.s.number)}</span></span><code>${o.code}</code></div>`).join("")}</div>` : '<p class="empty" style="padding:12px"><b style="color:var(--fg)">No new codes</b><br>Everyone you picked has already joined.</p>'}
+            ${skipped ? `<p class="muted" style="font-size:13.5px">${skipped} student${skipped === 1 ? " was" : "s were"} skipped because they already joined the app.</p>` : ""}
+          </div>
+          ${out.length ? `<div class="sheet-foot"><button class="btn" data-copy>Copy text list</button><button class="btn btn-primary" data-csv>Download CSV</button></div>` : ""}`;
+        d.querySelector("[data-copy]")?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(text); } catch (e) {} S.toast("Copied " + out.length + " codes."); });
+        d.querySelector("[data-csv]")?.addEventListener("click", () => {
+          const rows = [["full_name", "grade", "class_group", "student_number", "invite_code", "expires"], ...out.map((o) => [o.s.name, o.s.grade, o.s.group, o.s.number, o.code, "2026-11-21"])];
+          const csv = rows.map((r) => r.map((c) => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(",")).join("\n");
+          const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" })); a.download = `invite-codes-${NOWD}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          S.toast("CSV downloaded.");
+        });
+      });
+    },
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const st = e.target.closest("[data-st]"); if (st) { status = st.dataset.st; render(); }
+  if (e.target.closest("[data-gen]")) genSheet();
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  if (a.dataset.act === "one") genSheet(a.dataset.id || undefined);
+  if (a.dataset.act === "noop") S.toast("This code is already used or inactive.");
+  if (a.dataset.act === "revoke") { const v = invites().find((x) => x.id === a.dataset.id); S.confirm(`Revoke ${v.student}'s code?`, "The code stops working at once. You can generate a new one later.", "Revoke code", () => { v.status = "Revoked"; S.saveLists(); render(); S.toast("Code revoked."); }); }
+});
+S.onSearch("q", (v) => { q = v; keep(render); });
+render();
+
+})();
+</script>
+</body>
+</html>

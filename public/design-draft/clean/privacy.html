@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Privacy
+// The five static sections, readable, with a contents list that follows you down the page.
+const I = S.ICON;
+const SECS = [
+  ["operational", "Operational data used by the platform", "list", "#2340d9", ["Verified account, school, role, profile, roster, and access information.", "Club, activity, registration, permission, attendance, and announcement records needed to operate the service.", "Restricted safety reports only when a user chooses that workflow."]],
+  ["access", "Who can access operational data", "eye", "#12804a", ["You can view your own profile and the school information made available to your account.", "Authorized same-school staff receive only the access needed for their operational responsibility.", "Platform-admin status does not automatically grant access to safeguarding narratives or private school records."]],
+  ["research", "Operational use and research are separate", "chart", "#6b4fd6", ["Operational participation is separate from optional research. No research survey or research-consent record is stored in this application in this phase.", "Clicks and participation are not used to diagnose loneliness, mental health, personality, or friendships.", "Declining or withdrawing from optional research must not block platform or activity access."]],
+  ["commitments", "Privacy commitments and limits", "shield", "#f2643f", ["The platform does not sell student data or use it for advertising.", "Safeguarding confidentiality may be limited when approved staff must follow the school's safety or legal process."]],
+  ["manual", "Manual privacy requests", "users", "#b25e00", null, "Privacy requests are handled manually through the participating school. Contact the school directly through its approved process."],
+];
+let cur = SECS[0][0];
+C.shell("", `
+  <div class="head"><div><h1>Privacy</h1><p>What operational information the platform uses, and how access is limited. Students are minors, so the defaults are strict.</p></div></div>
+  <div class="priv-glance">${[["lock", "#2340d9", "Invite-only", "Nothing is public"], ["school", "#12804a", "School-managed", "Your school owns the roster"], ["shield", "#f2643f", "Never sold", "No ads, no data sales"]].map(([i, c, t, d]) => `<div class="card"><span class="ga-tile" style="--c:${c}">${I[i]}</span><span><b>${t}</b><span class="muted">${d}</span></span></div>`).join("")}</div>
+  <div class="priv">
+    <nav class="card priv-toc" aria-label="On this page"><p>On this page</p>${SECS.map(([id, t], i) => `<a href="#${id}" data-toc="${id}" ${id === cur ? 'aria-current="true"' : ""}><i>${i + 1}</i>${t}</a>`).join("")}</nav>
+    <div class="priv-secs">
+      ${SECS.map(([id, t, ic, c, items, text], i) => `<section class="card priv-sec" id="${id}" style="--c:${c}"><header><span class="ga-tile" style="--c:${c}">${I[ic]}</span><div><small>Section ${i + 1}</small><h2>${t}</h2></div></header>${items ? `<ul>${items.map((x) => `<li>${I.checkCircle}<span>${x}</span></li>`).join("")}</ul>` : `<p>${text}</p>`}</section>`).join("")}
+      <div class="ga-note info">${I.shield}<span>Questions about a safety concern? Use <a class="ga-link" href="safety.html">Safety and support</a>. It is not an emergency service; in an emergency, talk to a staff member straight away.</span></div>
+    </div>
+  </div>`);
+S.startClock();
+// Highlight the section you are reading
+let lock = 0;
+const mark = () => document.querySelectorAll("[data-toc]").forEach((a) => (a.dataset.toc === cur ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
+document.addEventListener("click", (e) => { const a = e.target.closest("[data-toc]"); if (a) { cur = a.dataset.toc; lock = Date.now() + 900; mark(); } });
+const io = new IntersectionObserver((ents) => {
+  if (Date.now() < lock) return;
+  ents.filter((x) => x.isIntersecting).forEach((x) => { cur = x.target.id; mark(); });
+}, { rootMargin: "-80px 0px -60% 0px" });
+document.querySelectorAll(".priv-sec").forEach((s) => io.observe(s));
+
+})();
+</script>
+</body>
+</html>

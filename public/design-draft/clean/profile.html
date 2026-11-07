@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Profile · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Profile
+// Profile: a header card with your interests, then clubs, coming up, participation and goals. Account and roster on the side.
+// Settings (full name) and interests open in sheets; the ⋯ menu holds the rest.
+const ICOL = { "Mental Health": "#2f9c8f", Outdoor: "#5f8f1f" };
+const col = (c) => ICOL[c] || C.catColor(c);
+const tag = (c) => `<span class="cat" style="--c:${col(c)}">${esc(c)}</span>`;
+const name = () => S.flag("fullName-" + C.role()) || S.ME[C.role()].name;
+const initials = () => name().split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+const school = () => (C.role() === "platform" ? "All schools (platform)" : S.SCHOOL.name);
+
+function accountWidget() {
+  const me = S.ME[C.role()];
+  return `<div class="card widget"><h3>Account details</h3><dl class="prof-kv"><dt>Email</dt><dd>${esc(me.email)}</dd><dt>Full name</dt><dd>${esc(name())}</dd></dl>
+    <details class="prof-more"><summary>View details</summary><dl class="prof-kv"><dt>Role</dt><dd>${esc(S.ROLES[C.role()])}</dd><dt>School</dt><dd>${esc(school())}</dd><dt>Status</dt><dd><span class="tag ok">Active</span></dd></dl></details>
+    <p class="muted" style="font-size:12.5px">Role and school are managed by staff.</p></div>`;
+}
+function rosterWidget() {
+  const st = S.STUDENTS[0], un = S.flag("noRoster");
+  return `<div class="card widget"><h3>Student roster</h3>${un ? `<div class="ga-note warn">${S.ICON.shield}<span>Roster status: not found. Your account is not linked to an active roster student yet. Ask a teacher to check your invite code.</span></div>`
+    : `<dl class="prof-kv"><dt>Roster name</dt><dd>${esc(st.name)}</dd><dt>Grade</dt><dd>${esc(st.grade)}</dd><dt>Class group / homeroom</dt><dd>${esc(st.group)}</dd><dt>Student number</dt><dd>${esc(st.number)}</dd><dt>Roster status</dt><dd><span class="tag ok">${esc(st.status)}</span></dd></dl>`}</div>`;
+}
+
+function student() {
+  const ints = S.interests();
+  const mine = Object.keys(S.CLUBS).filter(S.isJoined);
+  const coming = S.EVENTS.filter((e) => !e.past && (e.approval || "approved") === "approved" && ((e.club && S.isJoined(e.club)) || C.isGoing(e))).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 4);
+  const attended = S.EVENTS.filter((e) => S.statusOf(e) === "attended");
+  const kinds = new Set(S.EVENTS.filter((e) => S.statusOf(e) === "attended" || C.isGoing(e)).map((e) => e.category)).size;
+  const ideas = S.list("ideas", S.IDEAS).filter((i) => i.mine).length;
+  const counters = [["Clubs joined", mine.length, "var(--primary)", [0, 1, 1, 2, 2, 3, mine.length]], ["Activities attended", attended.length, "var(--green)", [0, 0, 1, 1, 1, 2, attended.length]], ["Kinds of activity tried", kinds, "var(--coral)", [0, 1, 1, 2, 2, 2, kinds]], ["Club ideas proposed", ideas, "var(--sun)", [0, 0, 0, 0, 1, 1, ideas]]];
+  const goals = [["First club", "Join one club", Math.min(mine.length, 1), 1, "var(--primary)"], ["3 kinds of activity", "Take part in 3 different kinds of activity", Math.min(kinds, 3), 3, "var(--coral)"], ["5 activities attended", "Attend 5 activities", Math.min(attended.length, 5), 5, "var(--green)"], ["First club idea", "Propose a club your school doesn't have yet", Math.min(ideas, 1), 1, "#c08a00"]];
+  const head = `<section class="card prof-head"><div class="prof-id"><span class="pfav">${initials()}</span><div style="min-width:0;flex:1"><h1>${esc(name())}</h1><p>${esc(S.ME.student.sub)} · ${esc(school())}</p></div>
+      <div class="acts">${C.menu([{ label: "Profile settings", act: "settings", hint: "Change your full name" }, { label: ints.length ? "Edit interests" : "Pick interests", act: "interests" }, { label: "Open portfolio", href: "portfolio.html" }, "-", { label: S.flag("noRoster") ? "Draft: show linked roster" : "Draft: show unlinked account", act: "roster" }, { label: "Privacy", href: "privacy.html" }, { label: "Sign out", href: "landing.html" }])}</div></div>
+    <div><p class="muted" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">My interests</p>
+      <div class="prof-ints">${ints.length ? ints.map(tag).join("") : '<span class="muted">Pick your interests and clubs that fit you will show first.</span>'}<button class="btn btn-sm" data-act="interests">${ints.length ? "Edit interests" : "Pick interests"}</button></div>
+      <p class="muted" style="font-size:12.5px;margin-top:10px;display:flex;gap:6px;align-items:center">${S.ICON.lock.replace("<svg", '<svg width="13" height="13"')}Only you and your school's staff can see your interests.</p></div></section>`;
+  return `${head}
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
+        <section class="sec"><header><h2>My participation</h2></header><p class="muted" style="font-size:13.5px;margin-top:-4px">Only what you do in person counts here. This page does not compare you with other students.</p>
+          <div class="stats">${counters.map(([l, v, c, s]) => { const mx = Math.max(1, ...s); return `<div class="card stat rich" style="border-top:3px solid ${c}"><span class="muted">${l}</span><b>${v}</b><div class="spark" style="height:28px">${s.map((x) => `<i style="height:${Math.max(10, (x / mx) * 100)}%;background:color-mix(in srgb, ${c} 70%, transparent)"></i>`).join("")}</div></div>`; }).join("")}</div></section>
+        <section class="sec"><header><h2>Goals</h2><span class="muted" style="font-size:13.5px">${goals.filter((g) => g[2] >= g[3]).length} of ${goals.length} done</span></header>
+          <div class="prof-goals">${goals.map(([t, h, p, n, c]) => `<div class="card prof-goal"><div class="h"><span><b>${t}</b>${p >= n ? ' <span class="tag ok">Done</span>' : ""}<p>${h}</p></span><span class="ring" style="--c:${p >= n ? "var(--green)" : c};--p:${(p / n) * 100}" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${p}" aria-label="${t}"><span>${p} / ${n}</span></span></div></div>`).join("")}</div></section>
+        <section class="sec"><header><h2>Coming up</h2><a href="events.html">All events</a></header>
+          ${coming.length ? `<div class="egrid">${coming.slice(0, 2).map((e) => C.eventCard(e)).join("")}</div>${coming.length > 2 ? `<div class="card rows">${coming.slice(2).map((e) => `<a class="row" href="event.html#${e.id}"><span class="date"><span>${S.mon(e.start)}</span><b>${S.dom(e.start)}</b></span><span class="grow"><span class="t" style="display:block">${esc(e.title)}</span><span class="s">${S.time(e.start)} · ${esc(S.clubName(e))}</span></span>${C.cat(e.category)}</a>`).join("")}</div>` : ""}` : '<div class="card empty">Nothing coming up from your clubs yet.</div>'}</section>
+        <section class="sec"><header><h2>My clubs</h2><a href="clubs.html">All clubs</a></header>
+          ${mine.length ? `<div class="prof-clubs">${mine.map((k) => `<a class="card prof-club" href="club.html#${k}"><span class="cv">${S.art(S.CLUBS[k].art)}</span><span class="bd">${S.clubAv(k, 36)}<span style="min-width:0"><b>${esc(S.CLUBS[k].name)}</b><span class="s">${k === "robotics" ? "Leader" : "Member"} · ${esc(S.CLUBS[k].meets)}</span></span></span></a>`).join("")}</div>` : `<div class="card empty">You haven't joined a club yet.<br><a class="ga-link" href="clubs.html">Find a club</a></div>`}</section>
+      </div>
+      <aside class="side">
+        <div class="card prof-pf"><span class="mos">${["robot", "river", "concert", "medal"].map((a) => `<span>${S.art(a)}</span>`).join("")}</span><span><b>Your portfolio</b><p>Collect what you made and learned in clubs and events.</p><a class="btn btn-primary btn-sm" href="portfolio.html">Open portfolio</a></span></div>
+        ${accountWidget()}
+        ${rosterWidget()}
+      </aside>
+    </div>`;
+}
+
+function staffView() {
+  const me = S.ME[C.role()], plat = C.role() === "platform";
+  const myEvents = S.EVENTS.filter((e) => !e.past && (e.adult === name() || e.createdBy === name())).sort((a, b) => a.start.localeCompare(b.start));
+  const advised = Object.entries(S.CLUBS).filter(([k]) => C.role() !== "teacher" || ["robotics", "debate"].includes(k));
+  return `<section class="card prof-head"><div class="prof-id"><span class="pfav">${initials()}</span><div style="min-width:0;flex:1"><h1>${esc(name())}</h1><p>${esc(me.sub)} · ${esc(school())}</p></div>
+      <div class="acts"><button class="btn btn-primary" data-act="settings">Edit profile</button>${C.menu([{ label: "Privacy", href: "privacy.html" }, { label: "Sign out", href: "landing.html" }])}</div></div>
+    <div class="statline">${plat ? `<span><b>${S.SCHOOLS.filter((s) => s.status === "Active").length}</b>active schools</span><span><b>${S.CONNECTIONS.length}</b>school connections</span>` : `<span><b>${myEvents.length}</b>upcoming events you run</span><span><b>${advised.length}</b>clubs</span><span><b>${S.EVENTS.filter((e) => e.approval === "pending").length}</b>waiting for approval</span>`}</div></section>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
+        ${plat ? `<section class="sec"><header><h2>Recent platform actions</h2><a href="platform.html#audit">Audit log</a></header><div class="card rows">${S.AUDIT.map((a) => `<div class="row"><span class="dot"></span><span class="grow"><span class="t" style="display:block">${esc(a.action)}: ${esc(a.target)}</span><span class="s">${esc(a.actor)} · ${esc(a.date)}</span></span></div>`).join("")}</div></section>`
+        : `<section class="sec"><header><h2>Events you're responsible for</h2><a href="events.html">All events</a></header>${myEvents.length ? `<div class="egrid">${myEvents.slice(0, 3).map((e) => C.eventCard(e, C.menu([{ label: "Attendance and QR", href: `attendance.html#${e.id}` }, { label: "Open event", href: `event.html#${e.id}` }]))).join("")}</div>` : '<div class="card empty">You are not the responsible adult for any upcoming event.</div>'}</section>
+        <section class="sec"><header><h2>Clubs</h2><a href="clubs.html">All clubs</a></header><div class="card rows">${advised.map(([k, c]) => `<a class="row" href="club.html#${k}">${S.clubAv(k, 40)}<span class="grow"><span class="t" style="display:block">${esc(c.name)}</span><span class="s">${esc(c.meets)} · ${c.members} members</span></span>${C.cat(c.category)}</a>`).join("")}</div></section>`}
+      </div>
+      <aside class="side">${accountWidget()}
+        <div class="card widget"><h3>Profile settings</h3><p class="muted" style="font-size:13.5px">You can update your full name. Role and school are managed by ${plat ? "the platform team" : "your school admin"}.</p><button class="btn btn-soft btn-sm" data-act="settings" style="align-self:flex-start">Change full name</button></div></aside>
+    </div>`;
+}
+
+function render() { C.shell("", C.role() === "student" ? student() : staffView()); S.startClock(); }
+
+function settingsSheet() {
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Profile settings</h2><button class="close" data-close aria-label="Close">×</button></div><form class="sheet-body" id="pf" novalidate><p class="muted" style="font-size:14px">You can update your full name. Role and school are managed by staff.</p><label class="field"><span>Full name</span><input class="input" name="fullName" value="${esc(name())}" autocomplete="name"></label><p class="ga-note err" id="pferr" role="alert" hidden></p><button class="btn btn-primary">Save profile</button></form>`, {
+    onMount: (d) => d.querySelector("#pf").addEventListener("submit", (ev) => { ev.preventDefault(); const v = (S.formData(ev.target).fullName || "").trim(); const er = d.querySelector("#pferr"); if (!v) { er.hidden = false; er.textContent = "Full name is required."; return; } S.flag("fullName-" + C.role(), v); d.close(); render(); S.toast("Profile updated."); }),
+  });
+}
+function interestsSheet() {
+  const sel = new Set(S.interests());
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">What are you into?</h2><button class="close" data-close aria-label="Close">×</button></div>
+    <div class="sheet-body"><p class="muted">Pick as many as you like. Clubs that match show first on your home page.</p>
+      <div class="prof-pick" role="group" aria-label="Interests">${S.CATEGORIES.map((c) => `<button type="button" class="chip" data-c style="--c:${col(c)}" data-int="${esc(c)}" aria-pressed="${sel.has(c)}">${esc(c)}</button>`).join("")}</div>
+      <p class="muted" style="font-size:12.5px;display:flex;gap:6px;align-items:center">${S.ICON.lock.replace("<svg", '<svg width="13" height="13"')}Only you and your school's staff can see your interests.</p></div>
+    <div class="sheet-foot"><button class="btn" data-close>Not now</button><button class="btn btn-primary" data-save>Save interests</button></div>`, {
+    onMount: (d) => {
+      d.addEventListener("click", (ev) => { const b = ev.target.closest("[data-int]"); if (b) { const v = b.dataset.int; sel.has(v) ? sel.delete(v) : sel.add(v); b.setAttribute("aria-pressed", String(sel.has(v))); } if (ev.target.closest("[data-save]")) { S.interests(S.CATEGORIES.filter((c) => sel.has(c))); d.close(); render(); S.toast("Interests saved."); } });
+    },
+  });
+}
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("[data-act]"); if (!a || a.closest("dialog")) return;
+  if (a.dataset.act === "settings") settingsSheet();
+  if (a.dataset.act === "interests") interestsSheet();
+  if (a.dataset.act === "roster") { S.flag("noRoster", !S.flag("noRoster")); render(); }
+});
+render();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Activity Hub · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Activity Hub
+// Public front page. No app shell: its own header, one blue button (join with invite code), rich visuals below.
+const I = S.ICON;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ev = (id) => S.EVENTS.find((e) => e.id === id);
+const brand = `<a class="brand" href="landing.html"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5" fill="#ffc23d"/><path d="M2.5 20.5c2.6-4.2 5.9-6.3 9.5-6.3s6.9 2.1 9.5 6.3" stroke="#fff" stroke-linecap="round" stroke-width="3"/></svg></i>Activity Hub</a>`;
+const tileI = (name, c) => `<span class="ga-tile" style="--c:${c}">${I[name]}</span>`;
+const STREAM = [
+  ["Student clubs", "robot", "Robotics Club weekly build", "Robotics Club · Tue 16:30", "#2340d9"],
+  ["Sports", "ball", "District championship: opening game", "Basketball Team · Sun 16:30", "#12804a"],
+  ["Arts", "concert", "Winter concert rehearsal", "Morin Khuur Ensemble · Nov 27", "#e0447a"],
+  ["Volunteering", "books", "Book drive for rural schools", "Volunteers Union · Sat 10:00", "#6b4fd6"],
+  ["Workshops", "arduino", "Arduino for beginners", "STEM lab · Nov 11", "#0f8a9a"],
+  ["Competitions", "debate", "Inter-school chess open", "School No. 23 · Nov 21", "#f2643f"],
+  ["Community activities", "river", "Tuul river clean-up", "Volunteers Union · Spring term", "#12804a"],
+  ["Competitions", "medal", "Inter-province robotics final", "Sports complex · Dec 12", "#b25e00"],
+];
+const m = ([k, art, t, s, c], hide) => `<div class="land-m" style="--c:${c}" ${hide ? 'aria-hidden="true"' : ""}><span class="cv">${S.art(art)}</span><span style="min-width:0"><small>${k}</small><b>${esc(t)}</b><span class="s">${esc(s)}</span></span></div>`;
+const lane = (items, rev) => `<div class="land-lane ${rev ? "rev" : ""}"><div class="land-track">${items.map((x) => m(x)).join("")}${items.map((x) => m(x, true)).join("")}</div></div>`;
+const FEAT = [
+  ["key", "#2340d9", "Verified student access", "Students join only through school-issued invite codes.", `<span class="land-code">MNGL-STDN-24</span><span>one code, one student</span>`],
+  ["calendar", "#f2643f", "Club and event management", "Create clubs, publish events, and keep participation organized.", `${["robotics", "debate", "morin", "basketball"].map((k) => S.clubAv(k, 28)).join("")}<span>5 clubs · 8 events</span>`],
+  ["checkCircle", "#12804a", "Teacher approval", "Review activities before students can participate.", `<span class="tag ok">${C.ICON.check.replace("<svg", '<svg width="13" height="13"')}Approved</span><span>by Bat-Erdene G.</span>`],
+  ["qr", "#6b4fd6", "QR attendance", "Run check-in from a simple attendance page during the event.", `<span class="qr">${S.qr("landing")}</span><span><b style="color:var(--fg)">38</b> of 46 checked in</span>`],
+  ["chart", "#b25e00", "Reports for schools", "See registrations, attendance, and participation summaries.", `<span class="spark">${[3, 5, 4, 6, 8, 7, 9].map((x) => `<i style="height:${x * 11}%;background:color-mix(in srgb,#b25e00 70%,transparent)"></i>`).join("")}</span><span>86%</span>`],
+];
+const AUD = [
+  ["OD", "#2340d9", "School admins", "Manage students, staff, invite codes, school settings, and reports.", ["Import the roster from a CSV", "Create teacher accounts", "Connect with partner schools"]],
+  ["BG", "#12804a", "Teachers", "Create clubs, manage events, approve activities, and take attendance.", ["Approve event proposals", "Show the check-in QR at the door", "Record parent permission"]],
+  ["NU", "#f2643f", "Students", "Join clubs, register for events, check announcements, and check in.", ["Find clubs that match your interests", "Suggest a new club", "Keep a portfolio of what you did"]],
+];
+const STEPS = [
+  ["Add students", "Import the roster from a CSV or add students one by one.", "Students"],
+  ["Generate invite codes", "One-time codes for each rostered student.", "Invite codes"],
+  ["Students join", "Students activate their own accounts with the code.", "Join page"],
+  ["Create clubs/events", "Teachers publish activities after approval.", "Clubs and events"],
+  ["Track attendance", "Scan a QR code at the door and see reports.", "Attendance"],
+];
+const TRUST = ["Invite-only student accounts", "School-managed rosters", "Staff approval before participation", "QR attendance records", "Bilingual English/Mongolian support"];
+
+document.getElementById("app").innerHTML = `
+  <header class="top ga-pubtop"><div class="wrap">${brand}
+    <div class="right">
+      <span class="ga-seg ga-hide-s" role="group" aria-label="Language"><button type="button" aria-pressed="true">EN</button><button type="button" aria-pressed="false" data-mn>МН</button></span>
+      <button type="button" class="iconbtn" data-theme-toggle aria-label="Switch light or dark">${C.ICON.moon}</button>
+      <a class="btn btn-soft btn-sm" href="login.html">Sign in</a>
+    </div></div></header>
+  <main class="wrap land">
+    <section class="land-hero">
+      <div>
+        <span class="land-eyebrow"><i></i>Private school activity platform</span>
+        <h1>Manage school clubs, events, and attendance <em>in one safe place.</em></h1>
+        <p class="land-lead">Activity Hub helps schools manage student rosters, invite codes, clubs, event approvals, QR attendance and reports, without opening access to the public.</p>
+        <div class="land-cta"><a class="btn btn-primary" href="join.html">${I.key.replace("<svg", '<svg width="18" height="18"')}Student join with invite code</a><a class="btn btn-soft" href="login.html">School staff sign in</a></div>
+        <p class="land-help">${I.key}Students need an invite code from their school.</p>
+        <div class="land-proof">${S.avatars(412, 5)}<span><b>412 students</b> and <b>28 staff</b> at Khangai High School use it this term</span></div>
+      </div>
+      <div class="land-stack" aria-label="What students see">
+        <span class="land-ping" aria-hidden="true"><span class="av">KE</span>Khulan E. checked in<i></i></span>
+        <div class="land-s1">${C.eventCard(ev("ev2"))}</div>
+        <div class="land-s2">${C.eventCard(ev("ev3"))}</div>
+        <div class="card land-s3">
+          <div class="hd"><b>School pilot snapshot</b><span>Activity week overview</span></div>
+          ${[["clubs", "#2340d9", "Club events", "Teacher approved"], ["qr", "#12804a", "Attendance", "Live check-in records"], ["key", "#f2643f", "Invite access", "One-time student codes"]].map(([i, c, l, v]) => `<div class="land-snap">${tileI(i, c)}<span><small>${l}</small><b>${v}</b></span>${I.checkCircle}</div>`).join("")}
+          <div class="land-chips"><span class="tag ok">${I.qr}QR ready</span><span class="tag blue">${I.shield}Verified students only</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card land-stream" id="stream" data-play="${reduce ? "off" : "on"}" aria-labelledby="streamH">
+      <header><div class="land-sh"><span class="ga-eyebrow">Activities happening in your school community</span><h2 id="streamH">Discover what is happening at your school</h2><p>Find clubs, events, workshops, volunteering opportunities, and communities to join.</p></div>
+        <button class="btn btn-soft btn-sm" type="button" id="pauseBtn" aria-controls="stream">${reduce ? "Resume animation" : "Pause animation"}</button></header>
+      <div class="land-chips">${[["Student clubs", "#2340d9"], ["Sports", "#12804a"], ["Arts", "#e0447a"], ["Volunteering", "#6b4fd6"], ["Workshops", "#0f8a9a"], ["Competitions", "#f2643f"], ["Community activities", "#b25e00"]].map(([c, col]) => `<span class="cat" style="--c:${col}">${c}</span>`).join("")}</div>
+      ${lane(STREAM.slice(0, 4).concat(STREAM.slice(4)), false)}
+      ${lane(STREAM.slice(4).concat(STREAM.slice(0, 4)).reverse(), true)}
+    </section>
+
+    <section class="land-sec" aria-labelledby="whatH">
+      <div class="land-sh"><span class="ga-eyebrow">Verified access</span><h2 id="whatH">What this app does</h2><p>Everything a school needs to run activities, and nothing that opens student data to the public.</p></div>
+      <div class="land-feat">${FEAT.map(([i, c, t, d, demo]) => `<div class="card">${tileI(i, c)}<h3>${t}</h3><p>${d}</p><div class="land-demo">${demo}</div></div>`).join("")}</div>
+    </section>
+
+    <section class="land-sec" aria-labelledby="whoH">
+      <div class="land-sh"><span class="ga-eyebrow">Built for school communities</span><h2 id="whoH">Who is this for?</h2><p>Each role gets a focused path, so schools can pilot activities without exposing private student data.</p></div>
+      <div class="land-who">${AUD.map(([ini, c, t, d, list]) => `<div class="card" style="--c:${c}"><div class="band"><span class="av">${ini}</span></div><div class="bd"><h3>${t}</h3><p>${d}</p><ul>${list.map((x) => `<li>${C.ICON.check}${x}</li>`).join("")}</ul></div></div>`).join("")}</div>
+    </section>
+
+    <section class="land-sec" aria-labelledby="pilotH">
+      <div class="land-sh"><span class="ga-eyebrow">Pilot workflow</span><h2 id="pilotH">Start your school activity pilot in five steps.</h2><p>Move from setup to participation with a simple workflow that staff, teachers, and students can understand.</p></div>
+      <ol class="land-steps">${STEPS.map(([t, d, w], i) => `<li class="card"><span class="n">${i + 1}</span><b>${t}</b><p>${d}</p><small>${w}</small></li>`).join("")}</ol>
+    </section>
+
+    <section aria-labelledby="trustH">
+      <div class="land-trust">
+        <div><span class="ga-eyebrow">Trust and safety</span><h2 id="trustH">Private by design</h2><p>The platform is built around school-managed access, role checks, and clear staff oversight. Students are minors, so nothing is public.</p>
+          <a class="btn" href="join.html">Join with invite code</a><a class="btn" href="privacy.html">Read the privacy page</a></div>
+        <ul>${TRUST.map((t) => `<li>${I.checkCircle}${t}</li>`).join("")}</ul>
+      </div>
+    </section>
+
+    <footer class="ga-foot"><span style="display:flex;align-items:center;gap:10px">${brand.replace('class="brand"', 'class="brand" style="color:var(--fg)"')}<span>Private school activity platform</span></span><nav><a href="privacy.html">Privacy</a><a href="login.html">Sign in</a><a href="join.html">Join with invite code</a><a href="setup.html">First-time setup</a></nav></footer>
+  </main>
+  <div class="draftnote"><span>Clean draft</span><a href="index.html">All screens</a></div>`;
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-mn]")) S.toast("The real build switches to Монгол here. This draft is English only.");
+  const p = e.target.closest("#pauseBtn");
+  if (p) { const s = document.getElementById("stream"), on = s.dataset.play !== "on"; s.dataset.play = on ? "on" : "off"; p.textContent = on ? "Pause animation" : "Resume animation"; }
+});
+
+})();
+</script>
+</body>
+</html>

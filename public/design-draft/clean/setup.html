@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>First-time setup · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: First-time setup
+// Only shown when no school exists yet. School name fills the slug; one button creates the school.
+const I = S.ICON;
+let msg = null, vals = { name: "", slug: "", tz: "Asia/Ulaanbaatar" }, slugTouched = false, done = false;
+const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, "").trim().replace(/[\s-]+/g, "-").slice(0, 40);
+const TZ = [["Asia/Ulaanbaatar", "Ulaanbaatar (UTC+8)"], ["Asia/Hovd", "Khovd (UTC+7)"], ["Asia/Choibalsan", "Choibalsan (UTC+8)"]];
+const brand = `<a class="brand" href="landing.html"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5" fill="#ffc23d"/><path d="M2.5 20.5c2.6-4.2 5.9-6.3 9.5-6.3s6.9 2.1 9.5 6.3" stroke="#fff" stroke-linecap="round" stroke-width="3"/></svg></i>Activity Hub</a>`;
+const art = `<aside class="ga-art" aria-label="What happens next">
+  <span class="ga-eyebrow">After setup</span>
+  <h2>Five steps from an empty school to the first check-in.</h2>
+  <ol>${[["Add students", "Import the roster from a CSV"], ["Generate invite codes", "One-time codes for each student"], ["Students join", "They activate their own accounts"], ["Create clubs/events", "Teachers publish after approval"], ["Track attendance", "QR at the door, reports after"]].map(([t, d], i) => `<li><i>${i + 1}</i><span><b>${t}</b><small>${d}</small></span></li>`).join("")}</ol></aside>`;
+function render() {
+  const inner = done
+    ? `<div class="ga-form ga-done"><span class="ga-tile">${I.checkCircle}</span><div><p class="ga-eyebrow">First-time setup</p><h1>${esc(vals.name)} is ready</h1><p class="d">You are its first school admin. Next, add your students.</p></div>
+        <dl class="prof-kv" style="text-align:left;width:100%"><dt>School name</dt><dd>${esc(vals.name)}</dd><dt>School slug</dt><dd>${esc(vals.slug)}</dd><dt>Timezone</dt><dd>${esc(vals.tz)}</dd><dt>Status</dt><dd><span class="tag ok">Active</span></dd></dl>
+        <a class="btn btn-primary" style="width:100%;min-height:48px" href="dashboard.html">Go to dashboard</a></div>`
+    : `<div class="ga-form"><span class="ga-tile" style="--c:var(--green)">${I.school}</span>
+      <div><p class="ga-eyebrow">First-time setup</p><h1>Set up your school</h1><p class="d">There is no school on this installation yet. Create it once; you become its first admin.</p></div>
+      ${msg ? `<div class="ga-note err" role="alert">${I.shield}<span>${esc(msg)}</span></div>` : ""}
+      <form id="setupForm" novalidate>
+        <label class="field"><span>School name</span><input class="input" name="name" id="sname" value="${esc(vals.name)}" placeholder="Khangai High School" autocomplete="organization"></label>
+        <label class="field"><span>School slug</span><span class="ga-slug"><span>activityhub.mn/</span><input class="input" name="slug" id="sslug" value="${esc(vals.slug)}" placeholder="my-school" autocapitalize="none" spellcheck="false"></span><small>Lowercase letters, numbers and dashes. Filled in from the name.</small></label>
+        <label class="field"><span>Timezone</span><select class="input" name="tz">${TZ.map(([v, l]) => `<option value="${v}" ${v === vals.tz ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <button class="btn btn-primary" type="submit" id="go">Create school</button>
+      </form>
+      <p class="ga-alt">Already set up? <a href="login.html">Sign in</a></p></div>`;
+  document.getElementById("app").innerHTML = C.authShell(inner);
+}
+document.addEventListener("input", (e) => {
+  if (e.target.id === "sname" && !slugTouched) document.getElementById("sslug").value = slugify(e.target.value);
+  if (e.target.id === "sslug") { slugTouched = e.target.value !== ""; }
+});
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "setupForm") return;
+  e.preventDefault();
+  const f = S.formData(e.target); vals = { name: (f.name || "").trim(), slug: (f.slug || "").trim(), tz: f.tz }; msg = null;
+  if (!vals.name) msg = "School name is required.";
+  else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(vals.slug)) msg = "School slug can only use lowercase letters, numbers and single dashes.";
+  if (msg) { render(); return; }
+  const b = document.getElementById("go"); b.disabled = true; b.textContent = "Creating school...";
+  setTimeout(() => { S.setRole("admin"); done = true; render(); }, 600);
+});
+render();
+
+})();
+</script>
+</body>
+</html>

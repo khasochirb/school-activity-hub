@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Home v2: colourful welcome with your next event, a week strip, cover cards, clubs, goals.
+const upcoming = () => S.EVENTS.filter((e) => !e.past && (e.approval || "approved") === "approved").sort((a, b) => a.start.localeCompare(b.start));
+function joinBtn(e) { return C.isGoing(e) ? "" : S.statusOf(e) === "pending" ? "" : `<button class="btn btn-sm btn-soft" data-join="${e.id}">${e.needs ? "Request" : "Join"}</button>`; }
+function student() {
+  const up = upcoming(), mine = up.filter(C.isGoing), next = mine[0] || up[0];
+  const joined = Object.keys(S.CLUBS).filter(S.isJoined);
+  const notJoined = Object.entries(S.CLUBS).filter(([k]) => !S.isJoined(k));
+  const attended = S.EVENTS.filter((e) => S.statusOf(e) === "attended").length;
+  const notices = S.ANNOUNCEMENTS.filter((a) => a.status === "Active").slice(0, 2);
+  const goals = [["Join your first club", Math.min(joined.length, 1), 1], ["Try 3 kinds of activity", Math.min(new Set(S.EVENTS.filter((e) => C.isGoing(e) || S.statusOf(e) === "attended").map((e) => e.category)).size, 3), 3], ["Attend 5 events", Math.min(attended, 5), 5]];
+  return `
+    <div class="head"><div><h1>${C.greeting()}, ${esc(C.first())}</h1><p>Here's what's happening at Khangai High School.</p></div></div>
+    <div class="statline"><span><b>${mine.length}</b>events you're going to</span><span><b>${joined.length}</b>clubs joined</span><span><b>${attended}</b>events attended</span></div>
+    ${next ? `<a class="card upnext" href="event.html#${next.id}"><span style="min-width:0"><small>${C.isGoing(next) ? "UP NEXT FOR YOU" : "POPULAR THIS WEEK"} · ${S.weekday(next.start).toUpperCase()}</small><b>${esc(next.title)}</b><span class="muted" style="display:block">${S.dayLong(next.start)} · ${S.time(next.start)}</span><span class="muted" style="display:flex;align-items:center;gap:6px;margin-top:4px">${C.ICON.pin.replace("<svg", '<svg width="15" height="15"')}${esc(next.location)}</span><span style="display:flex;align-items:center;gap:8px;margin-top:10px">${S.avatars(next.going, 5)}<span class="muted" style="font-size:13px">${next.going} going</span></span></span><span class="sq">${S.art(next.art)}</span></a>` : ""}
+    ${C.weekStrip(up)}
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
+        <section class="sec"><header><h2>Coming up at school</h2><a href="events.html">See all ${up.length}</a></header><div class="egrid">${up.slice(0, 4).map((e) => C.eventCard(e, joinBtn(e))).join("")}</div></section>
+        <section class="sec"><header><h2>Clubs you might like</h2><a href="clubs.html">All clubs</a></header><div class="card rows">${notJoined.map(([k, c]) => `<a class="row" href="club.html#${k}">${S.clubAv(k, 40)}<span class="grow"><span class="t" style="display:block">${esc(c.name)}</span><span class="s">${esc(c.meets)} · ${c.members} members</span></span>${C.cat(c.category)}</a>`).join("") || '<p class="empty">You\'ve joined every club. Nice!</p>'}</div></section>
+      </div>
+      <aside class="side">
+        <div class="card widget"><h3>Your clubs</h3>${joined.map((k) => `<a class="row" style="padding:6px 0" href="club.html#${k}">${S.clubAv(k, 32)}<span class="grow"><span class="t" style="display:block;font-size:14px">${esc(S.CLUBS[k].name)}</span><span class="s">${esc(S.CLUBS[k].meets)}</span></span></a>`).join("")}</div>
+        <div class="card widget"><h3>Your goals</h3>${goals.map(([l, v, t]) => `<div class="goal"><div><span>${l}</span><b>${v}/${t}</b></div><div class="bar" style="--c:${v >= t ? "var(--green)" : "var(--sun)"}"><i style="width:${(v / t) * 100}%"></i></div></div>`).join("")}<a href="portfolio.html" style="font-size:13.5px;font-weight:600;color:var(--primary);text-decoration:none">Add to your portfolio →</a></div>
+        <div class="card widget"><h3>Notices</h3>${notices.map((n) => `<div><b style="font-size:14px">${esc(n.title)}</b><p class="muted" style="font-size:13px;margin-top:2px">${esc(n.body.slice(0, 110))}…</p></div>`).join("")}<a href="announcements.html" style="font-size:13.5px;font-weight:600;color:var(--primary);text-decoration:none">All notices →</a></div>
+      </aside>
+    </div>`;
+}
+function staffHome() {
+  const up = upcoming(), pending = S.EVENTS.filter((e) => e.approval === "pending");
+  const todo = [
+    pending.length && { t: `${pending.length} events waiting for approval`, s: pending.map((e) => e.title).join(" · "), h: "approvals.html", c: "var(--amber)" },
+    { t: "Take attendance for the opening game", s: "Tomorrow · 4:30 PM · School gym · 46 registered", h: "attendance.html#ev1", c: "var(--primary)" },
+    { t: "2 students haven't joined yet", s: "Khulan E. and Odgerel S. · codes expire Nov 15", h: "invites.html", c: "var(--coral)" },
+  ].filter(Boolean);
+  const stats = [["Active clubs", "5", "+1 this term", [3, 3, 4, 4, 4, 5, 5]], ["Upcoming events", String(up.length), "+3 vs last month", [2, 4, 3, 5, 4, 6, 6]], ["Registrations", "112", "+18% this month", [40, 52, 61, 70, 84, 95, 112]], ["Attendance", "86%", "+4 pts", [72, 75, 79, 80, 83, 84, 86]]];
+  const feed = [["NU", "#ffc23d", "Nomin-Erdene U. registered for", "Book drive for rural schools", "2m"], ["TB", "#b9c1ec", "Temuulen B. proposed", "Robot sumo practice night", "1h"], ["AG", "#ffb59f", "Anuujin G. suggested a club:", "Photography Club", "3h"], ["KE", "#9fe0bd", "Khulan E. checked in to", "Tuul river clean-up", "Yesterday"]];
+  return `
+    <div class="head"><div><h1>${C.greeting()}, ${esc(C.first())}</h1><p>${todo.length} things need you · ${up.length} events coming up</p></div>
+      ${C.menu([{ label: "Event", hint: "Schedule something for students", href: "create-event.html" }, { label: "Club", href: "clubs.html" }, { label: "Announcement", href: "announcements.html" }, "-", { label: "Add students", href: "students.html" }, { label: "Invite codes", href: "invites.html" }], { button: `${C.ICON.plus} New` }).replace('class="btn btn-soft"', 'class="btn btn-primary"')}</div>
+    <div class="stats">${stats.map(([l, v, ch, s]) => { const m = Math.max(...s); return `<div class="card stat rich"><span class="muted">${l}</span><b>${v}</b><span class="chg">${ch}</span><div class="spark">${s.map((x) => `<i style="height:${Math.max(12, (x / m) * 100)}%"></i>`).join("")}</div></div>`; }).join("")}</div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
+        <section class="sec"><header><h2>Needs you</h2></header><div class="card rows">${todo.map((x) => `<a class="row" href="${x.h}"><span class="dot" style="background:${x.c}"></span><span class="grow"><span class="t" style="display:block">${esc(x.t)}</span><span class="s">${esc(x.s)}</span></span>${C.ICON.chev}</a>`).join("")}</div></section>
+        <section class="sec"><header><h2>This week</h2><a href="events.html">All events</a></header>${C.weekStrip(up)}<div class="egrid">${up.slice(0, 3).map((e) => C.eventCard(e, C.menu([{ label: "Attendance and QR", href: `attendance.html#${e.id}` }, { label: "Open event", href: `event.html#${e.id}` }]))).join("")}</div></section>
+      </div>
+      <aside class="side">
+        <div class="card widget"><h3>Recent activity</h3><div class="feed">${feed.map(([i, c, a, b, t]) => `<div><span class="av" style="background:${c};color:#1b1a17;width:32px;height:32px;font-size:11px">${i}</span><span style="min-width:0">${a} <b>${b}</b><span class="s" style="display:block">${t}</span></span></div>`).join("")}</div></div>
+        <div class="card widget"><h3>Most active clubs</h3>${Object.entries(S.CLUBS).sort((a, b) => b[1].members - a[1].members).map(([k, c]) => `<div class="goal"><div><span style="display:flex;gap:8px;align-items:center">${S.clubAv(k, 22)}${esc(c.name)}</span><b>${c.members}</b></div><div class="bar" style="--c:${c.color}"><i style="width:${(c.members / 24) * 100}%"></i></div></div>`).join("")}</div>
+      </aside>
+    </div>`;
+}
+function render() { C.shell("home", C.staff() ? staffHome() : student()); S.startClock(); }
+document.addEventListener("click", (e) => { const j = e.target.closest("[data-join]"); if (j) { const ev = S.EVENTS.find((x) => x.id === j.dataset.join); S.setStatus(ev, ev.needs ? "pending" : "going"); render(); S.toast(ev.needs ? "Request sent." : "You're in."); } });
+render();
+
+})();
+</script>
+</body>
+</html>

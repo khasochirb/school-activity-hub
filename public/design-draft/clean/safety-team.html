@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Safety response team · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Safety response team
+// Safety response team (school admin): up to three staff who can open the safeguarding inbox.
+// A capacity meter, then one row per active staff member with one button (add) or ⋯ (remove). Both confirm.
+const I = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC = { warn: I('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'), lock: I('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>') };
+const MAX = 3, AVC = ["#b9c1ec", "#9fe0bd", "#ffb59f", "#ffc23d", "#e3c8ff"];
+const team = () => S.list("safetyTeam", S.STAFF.filter((s) => s.safety).map((s) => ({ name: s.name, date: s.safety })));
+const log = () => S.list("safetyTeamLog", [{ t: "Added", who: "Munkhbayar Tumur", by: "Oyunchimeg Dorj", date: "2026-08-20" }, { t: "Added", who: "Bat-Erdene Ganbold", by: "Oyunchimeg Dorj", date: "2026-08-20" }]);
+const ini = (n) => n.split(" ").map((w) => w[0]).join("").slice(0, 2);
+let q = "";
+function render() {
+  if (C.role() !== "admin") { C.shell("", `<a class="b-back" href="safety.html">← Safety and support</a><div class="card empty"><b style="color:var(--fg)">Only the school admin can manage the response team</b><br>${C.staff() ? "You can see who is on it on Safety and support." : ""}</div>`); S.startClock(); return; }
+  const t = team(), full = t.length >= MAX;
+  const staff = S.STAFF.filter((s) => s.status === "Active" && (!q || (s.name + s.email + s.role).toLowerCase().includes(q.toLowerCase())))
+    .sort((a, b) => Number(!!t.find((m) => m.name === b.name)) - Number(!!t.find((m) => m.name === a.name)));
+  const inactive = S.STAFF.filter((s) => s.status !== "Active");
+  C.shell("", `
+    <a class="b-back" href="safety.html">← Safety and support</a>
+    <div class="head b-head"><div><h1>Safety response team</h1><p>Choose who can open the safeguarding inbox at ${esc(S.SCHOOL.name)}.</p></div>${C.menu([{ label: "Open safeguarding inbox", href: "safety-inbox.html" }, { label: "Staff accounts", href: "staff.html" }])}</div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+        <div class="card b-card"><div class="st-cap"><span class="slots">${Array.from({ length: MAX }, (_, i) => t[i] ? `<i class="on" style="background:${AVC[i]}" title="${esc(t[i].name)}">${ini(t[i].name)}</i>` : "<i></i>").join("")}</span><div><b>${t.length} of ${MAX} responders</b><span>${full ? "The team is full. Remove someone before adding another." : `${MAX - t.length} ${MAX - t.length === 1 ? "place" : "places"} left.`}</span></div></div>
+          <div class="bar" style="--c:${full ? "var(--amber)" : "var(--primary)"}"><i style="width:${(t.length / MAX) * 100}%"></i></div></div>
+        <div class="b-note warn">${IC.warn}<div><b>Restricted responsibility</b><p>Responders read confidential reports from students, some about other students or staff. Only choose trained staff, and remove people who change role or leave.</p></div></div>
+        <section class="sec"><header><h2>Staff</h2><label class="search" style="max-width:16rem">${C.ICON.search}<span class="sr">Search staff</span><input id="q" type="search" placeholder="Search staff" value="${esc(q)}"></label></header>
+          <div class="card rows">${staff.map((s, i) => { const m = t.find((x) => x.name === s.name);
+            return `<div class="row st-row"><span class="av" style="background:${AVC[(S.STAFF.indexOf(s)) % 5]}">${ini(s.name)}</span><span class="grow"><span class="t" style="display:block">${esc(s.name)}</span><span class="s">${esc(s.role)} · ${esc(s.email)}</span><span class="when" style="display:block">${m ? `Originally assigned ${S.fmtDate(m.date)}` : "Not designated"}</span></span>
+              ${m ? `<span class="tag blue">${IC.lock.replace("<svg", '<svg width="12" height="12"')} Responder</span><span class="end">${C.menu([{ label: "Remove from response team", act: "rm", id: s.name, danger: true }], { label: `Actions for ${s.name}` })}</span>`
+                : `<span class="end"><button class="btn btn-sm btn-soft" data-add="${esc(s.name)}" ${full ? 'aria-disabled="true" title="The team is full"' : ""} style="${full ? "opacity:.5" : ""}">Add to response team</button></span>`}</div>`; }).join("") || '<p class="empty">No eligible staff found</p>'}</div>
+          ${inactive.length ? `<p class="muted" style="font-size:13px">${inactive.map((s) => esc(s.name)).join(", ")} ${inactive.length === 1 ? "is" : "are"} inactive and can't be added.</p>` : ""}
+        </section>
+      </div>
+      <aside class="side">
+        <div class="card widget"><h3>Responders can</h3><ul class="ce-checks"><li class="ok"><i>${C.ICON.check}</i>Read confidential descriptions</li><li class="ok"><i>${C.ICON.check}</i>See who reported</li><li class="ok"><i>${C.ICON.check}</i>Move reports through review</li><li class="ok"><i>${C.ICON.check}</i>Record outside referrals</li></ul></div>
+        <div class="card widget"><h3>Recent changes</h3><div class="feed">${log().slice(0, 5).map((l) => `<div><span class="av" style="width:32px;height:32px;font-size:11px;background:${l.t === "Added" ? "var(--green-soft)" : "var(--coral-soft)"};color:${l.t === "Added" ? "var(--green)" : "var(--coral)"}">${l.t === "Added" ? "+" : "−"}</span><span style="min-width:0"><b>${esc(l.who)}</b> ${l.t === "Added" ? "added" : "removed"}<span class="s" style="display:block">${S.fmtDate(l.date)} · by ${esc(l.by)}</span></span></div>`).join("")}</div></div>
+      </aside>
+    </div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("[data-add]");
+  if (a) { const name = a.dataset.add, t = team();
+    if (t.length >= MAX) { S.toast(`The team already has ${MAX} responders. Remove someone first.`); return; }
+    S.confirm(`Add ${name} to the response team?`, "They will be able to read every confidential safety report at this school.", "Add to response team", () => { if (team().length >= MAX) return; t.push({ name, date: C.NOW.toISOString().slice(0, 10) }); log().unshift({ t: "Added", who: name, by: S.ME.admin.name, date: C.NOW.toISOString().slice(0, 10) }); S.saveLists(); render(); S.toast(`${name.split(" ")[0]} is now a responder.`); });
+    return; }
+  const r = e.target.closest('[data-act="rm"]');
+  if (r) { const name = r.dataset.id; S.confirm(`Remove ${name}?`, "They will lose access to the safeguarding inbox straight away. Reports they handled stay in the inbox.", "Remove from response team", () => { const t = team(); t.splice(t.findIndex((m) => m.name === name), 1); log().unshift({ t: "Removed", who: name, by: S.ME.admin.name, date: C.NOW.toISOString().slice(0, 10) }); S.saveLists(); render(); S.toast(`${name.split(" ")[0]} removed from the team.`); }); }
+});
+S.onSearch("q", (v) => { q = v; render(); const el = document.getElementById("q"); el.focus(); el.setSelectionRange(v.length, v.length); });
+render();
+
+})();
+</script>
+</body>
+</html>

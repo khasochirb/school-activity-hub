@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Event check-in · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Event check-in
+// Check-in: what a student sees after scanning the QR at the door. Phone first: the event, a permission notice
+// if needed, and one big "Check in" button. Then success, "already checked in" or a clear failure.
+const I = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC = { clock: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'), x: I('<path d="M7 7l10 10M17 7L7 17"/>'), warn: I('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'), lock: I('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>') };
+const FAIL = {
+  join: ["You haven't joined this event", "Join the event first, then scan the code again."],
+  roster: ["Your account isn't linked to the roster", "Your account is not linked to an active roster student yet. Ask your class teacher to link it."],
+  unavailable: ["This event isn't available", "The event may have been cancelled, or check-in hasn't opened yet."],
+  inactive: ["Only active students can check in", "Your student account is marked inactive."],
+};
+let result = null, preview = null; // preview: draft-only way to see each failure
+const getEv = () => S.EVENTS.find((e) => e.id === location.hash.slice(1));
+const links = `<div class="links"><a class="b-link" href="dashboard.html">Back to dashboard</a><a class="b-link" href="events.html">Back to events</a></div>`;
+const checkedAt = (e) => { const f = S.flag("ci-" + e.id); return f ? new Date(f) : S.statusOf(e) === "attended" ? new Date(new Date(e.start).getTime() + 4 * 60000) : null; };
+
+function failCard(kind, e) {
+  const [t, m] = FAIL[kind];
+  return `<section class="card ci-result" role="alert"><span class="b-pop bad">${IC.x}</span><h2>Check-in failed</h2><p style="color:var(--fg);font-weight:600">${t}</p><p>${m}</p>
+    <p style="font-size:13px">Show this page to staff if you need help.</p>${kind === "join" && e ? `<a class="btn btn-primary" href="event.html#${e.id}">Open event to join</a>` : ""}${links}</section>`;
+}
+function render() {
+  const e = getEv();
+  if (!e || e.approval === "pending" || preview === "unavailable") { C.shell("events", `<div class="ci-wrap"><p class="ci-eyebrow">Event check-in</p>${failCard("unavailable")}${preview ? '<button class="b-link" data-preview="" style="align-self:center">Back to the normal check-in</button>' : ""}</div>`); S.startClock(); return; }
+  if (C.role() !== "student") {
+    C.shell("events", `<div class="ci-wrap"><p class="ci-eyebrow">Event check-in</p><section class="card ci-result"><span class="b-pop warn">${IC.lock}</span><h2>Only active student accounts can check in</h2><p>This is the page students see after scanning the QR code for “${esc(e.title)}”. Staff see who arrived on the attendance page.</p>
+      ${C.staff() ? `<a class="btn btn-primary" href="attendance.html#${e.id}">Attendance and QR</a>` : ""}<div class="links"><a class="b-link" href="event.html#${e.id}">Back to event</a><a class="b-link" href="dashboard.html">Back to dashboard</a></div></section></div>`);
+    S.startClock(); return;
+  }
+  const perm = S.permOf(e, "st0"), at = checkedAt(e);
+  if (!result && at && !preview) result = "already";
+  const res = result === "ok" || result === "already"
+    ? `<section class="card ci-result" role="status"><span class="b-pop">${C.ICON.check}</span><h2>${result === "ok" ? "Checked in successfully" : "You are already checked in."}</h2>${at ? `<span class="when">${at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>` : ""}
+        <p>${result === "ok" ? "Your attendance is recorded. Enjoy the event!" : "Your attendance was already recorded. No need to scan again."}</p>
+        <a class="btn btn-primary" href="event.html#${e.id}">Open event page</a>${links}</section>`
+    : result ? failCard(result, e) : "";
+  const showButton = !result || !["ok", "already"].includes(result);
+  C.shell("events", `
+    <div class="ci-wrap">
+      <p class="ci-eyebrow">Event check-in</p>
+      ${res}
+      <section class="card ci-card">
+        <div class="cover">${S.art(e.art)}<span class="dt"><span>${S.mon(e.start)}</span><b>${S.dom(e.start)}</b></span>${C.menu([{ label: "Preview: not joined", act: "pv", id: "join", hint: "Draft only" }, { label: "Preview: no roster link", act: "pv", id: "roster", hint: "Draft only" }, { label: "Preview: event unavailable", act: "pv", id: "unavailable", hint: "Draft only" }, "-", { label: "Start again", act: "pv", id: "", hint: "Undo this draft check-in" }], { label: "Draft previews" })}</div>
+        <div class="ci-body">
+          ${C.cat(e.category)}
+          <h1>${esc(e.title)}</h1>
+          <div class="ci-meta"><span class="b-tile">${IC.clock}</span><div><b>${S.dayLong(e.start)}</b><span>${S.time(e.start)} – ${S.time(e.end)}</span></div></div>
+          <div class="ci-meta"><span class="b-tile" style="--c:var(--coral)">${C.ICON.pin}</span><div><b>${esc(e.location)}</b><span>${esc(e.partner || S.SCHOOL.name)}</span></div></div>
+          <details class="ci-det"><summary>View details</summary><dl class="kv"><dt>Safety</dt><dd>${esc(e.risk || "Low")} risk · ${esc(e.adult)} is responsible</dd><dt>Permission</dt><dd>${e.permission ? `May be required · ${esc(perm)}` : "Not required"}</dd>${e.permission ? `<dt>Permission note</dt><dd>${esc(e.permissionNote || "—")}</dd>` : ""}</dl></details>
+          ${e.permission && perm !== "Received" ? `<div class="b-note warn">${IC.warn}<div><b>This event may require school/parent permission.</b><p>Your permission is ${perm.toLowerCase()}. You can still check in; staff will follow up.</p></div></div>` : ""}
+          ${showButton ? `<button class="btn btn-primary ci-btn" data-checkin>${C.ICON.check} Check in</button>` : ""}
+          <p class="ci-me"><span class="av">${S.ME.student.initials}</span>Signed in as ${esc(S.ME.student.name)} · ${esc(S.ME.student.sub)}</p>
+        </div>
+      </section>
+      ${!result ? '<p class="muted" style="font-size:12.5px;text-align:center">Draft: this is what opens after scanning the QR code staff show at the door. Try a failure from ⋯ on the picture.</p>' : ""}
+    </div>`);
+  S.startClock();
+}
+document.addEventListener("click", (ev) => {
+  const e = getEv();
+  if (ev.target.closest("[data-checkin]") && e) {
+    if (preview) result = preview;
+    else if (checkedAt(e)) result = "already";
+    else if (!["going", "registered", "pending"].includes(S.statusOf(e))) result = "join";
+    else { S.flag("ci-" + e.id, new Date().toISOString()); S.setStatus(e, "attended"); result = "ok"; }
+    scrollTo(0, 0); render();
+  }
+  const p = ev.target.closest('[data-act="pv"], [data-preview]');
+  if (p) { preview = (p.dataset.id ?? p.dataset.preview) || null; result = null; if (!preview && e && S.flag("ci-" + e.id)) { S.flag("ci-" + e.id, null); S.setStatus(e, "going"); } render(); }
+});
+window.addEventListener("hashchange", () => { result = null; preview = null; render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Club · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Club page: banner, one Join button, tabs instead of seven stacked sections.
+let tab = "about";
+function render() {
+  const k = S.CLUBS[location.hash.slice(1)] ? location.hash.slice(1) : "robotics", c = S.CLUBS[k], joined = S.isJoined(k);
+  const evs = S.EVENTS.filter((e) => e.club === k && !e.past);
+  const past = S.EVENTS.filter((e) => e.club === k && e.past);
+  const TABS = [["about", "About"], ["events", `Events · ${evs.length}`], ["members", `Members · ${c.members}`], ["photos", "Photos"]];
+  const names = ["Anuujin", "Bilguun", "Enkhjin", "Ganbaatar", "Khulan", "Maral", "Nomin", "Odgerel", "Saruul", "Temuulen", "Zolboo", "Munkh-Od"];
+  const pane = tab === "about" ? `<p style="font-size:16px;line-height:1.65">${esc(c.about)}</p><div class="facts" style="margin-top:16px">${[["When", c.meets], ["Where", c.where], ["Advisor", c.advisor], ["Cost", "Free"]].map(([a, b]) => `<div class="card"><span class="muted">${a}</span><b>${esc(b)}</b></div>`).join("")}</div>`
+    : tab === "events" ? (evs.length ? `<div class="egrid">${evs.map((e) => C.eventCard(e)).join("")}</div>` : '<div class="card empty">No upcoming events.</div>')
+    : tab === "members" ? `<div class="card widget"><div class="ppl">${Array.from({ length: Math.min(c.members, 12) }, (_, i) => `<span><i style="background:${["#ffc23d", "#b9c1ec", "#ffb59f", "#9fe0bd", "#e3c8ff"][i % 5]}">${names[i][0]}</i>${names[i]}${i === 0 ? "<small style='color:var(--primary);font-weight:700'>Leader</small>" : ""}</span>`).join("")}</div><p class="muted" style="font-size:13px">Only students and staff at your school can see who's a member.</p></div>`
+    : `<div class="photos">${[c.art, ...past.map((e) => e.art), "robot", "arduino", "concert", "river"].slice(0, 8).map((a) => `<span>${S.art(a)}</span>`).join("")}</div><p class="muted" style="font-size:13px;margin-top:8px">Photos members shared to the whole school from their portfolios.</p>`;
+  C.shell("clubs", `
+    <a href="clubs.html" class="muted" style="text-decoration:none;font-weight:600;font-size:14px">← Clubs</a>
+    <div class="clubhero" style="position:relative">${S.art(c.art)}</div>
+    <div class="head" style="margin-top:-40px;padding:0 6px;position:relative"><div style="display:flex;gap:14px;align-items:flex-end">${S.clubAv(k, 84).replace('class="clubav"', 'class="clubav" style2')}<div><h1>${esc(c.name)}</h1><p>${C.cat(c.category)}</p></div></div>
+      <div style="display:flex;gap:6px;align-items:center">${C.staff() ? `<a class="btn btn-primary" href="club-edit.html#${k}">Edit page</a>` : joined ? `<button class="btn btn-done" data-leave>${C.ICON.check} Joined</button>` : '<button class="btn btn-primary" data-join>Join club</button>'}${C.menu([{ label: "Copy link", act: "copy" }, { label: "Print club sheet", href: "print-clubs.html" }])}</div></div>
+    <div class="statline"><span><b>${c.members}</b>members</span><span><b>${evs.length}</b>upcoming events</span><span><b>${past.length}</b>past events</span><span style="display:flex;align-items:center;gap:8px">${S.avatars(c.members, 5)}</span></div>
+    <div class="ptabs" role="tablist">${TABS.map(([t, l]) => `<button role="tab" data-tab="${t}" aria-selected="${tab === t}">${l}</button>`).join("")}</div>
+    <div>${pane}</div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const k = S.CLUBS[location.hash.slice(1)] ? location.hash.slice(1) : "robotics";
+  const t = e.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; render(); }
+  if (e.target.closest("[data-join]")) { S.setJoined(k, true); render(); S.toast("Welcome to " + S.CLUBS[k].name + "!"); }
+  if (e.target.closest("[data-leave]")) S.confirm("Leave this club?", "You can join again any time.", "Leave", () => { S.setJoined(k, false); render(); });
+  if (e.target.closest('[data-act="copy"]')) S.toast("Link copied.");
+});
+window.addEventListener("hashchange", () => { tab = "about"; render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

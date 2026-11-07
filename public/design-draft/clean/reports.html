@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Activity reports · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Activity reports
+// Activity reports (staff; platform picks a school first): a date range, three tabs, charts drawn in CSS/SVG, and one Export menu with real CSV files.
+const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const DL = I('<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/>');
+const INFO = I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/>');
+const NOWD = "2026-11-07";
+const ACTS = [
+  ["2026-08-28", "Club fair 2026", "Social", "Oyunchimeg Dorj", "School gym", 186, 171],
+  ["2026-09-05", "Robotics open lab", "Academic", "Bat-Erdene Ganbold", "STEM lab, room 204", 24, 21],
+  ["2026-09-12", "Morning run club", "Sports", "Tsetsegmaa B.", "Sports field", 31, 27],
+  ["2026-09-19", "Tuul river clean-up", "Volunteering", "Munkhbayar Tumur", "Tuul river bank", 38, 34],
+  ["2026-09-26", "Debate: school uniforms", "Leadership", "Enkhjargal Sodnom", "Room 112", 30, 26],
+  ["2026-10-03", "Autumn football cup", "Sports", "Tsetsegmaa B.", "Sports field", 64, 58],
+  ["2026-10-10", "Morin khuur evening", "Culture", "Altantsetseg Dash", "Assembly hall", 52, null],
+  ["2026-10-17", "Book drive sorting day", "Volunteering", "Munkhbayar Tumur", "Library", 22, 19],
+  ["2026-10-22", "Career talk: nurses and doctors", "Career", "Enkhjargal Sodnom", "Assembly hall", 75, 61],
+  ["2026-10-24", "Poster design workshop", "Arts", "Altantsetseg Dash", "Art room", 18, null],
+  ["2026-10-30", "Robot sumo heats", "Academic", "Bat-Erdene Ganbold", "STEM lab, room 204", 32, 29],
+  ["2026-11-02", "Basketball tryouts", "Sports", "Tsetsegmaa B.", "School gym", 41, 37],
+  ["2026-11-05", "Student council forum", "Leadership", "Oyunchimeg Dorj", "Room 112", 27, 22],
+].map(([date, title, cat, staff, loc, reg, chk], i) => ({ id: "a" + i, date, title, cat, staff, loc, reg, chk }));
+const SCALE = { "khangai-high": 1, "school-23": 1.45, "darkhan-lab": 0.7 };
+let range = "all", from = "2026-10-01", to = NOWD, tab = "overview", q = "", sq = "", sort = "date", rec = "All";
+const PAL = ["#2340d9", "#12804a", "#e0447a", "#b25e00", "#6b4fd6", "#0f8a9a", "#f2643f"];
+const crestColor = (slug) => PAL[[...slug].reduce((a, c) => a + c.charCodeAt(0), 0) % PAL.length];
+const crestText = (n) => (n.match(/No\.\s*(\d+)/) || [])[1] || n.split(" ").filter((w) => !/^(School|No\.)$/.test(w)).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+const crest = (s, cls = "") => `<span class="gc-crest ${cls}" style="--c:${crestColor(s.slug)}">${esc(crestText(s.name))}</span>`;
+const fmt = (d) => new Date(d + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const addDays = (d, n) => { const x = new Date(d + "T12:00"); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+const initials = (n) => n.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+const AVBG = ["#fff4d6", "#e9ecfb", "#fdeae4", "#e3f4ea", "#efe6fb"];
+function keep(fn) { const a = document.activeElement, id = a && a.id, p = a && a.selectionStart; fn(); if (id) { const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } } }
+const platform = () => C.role() === "platform";
+const schoolSlug = () => platform() ? S.flag("rpSchool") : "khangai-high";
+const school = () => S.SCHOOLS.find((s) => s.slug === schoolSlug());
+function bounds() { return range === "30" ? [addDays(NOWD, -30), NOWD] : range === "90" ? [addDays(NOWD, -90), NOWD] : range === "custom" ? [from || "2000-01-01", to || NOWD] : [ACTS[0].date, NOWD]; }
+function acts() { const k = SCALE[schoolSlug()] || 1, [a, b] = bounds(); return ACTS.filter((x) => x.date >= a && x.date <= b).map((x) => ({ ...x, reg: Math.round(x.reg * k), chk: x.chk === null ? null : Math.round(x.chk * k) })); }
+const roster = () => S.list("students", S.STUDENTS);
+// Each sample student's history is derived from the activity list, so the numbers agree everywhere.
+function history(st) { const i = Math.max(0, roster().indexOf(st)); return acts().filter((a) => ((i * 7 + ACTS.findIndex((x) => x.id === a.id) * 3) % 5) < (st.status === "Active" ? 3 : 1)).map((a) => ({ ...a, state: a.chk === null ? "na" : (i + a.id.length + ACTS.findIndex((x) => x.id === a.id)) % 4 ? "in" : "no" })); }
+function weeks(list) {
+  const [a, b] = bounds(), days = Math.max(7, Math.round((new Date(b) - new Date(a)) / 864e5) + 1), n = Math.min(12, Math.ceil(days / 7)), span = Math.ceil(days / n);
+  return Array.from({ length: n }, (_, k) => { const end = addDays(b, -span * (n - 1 - k)), start = addDays(end, -span + 1); const inB = list.filter((x) => x.date >= start && x.date <= end); return { label: fmt(end), reg: inB.reduce((s, x) => s + x.reg, 0), chk: inB.reduce((s, x) => s + (x.chk || 0), 0) }; });
+}
+function totals(list) {
+  const reg = list.reduce((s, x) => s + x.reg, 0), rec = list.filter((x) => x.chk !== null), chk = rec.reduce((s, x) => s + x.chk, 0), recReg = rec.reduce((s, x) => s + x.reg, 0);
+  const size = (school() || S.SCHOOL).students || 412;
+  return { n: list.length, reg, chk, recReg, people: Math.min(size, Math.round(chk * 0.58)), rate: recReg ? Math.round((chk / recReg) * 100) : 0, notRec: list.length - rec.length };
+}
+
+function lineChart(w) {
+  const max = Math.max(10, ...w.map((x) => x.reg)), top = Math.ceil(max / 20) * 20, n = w.length;
+  const X = (i) => (n === 1 ? 50 : (i / (n - 1)) * 100), Y = (v) => 100 - (v / top) * 92;
+  const pts = (k) => w.map((x, i) => `${X(i).toFixed(2)},${Y(x[k]).toFixed(2)}`).join(" ");
+  const every = Math.ceil(n / 5);
+  return `<div class="rp-line"><span class="rp-yl" style="top:8%">${top}</span><span class="rp-yl" style="top:54%">${top / 2}</span>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Registrations and recorded check-ins per week"><g class="grid"><line x1="0" x2="100" y1="8" y2="8"/><line x1="0" x2="100" y1="54" y2="54"/><line x1="0" x2="100" y1="100" y2="100"/></g>
+      <polygon points="0,100 ${pts("reg")} 100,100" fill="color-mix(in srgb, var(--primary) 13%, transparent)"/>
+      <polyline points="${pts("reg")}" fill="none" stroke="var(--primary)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <polyline points="${pts("chk")}" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-dasharray="5 4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg></div>
+    <div class="rp-axis">${w.map((x, i) => (i % every === 0 || i === n - 1) && !(i !== n - 1 && n - 1 - i < every) ? `<span>${x.label}</span>` : "").join("")}</div>`;
+}
+
+function overview(list) {
+  const t = totals(list), w = weeks(list);
+  const cats = {}; list.forEach((x) => (cats[x.cat] = (cats[x.cat] || 0) + x.reg)); const catList = Object.entries(cats).sort((a, b) => b[1] - a[1]), cmax = Math.max(1, ...catList.map((c) => c[1]));
+  const notRecReg = list.filter((x) => x.chk === null).reduce((s, x) => s + x.reg, 0);
+  const recent = [...list].reverse().slice(0, 6), pmax = Math.max(1, ...recent.map((x) => x.reg));
+  const spark = (k) => { const m = Math.max(1, ...w.map((x) => x[k])); return `<div class="spark">${w.slice(-8).map((x) => `<i style="height:${Math.max(8, (x[k] / m) * 100)}%"></i>`).join("")}</div>`; };
+  const stats = [["Activities held", t.n, `${t.notRec} without attendance`, `<div class="spark">${w.slice(-8).map((x) => `<i style="height:${x.reg ? 30 + Math.min(70, x.reg / 3) : 8}%"></i>`).join("")}</div>`], ["Total registrations", t.reg, "across all activities", spark("reg")], ["Recorded check-ins", t.chk, "QR, manual or admin", spark("chk")], ["Participating students", t.people, `of ${(school() || S.SCHOOL).students} on the roster`, `<div class="bar" style="--c:var(--primary);margin-top:auto"><i style="width:${Math.round((t.people / ((school() || S.SCHOOL).students || 412)) * 100)}%"></i></div>`], ["Recorded attendance rate", t.rate + "%", "of registrations with attendance", `<div class="bar" style="--c:var(--green);margin-top:auto"><i style="width:${t.rate}%"></i></div>`]];
+  return `<div class="stats">${stats.map(([l, v, ch, extra]) => `<div class="card stat rich"><span class="muted">${l}</span><b>${v}</b><span class="muted" style="font-size:12px">${ch}</span>${extra}</div>`).join("")}</div>
+    <div class="rp-charts">
+      <section class="card rp-chart"><header><h3>Participation over time</h3><div class="rp-key"><span style="--c:var(--primary)"><i></i>Registrations</span><span style="--c:var(--green)"><i></i>Check-ins</span></div></header>${lineChart(w)}</section>
+      <section class="card rp-chart"><header><h3>Participation by category</h3><small>Registrations</small></header><div class="rp-hbars">${catList.map(([c, v]) => `<div class="rp-hbar" style="--c:${C.catColor(c)}"><span>${esc(c)}</span><div class="bar"><i style="width:${(v / cmax) * 100}%"></i></div><b>${v}</b></div>`).join("")}</div></section>
+      <section class="card rp-chart"><header><h3>Recorded attendance</h3><small>${t.n - t.notRec} of ${t.n} activities recorded</small></header><div class="gc-ring" style="gap:22px"><span class="gc-donut" style="--p:${t.rate};width:120px;height:120px"><b style="font-size:24px">${t.rate}%</b></span>
+        <div class="gc-legend" style="flex:1"><span style="--c:var(--green)"><i></i>Checked in<b>${t.chk}</b></span><span style="--c:var(--card-soft)"><i style="border:1px solid var(--line-strong)"></i>Registered, no check-in<b>${t.recReg - t.chk}</b></span><span style="--c:transparent"><i style="border:1px dashed var(--line-strong)"></i>Attendance not recorded<b>${notRecReg}</b></span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:auto"><span class="muted" style="font-size:12.5px;font-weight:600">How students checked in</span><div class="rp-stack">${[["QR", 81, "var(--primary)"], ["Manual", 13, "var(--sun)"], ["Admin", 6, "var(--coral)"]].map(([l, v, c]) => `<i style="width:${v}%;background:${c}" title="${l} ${v}%"></i>`).join("")}</div><div class="rp-key">${[["QR code", 81, "var(--primary)"], ["Manual by staff", 13, "var(--sun)"], ["By an admin", 6, "var(--coral)"]].map(([l, v, c]) => `<span style="--c:${c}"><i></i>${l} <b style="color:var(--fg)">${Math.round((t.chk * v) / 100)}</b></span>`).join("")}</div></div></section>
+      <section class="card rp-chart"><header><h3>Registration versus recorded attendance</h3><div class="rp-key"><span style="--c:var(--primary)"><i></i>Registered</span><span style="--c:var(--green)"><i></i>Checked in</span></div></header><div class="rp-pairs">${recent.map((x) => `<div class="rp-pair"><div><span>${esc(x.title)}</span><b>${x.chk === null ? "Attendance not recorded" : `${x.chk} / ${x.reg}`}</b></div><div class="bar" style="--c:var(--primary)"><i style="width:${(x.reg / pmax) * 100}%"></i></div>${x.chk === null ? `<div class="na" style="width:${(x.reg / pmax) * 100}%"></div>` : `<div class="bar" style="--c:var(--green)"><i style="width:${(x.chk / pmax) * 100}%"></i></div>`}</div>`).join("")}</div></section>
+    </div>
+    <div class="gc-note">${INFO}<div class="rp-defs"><span><b>Registrations</b>Students who joined an activity in this period, including those who later cancelled.</span><span><b>Recorded check-ins</b>Check-ins by QR, by staff or by an admin. Activities where no one took attendance are left out.</span><span><b>Recorded attendance rate</b>Check-ins divided by registrations, only for activities that recorded attendance.</span></div></div>`;
+}
+
+function activities(list) {
+  let rows = list.filter((x) => (rec === "All" || (rec === "Recorded") === (x.chk !== null)) && (!q || (x.title + x.staff + x.cat).toLowerCase().includes(q.toLowerCase())));
+  const rate = (x) => (x.chk === null ? -1 : x.chk / x.reg);
+  rows.sort(sort === "reg" ? (a, b) => b.reg - a.reg : sort === "rate" ? (a, b) => rate(b) - rate(a) : sort === "title" ? (a, b) => a.title.localeCompare(b.title) : (a, b) => b.date.localeCompare(a.date));
+  const SORTS = [["date", "Newest first"], ["reg", "Most registrations"], ["rate", "Best attendance"], ["title", "Name A–Z"]];
+  return `<div class="filters">${["All", "Recorded", "Not recorded"].map((s) => `<button class="chip" data-rec="${s}" aria-pressed="${rec === s}">${s === "All" ? "All activities" : s === "Recorded" ? "Attendance recorded" : "Attendance not recorded"}</button>`).join("")}
+      ${C.menu(SORTS.map(([k, l]) => ({ label: (k === sort ? "✓ " : "") + l, act: "sort", id: k })), { button: `Sort: ${SORTS.find((s) => s[0] === sort)[1]}` })}
+      <label class="search">${C.ICON.search}<span class="sr">Search activities</span><input id="q" type="search" placeholder="Search activities" value="${esc(q)}"></label></div>
+    ${rows.length ? `<div class="card gc-table"><table><thead><tr><th>Activity</th><th>Date</th><th>Responsible staff</th><th>Registered</th><th>Checked in</th><th>Attendance</th></tr></thead><tbody>${rows.map((x) => `<tr><td class="lead"><span class="t">${esc(x.title)}</span>${C.cat(x.cat)}</td><td data-h="Date">${fmt(x.date)}</td><td data-h="Staff">${esc(x.staff)}</td><td class="num" data-h="Registered">${x.reg}</td><td class="num" data-h="Checked in">${x.chk === null ? "—" : x.chk}</td><td data-h="Attendance">${x.chk === null ? '<span class="tag warn">Attendance not recorded</span>' : `<span class="rp-rate"><span class="bar" style="--c:var(--green)"><i style="width:${Math.round((x.chk / x.reg) * 100)}%"></i></span><b>${Math.round((x.chk / x.reg) * 100)}%</b></span>`}</td></tr>`).join("")}</tbody></table></div>` : '<div class="card empty" style="padding:40px"><b style="color:var(--fg)">No activities for this period</b><br>Try another date range or clear the search.</div>'}`;
+}
+
+function studentsTab() {
+  const rows = roster().filter((s) => !sq || (s.name + s.group + s.number).toLowerCase().includes(sq.toLowerCase()));
+  return `<div class="filters"><span class="gc-count">${rows.length} student${rows.length === 1 ? "" : "s"} · history follows the date range above</span><label class="search">${C.ICON.search}<span class="sr">Search students</span><input id="sq" type="search" placeholder="Name, class or number" value="${esc(sq)}"></label></div>
+    <div class="card rows">${rows.map((s) => { const h = history(s), i = roster().indexOf(s), att = h.filter((x) => x.state === "in"), last = att[att.length - 1]; return `<div class="row"><span class="av" style="background:${AVBG[i % 5]};color:#1b1a17">${initials(s.name)}</span><span class="grow"><span class="t" style="display:block">${esc(s.name)}</span><span class="s">Class ${esc(s.group)} · ${last ? `last checked in ${fmt(last.date)}` : "no recorded participation"}</span></span><span class="cols"><span><b>${h.length}</b> registered</span><span><b>${att.length}</b> attended</span></span>${s.status !== "Active" ? '<span class="tag">Inactive</span>' : ""}<span class="end"><button class="btn btn-sm btn-soft" data-detail="${s.id}">View <span class="rp-long">activity </span>details</button></span></div>`; }).join("") || '<p class="empty"><b style="color:var(--fg)">No students found</b><br>Try another name or class.</p>'}</div>`;
+}
+
+function detail(id) {
+  const s = roster().find((x) => x.id === id), i = roster().indexOf(s), h = history(s), att = h.filter((x) => x.state === "in");
+  const clubs = Object.entries(S.CLUBS).filter((_, k) => (i + k) % 3 === 0);
+  const up = S.EVENTS.filter((e, k) => !e.past && (e.approval || "approved") === "approved" && (i + k) % 3 === 0);
+  const st = { in: '<span class="tag ok">Checked in</span>', no: '<span class="tag">Registered, no check-in</span>', na: '<span class="tag warn">Attendance not recorded</span>' };
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Student activity details</h2><button class="close" data-close aria-label="Close">×</button></div>
+    <div class="sheet-body">
+      <div class="row" style="padding:0"><span class="av" style="background:${AVBG[i % 5]};color:#1b1a17;width:48px;height:48px;font-size:15px">${initials(s.name)}</span><span class="grow"><span class="t" style="display:block;font-size:17px">${esc(s.name)}</span><span class="s">Grade ${esc(s.grade)} · Class ${esc(s.group)} · ${esc(s.number)}</span></span></div>
+      <div class="facts"><div class="card"><span class="muted">Joined clubs</span><b>${clubs.length}</b></div><div class="card"><span class="muted">Recorded attendances</span><b>${att.length}</b></div><div class="card"><span class="muted">Upcoming registrations</span><b>${up.length}</b></div><div class="card"><span class="muted">Last recorded participation</span><b>${att.length ? fmt(att[att.length - 1].date) : "None yet"}</b></div></div>
+      ${clubs.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px">${clubs.map(([k, c]) => `<span class="tag" style="padding:4px 10px 4px 4px;gap:6px">${S.clubAv(k, 20)}${esc(c.name)}</span>`).join("")}</div>` : ""}
+      <section class="sec"><header><h2>Filtered event history</h2><span class="gc-count">${h.length} in this period</span></header>
+        <div class="card rows">${[...h].reverse().map((x) => `<div class="row" style="padding:10px 14px"><span class="dtile" style="width:44px"><span>${new Date(x.date + "T12:00").toLocaleDateString("en-US", { month: "short" }).toUpperCase()}</span><b style="font-size:16px">${new Date(x.date + "T12:00").getDate()}</b></span><span class="grow"><span class="t" style="display:block;font-size:14px">${esc(x.title)}</span><span class="s">${esc(x.loc)}</span></span>${st[x.state]}</div>`).join("") || '<p class="empty">No activity in this period.</p>'}</div></section>
+      ${up.length ? `<section class="sec"><header><h2>Upcoming registrations</h2></header><div class="card rows">${up.map((e) => `<a class="row" style="padding:10px 14px" href="event.html#${e.id}"><span class="grow"><span class="t" style="display:block;font-size:14px">${esc(e.title)}</span><span class="s">${S.dayShort(e.start)} · ${S.time(e.start)}</span></span>${C.cat(e.category)}</a>`).join("")}</div></section>` : ""}
+    </div>`);
+}
+
+function csv(name, rows) {
+  const text = rows.map((r) => r.map((c) => /[",\n]/.test(String(c ?? "")) ? `"${String(c).replace(/"/g, '""')}"` : (c ?? "")).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportCsv(kind) {
+  const slug = schoolSlug(), list = acts();
+  if (kind === "roster") csv(`${slug}-student-roster.csv`, [["full_name", "grade", "class_group", "student_number", "status", "created"], ...roster().map((s) => [s.name, s.grade, s.group, s.number, s.status, s.created])]);
+  if (kind === "reg") csv(`${slug}-event-registrations.csv`, [["event_title", "event_date", "category", "responsible_staff", "student", "grade", "class_group", "registration_status"], ...roster().flatMap((s) => history(s).map((x) => [x.title, x.date, x.cat, x.staff, s.name, s.grade, s.group, x.state === "in" ? "Attended" : "Registered"]))]);
+  if (kind === "chk") csv(`${slug}-attendance-check-ins.csv`, [["event_title", "event_date", "student", "class_group", "check_in_time", "method"], ...roster().flatMap((s, i) => history(s).filter((x) => x.state === "in").map((x, k) => [x.title, x.date, s.name, s.group, `${x.date} 1${5 + ((i + k) % 3)}:${String((i * 7 + k * 11) % 60).padStart(2, "0")}`, ["QR", "QR", "Manual", "QR", "Admin"][(i + k) % 5]]))]);
+  S.toast("CSV downloaded.");
+}
+
+function render() {
+  if (!C.staff() && !platform()) { C.shell("", `<div class="head"><div><h1>Activity reports</h1><p>Participation and attendance across the school</p></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">This page is for school staff</b><br>Your own clubs, events and goals are on <a class="gc-link" href="portfolio.html">your portfolio</a>.</div>`); S.startClock(); return; }
+  if (platform() && !school()) {
+    C.shell("", `<div class="head"><div><span class="plat-eyebrow">Platform administrator mode</span><h1 style="margin-top:6px">Activity reports</h1><p>Pick a school to see its participation and attendance.</p></div></div>
+      <div class="rp-pick">${S.SCHOOLS.filter((s) => s.status === "Active").map((s) => `<button class="card" data-school="${s.slug}"><span style="display:flex;gap:12px;align-items:center">${crest(s)}<span><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">${esc(s.province)}</span></span></span><span class="statline" style="font-size:13px"><span><b>${s.students}</b>students</span><span><b>${s.teachers}</b>teachers</span></span><span class="gc-link">Open reports →</span></button>`).join("")}</div>`);
+    S.startClock(); return;
+  }
+  const list = acts(), sc = school() || S.SCHOOL;
+  const RANGES = [["all", "All time"], ["30", "Last 30 days"], ["90", "Last 90 days"], ["custom", "Custom range"]];
+  const TABS = [["overview", "Overview"], ["activities", `Activities <span class="muted">${list.length}</span>`], ["students", "Students"]];
+  const [a, b] = bounds();
+  const head = platform()
+    ? `<div class="head"><div><span class="plat-eyebrow">Platform administrator mode</span><h1 style="margin-top:6px">Activity reports</h1><p>${esc(sc.name)} · ${esc(sc.province)}</p></div>${C.menu([{ label: "Change school", act: "change" }, { label: "Open school", href: `platform.html#school-${sc.slug}` }])}</div>`
+    : `<div class="head"><div><h1>Activity reports</h1><p>${esc(sc.name)} · ${fmt(a)} – ${fmt(b)}</p></div>${C.menu([{ label: "Student roster", hint: "Everyone on the roster", act: "csv", id: "roster" }, { label: "Event registrations", hint: "One row per student per event", act: "csv", id: "reg" }, { label: "Attendance check-ins", hint: "Time and method of each check-in", act: "csv", id: "chk" }], { button: `${DL} Export reports` }).replace('class="btn btn-soft"', 'class="btn btn-primary"')}</div>`;
+  const body = !ACTS.length ? '<div class="card empty" style="padding:48px"><b style="color:var(--fg)">No report data yet</b><br><a class="gc-link" href="students.html">Add students</a> · <a class="gc-link" href="create-event.html">Create event</a></div>'
+    : tab === "students" ? studentsTab() : !list.length ? `<div class="card empty" style="padding:48px"><b style="color:var(--fg)">${tab === "overview" ? "No participation data for this period" : "No activities for this period"}</b><br>Nothing happened between ${fmt(a)} and ${fmt(b)}. Try a wider range.</div>` : tab === "overview" ? overview(list) : activities(list);
+  C.shell("", `${head}
+    <div class="filters">${RANGES.map(([k, l]) => `<button class="chip" data-range="${k}" aria-pressed="${range === k}">${l}</button>`).join("")}
+      ${range === "custom" ? `<span class="rp-range"><label class="sr" for="rfrom">From</label><span>From</span><input class="input" type="date" id="rfrom" value="${from}" max="${NOWD}"><span>to</span><label class="sr" for="rto">To</label><input class="input" type="date" id="rto" value="${to}" max="${NOWD}"></span>` : ""}</div>
+    <div class="ptabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`).join("")}</div>
+    ${body}`);
+  S.startClock();
+}
+
+document.addEventListener("click", (e) => {
+  const r = e.target.closest("[data-range]"); if (r) { range = r.dataset.range; render(); }
+  const t = e.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; render(); }
+  const rc = e.target.closest("[data-rec]"); if (rc) { rec = rc.dataset.rec; render(); }
+  const d = e.target.closest("[data-detail]"); if (d) detail(d.dataset.detail);
+  const sc = e.target.closest("[data-school]"); if (sc) { S.flag("rpSchool", sc.dataset.school); render(); }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  if (a.dataset.act === "sort") { sort = a.dataset.id; render(); }
+  if (a.dataset.act === "csv") exportCsv(a.dataset.id);
+  if (a.dataset.act === "change") { S.flag("rpSchool", ""); render(); }
+});
+document.addEventListener("change", (e) => { if (e.target.id === "rfrom") { from = e.target.value; render(); } if (e.target.id === "rto") { to = e.target.value; render(); } });
+S.onSearch("q", (v) => { q = v; keep(render); });
+S.onSearch("sq", (v) => { sq = v; keep(render); });
+render();
+
+})();
+</script>
+</body>
+</html>

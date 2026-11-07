@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Staff accounts · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Staff accounts
+// Staff accounts (school admin): one "Add teacher" button, chips + search, Deactivate/Reactivate in ⋯ with a confirm. Admins and you are protected.
+const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const LOCK = I('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>');
+const INFO = I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/>');
+let roleF = "All", statusF = "Active", q = "";
+const fmt = (d) => new Date(d + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const initials = (n) => n.split(" ").map((w) => w[0]).join("").slice(0, 2);
+const AVBG = ["#e9ecfb", "#fff4d6", "#e3f4ea", "#fdeae4", "#efe6fb"];
+const staffList = () => S.list("staff", S.STAFF.map((x, i) => ({ id: "sf" + i, ...x })));
+const isMe = (p) => p.email === S.ME.admin.email;
+const protectedAcc = (p) => p.role === "School admin" || isMe(p);
+function keep(fn) { const a = document.activeElement, id = a && a.id, p = a && a.selectionStart; fn(); if (id) { const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } } }
+
+function render() {
+  if (C.role() !== "admin") { C.shell("", `<div class="head"><div><h1>Staff accounts</h1><p>Teacher and school admin accounts</p></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">This page is for school admins</b><br>${C.staff() ? "Ask your school admin to add or deactivate a teacher account." : "Only school staff can see staff accounts."}</div>`); S.startClock(); return; }
+  const all = staffList(), list = all.filter((p) => (roleF === "All" || p.role === roleF) && (statusF === "All" || p.status === statusF) && (!q || (p.name + p.email).toLowerCase().includes(q.toLowerCase())));
+  const n = (f) => all.filter(f).length, teachers = n((p) => p.role === "Teacher" && p.status === "Active"), admins = n((p) => p.role === "School admin" && p.status === "Active"), inactive = n((p) => p.status !== "Active");
+  const safety = all.filter((p) => p.safety && p.status === "Active");
+  const recent = [...all].sort((a, b) => b.created.localeCompare(a.created)).slice(0, 3);
+  C.shell("", `
+    <div class="head"><div><h1>Staff accounts</h1><p>${teachers} active teacher${teachers === 1 ? "" : "s"} · ${admins} school admin${admins === 1 ? "" : "s"}</p></div><button class="btn btn-primary" data-add>${C.ICON.plus} Add teacher</button></div>
+    <div class="filters">${[["All", "Everyone"], ["Teacher", "Teachers"], ["School admin", "School admins"]].map(([k, l]) => `<button class="chip" data-role-f="${k}" aria-pressed="${roleF === k}">${l}</button>`).join("")}<span class="gc-sep" aria-hidden="true"></span>${["Active", "Inactive", "All"].map((s) => `<button class="chip" data-st="${s}" aria-pressed="${statusF === s}">${s === "All" ? "Any status" : s}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search staff</span><input id="q" type="search" placeholder="Name or email" value="${esc(q)}"></label></div>
+    <div class="split"><section class="sec" style="align-self:start"><header><h2>Staff profiles</h2><span class="gc-count">${list.length} of ${all.length}</span></header>
+      <div class="card rows">${list.map((p) => { const i = all.indexOf(p); return `<div class="row"><span class="av" style="background:${p.role === "School admin" ? "linear-gradient(135deg,var(--sun),var(--coral))" : AVBG[i % 5]};color:#1b1a17">${initials(p.name)}</span><span class="grow"><span class="t" style="display:block">${esc(p.name)}${isMe(p) ? ' <span class="muted" style="font-weight:500">(you)</span>' : ""}${protectedAcc(p) ? ` <span class="sf-lock" title="Protected account">${LOCK}</span>` : ""}</span><span class="s"><span class="sf-show">${p.role} · </span>${esc(p.email)}</span></span>
+        <span class="gc-when">Added ${fmt(p.created)}${p.safety ? '<br><span style="color:var(--coral);font-weight:600">Safety response team</span>' : ""}</span>
+        <span class="tag sf-hide ${p.role === "School admin" ? "blue" : ""}">${p.role}</span>${p.status === "Active" ? '<span class="tag ok sf-hide">Active</span>' : '<span class="tag">Inactive</span>'}
+        <span class="end">${protectedAcc(p) ? C.menu([{ label: "Copy email", act: "copy", id: p.id }, "-", { label: "Protected account", act: "prot", id: p.id, hint: isMe(p) ? "You can't deactivate your own account" : "School admins are managed by the platform team" }]) : C.menu([{ label: "Copy email", act: "copy", id: p.id }, ...(p.safety ? [{ label: "Safety response team", href: "safety-team.html" }] : []), "-", p.status === "Active" ? { label: "Deactivate teacher", act: "off", id: p.id, danger: true, hint: "They can't sign in until reactivated" } : { label: "Reactivate teacher", act: "on", id: p.id }])}</span></div>`; }).join("") || `<div class="empty"><b style="color:var(--fg)">${all.length ? "No staff match" : "No staff profiles yet"}</b><br>${all.length ? "Try another filter or search." : "Add your first teacher to get started."}</div>`}</div>
+      <div class="gc-note">${INFO}<span><b>Protected accounts</b> can't be deactivated here: your own account and other school admins. The platform team manages school admins.</span></div></section>
+      <aside class="side">
+        <div class="card widget"><h3>Your team</h3><div class="statline"><span><b>${n((p) => p.status === "Active")}</b>active</span><span><b>${inactive}</b>inactive</span></div>
+          ${[["Teachers", teachers, "var(--primary)"], ["School admins", admins, "var(--sun)"], ["Inactive", inactive, "var(--faint)"]].map(([l, v, c]) => `<div class="goal"><div><span>${l}</span><b>${v}</b></div><div class="bar" style="--c:${c}"><i style="width:${(v / Math.max(1, all.length)) * 100}%"></i></div></div>`).join("")}</div>
+        <div class="card widget"><h3>Safety response team</h3><div class="sf-team">${[0, 1, 2].map((k) => `<span class="${k < safety.length ? "on" : ""}"></span>`).join("")}</div><p class="muted" style="font-size:13.5px">${safety.length} of 3 responders: ${safety.map((p) => esc(p.name.split(" ")[0])).join(" and ") || "none yet"}.</p><a class="gc-link" href="safety-team.html">Manage response team →</a></div>
+        <div class="card widget"><h3>Recently added</h3><div class="feed">${recent.map((p) => `<div><span class="av" style="width:32px;height:32px;font-size:11px;background:${AVBG[all.indexOf(p) % 5]};color:#1b1a17">${initials(p.name)}</span><span style="min-width:0"><b>${esc(p.name)}</b><span class="s" style="display:block">${p.role} · ${fmt(p.created)}</span></span></div>`).join("")}</div></div>
+      </aside></div>`);
+  S.startClock();
+}
+function addSheet() {
+  const pw = () => "Khangai-" + Math.random().toString(36).slice(2, 6) + Math.floor(10 + Math.random() * 89);
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Create teacher account</h2><button class="close" data-close aria-label="Close">×</button></div>
+    <form class="sheet-body" id="addf"><label class="field"><span>Full name</span><input class="input" name="name" required autocomplete="off"></label>
+      <label class="field"><span>Email</span><input class="input" name="email" type="email" required placeholder="name@khangai.edu.mn" autocomplete="off"></label>
+      <label class="field"><span>Temporary password</span><span class="set-ro" style="display:flex;gap:8px"><input class="input" name="pw" required minlength="8" value="${pw()}"><button type="button" class="btn btn-sm" data-pw>New</button></span><small>Share it with the teacher privately. They change it after their first sign-in.</small></label>
+      <button class="btn btn-primary">Create teacher</button></form>`, {
+    onMount: (d) => {
+      d.querySelector("[data-pw]").addEventListener("click", () => (d.querySelector("[name=pw]").value = pw()));
+      d.querySelector("#addf").addEventListener("submit", (ev) => {
+        ev.preventDefault(); const v = S.formData(ev.target), all = staffList();
+        if (all.some((p) => p.email.toLowerCase() === v.email.toLowerCase())) { S.toast("That email already has an account."); return; }
+        all.unshift({ id: S.uid(), name: v.name, email: v.email, role: "Teacher", status: "Active", created: "2026-11-07" }); S.saveLists(); d.close(); roleF = "All"; statusF = "Active"; render(); S.toast("Teacher account created.");
+      });
+    },
+  });
+}
+document.addEventListener("click", (e) => {
+  const rf = e.target.closest("[data-role-f]"); if (rf) { roleF = rf.dataset.roleF; render(); }
+  const st = e.target.closest("[data-st]"); if (st) { statusF = st.dataset.st; render(); }
+  if (e.target.closest("[data-add]")) addSheet();
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const p = staffList().find((x) => x.id === a.dataset.id); if (!p) return;
+  if (a.dataset.act === "prot") S.toast(isMe(p) ? "You can't deactivate your own account." : "School admin accounts are protected.");
+  if (a.dataset.act === "copy") { try { navigator.clipboard.writeText(p.email); } catch (er) {} S.toast("Email copied."); }
+  if (a.dataset.act === "off") S.confirm(`Deactivate ${p.name}?`, "They won't be able to sign in. Their events and records stay. You can reactivate them later.", "Deactivate teacher", () => { p.status = "Inactive"; S.saveLists(); render(); S.toast("Teacher deactivated."); });
+  if (a.dataset.act === "on") S.confirm(`Reactivate ${p.name}?`, "They can sign in again with their existing password.", "Reactivate teacher", () => { p.status = "Active"; S.saveLists(); render(); S.toast("Teacher reactivated."); });
+});
+S.onSearch("q", (v) => { q = v; keep(render); });
+render();
+
+})();
+</script>
+</body>
+</html>

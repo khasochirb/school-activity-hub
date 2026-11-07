@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Create event · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Create event
+// Create event: a 3-step wizard (Basics → Participation → Review) with a live preview card beside it.
+// One primary button per step. Staff publish straight away; a student club leader submits for approval.
+const I = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC = { clock: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'), info: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>'), warn: I('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'), image: I('<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M20.5 16l-5-5-8 8.5"/>'), send: I('<path d="M4 12l16-8-6 16-2.5-6.5z"/>') };
+const STAFF = C.staff(), PLATFORM = C.role() === "platform", LEADER = C.role() === "student";
+const LEAD_CLUB = "robotics";
+const ME = S.ME[C.role()];
+const DURS = [["30", "30 min"], ["60", "1 hour"], ["90", "1.5 hours"], ["120", "2 hours"], ["custom", "Custom"]];
+const MATS = ["Nothing required", "Notebook and pen", "Sportswear", "Device"];
+const ACCESS = ["Wheelchair-accessible location", "Seating available", "Accessible washroom", "Quiet environment", "Custom"];
+const ARTS = ["robot", "arduino", "ball", "books", "debate", "concert", "river", "medal", "poster", "notebook"];
+const MULTI = ["materials", "access", "grades"];
+const STEPS = [["Basics", "Title, time and place"], ["Participation", "Who, cost and safety"], ["Review", "Check and publish"]];
+const fresh = () => ({ title: "", category: "Academic", date: "2026-11-18", start: "16:30", dur: "90", end: "18:00", location: "", about: "", club: LEADER ? LEAD_CLUB : "", capacity: "", art: "robot", poster: "",
+  experience: "Beginner-friendly", elig: "All students", grades: [], cost: "Free", amount: "", currency: "MNT", costNotes: "", materials: ["Nothing required"], materialsOther: "", commitment: "One-time",
+  access: ["Wheelchair-accessible location"], accessOther: "", adult: "Bat-Erdene Ganbold", risk: "Low", permission: "No", permissionNote: "", scheduleNote: "" });
+let d = Object.assign(fresh(), S.flag("ceDraft") || {});
+let step = 0, errors = {}, done = null, school = PLATFORM ? S.flag("ceSchool") || "" : "";
+
+const pad = (n) => String(n).padStart(2, "0");
+const toMin = (t) => { const [h, m] = String(t || "0:0").split(":").map(Number); return h * 60 + (m || 0); };
+const addMin = (t, m) => { const x = toMin(t) + m; return pad(Math.floor(x / 60) % 24) + ":" + pad(x % 60); };
+const fmtDur = (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
+const isPast = () => d.date && new Date(d.date + "T23:59") < C.NOW;
+const costText = () => (d.cost === "Free" ? "Free" : `${d.cost === "Variable" ? "Variable cost" : "Paid"}${d.amount ? ` · ${Number(d.amount).toLocaleString("en-US")} ${d.currency}` : ""}`);
+const eligText = () => (d.elig === "Specific grades" ? (d.grades.length ? `Grades ${d.grades.join(", ")}` : "Specific grades") : d.elig);
+const matText = () => [...d.materials, d.materialsOther.trim()].filter(Boolean).join(", ") || "Not set";
+const accText = () => [...d.access.filter((a) => a !== "Custom"), d.access.includes("Custom") ? d.accessOther.trim() : ""].filter(Boolean).join(", ") || "Not set";
+const checks = () => [
+  ["Title", d.title.trim().length >= 4, 0], ["Date and time", !!(d.date && d.start && d.end && toMin(d.end) > toMin(d.start)), 0], ["Location", !!d.location.trim(), 0],
+  ["Description", d.about.trim().length >= 40, 0], ["Responsible adult", !!d.adult, 1], ["Who can attend", d.elig !== "Specific grades" || d.grades.length > 0, 1],
+  ["Cost", d.cost === "Free" || !!(d.amount || d.costNotes.trim()), 1], ["Required materials", d.materials.length > 0 || !!d.materialsOther.trim(), 1],
+  ["Safety and permission", d.permission === "No" || !!d.permissionNote.trim(), 1]];
+
+const opt = (name, v, l, type = "radio") => `<label class="b-opt"><input type="${type}" name="${name}" value="${esc(v)}" ${(type === "radio" ? d[name] === v : (d[name] || []).includes(v)) ? "checked" : ""}><span>${esc(l || v)}</span></label>`;
+const fld = (label, ctl, extra = "") => `<label class="field"><span>${label}</span>${ctl}${extra}</label>`;
+const inp = (name, attrs = "") => `<input class="input" name="${name}" value="${esc(d[name])}" ${attrs}>`;
+const err = (k) => (errors[k] ? `<small class="b-err">${esc(errors[k])}</small>` : "");
+const cnt = (name, max) => `<small class="b-cnt" data-cnt="${name}" data-max="${max}"></small>`;
+
+function timePreview() {
+  const okEnd = toMin(d.end) > toMin(d.start);
+  if (!d.date || !d.start || !d.end) return `<div class="ce-time bad" id="cetime">${IC.warn}<div><b>Add a date, start and end time</b><span>Students see this on the event card.</span></div></div>`;
+  if (!okEnd) return `<div class="ce-time bad" id="cetime">${IC.warn}<div><b>End time must be after the start time</b><span>Pick a quick duration or change the end time.</span></div></div>`;
+  const s = `${d.date}T${d.start}`, e = `${d.date}T${d.end}`;
+  return `<div class="ce-time ${isPast() ? "bad" : ""}" id="cetime">${isPast() ? IC.warn : IC.clock}<div><b>${S.dayLong(s)} · ${S.time(s)} – ${S.time(e)}</b><span>${isPast() ? "This date is in the past. " : ""}${fmtDur(toMin(d.end) - toMin(d.start))} · Ulaanbaatar time</span></div></div>`;
+}
+
+function basics() {
+  const clubs = Object.entries(S.CLUBS);
+  return `
+    <section class="card b-card sec"><header><div><h2>The basics</h2><p>What students see first on the events list.</p></div></header>
+      ${fld("Title", inp("title", 'placeholder="e.g. Arduino for beginners" maxlength="120" required'), err("title"))}
+      <div class="b-grid2">
+        ${fld("Category", `<select class="input" name="category">${S.CATEGORIES.map((c) => `<option ${c === d.category ? "selected" : ""}>${c}</option>`).join("")}</select>`)}
+        ${fld("Club", LEADER ? `<select class="input" name="club" disabled><option value="${LEAD_CLUB}">${esc(S.CLUBS[LEAD_CLUB].name)}</option></select>` : `<select class="input" name="club"><option value="">No club (school event)</option>${clubs.map(([k, c]) => `<option value="${k}" ${d.club === k ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>`, LEADER ? '<small>You lead this club.</small>' : "")}
+      </div>
+    </section>
+    <section class="card b-card sec"><header><div><h2>When</h2><p>Pick a quick duration and the end time fills in.</p></div></header>
+      <div class="b-grid3">${fld("Event date", inp("date", 'type="date" required'), err("date"))}${fld("Start time", inp("start", 'type="time" required'))}${fld("End time", inp("end", 'type="time" required'), err("end"))}</div>
+      <div class="field"><span>Quick duration</span><div class="b-opts">${DURS.map(([v, l]) => opt("dur", v, l)).join("")}</div></div>
+      <div class="field"><span>Event time preview</span>${timePreview()}</div>
+    </section>
+    <section class="card b-card sec"><header><div><h2>Where and what</h2><p>A clear description gets more students to join.</p></div></header>
+      <div class="b-grid2">${fld("Location", inp("location", 'placeholder="e.g. STEM lab, room 204"'))}${fld("Max participants", inp("capacity", 'type="number" min="1" placeholder="No limit"'), "<small>Leave empty for no limit.</small>")}</div>
+      ${fld("Description", `<textarea class="textarea" name="about" rows="5" maxlength="2000" placeholder="What will happen, who it's for and what students will get out of it.">${esc(d.about)}</textarea>`, cnt("about", 2000))}
+    </section>`;
+}
+
+function participation() {
+  const staffList = S.STAFF.filter((s) => s.status === "Active");
+  return `
+    <section class="card b-card sec"><header><div><h2>Who can attend</h2><p>Helps students decide if it's for them.</p></div></header>
+      <div class="field"><span>Experience level</span><div class="b-opts">${opt("experience", "Beginner-friendly")}${opt("experience", "Prior experience recommended")}</div></div>
+      <div class="field"><span>Eligibility</span><div class="b-opts">${opt("elig", "All students")}${opt("elig", "Specific grades")}${opt("elig", "Club members")}</div></div>
+      <div class="field" data-show="elig:Specific grades"><span>Grades</span><div class="b-opts">${["9", "10", "11", "12"].map((g) => opt("grades", g, "Grade " + g, "checkbox")).join("")}</div></div>
+    </section>
+    <section class="card b-card sec"><header><div><h2>Practical details</h2><p>Cost, what to bring and how often.</p></div></header>
+      <div class="field"><span>Cost</span><div class="b-opts">${opt("cost", "Free")}${opt("cost", "Paid")}${opt("cost", "Variable")}</div></div>
+      <div class="b-grid3" data-show="cost:Paid,Variable">${fld("Amount", inp("amount", 'type="number" min="0" placeholder="5000"'))}${fld("Currency", `<select class="input" name="currency">${["MNT", "USD"].map((c) => `<option ${d.currency === c ? "selected" : ""}>${c}</option>`).join("")}</select>`)}${fld("Cost notes", inp("costNotes", 'placeholder="e.g. Bus ticket"'))}</div>
+      <div class="field"><span>Required materials</span><div class="b-opts">${MATS.map((m) => opt("materials", m, m, "checkbox")).join("")}</div>${inp("materialsOther", 'placeholder="Something else? e.g. Calculator" aria-label="Other materials"')}</div>
+      <div class="field"><span>Expected commitment</span><div class="b-opts">${["One-time", "Weekly", "Twice weekly", "Full term"].map((c) => opt("commitment", c)).join("")}</div></div>
+      <div class="field"><span>Accessibility</span><div class="b-opts">${ACCESS.map((a) => opt("access", a, a, "checkbox")).join("")}</div><div data-show="access:Custom">${inp("accessOther", 'placeholder="Describe the access arrangements" aria-label="Custom accessibility"')}</div></div>
+    </section>
+    <section class="card b-card sec"><header><div><h2>Poster</h2><p>Upload a poster or pick a cover.</p></div></header>
+      <div class="ce-drop"><span class="pv" id="cepv">${d.poster ? `<img src="${d.poster}" alt="Poster preview">` : S.art(d.art)}</span><div style="min-width:0;display:flex;flex-direction:column;gap:8px;align-items:flex-start"><p>JPG or PNG, landscape works best. ${d.poster ? "Your poster is used on the event card." : "No poster yet: the cover below is used."}</p>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-soft btn-sm" style="position:relative;overflow:hidden">${IC.image}${d.poster ? "Replace poster" : "Upload poster"}<input type="file" accept="image/*" id="ceposter" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>${d.poster ? '<button type="button" class="btn btn-sm" data-unposter>Remove</button>' : ""}</span></div></div>
+      <div class="ce-art" role="radiogroup" aria-label="Cover">${ARTS.map((a) => `<label title="${a}"><input type="radio" name="art" value="${a}" ${d.art === a ? "checked" : ""} aria-label="Cover ${a}">${S.art(a)}</label>`).join("")}</div>
+    </section>
+    <section class="card b-card sec"><header><div><h2>Safety</h2><p>Shown on the event and to the approving teacher.</p></div></header>
+      <div class="b-grid2">${fld("Responsible adult", `<select class="input" name="adult">${staffList.map((s) => `<option ${s.name === d.adult ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`)}
+        <div class="field"><span>Risk level</span><div class="b-opts">${["Low", "Medium", "High"].map((r) => opt("risk", r)).join("")}</div></div></div>
+      <div class="field"><span>Permission required</span><div class="b-opts">${opt("permission", "No")}${opt("permission", "Yes")}</div></div>
+      <div data-show="permission:Yes">${fld("Permission note", `<textarea class="textarea" name="permissionNote" rows="2" placeholder="Why permission is needed, e.g. ends after school hours">${esc(d.permissionNote)}</textarea>`, "<small>Staff record each student's permission on the attendance page. Parents don't have a login.</small>")}</div>
+      ${STAFF || PLATFORM ? fld("Schedule-change notice", `<textarea class="textarea" name="scheduleNote" rows="2" placeholder="Optional. Shown as “Important schedule update” on the event.">${esc(d.scheduleNote)}</textarea>`) : ""}
+    </section>`;
+}
+
+function review() {
+  const ch = checks(), miss = ch.filter((c) => !c[1]), ok = !miss.length;
+  const s = `${d.date}T${d.start}`, e = `${d.date}T${d.end}`;
+  const box = (title, st, rows) => `<div class="card"><h3>${title}<button type="button" class="b-link" data-go="${st}">Edit</button></h3><dl class="kv">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v || "—")}</dd>`).join("")}</dl></div>`;
+  return `
+    <section class="card b-card"><div class="ce-ready"><span class="b-tile" style="--c:${ok ? "var(--green)" : "var(--amber)"}">${ok ? C.ICON.check : IC.warn}</span><div><h2>${ok ? "Ready to publish" : "Needs more details"}</h2><p class="muted" style="font-size:14px">${ok ? "Every part of the listing is filled in." : `${miss.length} missing. Complete listings get approved faster and more students join.`}</p></div></div>
+      ${ok ? "" : `<div><p style="font-weight:700;font-size:14px;margin-bottom:8px">Missing information</p><ul class="ce-checks">${miss.map(([l, , st]) => `<li>${"<i></i>"}${l}<button type="button" class="b-link" data-go="${st}">Complete</button></li>`).join("")}</ul></div>`}
+      ${LEADER ? `<div class="b-note">${IC.info}<div><b>Staff approve this first</b><p>A teacher checks your proposal on Approvals. Students see it once it's approved.</p></div></div>` : ""}
+    </section>
+    <div class="ce-sum">
+      ${box("Basics", 0, [["Title", d.title], ["Category", d.category], ["Club", d.club ? S.CLUBS[d.club].name : "School event"], ["When", d.date && toMin(d.end) > toMin(d.start) ? `${S.dayShort(s)} · ${S.time(s)}–${S.time(e)}` : ""], ["Location", d.location], ["Max", d.capacity || "No limit"]])}
+      ${box("Who can attend", 1, [["Level", d.experience], ["Eligibility", eligText()], ["Commitment", d.commitment], ["Access", accText()]])}
+      ${box("Practical", 1, [["Cost", costText()], ["Cost notes", d.costNotes], ["Bring", matText()], ["Poster", d.poster ? "Uploaded" : "Cover image"]])}
+      ${box("Safety", 1, [["Adult", d.adult], ["Risk", d.risk], ["Permission", d.permission === "Yes" ? "Required" : "Not required"], ...(d.permission === "Yes" ? [["Note", d.permissionNote]] : []), ...(d.scheduleNote ? [["Notice", d.scheduleNote]] : [])])}
+    </div>
+    ${d.about ? `<section class="card b-card sec"><header><h2>Description</h2></header><p style="white-space:pre-wrap;line-height:1.6">${esc(d.about)}</p></section>` : ""}`;
+}
+
+function previewCard() {
+  const ev = { id: "preview", title: d.title.trim() || "Your event title", category: d.category, start: `${d.date || "2026-11-18"}T${d.start || "16:30"}`, end: `${d.date || "2026-11-18"}T${d.end || "18:00"}`, location: d.location.trim() || "Location", art: d.poster ? "__none" : d.art, going: 0, capacity: Number(d.capacity) || undefined, status: null };
+  let h = C.eventCard(ev);
+  if (d.poster) h = h.replace('<span class="dt">', `<img src="${d.poster}" alt=""><span class="dt">`);
+  return h;
+}
+function sideHTML() {
+  const ch = checks(), n = ch.filter((c) => c[1]).length;
+  return `<div class="b-sticky">
+    <div class="card widget"><h3>Preview</h3><div class="ce-prev" id="ceprev">${previewCard()}</div>
+      <div class="facts" style="grid-template-columns:1fr 1fr" id="cefacts">${[["Cost", costText()], ["Who", eligText()]].map(([k, v]) => `<div class="card"><span class="muted">${k}</span><b>${esc(v)}</b></div>`).join("")}</div></div>
+    <div class="card widget"><h3>Listing completeness</h3><div class="goal" id="cegoal"><div><span>${n === ch.length ? "Ready to publish" : "Needs more details"}</span><b>${n}/${ch.length}</b></div><div class="bar" style="--c:${n === ch.length ? "var(--green)" : "var(--sun)"}"><i style="width:${(n / ch.length) * 100}%"></i></div></div>
+      <ul class="ce-checks" id="cechecks">${ch.map(([l, ok]) => `<li class="${ok ? "ok" : ""}"><i>${ok ? C.ICON.check : ""}</i>${l}</li>`).join("")}</ul></div>
+    ${LEADER ? `<div class="card widget"><h3>How approval works</h3><ol class="b-steps"><li class="cur"><i></i><div><b>You submit</b><span>From ${esc(S.CLUBS[LEAD_CLUB].name)}</span></div></li><li><i></i><div><b>A teacher reviews</b><span>Usually within 2 school days</span></div></li><li><i></i><div><b>Students can join</b><span>It appears on Events</span></div></li></ol></div>` : ""}
+  </div>`;
+}
+
+function stepper() {
+  return `<ol class="ce-steps" aria-label="Steps">${STEPS.map(([l, s], i) => `<li><button type="button" data-step="${i}" data-st="${i === step ? "cur" : i < step ? "done" : "todo"}" ${i > step ? "disabled" : ""} ${i === step ? 'aria-current="step"' : ""}><span class="n">${i < step ? C.ICON.check : i + 1}</span><span><b>${l}</b><small>${s}</small></span></button></li>`).join("")}</ol>`;
+}
+
+function render() {
+  if (!(STAFF || PLATFORM || LEADER)) { C.shell("events", '<div class="card empty">Only staff and student club leaders can create events.</div>'); return; }
+  if (PLATFORM && !school) {
+    C.shell("", `<a class="b-back" href="events.html">← Events</a><div class="head b-head"><div><h1>Create event</h1><p>Platform admins create events for one school at a time.</p></div></div>
+      <form class="card b-card" id="cesch" style="max-width:32rem"><label class="field"><span>School event context</span><select class="input" name="school">${S.SCHOOLS.filter((s) => s.status === "Active").map((s) => `<option>${esc(s.name)}</option>`).join("")}</select></label><div><button class="btn btn-primary">Continue</button></div></form>`);
+    S.startClock(); return;
+  }
+  if (done) { renderDone(); return; }
+  const ok = checks().every((c) => c[1]);
+  const finalLabel = LEADER ? "Submit for approval" : "Create approved event";
+  const foot = step === 0 ? `<a class="btn" href="events.html">Cancel</a><button class="btn btn-primary" data-next>Continue to participation</button>`
+    : step === 1 ? `<button type="button" class="btn" data-back>Back</button><button class="btn btn-primary" data-next>Continue to review</button>`
+    : `<button type="button" class="btn" data-back>Back</button><span style="display:flex;gap:8px;flex-wrap:wrap">${ok ? `<button class="btn btn-primary" data-create>${LEADER ? IC.send : C.ICON.check}${finalLabel}</button>` : `<button type="button" class="btn" data-create>${LEADER ? "Submit proposal anyway" : "Publish anyway"}</button><button type="button" class="btn btn-primary" data-complete>Go back and complete</button>`}</span>`;
+  C.shell(STAFF ? "events" : "", `
+    <a class="b-back" href="events.html">← Events</a>
+    <div class="head b-head"><div><h1>${LEADER ? "Propose an event" : "Create event"}</h1><p>${LEADER ? `For ${esc(S.CLUBS[LEAD_CLUB].name)} · a teacher approves it before students can join` : PLATFORM ? `For ${esc(school)} · published as approved` : "Published as approved · students can join straight away"}</p></div>
+      ${C.menu([{ label: "Save draft", act: "save", hint: "Keep it in this browser" }, ...(PLATFORM ? [{ label: "Change school", act: "school" }] : []), "-", { label: "Start over", act: "reset", danger: true }])}</div>
+    ${stepper()}
+    <div class="split">
+      <form class="ce-main" id="cef" novalidate>${[basics, participation, review][step]()}<div class="b-foot">${foot}</div></form>
+      <aside class="side" id="ceside">${sideHTML()}</aside>
+    </div>`);
+  refresh();
+  S.startClock();
+}
+
+function sync() {
+  const f = document.getElementById("cef"); if (!f) return;
+  f.querySelectorAll("[name]").forEach((el) => {
+    if (MULTI.includes(el.name) || el.type === "file" || el.disabled) return;
+    if (el.type === "radio") { if (el.checked) d[el.name] = el.value; } else d[el.name] = el.value;
+  });
+  MULTI.forEach((n) => { const els = f.querySelectorAll(`[name="${n}"]`); if (els.length) d[n] = [...els].filter((x) => x.checked).map((x) => x.value); });
+}
+function refresh() {
+  const f = document.getElementById("cef"); if (!f) return;
+  f.querySelectorAll("[data-show]").forEach((el) => { const [k, vs] = el.dataset.show.split(":"); const val = d[k]; const on = vs.split(",").some((v) => (Array.isArray(val) ? val.includes(v) : val === v)); el.hidden = !on; el.style.display = on ? "" : "none"; });
+  f.querySelectorAll("[data-cnt]").forEach((el) => { const left = Number(el.dataset.max) - (d[el.dataset.cnt] || "").length; el.textContent = `${left} characters remaining`; el.classList.toggle("low", left < 100); });
+  const t = document.getElementById("cetime"); if (t) t.outerHTML = timePreview();
+  const side = document.getElementById("ceside"); if (side) side.innerHTML = sideHTML();
+}
+
+function downscale(file, max, cb) {
+  const r = new FileReader();
+  r.onload = () => { const img = new Image(); img.onload = () => { const k = Math.min(1, max / img.width), c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); cb(c.toDataURL("image/jpeg", 0.82), img); }; img.onerror = () => S.toast("That file couldn't be read as an image."); img.src = r.result; };
+  r.readAsDataURL(file);
+}
+
+function validateBasics() {
+  errors = {};
+  if (d.title.trim().length < 3) errors.title = "Add a title (at least 3 characters).";
+  if (!d.date) errors.date = "Pick a date.";
+  if (!d.start || !d.end || toMin(d.end) <= toMin(d.start)) errors.end = "End time must be after the start time.";
+  return !Object.keys(errors).length;
+}
+
+function create() {
+  sync();
+  const staffName = PLATFORM ? "Platform team" : ME.name;
+  const ev = { id: "u" + S.uid(), user: true, club: d.club || null, title: d.title.trim() || "Untitled event", start: `${d.date}T${d.start}`, end: `${d.date}T${d.end}`, location: d.location.trim() || "Location to be confirmed",
+    art: d.art, poster: d.poster, going: 0, capacity: Number(d.capacity) || undefined, status: null, category: d.category, needs: d.permission === "Yes" ? "permission" : null,
+    approval: LEADER ? "pending" : "approved", createdBy: LEADER ? `${ME.short} (club leader)` : staffName, about: d.about.trim(), cost: costText(), costNotes: d.costNotes, eligibility: eligText(), experience: d.experience,
+    materials: matText(), commitment: d.commitment, accessibility: accText(), risk: d.risk, permission: d.permission === "Yes", permissionNote: d.permissionNote, adult: d.adult, scheduleNote: d.scheduleNote,
+    school: PLATFORM ? school : S.SCHOOL.name, complete: checks().every((c) => c[1]), created: new Date().toISOString(), shared: [], partner: null };
+  S.list("cleanCreated", []).unshift(ev);
+  S.list("eventsCreated", []).push(ev); // the shared store every events page reads, so it shows up on Events and Approvals
+  S.saveLists(); S.flag("ceDraft", null);
+  done = ev; scrollTo(0, 0); render();
+  S.toast(LEADER ? "Sent for approval." : "Event created.");
+}
+
+function renderDone() {
+  const ev = done, mine = S.list("cleanCreated", []);
+  let card = C.eventCard(ev); if (ev.poster) card = card.replace('<span class="dt">', `<img src="${ev.poster}" alt=""><span class="dt">`);
+  C.shell(STAFF ? "events" : "", `
+    <section class="card ce-done"><div><span class="b-pop ${LEADER ? "warn" : ""}">${LEADER ? IC.send : C.ICON.check}</span>
+      <h1>${LEADER ? "Sent for approval" : "Event created and approved"}</h1>
+      <p>${LEADER ? `A teacher will review “${esc(ev.title)}”. You'll find it under Events once it's approved. Until then only you and staff can see it.` : `“${esc(ev.title)}” is live. Students at ${esc(ev.school)} can see it on Events and join now.`}</p>
+      <div class="acts"><a class="btn btn-primary" href="event.html#${ev.id}">View event</a><a class="b-link" href="events.html">Back to events</a>${STAFF ? `<a class="b-link" href="attendance.html#${ev.id}">Attendance and QR</a>` : ""}<button type="button" class="b-link" data-again>Create another event</button></div></div>
+      <div class="ce-prev" style="pointer-events:auto">${card}</div></section>
+    ${mine.length > 1 ? `<section class="sec"><header><h2>Created in this draft</h2></header><div class="card rows">${mine.slice(0, 5).map((e) => `<a class="row" href="event.html#${e.id}"><span class="dtile" style="width:46px"><span>${S.mon(e.start).toUpperCase()}</span><b style="font-size:17px">${S.dom(e.start)}</b></span><span class="grow"><span class="t" style="display:block">${esc(e.title)}</span><span class="s">${S.time(e.start)} · ${esc(e.location)}</span></span>${e.approval === "pending" ? '<span class="tag warn">Pending approval</span>' : '<span class="tag ok">Approved</span>'}${C.ICON.chev}</a>`).join("")}</div></section>` : ""}`);
+  document.querySelectorAll(".ce-done .ce-prev a").forEach((a) => (a.style.pointerEvents = "auto"));
+  S.startClock();
+}
+
+document.addEventListener("input", (e) => {
+  if (!e.target.closest("#cef")) return;
+  if (e.target.name === "end") { d.dur = "custom"; const c = document.querySelector('[name="dur"][value="custom"]'); if (c) c.checked = true; }
+  sync();
+  if (e.target.name === "start" && d.dur !== "custom") { d.end = addMin(d.start, Number(d.dur)); const el = document.querySelector('[name="end"]'); if (el) el.value = d.end; }
+  refresh();
+});
+document.addEventListener("change", (e) => {
+  if (e.target.id === "ceposter") {
+    const file = e.target.files[0]; if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { S.toast("That image is over 8 MB. Pick a smaller one."); return; }
+    sync(); downscale(file, 900, (url) => { d.poster = url; render(); S.toast("Poster added."); }); return;
+  }
+  if (!e.target.closest("#cef")) return;
+  const n = e.target.name, v = e.target.value;
+  if (n === "materials") { const f = document.getElementById("cef"); if (v === "Nothing required" && e.target.checked) f.querySelectorAll('[name="materials"]').forEach((x) => { if (x.value !== v) x.checked = false; }); else if (e.target.checked) f.querySelector('[name="materials"][value="Nothing required"]').checked = false; }
+  sync();
+  if (n === "dur" && v !== "custom") { d.end = addMin(d.start, Number(v)); const el = document.querySelector('[name="end"]'); if (el) el.value = d.end; }
+  if (n === "art") { const pv = document.getElementById("cepv"); if (pv && !d.poster) pv.innerHTML = S.art(d.art); }
+  refresh();
+});
+document.addEventListener("submit", (e) => {
+  if (e.target.id === "cesch") { e.preventDefault(); school = S.formData(e.target).school; S.flag("ceSchool", school); render(); return; }
+  if (e.target.id !== "cef") return;
+  e.preventDefault(); sync();
+  const sub = e.submitter;
+  if (sub && sub.hasAttribute("data-create")) { create(); return; }
+  if (step === 0 && !validateBasics()) { render(); S.toast("A few things need fixing first."); const f = document.querySelector(".b-err"); if (f) f.closest(".field").scrollIntoView({ block: "center" }); return; }
+  errors = {}; step = Math.min(2, step + 1); scrollTo(0, 0); render();
+});
+document.addEventListener("click", (e) => {
+  const st = e.target.closest("[data-step]"); if (st && !st.disabled) { sync(); step = Number(st.dataset.step); render(); return; }
+  const go = e.target.closest("[data-go]"); if (go) { sync(); step = Number(go.dataset.go); scrollTo(0, 0); render(); return; }
+  if (e.target.closest("[data-back]")) { sync(); step = Math.max(0, step - 1); scrollTo(0, 0); render(); }
+  if (e.target.closest("[data-complete]")) { const m = checks().find((c) => !c[1]); step = m ? m[2] : 0; scrollTo(0, 0); render(); }
+  if (e.target.closest("button[type=button][data-create]")) create();
+  if (e.target.closest("[data-unposter]")) { sync(); d.poster = ""; render(); }
+  if (e.target.closest("[data-again]")) { done = null; d = fresh(); step = 0; render(); }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  if (a.dataset.act === "save") { sync(); const { poster, ...rest } = d; S.flag("ceDraft", rest); S.toast("Draft saved in this browser."); }
+  if (a.dataset.act === "school") { school = ""; S.flag("ceSchool", ""); render(); }
+  if (a.dataset.act === "reset") S.confirm("Start over?", "Everything you've entered in this form will be cleared.", "Start over", () => { d = fresh(); step = 0; errors = {}; S.flag("ceDraft", null); render(); });
+});
+render();
+
+})();
+</script>
+</body>
+</html>

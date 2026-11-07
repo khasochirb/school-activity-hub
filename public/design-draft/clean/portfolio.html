@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portfolio · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Portfolio: one "Add" button. Preview-as lives in ⋯. Filter by type with chips.
+const P = window.Portfolio;
+let kind = "all";
+function render() {
+  const owner = P.isOwner(), s = P.state;
+  const list = P.visibleEntries().filter((e) => (owner || !e.draft) && (kind === "all" || e.kind === kind));
+  const card = (e) => `<button class="pf" data-open="${e.id}"><span class="pfc" data-k="${e.kind}">${e.photos?.length ? P.media(e.photos[0], e.title) : `<q>${esc(P.bodyText(e).slice(0, 160))}</q>`}${s.profile.featuredId === e.id ? '<span class="tag blue pfb">Featured</span>' : ""}</span><span class="t">${esc(e.title)}</span><span class="s">${P.fmtDate(e.date)}${owner ? ` · ${e.draft ? "Draft" : P.VIS[e.visibility].label}` : ""}</span></button>`;
+  C.shell("portfolio", `
+    ${!owner ? `<div class="card" style="padding:12px 16px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><span>Previewing as <b>${P.viewAs === "teacher" ? "a teacher" : "a classmate"}</b>.</span><button class="btn btn-sm btn-soft" data-view="me">Done</button></div>` : ""}
+    <div class="head"><div style="display:flex;gap:16px;align-items:center"><span class="pfav">${esc(s.profile.initials)}</span><div><h1>${esc(s.profile.name)}</h1><p>${esc(s.profile.grade)}</p><p style="margin-top:6px;max-width:36rem">${esc(s.profile.headline || "")}</p></div></div>
+      <div style="display:flex;gap:6px;align-items:center">${owner ? `<button class="btn btn-primary" data-add>${C.ICON.plus} Add</button>` : ""}${C.menu([{ label: "Preview as a teacher", act: "view-teacher" }, { label: "Preview as a classmate", act: "view-classmate" }, "-", { label: "Edit profile", act: "profile" }]).replace('data-act="view-teacher"', 'data-view="teacher"').replace('data-act="view-classmate"', 'data-view="classmate"')}</div></div>
+    <div class="pfstats">${[["Entries", s.entries.filter((e) => !e.draft).length, "var(--primary)"], ["Photos", s.entries.reduce((n, e) => n + (e.photos?.length || 0), 0), "var(--green)"], ["Clubs", 3, "var(--coral)"], ["Teacher notes", s.entries.reduce((n, e) => n + (e.feedback?.length || 0), 0), "var(--sun)"]].map(([l, v, c]) => `<div class="card stat" style="border-top:3px solid ${c}"><span class="muted">${l}</span><b>${v}</b></div>`).join("")}</div>
+    <div class="filters">${[["all", "All"], ["photos", "Photos"], ["project", "Projects"], ["achievement", "Achievements"], ["reflection", "Reflections"]].map(([k, l]) => `<button class="chip" data-kind="${k}" aria-pressed="${kind === k}">${l}</button>`).join("")}</div>
+    ${list.length ? `<div class="pfgrid">${list.map(card).join("")}</div>` : '<div class="card empty">Nothing here yet.</div>'}`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const k = e.target.closest("[data-kind]"); if (k) { kind = k.dataset.kind; render(); }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  if (a.dataset.act === "profile") P.openProfile();
+});
+P.init(render);
+
+})();
+</script>
+</body>
+</html>

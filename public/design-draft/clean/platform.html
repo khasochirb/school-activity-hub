@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Platform admin · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Platform admin
+// Platform admin (role platform). Hash routes: dashboard, #schools, #new-school, #school-<slug>, #connections, #admins, #audit.
+const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ARROW = I('<path d="M5 12h14M13 6l6 6-6 6"/>');
+const INFO = I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/>');
+const SHIELD = I('<path d="M12 3.5l7 3v5.5c0 4.2-3 7.4-7 8.5-4-1.1-7-4.3-7-8.5V6.5z"/><path d="M9 12l2 2 4-4"/>');
+const LOCK = I('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>');
+const PROVINCES = ["Ulaanbaatar", "Arkhangai", "Bayan-Ölgii", "Bayankhongor", "Bulgan", "Darkhan-Uul", "Dornod", "Dornogovi", "Dundgovi", "Govi-Altai", "Govisümber", "Khentii", "Khovd", "Khövsgöl", "Ömnögovi", "Orkhon", "Övörkhangai", "Selenge", "Sükhbaatar", "Töv", "Uvs", "Zavkhan"];
+const TODAY = "2026-11-07";
+const PAL = ["#2340d9", "#12804a", "#e0447a", "#b25e00", "#6b4fd6", "#0f8a9a", "#f2643f"];
+const crestColor = (slug) => PAL[[...slug].reduce((a, c) => a + c.charCodeAt(0), 0) % PAL.length];
+const crestText = (n) => (n.match(/No\.\s*(\d+)/) || [])[1] || n.split(" ").filter((w) => !/^(School|No\.)$/.test(w)).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "S";
+const fmt = (d) => d ? new Date(d.slice(0, 10) + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+const fmtS = (d) => new Date(d.slice(0, 10) + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+const initials = (n) => n.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+const AVBG = ["#e9ecfb", "#fff4d6", "#e3f4ea", "#fdeae4", "#efe6fb"];
+function keep(fn) { const a = document.activeElement, id = a && a.id, p = a && a.selectionStart; fn(); if (id) { const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } } }
+
+const EXTRA = [{ name: "Riverside School", province: "Selenge", slug: "riverside", status: "Active", created: "2026-10-02", students: 340, teachers: 22, admins: 1 }, { name: "Polytechnic School", province: "Khovd", slug: "polytechnic", status: "Active", created: "2026-10-19", students: 510, teachers: 33, admins: 2 }];
+const schools = () => S.list("pfSchools", [...S.SCHOOLS, ...EXTRA]);
+const conns = () => S.list("pfConnections", [...S.CONNECTIONS.map((c) => ({ ...c, status: c.status === "Approved" ? "Active" : c.status })), { from: "Riverside School", to: "Polytechnic School", status: "Pending", requested: "2026-11-05", updated: "2026-11-05" }, { from: "School No. 23", to: "Darkhan Lab School", status: "Revoked", requested: "2026-09-14", updated: "2026-10-30" }].map((c, i) => ({ id: "cn" + i, ...c })));
+const schoolAdmins = () => S.list("pfSchoolAdmins", [
+  { id: "sa0", school: "khangai-high", name: "Oyunchimeg Dorj", email: "oyunchimeg.d@khangai.edu.mn", status: "Active", created: "2026-08-12" },
+  { id: "sa1", school: "khangai-high", name: "Gerelmaa Tsend", email: "gerelmaa.ts@khangai.edu.mn", status: "Active", created: "2026-08-20" },
+  { id: "sa2", school: "school-23", name: "Bolormaa Chuluun", email: "bolormaa.ch@school23.edu.mn", status: "Active", created: "2026-08-30" },
+  { id: "sa3", school: "darkhan-lab", name: "Tuvshin Erdene", email: "tuvshin.e@darkhanlab.edu.mn", status: "Active", created: "2026-09-10" },
+  { id: "sa4", school: "erdenet-gym", name: "Baasan Dorjsuren", email: "baasan.d@erdenet.edu.mn", status: "Inactive", created: "2026-09-01" },
+  { id: "sa5", school: "riverside", name: "Nandin Sukh", email: "nandin.s@riverside.edu.mn", status: "Active", created: "2026-10-02" },
+  { id: "sa6", school: "polytechnic", name: "Ariunaa Bat", email: "ariunaa.b@poly.edu.mn", status: "Active", created: "2026-10-19" },
+  { id: "sa7", school: "polytechnic", name: "Khishig Od", email: "khishig.o@poly.edu.mn", status: "Active", created: "2026-10-21" }]);
+const admins = () => S.list("pfAdmins", [
+  { id: "pa0", name: "Platform team", email: "platform@activityhub.mn", schoolRole: "—", status: "Active", created: "2026-08-01", me: true },
+  { id: "pa1", name: "Sarnai Otgon", email: "sarnai.o@activityhub.mn", schoolRole: "—", status: "Active", created: "2026-10-28" },
+  { id: "pa2", name: "Ganzorig Bat", email: "ganzorig.b@khangai.edu.mn", schoolRole: "Teacher", status: "Inactive", created: "2026-09-02" }]);
+const audit = () => S.list("pfAudit", [
+  ...S.AUDIT.map((a) => ({ ...a, meta: a.action.startsWith("Connection") ? '{"status":"' + (a.action.includes("approved") ? "active" : "pending") + '"}' : a.action === "School created" ? '{"province":"Darkhan-Uul"}' : '{"role":"platform_admin"}' })),
+  { date: "2026-10-30 14:20", action: "Connection revoked", actor: "Platform team", target: "School No. 23 → Darkhan Lab School", school: "School No. 23", meta: '{"reason":"requested by school"}' },
+  { date: "2026-10-19 11:05", action: "School created", actor: "Platform team", target: "Polytechnic School", school: "Polytechnic School", meta: '{"province":"Khovd","first_admin":true}' },
+  { date: "2026-10-02 09:12", action: "School created", actor: "Sarnai O.", target: "Riverside School", school: "Riverside School", meta: '{"province":"Selenge"}' },
+  { date: "2026-09-21 15:40", action: "School archived", actor: "Platform team", target: "Erdenet Gymnasium", school: "Erdenet Gymnasium", meta: '{"status":"archived"}' },
+  { date: "2026-09-02 10:00", action: "School admin deactivated", actor: "Platform team", target: "Baasan Dorjsuren", school: "Erdenet Gymnasium", meta: '{}' },
+].sort((a, b) => b.date.localeCompare(a.date)));
+const log = (action, target, school, meta = {}) => { audit().unshift({ date: `${TODAY} ${new Date().toTimeString().slice(0, 5)}`, action, actor: "Platform team", target, school, meta: JSON.stringify(meta) }); };
+const sch = (slug) => schools().find((s) => s.slug === slug);
+const byName = (n) => schools().find((s) => s.name === n) || { name: n, slug: slugify(n), province: "" };
+const crest = (s, cls = "") => `<span class="gc-crest ${cls}" style="--c:${s.status === "Archived" ? "#8a877f" : crestColor(s.slug)}">${esc(crestText(s.name))}</span>`;
+const STAG = { Pending: "warn", Active: "ok", Rejected: "bad", Revoked: "bad", Blocked: "bad", Archived: "" };
+let sq = "", sStatus = "All", cStatus = "All", cq = "", aq = "", aType = "All", draft = null;
+
+/* ---------- views ---------- */
+function dashboard() {
+  const all = schools(), cs = conns(), active = all.filter((s) => s.status === "Active"), pend = cs.filter((c) => c.status === "Pending");
+  const stats = [["All schools", all.length, `${all.length - active.length} archived`, [1, 2, 3, 4, 4, 5, all.length], "#schools"], ["Active schools", active.length, `${active.reduce((s, x) => s + x.students, 0).toLocaleString()} students`, [1, 2, 2, 3, 3, 4, active.length], "#schools"], ["Platform admins", admins().filter((a) => a.status === "Active").length, "with full access", [1, 1, 1, 1, 2, 2, 2], "#admins"], ["School connections", cs.filter((c) => c.status === "Active").length, `${pend.length} pending`, [0, 1, 1, 1, 2, 2, cs.length], "#connections"]];
+  const prov = {}; active.forEach((s) => (prov[s.province] = (prov[s.province] || 0) + s.students)); const pmax = Math.max(1, ...Object.values(prov));
+  return `<div class="head"><div><span class="plat-eyebrow">Platform administrator mode</span><h1 style="margin-top:6px">${C.greeting()}</h1><p>${active.length} schools on Activity Hub · ${pend.length} connection${pend.length === 1 ? "" : "s"} waiting</p></div><a class="btn btn-primary" href="#new-school">${C.ICON.plus} New school</a></div>
+    <div class="stats">${stats.map(([l, v, ch, s, h]) => { const m = Math.max(...s); return `<a class="card stat rich" href="${h}" style="text-decoration:none;color:inherit"><span class="muted">${l}</span><b>${v}</b><span class="chg" style="color:var(--muted);font-weight:600">${ch}</span><div class="spark">${s.map((x) => `<i style="height:${Math.max(10, (x / m) * 100)}%"></i>`).join("")}</div></a>`; }).join("")}</div>
+    <div class="split"><div class="gc-main">
+      <section class="sec"><header><h2>Schools</h2><a href="#schools">All ${all.length}</a></header><div class="plat-schools">${active.slice(0, 3).map(schoolCard).join("")}</div></section>
+      <section class="sec"><header><h2>Recent platform actions</h2><a href="#audit">Audit log</a></header><div class="card rows">${audit().slice(0, 5).map((a) => `<div class="row"><span class="dot" style="background:${a.action.includes("Connection") ? "var(--primary)" : a.action.includes("admin") ? "var(--coral)" : "var(--green)"}"></span><span class="grow"><span class="t" style="display:block">${esc(a.action)}</span><span class="s">${esc(a.target)} · by ${esc(a.actor)}</span></span><span class="gc-when">${fmtS(a.date)}<br><span style="color:var(--faint)">${a.date.slice(11)}</span></span></div>`).join("")}</div></section>
+    </div><aside class="side">
+      <div class="card widget"><h3>Needs attention</h3>${pend.map((c) => `<a class="row" href="#connections" style="padding:0;gap:10px"><span class="gc-pair">${crest(byName(c.from), "sm")}${ARROW}${crest(byName(c.to), "sm")}</span><span class="grow"><span class="t" style="display:block;font-size:14px">Connection pending</span><span class="s">Since ${fmtS(c.requested)}</span></span></a>`).join("") || '<p class="muted" style="font-size:13.5px">Nothing waiting.</p>'}</div>
+      <div class="card widget"><h3>Students by province</h3>${Object.entries(prov).sort((a, b) => b[1] - a[1]).map(([p, v], i) => `<div class="goal"><div><span>${esc(p)}</span><b>${v}</b></div><div class="bar" style="--c:${PAL[i % PAL.length]}"><i style="width:${(v / pmax) * 100}%"></i></div></div>`).join("")}</div>
+      <div class="card widget"><h3>Shortcuts</h3><a class="gc-link" href="#admins">Platform admins →</a><a class="gc-link" href="reports.html">Activity reports →</a><a class="gc-link" href="approvals.html">Event approvals →</a></div>
+    </aside></div>`;
+}
+function schoolCard(s) {
+  const a = schoolAdmins().filter((x) => x.school === s.slug && x.status === "Active").length;
+  return `<a class="card plat-school" href="#school-${s.slug}"><span class="top2">${crest(s)}<span style="min-width:0"><span class="t">${esc(s.name)}</span><span class="s">${esc(s.province)}</span></span></span><span class="nums"><span><b>${s.students}</b>students</span><span><b>${s.teachers}</b>teachers</span><span><b>${a}</b>admins</span></span>${s.status === "Active" ? '<span class="tag ok" style="align-self:flex-start">Active</span>' : '<span class="tag" style="align-self:flex-start">Archived</span>'}</a>`;
+}
+function schoolsView() {
+  const all = schools(), list = all.filter((s) => (sStatus === "All" || s.status === sStatus) && (!sq || (s.name + s.province + s.slug).toLowerCase().includes(sq.toLowerCase())));
+  return `<div class="head"><div><h1>Schools</h1><p>${all.filter((s) => s.status === "Active").length} active · ${all.filter((s) => s.status !== "Active").length} archived</p></div><a class="btn btn-primary" href="#new-school">${C.ICON.plus} New school</a></div>
+    <div class="filters">${["All", "Active", "Archived"].map((s) => `<button class="chip" data-ss="${s}" aria-pressed="${sStatus === s}">${s}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search schools</span><input id="sq" type="search" placeholder="Name, province or identifier" value="${esc(sq)}"></label></div>
+    ${list.length ? `<div class="card gc-table"><table><thead><tr><th>School name</th><th>Province</th><th>School identifier</th><th>Students</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody>${list.map((s) => `<tr><td class="lead"><span style="display:flex;gap:12px;align-items:center">${crest(s, "sm")}<a class="t" href="#school-${s.slug}" style="color:inherit;text-decoration:none">${esc(s.name)}</a></span></td><td data-h="Province">${esc(s.province)}</td><td data-h="Identifier"><span class="plat-slug">${esc(s.slug)}</span></td><td class="num" data-h="Students">${s.students}</td><td data-h="Status"><span class="tag ${s.status === "Active" ? "ok" : ""}">${s.status}</span></td><td data-h="Created">${fmt(s.created)}</td><td class="end" style="text-align:right"><a class="btn btn-sm btn-soft" href="#school-${s.slug}">Manage school</a></td></tr>`).join("")}</tbody></table></div>` : `<div class="card empty" style="padding:40px"><b style="color:var(--fg)">No schools match</b><br>Try another status or search.</div>`}`;
+}
+function newSchool() {
+  const d = draft || (draft = { name: "", slug: "", touched: false, province: "Ulaanbaatar", status: "Active", aname: "", aemail: "", apw: "" });
+  return `<a class="gc-back" href="#schools">← Schools</a>
+    <div class="head"><div><h1>New school</h1><p>Create the school and, if you like, its first school admin.</p></div></div>
+    <div class="split"><form class="card gc-form" id="nsf" style="align-self:start">
+      <label class="field"><span>School name</span><input class="input" name="name" id="ns-name" required value="${esc(d.name)}" placeholder="e.g. Bayankhongor School No. 1"></label>
+      <label class="field"><span>School identifier</span><input class="input" name="slug" id="ns-slug" required pattern="[a-z0-9-]+" value="${esc(d.slug)}" placeholder="filled in from the name"><small>Lowercase letters, numbers and dashes. It can't be changed later.</small></label>
+      <div class="gc-two"><label class="field"><span>Province</span><select class="input" name="province">${PROVINCES.map((p) => `<option ${p === d.province ? "selected" : ""}>${p}</option>`).join("")}</select></label>
+        <label class="field"><span>Status</span><select class="input" name="status">${["Active", "Archived"].map((p) => `<option ${p === d.status ? "selected" : ""}>${p}</option>`).join("")}</select></label></div>
+      <div class="plat-optional"><h3>First school admin</h3><p>Optional. You can add admins later from the school page.</p>
+        <div class="gc-two"><label class="field"><span>Admin full name</span><input class="input" name="aname" value="${esc(d.aname)}"></label><label class="field"><span>Admin email</span><input class="input" name="aemail" type="email" value="${esc(d.aemail)}"></label></div>
+        <label class="field"><span>Temporary password</span><input class="input" name="apw" minlength="8" value="${esc(d.apw)}" placeholder="At least 8 characters"></label></div>
+      <div class="gc-actions"><button class="btn btn-primary" data-mode="admin">Create school and admin</button><button class="btn" data-mode="only">Create school only</button></div>
+    </form>
+    <aside class="side"><div class="card plat-preview"><span class="muted" style="font-size:12.5px;font-weight:700">PREVIEW</span><span class="top2"><span id="ns-crest">${crest({ name: d.name || "New school", slug: d.slug || "new" })}</span><span style="min-width:0"><span class="t" id="ns-pname">${esc(d.name || "New school")}</span><span class="plat-slug" id="ns-pslug">${esc(d.slug || "school-identifier")}</span></span></span><span class="tag ok" style="align-self:flex-start">${esc(d.status)}</span></div>
+      <div class="card widget"><h3>What happens next</h3><div class="gc-steps"><div><span><b>The school is created</b><span>Empty: no students, clubs or events yet.</span></span></div><div><span><b>The admin signs in</b><span>With the temporary password, then sets their own.</span></span></div><div><span><b>They set up the school</b><span>Teachers, the roster and invite codes.</span></span></div></div></div></aside></div>`;
+}
+function schoolView(slug) {
+  const s = sch(slug); if (!s) return `<a class="gc-back" href="#schools">← Schools</a><div class="card empty" style="padding:48px"><b style="color:var(--fg)">School not found</b><br>It may have been renamed.</div>`;
+  const cs = conns().filter((c) => c.from === s.name || c.to === s.name), adm = schoolAdmins().filter((a) => a.school === slug);
+  return `<a class="gc-back" href="#schools">← Schools</a>
+    <div class="plat-hero">${crest(s, "lg")}<div class="who"><h1>${esc(s.name)}</h1><p>${esc(s.province)} · <span class="plat-slug">${esc(s.slug)}</span> · since ${fmt(s.created)}</p></div><span class="tag ${s.status === "Active" ? "ok" : ""}">${s.status}</span>
+      <button class="btn btn-primary" data-addadmin="${slug}">${C.ICON.plus} Add school admin</button>${C.menu([{ label: "Edit school", act: "edit", id: slug }, { label: "Activity reports", act: "reports", id: slug }, "-", s.status === "Active" ? { label: "Archive school", act: "archive", id: slug, danger: true } : { label: "Make active again", act: "unarchive", id: slug }])}</div>
+    <div class="facts"><div class="card"><span class="muted">Students</span><b>${s.students}</b></div><div class="card"><span class="muted">Teachers</span><b>${s.teachers}</b></div><div class="card"><span class="muted">School admins</span><b>${adm.filter((a) => a.status === "Active").length}</b></div><div class="card"><span class="muted">Connections</span><b>${cs.filter((c) => c.status === "Active").length} active · ${cs.filter((c) => c.status === "Pending").length} pending</b></div></div>
+    <div class="split"><div class="gc-main">
+      <section class="sec"><header><h2>School admins</h2><span class="gc-count">${adm.length}</span></header><div class="card rows">${adm.map((a, i) => `<div class="row"><span class="av" style="background:${AVBG[i % 5]};color:#1b1a17">${initials(a.name)}</span><span class="grow"><span class="t" style="display:block">${esc(a.name)}</span><span class="s">${esc(a.email)}</span></span><span class="gc-when">Added ${fmtS(a.created)}</span><span class="tag ${a.status === "Active" ? "ok" : ""}">${a.status}</span><span class="end">${C.menu([{ label: "Copy email", act: "copy", id: a.email }, "-", a.status === "Active" ? { label: "Deactivate admin", act: "sa-off", id: a.id, danger: true } : { label: "Reactivate admin", act: "sa-on", id: a.id }])}</span></div>`).join("") || '<p class="empty"><b style="color:var(--fg)">No school admins yet</b><br>Add one so the school can set itself up.</p>'}</div></section>
+      <section class="sec"><header><h2>Connections summary</h2><a href="#connections">All connections</a></header><div class="card rows">${cs.map((c) => `<div class="row"><span class="gc-pair">${crest(byName(c.from), "sm")}${ARROW}${crest(byName(c.to), "sm")}</span><span class="grow"><span class="t" style="display:block">${esc(c.from === s.name ? c.to : c.from)}</span><span class="s">${c.from === s.name ? "Sent" : "Received"} · updated ${fmtS(c.updated)}</span></span><span class="tag ${STAG[c.status]}">${c.status}</span></div>`).join("") || '<p class="empty">No connections yet.</p>'}</div></section>
+    </div><aside class="side">
+      <div class="gc-note">${SHIELD}<span><b>Privacy</b><br>Platform admins see counts only. Student names, rosters and records stay with the school.</span></div>
+      <div class="card widget"><h3>School information</h3><dl class="kv"><dt>Name</dt><dd>${esc(s.name)}</dd><dt>Identifier</dt><dd><span class="plat-slug">${esc(s.slug)}</span></dd><dt>Province</dt><dd>${esc(s.province)}</dd><dt>Status</dt><dd>${s.status}</dd><dt>Created</dt><dd>${fmt(s.created)}</dd></dl><button class="btn btn-sm btn-soft" data-act="edit" data-id="${slug}" style="align-self:flex-start">Edit school</button></div>
+    </aside></div>`;
+}
+function connectionsView() {
+  const all = conns(), list = all.filter((c) => (cStatus === "All" || c.status === cStatus) && (!cq || (c.from + c.to).toLowerCase().includes(cq.toLowerCase())));
+  const cnt = (s) => all.filter((c) => c.status === s).length;
+  return `<div class="head"><div><span class="plat-eyebrow">Platform connection control</span><h1 style="margin-top:6px">Connections</h1><p>${cnt("Active")} active · ${cnt("Pending")} pending</p></div><button class="btn btn-primary" data-newconn>${C.ICON.plus} Create connection</button></div>
+    <div class="filters">${["All", "Pending", "Active", "Rejected", "Revoked", "Blocked"].map((s) => `<button class="chip" data-cs="${s}" aria-pressed="${cStatus === s}">${s}${s !== "All" && cnt(s) ? ` <span style="opacity:.6">${cnt(s)}</span>` : ""}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search connections</span><input id="cq" type="search" placeholder="School name" value="${esc(cq)}"></label></div>
+    <div class="card rows">${list.map((c) => `<div class="row gc-wrap"><span class="gc-pair">${crest(byName(c.from), "sm")}${ARROW}${crest(byName(c.to), "sm")}</span><span class="grow"><span class="t" style="display:block">${esc(c.from)} → ${esc(c.to)}</span><span class="s">Requested ${fmtS(c.requested)} · updated ${fmtS(c.updated)}</span></span><span class="tag ${STAG[c.status]}">${c.status}</span>
+      <span class="end">${c.status === "Pending" ? `<button class="btn btn-sm btn-soft" data-capprove="${c.id}">Approve</button>${C.menu([{ label: "Reject", act: "c-reject", id: c.id, danger: true }, { label: "Block", act: "c-block", id: c.id, danger: true, hint: "Neither school can request again" }])}` : c.status === "Active" ? C.menu([{ label: "Revoke connection", act: "c-revoke", id: c.id, danger: true, hint: "Shared events stop being shared" }]) : C.menu([{ label: "Approve anyway", act: "c-approve", id: c.id }])}</span></div>`).join("") || '<p class="empty"><b style="color:var(--fg)">No connections match</b></p>'}</div>`;
+}
+function adminsView() {
+  const all = admins(), list = all;
+  return `<div class="head"><div><h1>Platform admins</h1><p>${all.filter((a) => a.status === "Active").length} active · full access to every school</p></div><button class="btn btn-primary" data-newadmin>${C.ICON.plus} Add platform admin</button></div>
+    <div class="gc-note warn">${SHIELD}<span><b>Keep this list short.</b> Platform admins can create and archive schools and manage every connection. Add only people on the platform team, and deactivate them when they leave.</span></div>
+    <div class="card rows">${list.map((a, i) => `<div class="row"><span class="av" style="background:${a.me ? "linear-gradient(135deg,var(--sun),var(--coral))" : AVBG[i % 5]};color:#1b1a17">${initials(a.name)}</span><span class="grow"><span class="t" style="display:block">${esc(a.name)}${a.me ? ' <span class="muted" style="font-weight:500">(you)</span>' : ""}</span><span class="s">${esc(a.email)} · school role: ${esc(a.schoolRole)}</span></span><span class="gc-when">Added ${fmtS(a.created)}</span><span class="tag ${a.status === "Active" ? "ok" : ""}">${a.status}</span><span class="end">${C.menu(a.me ? [{ label: "Protected account", act: "prot", hint: "You can't deactivate yourself" }] : [{ label: "Copy email", act: "copy", id: a.email }, "-", a.status === "Active" ? { label: "Deactivate", act: "pa-off", id: a.id, danger: true } : { label: "Reactivate", act: "pa-on", id: a.id }])}</span></div>`).join("")}</div>`;
+}
+function auditView() {
+  const TYPES = [["All", "All actions"], ["School", "Schools"], ["Connection", "Connections"], ["admin", "Admins"]];
+  const list = audit().filter((a) => (aType === "All" || a.action.includes(aType)) && (!aq || (a.action + a.actor + a.target + a.school + a.meta).toLowerCase().includes(aq.toLowerCase())));
+  const days = Array.from({ length: 14 }, (_, i) => { const d = new Date("2026-11-07T12:00"); d.setDate(d.getDate() - 13 + i); const k = d.toISOString().slice(0, 10); return audit().filter((a) => a.date.startsWith(k)).length; });
+  return `<div class="head"><div><h1>Audit log</h1><p>Every platform action, newest first · ${audit().length} entries</p></div></div>
+    <div class="filters">${TYPES.map(([k, l]) => `<button class="chip" data-at="${k}" aria-pressed="${aType === k}">${l}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search the audit log</span><input id="aq" type="search" placeholder="Action, person or school" value="${esc(aq)}"></label></div>
+    <div class="split"><div style="min-width:0">${list.length ? `<div class="card gc-table"><table><thead><tr><th>Action and date</th><th>Actor</th><th>Target</th><th>Target school</th><th>Metadata</th></tr></thead><tbody>${list.map((a) => `<tr><td class="lead"><span class="t">${esc(a.action)}</span><span class="s">${fmt(a.date)} · ${a.date.slice(11)}</span></td><td data-h="Actor">${esc(a.actor)}</td><td data-h="Target">${esc(a.target)}</td><td data-h="School">${esc(a.school)}</td><td data-h="Metadata"><span class="gc-meta">${esc(a.meta || "{}")}</span></td></tr>`).join("")}</tbody></table></div>` : '<div class="card empty" style="padding:40px"><b style="color:var(--fg)">No actions match</b></div>'}</div>
+      <aside class="side"><div class="card widget"><h3>Last 14 days</h3><div class="spark" style="height:64px">${days.map((x) => `<i style="height:${x ? 20 + x * 30 : 6}%;${x ? "" : "opacity:.3"}"></i>`).join("")}</div><span class="muted" style="font-size:12.5px">Platform actions per day</span></div>
+        <div class="card widget"><h3>By type</h3>${[["Schools", "School", "var(--green)"], ["Connections", "Connection", "var(--primary)"], ["Admins", "admin", "var(--coral)"]].map(([l, k, c]) => { const n = audit().filter((a) => a.action.includes(k)).length; return `<div class="goal"><div><span>${l}</span><b>${n}</b></div><div class="bar" style="--c:${c}"><i style="width:${(n / audit().length) * 100}%"></i></div></div>`; }).join("")}</div></aside></div>`;
+}
+
+function render() {
+  if (C.role() !== "platform") { C.shell("", `<div class="head"><div><h1>Platform admin</h1><p>Schools, connections and the audit log</p></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">This page is for platform administrators</b><br>Your school's own settings are in <a class="gc-link" href="${C.role() === "admin" ? "settings.html" : "dashboard.html"}">${C.role() === "admin" ? "School settings" : "your dashboard"}</a>.</div>`); S.startClock(); return; }
+  const h = location.hash.slice(1);
+  const [key, body] = h === "schools" ? ["schools", schoolsView()] : h === "new-school" ? ["schools", newSchool()] : h.startsWith("school-") ? ["schools", schoolView(h.slice(7))] : h === "connections" ? ["connections", connectionsView()] : h === "admins" ? ["platform", adminsView()] : h === "audit" ? ["audit", auditView()] : ["platform", dashboard()];
+  C.shell(key, body);
+  S.startClock();
+}
+
+/* ---------- sheets ---------- */
+function sheetForm(title, inner, submit, onSubmit) {
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">${title}</h2><button class="close" data-close aria-label="Close">×</button></div><form class="sheet-body" id="pff">${inner}<button class="btn btn-primary">${submit}</button></form>`, { onMount: (d) => d.querySelector("#pff").addEventListener("submit", (ev) => { ev.preventDefault(); if (onSubmit(S.formData(ev.target)) !== false) { d.close(); render(); } }) });
+}
+const pw = () => "Hub-" + Math.random().toString(36).slice(2, 7) + Math.floor(10 + Math.random() * 89);
+function addAdmin(slug) {
+  const s = sch(slug);
+  sheetForm(`Add school admin`, `<p class="muted" style="font-size:14px">For ${esc(s.name)}.</p><label class="field"><span>Admin full name</span><input class="input" name="name" required></label><label class="field"><span>Admin email</span><input class="input" name="email" type="email" required></label><label class="field"><span>Temporary password</span><input class="input" name="pw" required minlength="8" value="${pw()}"><small>Share it privately. They change it after signing in.</small></label>`, "Add school admin", (v) => { schoolAdmins().push({ id: S.uid(), school: slug, name: v.name, email: v.email, status: "Active", created: TODAY }); s.admins = (s.admins || 0) + 1; log("School admin added", v.name, s.name, { email: v.email }); S.saveLists(); S.toast("School admin added."); });
+}
+function editSchool(slug) {
+  const s = sch(slug);
+  sheetForm("Edit school", `<label class="field"><span>School name</span><input class="input" name="name" required value="${esc(s.name)}"></label><label class="field"><span>School identifier</span><input class="input" value="${esc(s.slug)}" readonly style="background:var(--card-soft);color:var(--muted)"><small>The identifier can't be changed.</small></label><div class="gc-two"><label class="field"><span>Province</span><select class="input" name="province">${PROVINCES.map((p) => `<option ${p === s.province ? "selected" : ""}>${p}</option>`).join("")}</select></label><label class="field"><span>Status</span><select class="input" name="status">${["Active", "Archived"].map((p) => `<option ${p === s.status ? "selected" : ""}>${p}</option>`).join("")}</select></label></div>`, "Save school", (v) => { const old = s.name; conns().forEach((c) => { if (c.from === old) c.from = v.name; if (c.to === old) c.to = v.name; }); Object.assign(s, { name: v.name, province: v.province, status: v.status }); log("School updated", s.name, s.name, { province: v.province, status: v.status.toLowerCase() }); S.saveLists(); S.toast("School saved."); });
+}
+
+/* ---------- events ---------- */
+window.addEventListener("hashchange", () => { window.scrollTo(0, 0); render(); });
+document.addEventListener("input", (e) => {
+  const f = e.target.closest && e.target.closest("#nsf"); if (!f || !draft) return;
+  const v = S.formData(f);
+  if (e.target.id === "ns-slug") draft.touched = true;
+  Object.assign(draft, { name: v.name, province: v.province, status: v.status, aname: v.aname, aemail: v.aemail, apw: v.apw, slug: v.slug });
+  if (e.target.id === "ns-name" && !draft.touched) { draft.slug = slugify(v.name); f.querySelector("#ns-slug").value = draft.slug; }
+  document.getElementById("ns-pname").textContent = draft.name || "New school";
+  document.getElementById("ns-pslug").textContent = draft.slug || "school-identifier";
+  document.getElementById("ns-crest").innerHTML = crest({ name: draft.name || "New school", slug: draft.slug || "new" });
+});
+document.addEventListener("change", (e) => { if (e.target.closest && e.target.closest("#nsf")) e.target.dispatchEvent(new Event("input", { bubbles: true })); });
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "nsf") return; e.preventDefault();
+  const mode = (e.submitter && e.submitter.dataset.mode) || "admin", v = S.formData(e.target);
+  if (schools().some((s) => s.slug === v.slug)) { S.toast("That school identifier is taken. Pick another."); return; }
+  if (mode === "admin" && (!v.aname || !v.aemail || (v.apw || "").length < 8)) { S.toast("Fill in the admin's name, email and a password of 8+ characters, or create the school only."); return; }
+  schools().push({ name: v.name.trim(), slug: v.slug, province: v.province, status: v.status, created: TODAY, students: 0, teachers: 0, admins: mode === "admin" ? 1 : 0 });
+  log("School created", v.name.trim(), v.name.trim(), { province: v.province, first_admin: mode === "admin" });
+  if (mode === "admin") { schoolAdmins().push({ id: S.uid(), school: v.slug, name: v.aname, email: v.aemail, status: "Active", created: TODAY }); log("School admin added", v.aname, v.name.trim(), { email: v.aemail }); }
+  S.saveLists(); draft = null; location.hash = "school-" + v.slug; S.toast(mode === "admin" ? "School and admin created." : "School created.");
+});
+document.addEventListener("click", (e) => {
+  const ss = e.target.closest("[data-ss]"); if (ss) { sStatus = ss.dataset.ss; render(); }
+  const cs = e.target.closest("[data-cs]"); if (cs) { cStatus = cs.dataset.cs; render(); }
+  const at = e.target.closest("[data-at]"); if (at) { aType = at.dataset.at; render(); }
+  const aa = e.target.closest("[data-addadmin]"); if (aa) addAdmin(aa.dataset.addadmin);
+  const ca = e.target.closest("[data-capprove]"); if (ca) setConn(ca.dataset.capprove, "Active", "Connection approved");
+  if (e.target.closest("[data-newconn]")) { const act = schools().filter((s) => s.status === "Active"); const opts = (sel) => act.map((s, i) => `<option ${i === sel ? "selected" : ""}>${esc(s.name)}</option>`).join(""); sheetForm("Create connection", `<p class="muted" style="font-size:14px">The connection is active at once. Both schools can then share events with each other.</p><label class="field"><span>From school</span><select class="input" name="from">${opts(0)}</select></label><label class="field"><span>To school</span><select class="input" name="to">${opts(1)}</select></label>`, "Create connection", (v) => { if (v.from === v.to) { S.toast("Pick two different schools."); return false; } if (conns().some((c) => ["Active", "Pending"].includes(c.status) && ((c.from === v.from && c.to === v.to) || (c.from === v.to && c.to === v.from)))) { S.toast("These schools are already connected or pending."); return false; } conns().unshift({ id: S.uid(), from: v.from, to: v.to, status: "Active", requested: TODAY, updated: TODAY }); log("Connection created", `${v.from} → ${v.to}`, v.from, { status: "active" }); S.saveLists(); cStatus = "All"; S.toast("Connection created."); }); }
+  if (e.target.closest("[data-newadmin]")) sheetForm("Add platform admin", `<div class="gc-note warn">${SHIELD}<span>They get full access to every school. The person must already have an Activity Hub account.</span></div><label class="field"><span>Email</span><input class="input" name="email" type="email" required placeholder="name@activityhub.mn"></label>`, "Add platform admin", (v) => { if (admins().some((a) => a.email.toLowerCase() === v.email.toLowerCase())) { S.toast("Already a platform admin."); return false; } const nm = v.email.split("@")[0].split(/[._-]/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" "); admins().push({ id: S.uid(), name: nm, email: v.email, schoolRole: "—", status: "Active", created: TODAY }); log("Platform admin added", nm, "—", { email: v.email }); S.saveLists(); S.toast("Platform admin added."); });
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const id = a.dataset.id, act = a.dataset.act;
+  if (act === "edit") editSchool(id);
+  if (act === "reports") { S.flag("rpSchool", id); location.href = "reports.html"; }
+  if (act === "copy") { try { navigator.clipboard.writeText(id); } catch (er) {} S.toast("Email copied."); }
+  if (act === "prot") S.toast("You can't deactivate your own account.");
+  if (act === "archive") { const s = sch(id); S.confirm(`Archive ${s.name}?`, "Nobody at the school can sign in while it's archived. Its data is kept.", "Archive school", () => { s.status = "Archived"; log("School archived", s.name, s.name, { status: "archived" }); S.saveLists(); render(); S.toast("School archived."); }); }
+  if (act === "unarchive") { const s = sch(id); s.status = "Active"; log("School updated", s.name, s.name, { status: "active" }); S.saveLists(); render(); S.toast("School is active again."); }
+  if (act === "sa-off" || act === "sa-on") { const x = schoolAdmins().find((y) => y.id === id), on = act === "sa-on", s = sch(x.school); S.confirm(`${on ? "Reactivate" : "Deactivate"} ${x.name}?`, on ? "They can sign in again as a school admin." : `They won't be able to sign in to ${s.name}.`, on ? "Reactivate" : "Deactivate", () => { x.status = on ? "Active" : "Inactive"; log(`School admin ${on ? "reactivated" : "deactivated"}`, x.name, s.name); S.saveLists(); render(); S.toast(on ? "Admin reactivated." : "Admin deactivated."); }); }
+  if (act === "pa-off" || act === "pa-on") { const x = admins().find((y) => y.id === id), on = act === "pa-on"; S.confirm(`${on ? "Reactivate" : "Deactivate"} ${x.name}?`, on ? "They get full platform access again." : "They lose platform access at once.", on ? "Reactivate" : "Deactivate", () => { x.status = on ? "Active" : "Inactive"; log(`Platform admin ${on ? "reactivated" : "deactivated"}`, x.name, "—"); S.saveLists(); render(); S.toast("Saved."); }); }
+  if (act === "c-approve") setConn(id, "Active", "Connection approved");
+  if (act === "c-reject") S.confirm("Reject this connection?", "The schools won't be connected.", "Reject", () => setConn(id, "Rejected", "Connection rejected"));
+  if (act === "c-block") S.confirm("Block this connection?", "Neither school can request a connection with the other again.", "Block", () => setConn(id, "Blocked", "Connection blocked"));
+  if (act === "c-revoke") S.confirm("Revoke this connection?", "Events shared between the two schools stop being shared.", "Revoke", () => setConn(id, "Revoked", "Connection revoked"));
+});
+function setConn(id, status, action) { const c = conns().find((x) => x.id === id); c.status = status; c.updated = TODAY; log(action, `${c.from} → ${c.to}`, c.from, { status: status.toLowerCase() }); S.saveLists(); render(); S.toast(action + "."); }
+S.onSearch("sq", (v) => { sq = v; keep(render); });
+S.onSearch("cq", (v) => { cq = v; keep(render); });
+S.onSearch("aq", (v) => { aq = v; keep(render); });
+render();
+
+})();
+</script>
+</body>
+</html>

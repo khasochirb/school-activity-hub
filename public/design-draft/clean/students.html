@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Students · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Students (staff): one table, one "Add students" button. Per-row actions in ⋯ instead of buttons on every row.
+let status = "Active", q = "";
+function render() {
+  if (!C.staff()) { C.shell("", '<div class="card empty">This page is for school staff.</div>'); return; }
+  const all = S.list("students", S.STUDENTS);
+  const list = all.filter((s) => (status === "All" || s.status === status) && (!q || (s.name + s.number + s.group).toLowerCase().includes(q.toLowerCase())));
+  C.shell("students", `
+    <div class="head"><div><h1>Students</h1><p>${all.filter((s) => s.status === "Active").length} active on the roster</p></div>
+      ${C.menu([{ label: "Add one student", act: "add" }, { label: "Import from CSV", hint: "full_name, grade, class, number", href: "students.html" }], { button: `${C.ICON.plus} Add students` }).replace('class="btn btn-soft"', 'class="btn btn-primary"')}</div>
+    <div class="filters">${["Active", "Inactive", "All"].map((s) => `<button class="chip" data-st="${s}" aria-pressed="${status === s}">${s}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search students</span><input id="q" type="search" placeholder="Name, class or number" value="${esc(q)}"></label></div>
+    <div class="split"><div class="card rows" style="align-self:start">${list.map((s, i) => { const clubs = (i * 7) % 4, evs = (i * 5) % 9, joinedApp = !["st3", "st8"].includes(s.id); return `<div class="row"><span class="av" style="background:${["#fff4d6", "#e9ecfb", "#fdeae4", "#e3f4ea", "#efe6fb"][i % 5]};color:#1b1a17">${s.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span><span class="grow"><span class="t" style="display:block">${esc(s.name)}</span><span class="s">Class ${esc(s.group)} · ${esc(s.number)}</span></span><span class="cols"><span><b>${clubs}</b> clubs</span><span><b>${evs}</b> events</span></span>${s.status !== "Active" ? '<span class="tag">Inactive</span>' : joinedApp ? '<span class="tag ok">Joined app</span>' : '<span class="tag warn">Code not used</span>'}<span class="end">${C.menu([{ label: "View portfolio", href: "portfolio.html" }, { label: "Create invite code", act: "code", id: s.id }, "-", s.status === "Active" ? { label: "Mark as inactive", act: "inactive", id: s.id, danger: true } : { label: "Mark as active", act: "active", id: s.id }])}</span></div>`; }).join("") || '<p class="empty">No students match.</p>'}</div>
+    <aside class="side"><div class="card widget"><h3>By grade</h3>${["9", "10", "11", "12"].map((g) => { const n = all.filter((x) => x.grade === g && x.status === "Active").length; return `<div class="goal"><div><span>Grade ${g}</span><b>${n}</b></div><div class="bar"><i style="width:${(n / 4) * 100}%"></i></div></div>`; }).join("")}</div>
+      <div class="card widget"><h3>Haven't joined yet</h3>${all.filter((x) => ["st3", "st8"].includes(x.id)).map((x) => `<div class="row" style="padding:4px 0"><span class="grow"><span class="t" style="display:block;font-size:14px">${esc(x.name)}</span><span class="s">Code expires Nov 15</span></span></div>`).join("")}<a href="invites.html" style="font-size:13.5px;font-weight:600;color:var(--primary);text-decoration:none">Invite codes →</a></div>
+      <div class="card widget"><h3>Participation</h3><div class="statline"><span><b>78%</b>in a club</span><span><b>4.2</b>events each</span></div><div class="spark">${[3, 5, 4, 6, 8, 7, 9].map((x) => `<i style="height:${x * 11}%"></i>`).join("")}</div><span class="muted" style="font-size:12.5px">Check-ins per week, last 7 weeks</span></div></aside></div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const st = e.target.closest("[data-st]"); if (st) { status = st.dataset.st; render(); }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const all = S.list("students", S.STUDENTS), s = all.find((x) => x.id === a.dataset.id);
+  if (a.dataset.act === "code") S.toast("Invite code for " + s.name + ": " + Math.random().toString(36).slice(2, 6).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase());
+  if (a.dataset.act === "inactive") S.confirm("Mark " + s.name + " as inactive?", "They won't be able to sign in or join events.", "Mark inactive", () => { s.status = "Inactive"; S.saveLists(); render(); });
+  if (a.dataset.act === "active") { s.status = "Active"; S.saveLists(); render(); }
+  if (a.dataset.act === "add") S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Add a student</h2><button class="close" data-close aria-label="Close">×</button></div><form class="sheet-body" id="addf"><label class="field"><span>Full name</span><input class="input" name="name" required></label><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><label class="field"><span>Class</span><input class="input" name="group" placeholder="10A" required></label><label class="field"><span>Student number</span><input class="input" name="number" placeholder="S-1030"></label></div><button class="btn btn-primary">Add student</button></form>`, { onMount: (d) => d.querySelector("#addf").addEventListener("submit", (ev) => { ev.preventDefault(); const v = S.formData(ev.target); all.unshift({ id: S.uid(), name: v.name, grade: v.group.replace(/\D/g, ""), group: v.group, number: v.number || "—", status: "Active", created: new Date().toISOString().slice(0, 10) }); S.saveLists(); d.close(); render(); S.toast("Student added."); }) });
+});
+S.onSearch("q", (v) => { q = v; render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

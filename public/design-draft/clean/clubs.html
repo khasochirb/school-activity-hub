@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clubs · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Clubs: a card shows what matters and ONE button. Share, members, archive live in ⋯.
+let cat = "All", q = "";
+function render() {
+  const cats = ["All", ...new Set(Object.values(S.CLUBS).map((c) => c.category))];
+  const list = Object.entries(S.CLUBS).filter(([, c]) => (cat === "All" || c.category === cat) && (!q || c.name.toLowerCase().includes(q.toLowerCase())));
+  C.shell(C.staff() ? "" : "clubs", `
+    <div class="head"><div><h1>Clubs</h1><p>${list.length} clubs · meet new people, try something new</p></div>${C.staff() ? `<button class="btn btn-primary" data-new>${C.ICON.plus} New club</button>` : ""}</div>
+    <div class="filters">${cats.map((c) => `<button class="chip" ${c === "All" ? "" : `data-c style="--c:${C.catColor(c)}"`} data-cat="${c}" aria-pressed="${cat === c}">${c}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search clubs</span><input id="q" type="search" placeholder="Search clubs" value="${esc(q)}"></label></div>
+    <div class="grid">${list.map(([k, c]) => { const nx = S.EVENTS.find((e) => e.club === k && !e.past); return `<article class="card club">
+        <a class="banner" href="club.html#${k}">${S.art(c.art)}${S.clubAv(k, 40)}</a>
+        <div class="body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><a class="t" href="club.html#${k}">${esc(c.name)}</a>${C.cat(c.category)}</div>
+          <p class="muted" style="font-size:13.5px">${esc(c.about.slice(0, 90))}${c.about.length > 90 ? "…" : ""}</p>
+          ${nx ? `<a class="nextm" href="event.html#${nx.id}" style="text-decoration:none;color:var(--muted)">Next: <b>${esc(nx.title)}</b> · ${S.dayShort(nx.start)}</a>` : `<span class="nextm">Meets ${esc(c.meets)}</span>`}
+          <div class="meta"><span style="display:flex;align-items:center;gap:8px">${S.avatars(c.members, 4)}${c.members} members</span></div>
+          <div class="foot">${C.staff() ? `<a class="btn btn-sm btn-soft" href="club.html#${k}">Open</a>` : S.isJoined(k) ? `<button class="btn btn-sm btn-done" data-leave="${k}">${C.ICON.check} Joined</button>` : `<button class="btn btn-sm btn-soft" data-join="${k}">Join</button>`}
+            ${C.menu(C.staff() ? [{ label: "Members", href: `club.html#${k}` }, { label: "Edit club page", href: `club-edit.html#${k}` }, { label: "Copy link", act: "copy" }, "-", { label: "Archive club", act: "archive", danger: true }] : [{ label: "Copy link", act: "copy" }, { label: "Print club sheet", href: "print-clubs.html" }])}</div></div></article>`; }).join("")}</div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-cat]"); if (c) { cat = c.dataset.cat; render(); }
+  const j = e.target.closest("[data-join]"); if (j) { S.setJoined(j.dataset.join, true); render(); S.toast("You joined " + S.CLUBS[j.dataset.join].name + "."); }
+  const l = e.target.closest("[data-leave]"); if (l) { S.confirm("Leave this club?", "You can join again any time.", "Leave", () => { S.setJoined(l.dataset.leave, false); render(); }); }
+  if (e.target.closest('[data-act="copy"]')) S.toast("Link copied.");
+  if (e.target.closest('[data-act="archive"]')) S.confirm("Archive this club?", "It disappears for students. You can restore it later.", "Archive", () => S.toast("Club archived."));
+  if (e.target.closest("[data-new]")) S.toast("Opens the one-page club form in the real build.");
+});
+S.onSearch("q", (v) => { q = v; render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

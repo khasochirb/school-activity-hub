@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Attendance · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Attendance
+// Attendance: without a hash, the approved school events to take attendance for. With #eventId, "Attendance and QR":
+// a big check-in QR with one Copy button, the summary, chips, and the list. Permission changes live in each row's ⋯.
+const I = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC = { qr: I('<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/>'), copy: I('<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>'), warn: I('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>') };
+const AVC = ["#fff4d6", "#e9ecfb", "#fdeae4", "#e3f4ea", "#efe6fb"];
+const FIRST = ["Ariunzaya", "Bat-Orgil", "Dulguun", "Erdene", "Gerel", "Iveel", "Javkhlan", "Khongor", "Misheel", "Narantsetseg", "Oyuka", "Pujee", "Sodbileg", "Tergel", "Uuganbayar", "Yesui", "Ankhbayar", "Billegt", "Dashka", "Enkhmaa", "Solongo", "Tuvshin", "Amira", "Chinguun"];
+const LAST = ["Batbold", "Dorjsuren", "Ganzorig", "Tserendorj", "Sukhbaatar", "Otgonbayar", "Naranbaatar", "Erdenebileg", "Purevdorj", "Altangerel"];
+const hash = (s) => { let x = 7; for (const ch of s) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return x; };
+const fmtT = (d) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+const isReg = (e) => ["going", "registered", "pending", "attended"].includes(S.statusOf(e));
+let tab = "all", q = "", when = "upcoming", lq = "";
+
+function roster(e) {
+  const rows = [], n = e.going || 0;
+  if (isReg(e)) { const at = S.flag("ci-" + e.id), checked = S.statusOf(e) === "attended" || !!at; rows.push({ s: S.STUDENTS[0], checked, time: checked ? (at ? new Date(at) : new Date(new Date(e.start).getTime() + 4 * 60000)) : null, method: "QR" }); }
+  const pool = S.STUDENTS.filter((s) => s.status === "Active" && s.id !== "st0").sort((a, b) => hash(e.id + a.id) - hash(e.id + b.id));
+  for (let i = 0; rows.length < Math.max(n, rows.length); i++) {
+    const s = i < pool.length ? pool[i] : (() => { const k = i - pool.length, h = hash(e.id + k); const g = String(9 + (h % 4)); return { id: `g${k}`, name: `${FIRST[(h >> 3) % FIRST.length]} ${LAST[(h >> 7) % LAST.length]}`, grade: g, group: g + "ABC"[(h >> 5) % 3] }; })();
+    const h = hash(s.id + e.id), checked = !!e.past && h % 5 !== 0;
+    rows.push({ s, checked, time: checked ? new Date(new Date(e.start).getTime() + ((h % 28) - 6) * 60000) : null, method: h % 9 === 0 ? "Admin" : "QR" });
+  }
+  return rows;
+}
+const events = () => S.EVENTS.filter((e) => (e.approval || "approved") === "approved" && !e.partner);
+const permTag = (p) => (p === "Received" ? '<span class="tag ok">Received</span>' : p === "Declined" ? '<span class="tag" style="background:var(--coral-soft);color:var(--coral)">Declined</span>' : p === "Pending" ? '<span class="tag warn">Pending</span>' : '<span class="tag">Not required</span>');
+
+function list() {
+  const all = events(), evs = all.filter((e) => (when === "past") === !!e.past && (!lq || (e.title + S.clubName(e) + e.location).toLowerCase().includes(lq.toLowerCase())))
+    .sort((a, b) => (when === "past" ? b.start.localeCompare(a.start) : a.start.localeCompare(b.start)));
+  const next = all.filter((e) => !e.past).sort((a, b) => a.start.localeCompare(b.start))[0];
+  const past = all.filter((e) => e.past), held = past.map(roster), ci = held.flat().filter((r) => r.checked).length, reg = held.flat().length;
+  const permEvs = all.filter((e) => !e.past && e.permission);
+  return `
+    <div class="head b-head"><div><h1>Attendance</h1><p>Approved school events · open one to show its check-in QR and see who arrived</p></div></div>
+    <div class="filters">${[["upcoming", "Upcoming"], ["past", "Past"]].map(([k, l]) => `<button class="chip" data-when="${k}" aria-pressed="${when === k}">${l} · ${all.filter((e) => (k === "past") === !!e.past).length}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search events</span><input id="lq" type="search" placeholder="Search events" value="${esc(lq)}"></label></div>
+    <div class="split">
+      <div class="card rows" style="align-self:start">${evs.map((e) => { const r = roster(e), c = r.filter((x) => x.checked).length; const pct = e.past ? (r.length ? c / r.length : 0) : e.capacity ? r.length / e.capacity : Math.min(1, r.length / 50);
+        return `<a class="row at-row" href="#${e.id}"><span class="dtile"><span>${S.mon(e.start).toUpperCase()}</span><b>${S.dom(e.start)}</b></span>
+          <span class="grow"><span class="t" style="display:block">${esc(e.title)}</span><span class="s">${S.weekday(e.start)} · ${S.time(e.start)} · ${esc(e.location)}</span><span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${C.cat(e.category)}${e.permission ? '<span class="tag warn">Permission required</span>' : ""}</span></span>
+          <span class="reg">${e.past ? `<span><b>${c}</b> of ${r.length} checked in</span>` : `<span><b>${r.length}</b> registered${e.capacity ? ` of ${e.capacity}` : ""}</span>`}<span class="bar" style="--c:${e.past ? "var(--green)" : C.catColor(e.category)}"><i style="width:${Math.round(pct * 100)}%"></i></span></span>${C.ICON.chev}</a>`; }).join("") || `<p class="empty">${lq ? "No events match." : when === "past" ? "No past events" : "No upcoming events"}</p>`}</div>
+      <aside class="side">
+        ${next ? `<div class="card widget"><h3>Next up</h3><a class="row" style="padding:0" href="#${next.id}"><span class="thumb">${S.art(next.art)}</span><span class="grow"><span class="t" style="display:block;font-size:14.5px">${esc(next.title)}</span><span class="s">${S.dayShort(next.start)} · ${S.time(next.start)}</span></span></a><a class="btn btn-primary" href="#${next.id}">${IC.qr} Show check-in QR</a></div>` : ""}
+        <div class="card widget"><h3>This term</h3><div class="statline"><span><b>${past.length}</b>events held</span><span><b>${ci}</b>check-ins</span><span><b>${reg ? Math.round((ci / reg) * 100) : 0}%</b>attended</span></div><div class="spark">${[62, 70, 66, 81, 77, 84, Math.round((ci / Math.max(1, reg)) * 100)].map((x) => `<i style="height:${x}%;background:color-mix(in srgb, var(--green) 70%, transparent)"></i>`).join("")}</div><span class="muted" style="font-size:12.5px">Attendance rate, last 7 events</span></div>
+        ${permEvs.length ? `<div class="card widget"><h3>Permission forms</h3>${permEvs.map((e) => { const r = roster(e); seedPerms(e, r); const got = r.filter((x) => S.permOf(e, x.s.id) === "Received").length; return `<div class="goal"><div><a href="#${e.id}" style="text-decoration:none;font-weight:600">${esc(e.title)}</a><b>${got}/${r.length}</b></div><div class="bar" style="--c:var(--amber)"><i style="width:${r.length ? (got / r.length) * 100 : 0}%"></i></div></div>`; }).join("")}<span class="muted" style="font-size:12.5px">Record forms on each event's attendance list.</span></div>` : ""}
+      </aside>
+    </div>`;
+}
+
+function seedPerms(e, rows) { // sample data: most forms are already in for events with permission
+  if (!e.permission || S.flag("permSeed-" + e.id)) return;
+  rows.forEach((r) => { if (r.s.id !== "st0") { const h = hash(r.s.id + "p" + e.id) % 6; S.setPerm(e, r.s.id, h < 3 ? "Received" : h < 5 ? "Pending" : "Declined"); } });
+  S.flag("permSeed-" + e.id, true);
+}
+function detail(e) {
+  seedPerms(e, roster(e));
+  const rows = roster(e), ci = rows.filter((r) => r.checked).length, n = rows.length, rate = n ? Math.round((ci / n) * 100) : 0;
+  const url = location.href.split("#")[0].replace(/attendance\.html.*$/, "checkin.html") + "#" + e.id;
+  const shown = rows.filter((r) => (tab === "all" || (tab === "in" ? r.checked : !r.checked)) && (!q || (r.s.name + r.s.group).toLowerCase().includes(q.toLowerCase())));
+  const pend = e.permission ? rows.filter((r) => S.permOf(e, r.s.id) !== "Received").length : 0;
+  const perms = e.permission ? ["Received", "Pending", "Declined"].map((p) => [p, rows.filter((r) => S.permOf(e, r.s.id) === p).length]) : [];
+  const times = rows.filter((r) => r.time).map((r) => r.time.getTime()), t0 = new Date(e.start).getTime();
+  const buckets = Array.from({ length: 8 }, (_, i) => times.filter((t) => t >= t0 + (i - 2) * 5 * 60000 && t < t0 + (i - 1) * 5 * 60000).length), bm = Math.max(1, ...buckets);
+  const stats = [["Registered students", n, "var(--primary)", 100], ["Checked in", ci, "var(--green)", rate], ["Not checked in", n - ci, "var(--amber)", n ? 100 - rate : 0], ["Attendance rate", rate + "%", "var(--green)", rate]];
+  return `
+    <a class="b-back" href="attendance.html">← Attendance</a>
+    <div class="head b-head"><div class="at-hero"><span class="sq">${S.art(e.art)}</span><div style="min-width:0"><h1>Attendance and QR</h1><p>${esc(e.title)} · ${S.dayShort(e.start)}, ${S.time(e.start)} · ${esc(e.location)}</p>
+      <div class="tags">${C.cat(e.category)}<span class="tag ${e.risk === "Low" ? "ok" : "warn"}">${esc(e.risk || "Low")} risk</span>${e.permission ? '<span class="tag warn">Permission required</span>' : '<span class="tag">No permission needed</span>'}</div></div></div>
+      ${C.menu([{ label: "Open event", href: `event.html#${e.id}` }, { label: "Open check-in link", href: `checkin.html#${e.id}`, hint: "What students see after scanning" }, { label: "Show QR full screen", act: "big" }])}</div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+        <div class="stats at-stats">${stats.map(([l, v, c, w]) => `<div class="card stat rich b-stat"><span class="muted">${l}</span><b>${v}</b><div class="bar" style="--c:${c}"><i style="width:${w}%"></i></div></div>`).join("")}</div>
+        ${pend ? `<div class="b-note warn">${IC.warn}<div><b>Permission has not been received for ${pend} registered ${pend === 1 ? "student" : "students"}</b><p>${esc(e.permissionNote || "This event needs school or parent permission.")} Record forms with ⋯ on each row.</p></div></div>` : ""}
+        <section class="sec"><header><h2>Attendance list</h2><span class="muted" style="font-size:13.5px">${n} registered</span></header>
+          <div class="filters">${[["all", "All students", n], ["in", "Checked in", ci], ["out", "Not checked in", n - ci]].map(([k, l, c]) => `<button class="chip" data-tab="${k}" aria-pressed="${tab === k}">${l} · ${c}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search students</span><input id="q" type="search" placeholder="Name or class" value="${esc(q)}"></label></div>
+          <div class="card rows">${shown.map((r, i) => { const p = S.permOf(e, r.s.id); const ini = r.s.name.split(" ").map((w) => w[0]).join("").slice(0, 2);
+            return `<div class="row at-stu"><span class="av" style="background:${AVC[hash(r.s.id) % 5]}">${ini}</span><span class="grow"><span class="t" style="display:block">${esc(r.s.name)}${r.s.id === "st0" ? ' <span class="tag blue">You in the student draft</span>' : ""}</span><span class="s">Grade ${esc(r.s.grade)} · ${esc(r.s.group)} · ${esc(S.SCHOOL.name)}</span>${e.permission && p !== "Received" ? '<span class="warnline">Permission not received yet</span>' : ""}</span>
+              <span class="ci"><b>${r.checked ? "Attended" : "Registered"}</b>${r.checked ? `${fmtT(r.time)} · ${r.method}` : "Not checked in"}</span>
+              <span class="pm">${e.permission ? permTag(p) : r.checked ? '<span class="tag ok">Checked in</span>' : '<span class="tag">Not checked in</span>'}</span>
+              <span class="end">${e.permission ? C.menu([{ label: "Permission received", act: "perm", id: r.s.id + "|Received", hint: p === "Received" ? "Current" : "" }, { label: "Permission pending", act: "perm", id: r.s.id + "|Pending", hint: p === "Pending" ? "Current" : "" }, { label: "Permission declined", act: "perm", id: r.s.id + "|Declined", hint: p === "Declined" ? "Current" : "", danger: true }], { label: `Permission for ${r.s.name}` }) : ""}</span></div>`; }).join("") || `<p class="empty">${n === 0 ? "No students registered yet" : tab === "in" ? "No check-ins yet" : q ? "No students match." : "Everyone has checked in."}</p>`}</div>
+        </section>
+      </div>
+      <aside class="side">
+        <div class="card at-qr"><div><h3>Check-in QR</h3><p class="muted" style="font-size:13.5px">Scan this code to check in</p></div><button type="button" class="qr" data-act="big" aria-label="Show QR full screen" style="cursor:zoom-in">${S.qr(e.id, 25)}</button>
+          <div><p style="font-weight:600;font-size:13.5px;margin-bottom:6px">Check-in link</p><div class="at-link"><code>${esc(url)}</code></div></div>
+          <button class="btn btn-primary" data-copy="${esc(url)}">${IC.copy} Copy check-in link</button></div>
+        <div class="card widget"><h3>${e.past ? "Arrivals" : "Live check-ins"}</h3>${ci ? `<div style="display:flex;gap:16px;align-items:center"><span class="at-ring" style="--p:${rate}"><b>${rate}%</b></span><div class="spark" style="flex:1;height:60px">${buckets.map((b) => `<i style="height:${Math.max(6, (b / bm) * 100)}%;background:color-mix(in srgb, var(--green) 70%, transparent)"></i>`).join("")}</div></div><span class="muted" style="font-size:12.5px">Check-ins per 5 minutes around the start time</span>` : `<p class="muted" style="font-size:13.5px">No check-ins yet. They appear here as students scan the QR code at the door.</p>`}</div>
+        ${e.permission ? `<div class="card widget"><h3>Permission forms</h3>${perms.map(([p, c]) => `<div class="goal"><div><span>${p}</span><b>${c}</b></div><div class="bar" style="--c:${p === "Received" ? "var(--green)" : p === "Pending" ? "var(--amber)" : "var(--coral)"}"><i style="width:${n ? (c / n) * 100 : 0}%"></i></div></div>`).join("")}</div>` : ""}
+      </aside>
+    </div>`;
+}
+
+function render() {
+  if (!(C.staff() || C.role() === "platform")) { C.shell("", '<div class="card empty"><b style="color:var(--fg)">Attendance is for school staff</b><br>Students check in by scanning the QR code at the event.</div>'); S.startClock(); return; }
+  const e = events().find((x) => x.id === location.hash.slice(1));
+  C.shell("events", e ? detail(e) : list());
+  S.startClock();
+}
+const cur = () => events().find((x) => x.id === location.hash.slice(1));
+document.addEventListener("click", (ev) => {
+  const t = ev.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; render(); }
+  const w = ev.target.closest("[data-when]"); if (w) { when = w.dataset.when; render(); }
+  const c = ev.target.closest("[data-copy]");
+  if (c) { const url = c.dataset.copy; const ok = () => { c.innerHTML = `${C.ICON.check} Copied`; S.toast("Check-in link copied."); setTimeout(() => { if (c.isConnected) c.innerHTML = `${IC.copy} Copy check-in link`; }, 2000); }; try { navigator.clipboard.writeText(url).then(ok, ok); } catch (e) { ok(); } }
+  const a = ev.target.closest("[data-act]"); if (!a) return;
+  const e = cur(); if (!e) return;
+  if (a.dataset.act === "big") S.sheet(`<div class="sheet-head"><h2 style="font-size:1.15rem">${esc(e.title)}</h2><button class="close" data-close aria-label="Close">×</button></div><div class="at-big"><div class="qr">${S.qr(e.id, 25)}</div><b style="font-size:20px">Scan to check in</b><p class="muted">${S.dayLong(e.start)} · ${S.time(e.start)} · ${esc(e.location)}</p></div>`);
+  if (a.dataset.act === "perm") { const [sid, v] = a.dataset.id.split("|"); const r = roster(e).find((x) => x.s.id === sid); S.setPerm(e, sid, v); render(); S.toast(`Permission ${v.toLowerCase()} for ${r ? r.s.name.split(" ")[0] : "student"}.`); }
+});
+S.onSearch("q", (v) => { q = v; render(); const el = document.getElementById("q"); el.focus(); el.setSelectionRange(v.length, v.length); });
+S.onSearch("lq", (v) => { lq = v; render(); const el = document.getElementById("lq"); el.focus(); el.setSelectionRange(v.length, v.length); });
+window.addEventListener("hashchange", () => { tab = "all"; q = ""; scrollTo(0, 0); render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

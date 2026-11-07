@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Safety and support · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Safety and support
+// Safety and support (everyone): the important notice up top, then three tabs — Overview (where to go), Report a concern
+// (the full confidential form, one Submit button) and My reports (a status timeline per report).
+const I = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC = { shield: I('<path d="M12 3.5l7.5 3v5.5c0 4.5-3.2 7.8-7.5 9-4.3-1.2-7.5-4.5-7.5-9V6.5z"/><path d="M9 12l2.2 2.2L15.5 10"/>'), warn: I('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'), pen: I('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'), list: I('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>'), lock: I('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>'), team: I('<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="7" r="2.6"/><path d="M17.5 12.6c2.2.4 3.6 2 4 4.4"/>'), eye: I('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'), talk: I('<path d="M4 5.5h16v10H9l-5 4z"/>'), user: I('<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/>'), bolt: I('<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>'), web: I('<rect x="3.5" y="4.5" width="17" height="13" rx="2.5"/><path d="M8 21h8M12 17.5V21"/>'), dot: I('<circle cx="12" cy="12" r="8"/><path d="M12 8v5M12 16h.01"/>') };
+const CAT = { "Bullying or harassment": ["#e0447a", IC.talk, "Someone is being hurt, threatened or picked on."], "Personal safety": ["#f2643f", IC.user, "You or someone else doesn't feel safe."], "Activity or event concern": ["#2340d9", IC.bolt, "Something at a club, trip or event."], "Online or platform safety": ["#6b4fd6", IC.web, "Messages, posts or this app."], "Other safety concern": ["#6d6a63", IC.dot, "Anything else that worries you."] };
+const STEPS = ["Submitted", "Being reviewed", "Closed"];
+const reports = () => S.list("safety", S.SAFETY_REPORTS);
+const team = () => S.list("safetyTeam", S.STAFF.filter((s) => s.safety).map((s) => ({ name: s.name, date: s.safety })));
+const fmt = (iso) => S.fmtDate(iso);
+const tabFromHash = () => (["report", "mine"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "overview");
+let tab = tabFromHash(), fresh = null, formErr = {};
+const designated = () => ["teacher", "admin"].includes(C.role());
+
+function overview() {
+  const mine = reports().filter((r) => r.mine), open = reports().filter((r) => r.status !== "Closed").length;
+  const cards = [
+    { c: "var(--primary)", i: IC.pen, t: "Confidential reporting", p: "Tell designated staff about something that worries you. Only the safety response team can read it.", go: "Report a safety concern", h: "#report", primary: true },
+    { c: "var(--green)", i: IC.list, t: "My safety reports", p: mine.length ? `${mine.length} submitted · ${mine.filter((r) => r.status !== "Closed").length} still open` : "See the status of anything you've reported.", go: "View my report status", h: "#mine" },
+    ...(designated() ? [{ c: "var(--coral)", i: IC.lock, t: "Safety response inbox", p: `${open} open ${open === 1 ? "report" : "reports"}. Restricted to the safety response team.`, go: "Open restricted inbox", h: "safety-inbox.html", lock: "Designated staff" }] : []),
+    ...(C.role() === "admin" ? [{ c: "#6b4fd6", i: IC.team, t: "Safety response team", p: `${team().length} of 3 responders. Choose who can open the inbox.`, go: "Manage response team", h: "safety-team.html", lock: "School admin" }] : []),
+  ];
+  return `
+    <div class="sf-cards">${cards.map((x) => `<a class="card" href="${x.h}" ${x.h.startsWith("#") ? `data-tab="${x.h.slice(1)}"` : ""}><span style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><span class="b-tile" style="--c:${x.c}">${x.i}</span>${x.lock ? `<span class="lock">${x.lock}</span>` : ""}</span><b>${x.t}</b><p>${x.p}</p>${x.primary ? `<span class="btn btn-primary" style="align-self:flex-start;margin-top:auto">${x.go}</span>` : `<span class="go">${x.go}${C.ICON.chev}</span>`}</a>`).join("")}</div>
+    <section class="sec"><header><h2>Confidentiality and other reporting options</h2></header>
+      <div class="sf-conf">
+        <div class="card"><span class="b-tile" style="--c:var(--primary)">${IC.eye}</span><b>Confidential, not anonymous</b><p>Your name is attached so staff can help and follow up. It is only shown to the safety response team, never to other students.</p></div>
+        <div class="card"><span class="b-tile" style="--c:var(--green)">${IC.talk}</span><b>You can always talk in person</b><p>Your class teacher, the school social worker or any staff member you trust. You don't have to use this app.</p></div>
+        <div class="card"><span class="b-tile" style="--c:var(--coral)">${IC.lock}</span><b>Restricted access</b><p>At most three designated staff can open reports. Every status change is recorded.</p></div>
+      </div></section>`;
+}
+
+function form() {
+  const evs = S.EVENTS.filter((e) => (e.approval || "approved") === "approved" && !e.partner).sort((a, b) => b.start.localeCompare(a.start)).slice(0, 8);
+  return `<form class="card b-card" id="sff" novalidate>
+      <header><div><h2 style="font-size:19px">Report a safety concern</h2><p>Write what happened in your own words. You don't need every detail. A designated staff member reads it, usually within one school day.</p></div></header>
+      <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px"><legend style="font-size:13px;font-weight:600;margin-bottom:8px">Concern category</legend>
+        <div class="sf-cats">${S.SAFETY_CATS.map((c) => `<label><input type="radio" name="category" value="${esc(c)}" required><span class="b-tile" style="--c:${CAT[c][0]}">${CAT[c][1]}</span><span><b>${esc(c)}</b><small>${CAT[c][2]}</small></span></label>`).join("")}</div>${formErr.category ? `<small class="b-err">${formErr.category}</small>` : ""}</fieldset>
+      <label class="field"><span>Brief description</span><textarea class="textarea" name="text" rows="6" maxlength="2000" placeholder="What happened, where and when. Include names only if you're comfortable."></textarea><small class="b-cnt" id="sfcnt">2000 characters remaining</small>${formErr.text ? `<small class="b-err">${formErr.text}</small>` : ""}</label>
+      <label class="field"><span>Related school activity or club <span class="muted" style="font-weight:500">(optional)</span></span><select class="input" name="related"><option>No related activity</option><optgroup label="Clubs">${Object.values(S.CLUBS).map((c) => `<option>${esc(c.name)}</option>`).join("")}</optgroup><optgroup label="Events">${evs.map((e) => `<option>${esc(e.title)}</option>`).join("")}</optgroup></select></label>
+      <label class="b-check"><input type="checkbox" name="contact"><span>I would like a designated staff member to contact me<small>They'll find you privately at school. Leave this off if you'd rather they didn't.</small></span></label>
+      <div class="b-foot"><a class="b-link" href="#overview" data-tab="overview">Back to safety and support</a><button class="btn btn-primary">${IC.lock} Submit confidential report</button></div>
+    </form>`;
+}
+
+function track(r) {
+  const idx = STEPS.indexOf(r.status), dates = [r.submitted, r.reviewed, r.closed];
+  return `<ol class="sf-track">${STEPS.map((s, i) => `<li class="${i < idx || (i === idx && s === "Closed") ? "done" : i === idx ? "cur" : ""}"><b>${i === 0 ? "Submitted" : i === 1 ? "Review started" : "Closed"}</b>${dates[i] ? fmt(dates[i]) : i === idx + 1 ? "Next" : "—"}</li>`).join("")}</ol>`;
+}
+function mine() {
+  const list = reports().filter((r) => r.mine);
+  return `<div class="b-note">${IC.eye}<div><b>You see a safe summary</b><p>Category, status and dates. Your description stays with the safety response team and isn't shown here.</p></div></div>
+    ${list.length ? list.map((r) => `<article class="card sf-rep ${r.id === fresh ? "new" : ""}"><header><span style="display:flex;gap:12px;align-items:center"><span class="b-tile" style="--c:${CAT[r.category][0]}">${CAT[r.category][1]}</span><span><b>${esc(r.category)}</b><span class="s">Submitted ${fmt(r.submitted)} · ${esc(r.related)}</span></span></span><span class="tag ${r.status === "Closed" ? "ok" : r.status === "Being reviewed" ? "blue" : "warn"}">${r.status}</span></header>
+      ${track(r)}<p class="muted" style="font-size:13px">${r.contact ? "Contact requested: a designated staff member will find you privately." : "No contact requested."}</p></article>`).join("")
+      : '<div class="card empty"><b style="color:var(--fg)">No safety reports submitted</b><br>If something worries you, you can report it here or talk to a teacher.</div>'}`;
+}
+
+function side() {
+  const t = team();
+  return `<aside class="side">
+    <div class="card widget"><h3>Who reads reports</h3><div class="ppl">${t.map((m, i) => `<span><i style="background:${["#b9c1ec", "#9fe0bd", "#ffb59f"][i % 3]}">${m.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</i>${esc(m.name.split(" ")[0])}</span>`).join("")}</div><span class="muted" style="font-size:12.5px">The safety response team at ${esc(S.SCHOOL.name)}. ${t.length} of 3 places filled.</span></div>
+    <div class="card widget"><h3>What happens next</h3><ol class="b-steps"><li class="done"><i>${C.ICON.check}</i><div><b>You report</b><span>Only the team can open it</span></div></li><li class="cur"><i></i><div><b>A responder reviews</b><span>Usually within one school day</span></div></li><li><i></i><div><b>They follow up</b><span>In person if you asked to be contacted</span></div></li></ol></div>
+    <div class="card widget"><h3>Need help right now?</h3><p class="muted" style="font-size:13.5px">This app isn't watched around the clock. If someone is in danger, go to the nearest staff member straight away.</p></div>
+  </aside>`;
+}
+
+function render() {
+  if (C.role() === "platform") { C.shell("", '<div class="card empty">Safety and support is for students and staff at a school.</div>'); S.startClock(); return; }
+  const nMine = reports().filter((r) => r.mine).length;
+  const TABS = [["overview", "Overview"], ["report", "Report a concern"], ["mine", `My reports · ${nMine}`]];
+  C.shell("", `
+    <section class="sf-hero"><div><h1>Safety and support</h1><p>A confidential way to tell designated staff about something that worries you, at school, at an activity or online.</p></div><span class="shield">${IC.shield}</span></section>
+    <div class="b-note warn">${IC.warn}<div><b>Important safety notice</b><p>This is not an emergency service. If you or someone else is in danger right now, tell a teacher or any staff member immediately.</p></div></div>
+    <div class="ptabs" role="tablist">${TABS.map(([t, l]) => `<button role="tab" data-tab="${t}" aria-selected="${tab === t}">${l}</button>`).join("")}</div>
+    <div class="split"><div style="display:flex;flex-direction:column;gap:20px;min-width:0">${tab === "report" ? form() : tab === "mine" ? mine() : overview()}</div>${side()}</div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-tab]"); if (t) { e.preventDefault(); tab = t.dataset.tab; formErr = {}; history.replaceState(null, "", tab === "overview" ? location.pathname : "#" + tab); render(); }
+});
+document.addEventListener("input", (e) => { if (e.target.name === "text" && e.target.closest("#sff")) { const left = 2000 - e.target.value.length, c = document.getElementById("sfcnt"); c.textContent = `${left} characters remaining`; c.classList.toggle("low", left < 200); } });
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "sff") return; e.preventDefault();
+  const v = S.formData(e.target); formErr = {};
+  if (!v.category) formErr.category = "Choose the category that fits best.";
+  if (!(v.text || "").trim()) formErr.text = "Add a short description.";
+  if (Object.keys(formErr).length) { const keep = v; render(); const f = document.getElementById("sff"); if (keep.category) f.querySelector(`[name="category"][value="${CSS.escape(keep.category)}"]`).checked = true; f.text.value = keep.text || ""; f.related.value = keep.related; f.contact.checked = !!keep.contact; S.toast("A couple of things are missing."); return; }
+  const r = { id: "sr" + S.uid(), category: v.category, status: "Submitted", contact: !!v.contact, submitted: C.NOW.toISOString().slice(0, 10), reporter: S.ME[C.role()].name, related: v.related, text: v.text.trim(), mine: true };
+  reports().unshift(r); S.saveLists(); fresh = r.id; tab = "mine"; history.replaceState(null, "", "#mine"); scrollTo(0, 0); render();
+  S.toast("Report submitted. Only the safety response team can read it.");
+});
+window.addEventListener("hashchange", () => { tab = tabFromHash(); render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>School news · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: School news
+// "The Activity Gazette": a newspaper built from the school's own events and clubs. Lead report, more reports, coming up, club notices.
+const checked = { ev0: 19, evp2: 28 };
+const EXTRA_REPORTS = [{ id: "sportsday", title: "Autumn sports day", start: "2026-09-26T10:00", art: "medal", going: 140, checked: 121, club: null, category: "Sports", about: "Eleven classes, six events and one very close tug-of-war final. 11B took the cup." }];
+const WHO = { basketball: "Tryouts each term", morin: "All students; instruments provided", robotics: "All students, beginners welcome", debate: "Grades 9–12", volunteers: "All students" };
+const CHIPS = { robotics: ["Beginners welcome", "First visit free"], debate: ["Beginners welcome"], morin: ["First visit free"], volunteers: ["Beginners welcome", "First visit free"], basketball: [] };
+const from = (e) => (e.club ? `Report from ${S.CLUBS[e.club].name}` : "School event");
+const sum = (e) => e.summary || e.about || "";
+const ci = (e) => e.checked ?? checked[e.id] ?? Math.round(e.going * 0.85);
+const LONG = { ev0: " The teams trained twice a week since August, and two of the three were made up of first-year members." };
+
+function render() {
+  if (C.role() === "platform") { C.shell("", '<div class="head"><div><h1>School news</h1></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">News belongs to each school</b><br>Each school\'s newspaper is built from its own events and clubs.</div>'); S.startClock(); return; }
+  const past = [...S.EVENTS.filter((e) => e.past && (e.approval || "approved") === "approved"), ...EXTRA_REPORTS].sort((a, b) => b.start.localeCompare(a.start));
+  const up = S.EVENTS.filter((e) => !e.past && (e.approval || "approved") === "approved").sort((a, b) => a.start.localeCompare(b.start)).slice(0, 5);
+  const notices = S.ANNOUNCEMENTS.filter((a) => a.status === "Active").slice(0, 3);
+  const lead = past[0], more = past.slice(1);
+  const today = C.NOW.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  if (!lead) { C.shell("", '<div class="card empty" style="padding:48px"><b style="color:var(--fg)">No stories yet</b><br>Reports appear here after approved events take place.</div>'); S.startClock(); return; }
+  const link = (e) => (S.EVENTS.includes(e) ? `event.html#${e.id}` : "events.html");
+  C.shell("", `
+    <article class="card news">
+      <header class="news-mast"><div class="line"><span>${esc(S.SCHOOL.name)}</span><span>Vol. 1 · No. 9</span><span>${today}</span><span>Free to every student</span></div>
+        <h1>The Activity <span>Gazette</span></h1><p>News, event reports and club notices from your school</p></header>
+
+      <section class="news-lead" aria-label="Event report">
+        <figure class="news-cover" style="margin:0">${S.art(lead.art)}<figcaption>${esc(lead.title)} · ${esc(lead.location || "")}</figcaption></figure>
+        <div><p class="news-kick">Event report</p><h2>${esc(lead.title)}</h2>
+          <p class="news-by">${lead.club ? S.clubAv(lead.club, 22) : ""}<b>${esc(from(lead))}</b><span>·</span><span>Held ${S.fmtDate(lead.start)}</span></p>
+          <p class="news-sum">${sum(lead) ? esc(sum(lead) + (LONG[lead.id] || "")) : "The organisers have not written a summary for this event yet."}</p>
+          <div class="news-nums"><h3>By the numbers</h3><div class="g"><div><b>${lead.going}</b>Registered</div><div><b>${ci(lead)}</b>Checked in</div><div><b>${Math.round((ci(lead) / lead.going) * 100)}%</b>Turned up</div></div>
+            <div class="bar" style="--c:var(--green)"><i style="width:${Math.round((ci(lead) / lead.going) * 100)}%"></i></div></div>
+          <a class="btn btn-primary" style="margin-top:18px" href="${link(lead)}">Read the event page</a></div>
+      </section>
+
+      <div class="news-cols">
+        <section><h3 class="news-ch"><span>More reports</span><span class="muted">${more.length}</span></h3>
+          ${more.length ? more.map((e) => `<div class="news-brief"><span class="cv">${S.art(e.art)}</span><div><p class="k">${esc(from(e))} · Held ${S.fmtDate(e.start)}</p><h4><a href="${link(e)}">${esc(e.title)}</a></h4><p>${sum(e) ? esc(sum(e)) : "The organisers have not written a summary for this event yet."}</p><p style="font-size:12.5px;margin-top:4px"><b style="color:var(--fg)">${e.going}</b> registered · <b style="color:var(--fg)">${ci(e)}</b> checked in</p></div></div>`).join("") : '<p class="muted">No other reports yet.</p>'}</section>
+        <section><h3 class="news-ch"><span>Coming up</span><a class="ga-link" href="events.html">All</a></h3>
+          ${up.length ? `<div class="news-up">${up.map((e) => `<a href="event.html#${e.id}"><span class="dtile"><span>${S.mon(e.start).toUpperCase()}</span><b>${S.dom(e.start)}</b></span><span style="min-width:0"><b class="t">${esc(e.title)}</b><span class="s">${S.weekday(e.start)} · ${S.time(e.start)} · ${esc(e.location)}</span></span></a>`).join("")}</div>` : '<p class="muted">No upcoming events are scheduled.</p>'}</section>
+        <section><h3 class="news-ch"><span>From the noticeboard</span><a class="ga-link" href="announcements.html">All</a></h3>
+          <div class="news-board">${notices.map((n) => `<div><b>${esc(n.title)}</b>${esc(n.body.length > 120 ? n.body.slice(0, 118) + "…" : n.body)}</div>`).join("")}</div></section>
+      </div>
+
+      <section style="border-top:1px solid var(--line-strong);padding-top:22px"><h3 class="news-ch"><span>Club notices</span><a class="ga-link" href="clubs.html">All clubs</a></h3>
+        <div class="news-ads">${Object.entries(S.CLUBS).filter(([k]) => (CHIPS[k] || []).length).map(([k, c]) => `<div class="news-ad" style="--c:${c.color}"><p class="news-kick">Now recruiting</p><h4>${S.clubAv(k, 32)}${esc(c.name)}</h4>
+          <dl><dt>Meets</dt><dd>${esc(c.meets)}</dd><dt>Where</dt><dd>${esc(c.where)}</dd><dt>Who can join</dt><dd>${esc(WHO[k] || "All students")}</dd></dl>
+          ${CHIPS[k] && CHIPS[k].length ? `<div class="tags">${CHIPS[k].map((t) => `<span class="tag ${t.startsWith("First") ? "blue" : "ok"}">${t}</span>`).join("")}</div>` : ""}
+          <div class="ft"><span style="display:flex;align-items:center;gap:8px">${S.avatars(c.members, 3)}${c.members} members</span><a href="club.html#${k}">Visit the club</a></div></div>`).join("")}</div></section>
+    </article>`);
+  S.startClock();
+}
+render();
+
+})();
+</script>
+</body>
+</html>

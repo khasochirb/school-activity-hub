@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Club ideas · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Club ideas
+// Students: "Club ideas" — one Suggest button (sheet, max 3 pending), a Support toggle per idea, supporter bars.
+// Staff: "Club requests" — an inbox like Approvals: pick a request, then approve-and-create or reject; archive in ⋯.
+const ICOL = { "Mental Health": "#2f9c8f", Outdoor: "#5f8f1f" };
+const col = (c) => ICOL[c] || C.catColor(c);
+const tag = (c) => `<span class="cat" style="--c:${col(c)}">${esc(c)}</span>`;
+const STUDENTS_N = 412, GOAL = 10;
+const ideas = S.list("ideas", S.IDEAS);
+let stat = C.staff() ? "Pending review" : "All", cat = "All", q = "", sel = null;
+const pendingMine = () => ideas.filter((i) => i.mine && i.status === "Pending review").length;
+const stTag = (s) => `<span class="tag ${s === "Approved" ? "ok" : s === "Pending review" ? "warn" : ""}">${esc(s)}</span>`;
+const ini = (n) => n.split(/\s+/).map((w) => w[0]).join("").slice(0, 2);
+const AVC = ["#fff4d6", "#e9ecfb", "#fdeae4", "#e3f4ea", "#efe6fb"];
+const avc = (n) => AVC[n.length % 5];
+const notes = (i) => `${i.status === "Approved" ? `<div class="ga-note ok idea-note">${S.ICON.checkCircle}<span><b>This club has been approved.</b> ${i.clubKey && S.CLUBS[i.clubKey] ? `<a class="ga-link" href="club.html#${i.clubKey}">This request became a club</a>` : "Staff are setting up the club page."}</span></div>` : ""}${i.status === "Rejected" && i.reason ? `<div class="ga-note idea-note"><span><b>Rejection reason:</b> ${esc(i.reason)}</span></div>` : ""}`;
+const supBox = (i, btn) => { const pct = Math.min(100, (i.supporters / GOAL) * 100); return `<div class="idea-sup"><div class="n"><b>${i.supporters}</b><span>Supporters</span></div><div class="bar" style="--c:${i.supporters >= GOAL ? "var(--green)" : col(i.category)}"><i style="width:${pct}%"></i></div><p>${i.status !== "Pending review" ? "" : i.supporters >= GOAL ? "Enough support for staff review · " : `${GOAL - i.supporters} more for staff review · `}Support rate ${(Math.round((i.supporters / STUDENTS_N) * 1000) / 10)}%</p>${btn || ""}</div>`; };
+
+function filtered() {
+  return ideas.filter((i) => (stat === "All" ? (C.staff() || i.status !== "Archived") : i.status === stat) && (cat === "All" || i.category === cat) && (!q || (i.name + " " + i.why + " " + i.by).toLowerCase().includes(q.toLowerCase())))
+    .sort((a, b) => b.supporters - a.supporters || b.created.localeCompare(a.created));
+}
+function filters() {
+  const sts = ["All", "Pending review", "Approved", "Rejected", ...(C.staff() ? ["Archived"] : [])];
+  const cats = ["All", ...new Set(ideas.map((i) => i.category))];
+  return `<div class="filters">${sts.map((s) => `<button class="chip" data-st="${s}" aria-pressed="${stat === s}">${s === "All" ? "All statuses" : s}${s !== "All" ? ` · ${ideas.filter((i) => i.status === s).length}` : ""}</button>`).join("")}<label class="search">${C.ICON.search}<span class="sr">Search club ideas</span><input id="q" type="search" placeholder="Search club ideas" value="${esc(q)}"></label></div>
+    <div class="filters">${cats.map((c) => `<button class="chip" ${c === "All" ? "" : `data-c style="--c:${col(c)}"`} data-cat="${esc(c)}" aria-pressed="${cat === c}">${c === "All" ? "All categories" : esc(c)}</button>`).join("")}</div>`;
+}
+
+function studentView() {
+  const list = filtered(), n = pendingMine(), mine = ideas.filter((i) => i.mine);
+  const top = ideas.filter((i) => i.status === "Pending review").sort((a, b) => b.supporters - a.supporters).slice(0, 4);
+  return `<div class="head"><div><h1>Club ideas</h1><p>Suggest new clubs and support ideas from other students in your school.</p></div><button class="btn btn-primary" data-suggest>${C.ICON.plus} Suggest a club</button></div>
+    ${filters()}
+    <div class="split">
+      <div class="idea-list" style="min-width:0">${list.length ? list.map((i) => `<article class="card idea">
+        <div style="min-width:0"><div class="tags">${tag(i.category)}${stTag(i.status)}${i.mine ? '<span class="tag blue">Your idea</span>' : ""}</div>
+          <h3>${esc(i.name)}</h3><p class="why">${esc(i.why)}</p>
+          <div class="meta"><span class="av" style="background:${avc(i.by)}">${ini(i.by)}</span><span>Created by <b>${esc(i.by)}</b> · ${S.fmtDate(i.created)}${i.reviewed ? ` · Reviewed ${S.fmtDate(i.reviewed)}` : ""}</span></div>
+          ${notes(i)}</div>
+        ${supBox(i, i.status === "Pending review" && !i.mine ? (i.supported ? `<button class="btn btn-sm btn-done" data-support="${i.id}" aria-pressed="true">${C.ICON.check} Supported</button>` : `<button class="btn btn-sm btn-soft" data-support="${i.id}" aria-pressed="false">Support this club</button>`) : "")}
+      </article>`).join("") : `<div class="card empty">${ideas.length && (q || cat !== "All" || stat !== "All") ? "No club ideas match these filters." : "<b style='color:var(--fg)'>No club ideas yet.</b><br>Be the first to suggest a club."}</div>`}</div>
+      <aside class="side">
+        <div class="card widget"><h3>Your ideas</h3><div class="idea-pend" aria-label="${n} of 3 pending">${[0, 1, 2].map((x) => `<i class="${x < n ? "on" : ""}"></i>`).join("")}<span class="muted" style="font-size:13px;margin-left:4px">${n} of 3 pending</span></div>
+          ${mine.map((i) => `<div class="goal"><div><span>${esc(i.name)}</span><b>${i.supporters}/${GOAL}</b></div><div class="bar" style="--c:${col(i.category)}"><i style="width:${Math.min(100, (i.supporters / GOAL) * 100)}%"></i></div></div>`).join("") || '<p class="muted" style="font-size:13.5px">You have not suggested a club yet.</p>'}
+          <p class="muted" style="font-size:12.5px">You can have up to 3 ideas waiting for review at once.</p></div>
+        <div class="card widget"><h3>How it works</h3><ol class="idea-how">${[["Suggest a club", "Name it and say why it should exist."], ["Collect support", `Other students press Support. ${GOAL} supporters gets staff attention.`], ["Staff decide", "Students can support club ideas, but staff make the final decision."], ["It becomes a club", "Approved ideas get a club page you can join."]].map(([t, d], k) => `<li><i>${k + 1}</i><span><b>${t}</b><small>${d}</small></span></li>`).join("")}</ol></div>
+        <div class="card widget"><h3>Most supported</h3>${top.map((i) => `<div class="goal"><div><span>${esc(i.name)}</span><b>${i.supporters}</b></div><div class="bar" style="--c:${col(i.category)}"><i style="width:${Math.min(100, (i.supporters / 25) * 100)}%"></i></div></div>`).join("")}</div>
+      </aside>
+    </div>`;
+}
+
+function staffView() {
+  const list = filtered(), cur = list.find((i) => i.id === sel) || list[0];
+  const pend = ideas.filter((i) => i.status === "Pending review").length;
+  const menuItems = (i) => i.status === "Archived" ? [{ label: "Restore request", act: "restore", id: i.id }] : [{ label: "Copy link", act: "copy" }, "-", { label: "Archive request", act: "archive", id: i.id, danger: true }];
+  return `<div class="head"><div><h1>Club requests</h1><p>${pend ? `${pend} waiting for review` : "No requests waiting for review."} · Students can support club ideas, but staff make the final decision.</p></div></div>
+    <div class="stats">${[["Waiting for review", pend, "var(--amber)"], ["Approved this term", ideas.filter((i) => i.status === "Approved").length, "var(--green)"], ["Total supporters", ideas.reduce((n, i) => n + i.supporters, 0), "var(--primary)"], ["Students supporting", `${Math.round((ideas.reduce((n, i) => n + i.supporters, 0) / STUDENTS_N) * 100)}%`, "var(--coral)"]].map(([l, v, c]) => `<div class="card stat" style="border-top:3px solid ${c}"><span class="muted">${l}</span><b>${v}</b></div>`).join("")}</div>
+    ${filters()}
+    ${cur ? `<div class="inbox">
+      <div class="card rows" style="align-self:start">${list.map((i) => `<button class="row click idea-row ${i === cur ? "sel" : ""}" data-sel="${i.id}"><span class="grow"><span class="t" style="display:block">${esc(i.name)}</span><span class="s">${esc(i.by)} · ${i.status}</span></span><span class="num"><b>${i.supporters}</b>support</span></button>`).join("")}</div>
+      <article class="card idea-detail">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="tags" style="display:flex;gap:6px;flex-wrap:wrap">${tag(cur.category)}${stTag(cur.status)}</div><h2>${esc(cur.name)}</h2></div>${C.menu(menuItems(cur))}</div>
+        <p style="font-size:15.5px">${esc(cur.why)}</p>
+        ${supBox(cur)}
+        <dl class="kv"><dt>Created by</dt><dd>${esc(cur.by)}</dd><dt>Created</dt><dd>${S.fmtDate(cur.created)}</dd>${cur.reviewed ? `<dt>Reviewed</dt><dd>${S.fmtDate(cur.reviewed)}</dd>` : ""}<dt>Category</dt><dd>${esc(cur.category)}</dd></dl>
+        ${notes(cur)}
+        ${cur.status === "Pending review" ? `<div class="acts"><button class="btn btn-primary" data-approve="${cur.id}">Approve and create club</button><button class="btn" data-reject="${cur.id}">Reject request…</button></div>` : ""}
+      </article></div>` : `<div class="card empty" style="padding:48px"><b style="color:var(--fg)">No requests waiting for review.</b><br>Student club ideas waiting for staff review will appear here.</div>`}`;
+}
+
+function render() {
+  if (C.role() === "platform") { C.shell("", '<div class="head"><div><h1>Club requests</h1></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">Club requests belong to each school</b><br>Students suggest clubs and their school\'s staff decide. Platform admins don\'t review them.</div>'); S.startClock(); return; }
+  C.shell("", C.staff() ? staffView() : studentView());
+  S.startClock();
+}
+
+function suggestSheet() {
+  const n = pendingMine(), full = n >= 3;
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Suggest a club</h2><button class="close" data-close aria-label="Close">×</button></div>
+    <form class="sheet-body" id="sf" novalidate><p class="muted" style="font-size:14px">Share a club idea with staff. Other students can support it before staff review.</p>
+      <div class="idea-pend">${[0, 1, 2].map((x) => `<i class="${x < n ? "on" : ""}"></i>`).join("")}<span class="muted" style="font-size:13px;margin-left:4px">${n} of 3 pending</span></div>
+      ${full ? `<div class="ga-note warn">${S.ICON.shield}<span>You already have 3 pending club ideas. Wait for staff review before adding another.</span></div>` : ""}
+      <label class="field"><span>Club name</span><input class="input" name="name" placeholder="e.g. Photography Club" ${full ? "disabled" : ""}></label>
+      <label class="field"><span>Category</span><select class="input" name="category" ${full ? "disabled" : ""}>${S.CATEGORIES.map((c) => `<option ${c === "Arts" ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+      <label class="field"><span>Why should this club exist?</span><textarea class="textarea" name="why" rows="3" placeholder="What would members do? Who would join?" ${full ? "disabled" : ""}></textarea></label>
+      <p class="ga-note err" id="sferr" role="alert" hidden></p>
+      <button class="btn btn-primary" ${full ? "disabled" : ""}>Submit club idea</button></form>`, {
+    onMount: (d) => d.querySelector("#sf").addEventListener("submit", (ev) => {
+      ev.preventDefault(); const v = S.formData(ev.target), er = d.querySelector("#sferr");
+      if (!(v.name || "").trim() || !(v.why || "").trim()) { er.hidden = false; er.textContent = "Add a club name and say why it should exist."; return; }
+      ideas.unshift({ id: S.uid(), name: v.name.trim(), category: v.category, why: v.why.trim(), by: S.ME.student.name, created: "2026-11-07", supporters: 1, status: "Pending review", mine: true });
+      S.saveLists(); stat = "All"; cat = "All"; d.close(); render(); S.toast("Club idea submitted. Other students can support it now.");
+    }),
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const st = e.target.closest("[data-st]"); if (st) { stat = st.dataset.st; sel = null; render(); return; }
+  const c = e.target.closest("[data-cat]"); if (c) { cat = c.dataset.cat; sel = null; render(); return; }
+  const s = e.target.closest("[data-sel]"); if (s) { sel = s.dataset.sel; render(); return; }
+  if (e.target.closest("[data-suggest]")) suggestSheet();
+  const sup = e.target.closest("[data-support]"); if (sup) { const i = ideas.find((x) => x.id === sup.dataset.support); i.supported = !i.supported; i.supporters += i.supported ? 1 : -1; S.saveLists(); render(); S.toast(i.supported ? `You support ${i.name}.` : "Support removed."); }
+  const ap = e.target.closest("[data-approve]"); if (ap) { const i = ideas.find((x) => x.id === ap.dataset.approve); S.confirm(`Approve ${i.name}?`, "A new active club is created from this request. The student who suggested it becomes its first leader.", "Approve and create club", () => { i.status = "Approved"; i.reviewed = "2026-11-07"; S.saveLists(); sel = null; render(); S.toast(`${i.name} was created.`); }); }
+  const rj = e.target.closest("[data-reject]"); if (rj) { const i = ideas.find((x) => x.id === rj.dataset.reject); S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Reject request?</h2><button class="close" data-close aria-label="Close">×</button></div><form class="sheet-body" id="rf"><label class="field"><span>Rejection reason (the student and supporters see this)</span><textarea class="textarea" name="why" rows="3" required></textarea></label><button class="btn btn-primary">Reject request</button></form>`, { onMount: (d) => d.querySelector("#rf").addEventListener("submit", (ev) => { ev.preventDefault(); i.status = "Rejected"; i.reason = S.formData(ev.target).why; i.reviewed = "2026-11-07"; S.saveLists(); d.close(); sel = null; render(); S.toast("Request rejected. The student can see why."); }) }); }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const i = ideas.find((x) => x.id === a.dataset.id);
+  if (a.dataset.act === "archive") S.confirm("Archive this request?", "It leaves the review list. Supporters can no longer support it.", "Archive request", () => { i.status = "Archived"; S.saveLists(); sel = null; render(); S.toast("Request archived."); });
+  if (a.dataset.act === "restore") { i.status = "Pending review"; S.saveLists(); render(); S.toast("Request restored."); }
+  if (a.dataset.act === "copy") S.toast("Link copied.");
+});
+S.onSearch("q", (v) => { q = v; sel = null; render(); const el = document.getElementById("q"); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+render();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Announcements · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Announcements
+// School notices: the newest one large, the rest as a list. Staff get one "New announcement" button (sheet) and archive in ⋯.
+const list = S.list("announcements", S.ANNOUNCEMENTS);
+let stat = "Active", q = "";
+const by = (a) => a.by || (a.id === "an2" ? "Altantsetseg Dash" : "Oyunchimeg Dorj");
+const ini = (n) => n.split(/\s+/).map((w) => w[0]).join("").slice(0, 2);
+const day = (d) => new Date(d + "T12:00");
+const fmt = (d) => S.fmtDate(d);
+
+function render() {
+  if (C.role() === "platform") { C.shell("", '<div class="head"><div><h1>Announcements</h1></div></div><div class="card empty" style="padding:48px"><b style="color:var(--fg)">Announcements belong to each school</b><br>Each school\'s staff post notices to their own students.</div>'); S.startClock(); return; }
+  const staff = C.staff();
+  const st = staff ? stat : "Active";
+  const items = list.filter((a) => (st === "All" || a.status === st) && (!q || (a.title + " " + a.body).toLowerCase().includes(q.toLowerCase()))).sort((a, b) => b.date.localeCompare(a.date));
+  const lead = !q && st !== "Archived" ? items.find((a) => a.status === "Active") : null;
+  const rest = items.filter((a) => a !== lead);
+  const active = list.filter((a) => a.status === "Active");
+  const up = S.EVENTS.filter((e) => !e.past && (e.approval || "approved") === "approved").sort((a, b) => a.start.localeCompare(b.start)).slice(0, 3);
+  const months = ["Aug", "Sep", "Oct", "Nov"].map((m, i) => [m, list.filter((a) => Number(a.date.slice(5, 7)) === 8 + i).length]);
+  const mx = Math.max(1, ...months.map((x) => x[1]));
+  const row = (a) => `<article class="ann ${a.status === "Archived" ? "arch" : ""}"><span class="dtile"><span>${day(a.date).toLocaleDateString("en-US", { month: "short" }).toUpperCase()}</span><b>${day(a.date).getDate()}</b></span>
+    <div style="min-width:0"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="t">${esc(a.title)}</span>${staff ? `<span class="tag ${a.status === "Active" ? "ok" : ""}">${a.status}</span>` : ""}</div><p class="b">${esc(a.body)}</p>
+      <p class="m"><span>Posted ${fmt(a.date)} · ${esc(by(a))}</span><span>·</span><button type="button" data-view="${a.id}">View details</button></p></div>
+    ${staff ? C.menu(a.status === "Active" ? [{ label: "Copy text", act: "copy", id: a.id }, "-", { label: "Archive notice", act: "archive", id: a.id, danger: true }] : [{ label: "Copy text", act: "copy", id: a.id }, { label: "Restore notice", act: "restore", id: a.id }]) : "<span></span>"}</article>`;
+  C.shell("", `
+    <div class="head"><div><h1>Announcements</h1><p>School notices from ${esc(S.SCHOOL.name)} · ${active.length} active</p></div>${staff ? `<button class="btn btn-primary" data-new>${C.ICON.plus} New announcement</button>` : ""}</div>
+    <div class="filters">${staff ? ["Active", "Archived", "All"].map((s) => `<button class="chip" data-st="${s}" aria-pressed="${stat === s}">${s}${s !== "All" ? ` · ${list.filter((a) => a.status === s).length}` : ""}</button>`).join("") : ""}<label class="search">${C.ICON.search}<span class="sr">Search announcements</span><input id="q" type="search" placeholder="Search announcements" value="${esc(q)}"></label></div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:22px;min-width:0">
+        ${lead ? `<article class="ann-feature"><span class="mega" aria-hidden="true">${S.ICON.megaphone}</span><div><span class="ga-eyebrow">Latest notice · ${fmt(lead.date)}</span><h2>${esc(lead.title)}</h2><p>${esc(lead.body)}</p>
+          <div class="meta"><span class="av">${ini(by(lead))}</span><span>Posted by <b>${esc(by(lead))}</b></span>${staff ? `<span style="margin-left:auto">${C.menu([{ label: "Copy text", act: "copy", id: lead.id }, "-", { label: "Archive notice", act: "archive", id: lead.id, danger: true }])}</span>` : ""}</div></div></article>` : ""}
+        <section class="sec"><header><h2>${staff ? "School notices" : "Active notices"}</h2><span class="muted" style="font-size:13.5px">Showing ${items.length} of ${staff ? list.length : active.length}</span></header>
+          ${rest.length ? `<div class="card ann-list">${rest.map(row).join("")}</div>` : items.length ? "" : `<div class="card empty" style="padding:40px"><b style="color:var(--fg)">${q ? "No announcements match" : "No announcements yet"}</b><br>${q ? "Try another search." : staff ? "Post the first notice for your students." : "Notices from your school will show up here."}</div>`}</section>
+      </div>
+      <aside class="side">
+        <div class="card widget"><h3>At a glance</h3><div class="statline"><span><b>${active.length}</b>active</span><span><b>${list.filter((a) => a.status === "Archived").length}</b>archived</span></div>
+          <div class="spark" style="height:56px">${months.map(([, n]) => `<i style="height:${Math.max(8, (n / mx) * 100)}%"></i>`).join("")}</div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">${months.map(([m]) => `<span>${m}</span>`).join("")}</div><span class="muted" style="font-size:12.5px">Notices posted per month</span></div>
+        <div class="card widget"><h3>Coming up</h3>${up.map((e) => `<a class="row" style="padding:6px 0" href="event.html#${e.id}"><span class="date" style="width:40px"><span>${S.mon(e.start)}</span><b style="font-size:16px">${S.dom(e.start)}</b></span><span class="grow"><span class="t" style="display:block;font-size:14px">${esc(e.title)}</span><span class="s">${S.time(e.start)} · ${esc(e.location)}</span></span></a>`).join("")}<a class="ga-link" href="events.html">All events →</a></div>
+        <div class="card widget"><h3>More from school</h3><a class="row" style="padding:6px 0" href="news.html"><span class="ga-tile" style="width:36px;height:36px;border-radius:10px;--c:var(--coral)">${S.ICON.news}</span><span class="grow"><span class="t" style="display:block;font-size:14px">The Activity Gazette</span><span class="s">Event reports and club notices</span></span></a><a class="row" style="padding:6px 0" href="ideas.html"><span class="ga-tile" style="width:36px;height:36px;border-radius:10px;--c:#c08a00">${S.ICON.bulb}</span><span class="grow"><span class="t" style="display:block;font-size:14px">${staff ? "Club requests" : "Club ideas"}</span><span class="s">${staff ? "Review what students want" : "Suggest a club"}</span></span></a></div>
+      </aside>
+    </div>`);
+  S.startClock();
+}
+
+function newSheet() {
+  S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">Post announcement</h2><button class="close" data-close aria-label="Close">×</button></div>
+    <form class="sheet-body" id="nf" novalidate><label class="field"><span>Title</span><input class="input" name="title" placeholder="e.g. Club fair moved to Friday"></label>
+      <label class="field"><span>Body</span><textarea class="textarea" name="body" rows="5" placeholder="What do students need to know?"></textarea></label>
+      <label class="field"><span>Status</span><select class="input" name="status"><option>Active</option><option>Archived</option></select><small>Active notices show on every student's home page.</small></label>
+      <p class="ga-note err" id="nferr" role="alert" hidden></p>
+      <button class="btn btn-primary">Post announcement</button></form>`, {
+    onMount: (d) => d.querySelector("#nf").addEventListener("submit", (ev) => {
+      ev.preventDefault(); const v = S.formData(ev.target), er = d.querySelector("#nferr");
+      if (!(v.title || "").trim() || !(v.body || "").trim()) { er.hidden = false; er.textContent = "Add a title and a body."; return; }
+      list.unshift({ id: S.uid(), title: v.title.trim(), body: v.body.trim(), date: "2026-11-07", status: v.status, by: S.ME[C.role()].name });
+      S.saveLists(); stat = v.status; q = ""; d.close(); render(); S.toast("Announcement posted.");
+    }),
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const st = e.target.closest("[data-st]"); if (st) { stat = st.dataset.st; render(); return; }
+  if (e.target.closest("[data-new]")) newSheet();
+  const v = e.target.closest("[data-view]"); if (v) { const a = list.find((x) => x.id === v.dataset.view); S.sheet(`<div class="sheet-head"><h2 style="font-size:1.2rem">${esc(a.title)}</h2><button class="close" data-close aria-label="Close">×</button></div><div class="sheet-body"><p style="font-size:16px;line-height:1.6">${esc(a.body)}</p><dl class="kv"><dt>Posted</dt><dd>${fmt(a.date)}</dd><dt>Posted by</dt><dd>${esc(by(a))}</dd><dt>Status</dt><dd>${a.status}</dd></dl></div>`); }
+  const a = e.target.closest("[data-act]"); if (!a || !a.dataset.id) return;
+  const n = list.find((x) => x.id === a.dataset.id);
+  if (a.dataset.act === "archive") S.confirm("Archive this notice?", "Students will no longer see it. You can restore it later.", "Archive notice", () => { n.status = "Archived"; S.saveLists(); render(); S.toast("Notice archived."); });
+  if (a.dataset.act === "restore") { n.status = "Active"; S.saveLists(); render(); S.toast("Notice restored."); }
+  if (a.dataset.act === "copy") S.toast("Notice text copied.");
+});
+S.onSearch("q", (v) => { q = v; render(); const el = document.getElementById("q"); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+render();
+
+})();
+</script>
+</body>
+</html>

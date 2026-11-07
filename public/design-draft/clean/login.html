@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Sign in
+// Sign in, plus #reset (send reset email) and #update (new password). Centred card with a picture of this week beside it.
+const I = S.ICON;
+let msg = null, vals = {};
+const view = () => (["reset", "update"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "login");
+const brand = `<a class="brand" href="landing.html"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5" fill="#ffc23d"/><path d="M2.5 20.5c2.6-4.2 5.9-6.3 9.5-6.3s6.9 2.1 9.5 6.3" stroke="#fff" stroke-linecap="round" stroke-width="3"/></svg></i>Activity Hub</a>`;
+const note = () => (msg ? `<div class="ga-note ${msg[0]}" role="${msg[0] === "err" ? "alert" : "status"}">${msg[0] === "ok" ? I.checkCircle : I.shield}<span>${esc(msg[1])}</span></div>` : "");
+const up = S.EVENTS.filter((e) => !e.past && (e.approval || "approved") === "approved").sort((a, b) => a.start.localeCompare(b.start)).slice(0, 3);
+const art = `<aside class="ga-art" aria-label="This week at school">
+  <span class="ga-eyebrow">This week at ${esc(S.SCHOOL.name)}</span>
+  <h2>${up.length} things happening, and your clubs are waiting.</h2>
+  ${up.map((e) => `<div class="ga-mini"><span class="cv">${S.art(e.art)}</span><span style="min-width:0"><b>${esc(e.title)}</b><span class="s">${S.weekday(e.start)} · ${S.time(e.start)} · ${e.going} going</span></span></div>`).join("")}
+  <p class="bottom-note">${S.avatars(412, 4)}<span>412 students and 28 staff sign in here.</span></p></aside>`;
+function render() {
+  const v = view();
+  let inner;
+  if (v === "login") inner = `<span class="ga-tile">${I.user}</span><div><p class="ga-eyebrow">Account access</p><h1>Sign in</h1><p class="d">Use your school activity account to manage or join verified school activities.</p></div>
+    ${note()}
+    <form id="loginForm" novalidate>
+      <label class="field"><span>Email</span><input class="input" name="email" type="email" autocomplete="email" value="${esc(vals.email || "")}" placeholder="name@school.edu.mn"></label>
+      <label class="field"><span class="ga-lbl"><span>Password</span><a href="#reset">Forgot password?</a></span><input class="input" name="password" type="password" autocomplete="current-password"></label>
+      <button class="btn btn-primary" type="submit" id="go">Sign in</button>
+    </form>
+    <div class="ga-try"><b>Draft: try these</b><ul>
+      <li>Sign in as ${["student", "teacher", "admin"].map((r) => `<button type="button" class="as" data-as="${r}">${S.ROLES[r]}</button>`).join("")}</li>
+      <li>Any email with a password under 6 characters shows the error.</li></ul></div>
+    <p class="ga-alt">Student without an account? <a href="join.html">Join with invite code</a></p>`;
+  if (v === "reset") inner = `<span class="ga-tile" style="--c:var(--amber)">${I.key}</span><div><p class="ga-eyebrow">Account access</p><h1>Reset password</h1><p class="d">Enter your account email and we will send a password reset link.</p></div>
+    ${note()}
+    <form id="resetForm" novalidate><label class="field"><span>Email</span><input class="input" name="email" type="email" autocomplete="email" value="${esc(vals.email || "")}" placeholder="name@school.edu.mn"></label><button class="btn btn-primary" type="submit" id="go">Send reset email</button></form>
+    <div class="ga-try"><b>Draft</b><ul><li><a class="ga-link" href="#update">Open the reset link from the email</a></li></ul></div>
+    <p class="ga-alt"><a href="#">Back to sign in</a></p>`;
+  if (v === "update") inner = `<span class="ga-tile" style="--c:var(--green)">${I.lock}</span><div><p class="ga-eyebrow">Account access</p><h1>Update password</h1><p class="d">Choose a new password after opening the reset link from your email.</p></div>
+    ${note()}
+    ${msg && msg[0] === "ok" ? `<a class="btn btn-primary" style="width:100%;min-height:48px" href="dashboard.html">Go to dashboard</a>` : `<form id="updateForm" novalidate>
+      <label class="field"><span>New password</span><input class="input" name="p1" id="p1" type="password" autocomplete="new-password"><span class="ga-meter" id="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span><small>At least 8 characters.</small></label>
+      <label class="field"><span>Confirm new password</span><input class="input" name="p2" type="password" autocomplete="new-password"></label>
+      <button class="btn btn-primary" type="submit" id="go">Update password</button></form>`}
+    <p class="ga-alt"><a href="#">Back to sign in</a></p>`;
+  document.getElementById("app").innerHTML = C.authShell(`<div class="ga-form">${inner}</div>`);
+}
+const pending = (label, then) => { const b = document.getElementById("go"); b.disabled = true; b.textContent = label; setTimeout(then, 650); };
+const emailOk = (x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);
+document.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const f = S.formData(e.target); vals = f; msg = null;
+  if (e.target.id === "loginForm") {
+    if (!emailOk((f.email || "").trim())) { msg = ["err", "Enter a valid email address."]; render(); return; }
+    pending("Signing in...", () => {
+      if ((f.password || "").length < 6) { msg = ["err", "Sign in failed. Check your email and password, then try again."]; render(); return; }
+      const match = Object.entries(S.ME).find(([, me]) => me.email === f.email.trim().toLowerCase());
+      if (match) S.setRole(match[0]);
+      location.href = S.role() === "platform" ? "platform.html" : "dashboard.html";
+    });
+  }
+  if (e.target.id === "resetForm") {
+    if (!emailOk((f.email || "").trim())) { msg = ["err", (f.email || "").trim() ? "Enter a valid email address." : "Email is required."]; render(); return; }
+    pending("Sending...", () => { msg = ["ok", "If an account exists for that email, a password reset link has been sent."]; render(); });
+  }
+  if (e.target.id === "updateForm") {
+    if ((f.p1 || "").length < 8) { msg = ["err", "Password must be at least 8 characters."]; render(); return; }
+    if (f.p1 !== f.p2) { msg = ["err", "Passwords do not match."]; render(); return; }
+    pending("Updating...", () => { msg = ["ok", "Password updated. You can continue to your dashboard."]; render(); });
+  }
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id !== "p1") return;
+  const v = e.target.value, n = (v.length >= 8) + /[A-Z]/.test(v) + /\d/.test(v) + /[^A-Za-z0-9]/.test(v);
+  document.querySelectorAll("#meter i").forEach((i, k) => { i.classList.toggle("on", k < n); i.style.setProperty("--c", n < 2 ? "var(--coral)" : n < 3 ? "var(--sun)" : "var(--green)"); });
+});
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-mn]")) S.toast("The real build switches to Монгол here. This draft is English only.");
+  const a = e.target.closest("[data-as]");
+  if (a) { document.querySelector("[name=email]").value = S.ME[a.dataset.as].email; document.querySelector("[name=password]").value = "khangai2026"; document.querySelector("[name=password]").focus(); }
+});
+window.addEventListener("hashchange", () => { msg = null; render(); });
+render();
+
+})();
+</script>
+</body>
+</html>

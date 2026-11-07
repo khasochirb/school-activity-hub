@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Event · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// Event: everything you need in one panel with ONE button. Details live in tabs; staff tools in ⋯.
+let tab = "about";
+function render() {
+  const ev = S.EVENTS.find((x) => x.id === location.hash.slice(1)) || S.EVENTS[1];
+  const st = S.statusOf(ev), staff = C.staff();
+  const left = ev.capacity ? ev.capacity - ev.going : null;
+  let cta;
+  if (ev.past) cta = `<p class="big">${st === "attended" ? "You attended this" : "This event has ended"}</p>${st === "attended" ? '<a class="btn btn-primary" href="portfolio.html">Add to portfolio</a>' : ""}`;
+  else if (staff) cta = `<p class="big">${ev.going} registered${ev.capacity ? ` of ${ev.capacity}` : ""}</p><a class="btn btn-primary" href="attendance.html#${ev.id}">Take attendance</a>`;
+  else if (st === "pending") cta = `<p class="big">Request sent</p><p class="muted" style="font-size:14px">${ev.needs === "permission" ? "Bring the signed parent form to your class teacher." : "The club advisor will confirm your place."}</p><button class="btn" data-cancel>Withdraw</button>`;
+  else if (["going", "registered"].includes(st)) cta = `<p class="big">You're going</p><p class="muted" style="font-size:14px">Scan the QR code at the door to check in.</p><button class="btn btn-soft" data-cal>Add to calendar</button><button class="btn" data-cancel>Can't go</button>`;
+  else cta = `<p class="big">${ev.needs === "approval" ? "Needs advisor approval" : ev.needs === "permission" ? "Needs a parent form" : "Free · open to all students"}</p>${left !== null ? `<p class="muted" style="font-size:14px">${left} spots left</p>` : ""}<button class="btn btn-primary" data-join>${ev.needs ? "Request to join" : "Join event"}</button>`;
+  const TABS = [["about", "About"], ["details", "Details"], ["safety", "Safety"]];
+  const pane = tab === "about" ? `<p style="font-size:16px;line-height:1.65">${esc(ev.about)}</p>`
+    : tab === "details" ? `<dl class="kv"><dt>Cost</dt><dd>${esc(ev.cost)}</dd><dt>Who can join</dt><dd>${esc(ev.eligibility)}</dd><dt>Level</dt><dd>${esc(ev.experience)}</dd><dt>Bring</dt><dd>${esc(ev.materials)}</dd><dt>Commitment</dt><dd>${esc(ev.commitment)}</dd><dt>Access</dt><dd>${esc(ev.accessibility)}</dd></dl>`
+    : `<dl class="kv"><dt>Responsible adult</dt><dd>${esc(ev.adult)}</dd><dt>Risk level</dt><dd>${esc(ev.risk)}</dd><dt>Parent permission</dt><dd>${ev.permission ? "Required" : "Not required"}</dd>${ev.permissionNote ? `<dt>Note</dt><dd>${esc(ev.permissionNote)}</dd>` : ""}</dl>`;
+  const club = ev.club ? S.CLUBS[ev.club] : null, tint = club ? club.color : C.catColor(ev.category);
+  const related = S.EVENTS.filter((x) => x !== ev && !x.past && (x.approval || "approved") === "approved" && (x.category === ev.category || x.club === ev.club)).slice(0, 3);
+  const facts = [["When", `${S.weekday(ev.start)}, ${S.time(ev.start)}`], ["Where", ev.location], ["Cost", ev.cost], ["Level", ev.experience]];
+  C.shell("events", `
+    <a href="events.html" class="muted" style="text-decoration:none;font-weight:600;font-size:14px">← Events</a>
+    <section class="evhero" style="--t:${tint}"><div class="evcover">${S.art(ev.art)}</div><div class="evinfo">${C.cat(ev.category)}<h1>${esc(ev.title)}</h1><p>${S.dayLong(ev.start)} · ${S.time(ev.start)}–${S.time(ev.end)}</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">${S.avatars(ev.going, 6)}<span style="font-size:14px"><b>${ev.going}</b> going${ev.capacity ? ` · ${ev.capacity - ev.going} spots left` : ""}</span></div></div>
+      <div class="evmenu">${C.menu(staff ? [{ label: "Edit details", href: "create-event.html" }, { label: "Share with partner schools", act: "share" }, { label: "Copy link", act: "copy" }, "-", { label: "Cancel event", act: "cancel", danger: true }] : [{ label: "Copy link", act: "copy" }, { label: "Report a concern", href: "safety.html" }])}</div></section>
+    <div class="facts">${facts.map(([k, v]) => `<div class="card"><span class="muted">${k}</span><b>${esc(v)}</b></div>`).join("")}</div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:22px;min-width:0">
+        <div class="ptabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`).join("")}</div>
+        <div>${pane}</div>
+        ${club ? `<a class="card row" href="club.html#${ev.club}" style="padding:16px">${S.clubAv(ev.club, 48)}<span class="grow"><span class="s">Hosted by</span><span class="t" style="display:block">${esc(club.name)}</span><span class="s">${club.members} members · meets ${esc(club.meets)}</span></span>${C.ICON.chev}</a>` : ""}
+        ${related.length ? `<section class="sec"><header><h2>You might also like</h2></header><div class="egrid">${related.map((x) => C.eventCard(x)).join("")}</div></section>` : ""}
+      </div>
+      <aside class="side"><div class="card panel">${cta}</div>
+        <div class="card widget"><h3>Who's going</h3><div class="ppl">${Array.from({ length: Math.min(ev.going, 8) }, (_, i) => `<span><i style="background:${["#ffc23d", "#b9c1ec", "#ffb59f", "#9fe0bd", "#e3c8ff"][i % 5]}">${"ABEGKMNOST"[(i * 3) % 10]}</i>${["Anuujin", "Bilguun", "Enkhjin", "Ganbaatar", "Khulan", "Maral", "Nomin", "Odgerel"][i]}</span>`).join("")}</div>${ev.going > 8 ? `<span class="muted" style="font-size:13px">and ${ev.going - 8} more</span>` : ""}</div></aside>
+    </div>`);
+  document.documentElement.style.setProperty("--tint", tint);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const ev = S.EVENTS.find((x) => x.id === location.hash.slice(1)) || S.EVENTS[1];
+  const t = e.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; render(); }
+  if (e.target.closest("[data-join]")) { S.setStatus(ev, ev.needs ? "pending" : "going"); render(); S.toast(ev.needs ? "Request sent." : "You're in."); }
+  if (e.target.closest("[data-cancel]")) { S.setStatus(ev, null); render(); S.toast("Registration cancelled."); }
+  if (e.target.closest("[data-cal]")) S.toast("Added to your calendar.");
+  if (e.target.closest('[data-act="copy"]')) S.toast("Link copied.");
+  if (e.target.closest('[data-act="share"]')) S.toast("Opens the sharing settings in the real build.");
+  if (e.target.closest('[data-act="cancel"]')) S.confirm("Cancel this event?", "Registered students will see it as cancelled.", "Cancel event", () => S.toast("Event cancelled."));
+});
+window.addEventListener("hashchange", () => { tab = "about"; render(); });
+render();
+
+})();
+</script>
+</body>
+</html>
