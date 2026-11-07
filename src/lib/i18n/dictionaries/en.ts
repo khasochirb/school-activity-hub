@@ -855,10 +855,18 @@ export const en = {
     superAdmin: "Platform Admin",
     tabs: {
       activities: "Activities",
+      approvals: "Approvals",
+      audit: "Audit log",
       clubs: "Clubs",
+      connections: "Connections",
+      events: "Events",
       home: "Home",
       label: "Main",
+      platform: "Platform",
+      portfolio: "Portfolio",
       profile: "Profile",
+      schools: "Schools",
+      students: "Students",
     },
   },
   news: {

@@ -10,7 +10,6 @@ import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
 import type { ThemePreference } from "@/lib/theme";
 import { logout } from "../actions";
-import { AppNav, type NavItem, type NavSection } from "./app-nav";
 import {
   MobileAppNav,
   type MobileNavGroup,
@@ -20,6 +19,7 @@ import {
 import { MobileMenuDrawer } from "./mobile-menu-drawer";
 import { RouteContentTransition } from "./route-content-transition";
 import { StudentTabBar } from "./student-tab-bar";
+import { TopTabs, type TopTab } from "./top-tabs";
 
 type Role = "school_admin" | "teacher" | "student";
 
@@ -62,123 +62,6 @@ const platformEventMobilePrimaryNav: RoleAwareNavItem[] = [
     href: staffAttendanceHref,
     labelKey: "nav.attendance",
     match: "attendance",
-  },
-];
-
-const navSections: Array<{
-  items: RoleAwareNavItem[];
-  labelKey: string;
-}> = [
-  {
-    labelKey: "nav.main",
-    items: [
-      { href: "/dashboard", labelKey: "nav.dashboard" },
-      { href: "/events", labelKey: "nav.events" },
-      { href: "/clubs", labelKey: "nav.clubs" },
-      { href: "/portfolio", labelKey: "nav.portfolio", roles: ["student"] },
-      {
-        href: "/club-requests",
-        labelKey: "nav.clubIdeas",
-        roles: ["student"],
-      },
-      {
-        href: "/club-requests",
-        labelKey: "nav.clubRequests",
-        roles: ["school_admin", "teacher"],
-      },
-      { href: "/announcements", labelKey: "nav.announcements" },
-      { href: "/news", labelKey: "nav.news" },
-      {
-        href: "/safety",
-        intentPrefetch: false,
-        labelKey: "nav.safety",
-      },
-    ],
-  },
-  {
-    labelKey: "nav.manage",
-    items: [
-      {
-        href: "/students",
-        labelKey: "nav.students",
-        roles: ["school_admin", "teacher"],
-      },
-      { href: "/staff", labelKey: "nav.staff", roles: ["school_admin"] },
-      {
-        href: "/invite-codes",
-        labelKey: "nav.inviteCodes",
-        roles: ["school_admin", "teacher"],
-      },
-    ],
-  },
-  {
-    labelKey: "nav.operations",
-    items: [
-      {
-        href: "/approvals",
-        labelKey: "nav.approvals",
-        roles: ["school_admin", "teacher"],
-      },
-      {
-        href: "/reports",
-        labelKey: "nav.reports",
-        roles: ["school_admin", "teacher"],
-      },
-      {
-        href: "/safety/reports",
-        intentPrefetch: false,
-        labelKey: "nav.safeguardingInbox",
-        safeguardingOnly: true,
-      },
-    ],
-  },
-  {
-    labelKey: "nav.schoolManagement",
-    items: [
-      { href: "/settings", labelKey: "nav.settings", roles: ["school_admin"] },
-      {
-        href: "/school-connections",
-        labelKey: "nav.schoolConnections",
-        roles: ["school_admin"],
-      },
-    ],
-  },
-  {
-    labelKey: "nav.platform",
-    items: [
-      {
-        href: "/super-admin",
-        labelKey: "nav.superAdmin",
-        platformAdminOnly: true,
-      },
-      {
-        href: "/super-admin/schools",
-        labelKey: "nav.schools",
-        platformAdminOnly: true,
-      },
-      {
-        href: "/super-admin/connections",
-        labelKey: "nav.platformConnections",
-        platformAdminOnly: true,
-      },
-      {
-        href: "/super-admin/platform-admins",
-        labelKey: "nav.platformAdmins",
-        platformAdminOnly: true,
-      },
-      {
-        href: "/super-admin/audit-log",
-        labelKey: "nav.auditLog",
-        platformAdminOnly: true,
-      },
-    ],
-  },
-  {
-    labelKey: "nav.account",
-    items: [
-      { href: "/profile", labelKey: "nav.profile" },
-      { href: "/privacy", intentPrefetch: false, labelKey: "nav.privacy" },
-    ],
   },
 ];
 
@@ -369,29 +252,6 @@ export async function AppShell({
   const theme = await getCurrentTheme();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
-  const visibleNavSections = navSections
-    .map((section) => ({
-      label: t(section.labelKey),
-      items: section.items
-        .filter((item) =>
-          isVisibleForRole(
-            item,
-            profile,
-            isPlatformAdmin,
-            isSafeguardingStaff,
-          ),
-        )
-        .map<NavItem>((item) => ({
-          href: item.href,
-          intentPrefetch: shouldIntentPrefetchNavigationItem(
-            item,
-            profile,
-            isPlatformAdmin,
-          ),
-          label: t(item.labelKey),
-        })),
-    }))
-    .filter((section) => section.items.length) satisfies NavSection[];
   const mobileNavigation = getMobileNavigation(
     profile,
     isPlatformAdmin,
@@ -409,43 +269,20 @@ export async function AppShell({
     system: t("theme.system"),
   };
 
-  return (
-    <div className="app-surface min-h-screen lg:flex">
-      <aside className="hidden w-[17.5rem] min-w-0 shrink-0 overflow-hidden border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
-        <div className="min-w-0 border-b border-slate-200 px-4 py-4">
-          <Brand
-            dashboardLabel={t("nav.dashboard")}
-            name={t("app.name")}
-            subtitle={t("app.subtitle")}
-          />
-        </div>
-        <div className="min-w-0 min-h-0 flex-1 overflow-y-auto px-3 py-4">
-          <AppNav sections={visibleNavSections} />
-        </div>
-        <AccountPanel
-          email={email}
-          languageLabels={languageLabels}
-          languageLabel={t("language.label")}
-          locale={locale}
-          logoutLabel={t("nav.logout")}
-          logoutPendingLabel={t("nav.loggingOut")}
-          roleLabel={formattedRole}
-          switchThemeLabel={t("theme.switch")}
-          theme={theme}
-          themeLabel={t("theme.label")}
-          themeLabels={themeLabels}
-        />
-      </aside>
+  const topTabs = getTopTabs(profile?.role ?? null, isPlatformAdmin, t);
 
-      <div className="min-w-0 flex-1 lg:pl-[17.5rem]">
-        <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
-          <div className="flex min-w-0 items-center justify-between gap-3">
+  return (
+    <div className="app-surface min-h-screen">
+      <div className="min-w-0">
+        <header className="app-topbar">
+          <div className="app-topbar-inner">
             <Brand
               compact
               dashboardLabel={t("nav.dashboard")}
               name={t("app.name")}
               subtitle={t("app.subtitle")}
             />
+            <TopTabs label={t("nav.tabs.label")} tabs={topTabs} />
             <MobileMenuDrawer
               closeLabel={t("common.close")}
               header={
@@ -455,7 +292,7 @@ export async function AppShell({
                   schoolName={profile?.schoolName ?? null}
                 />
               }
-              menuLabel={t("nav.menu")}
+              menuLabel={t("nav.more")}
             >
               <div className="flex min-h-full min-w-0 max-w-full flex-col">
                 <MobileAppNav
@@ -486,7 +323,7 @@ export async function AppShell({
 
         <main
           className={[
-            "mx-auto w-full max-w-[88rem] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6 xl:px-7",
+            "app-main mx-auto w-full max-w-[72rem] px-4 py-5 sm:px-6 sm:py-6 lg:py-8",
             profile?.role === "student" ? "pb-24 lg:pb-6" : "",
           ].join(" ")}
         >
@@ -498,9 +335,9 @@ export async function AppShell({
           label={t("nav.tabs.label")}
           tabs={[
             { href: "/dashboard", label: t("nav.tabs.home") },
-            { href: "/events", label: t("nav.tabs.activities") },
+            { href: "/events", label: t("nav.tabs.events") },
             { href: "/clubs", label: t("nav.tabs.clubs") },
-            { href: "/profile", label: t("nav.tabs.profile") },
+            { href: "/portfolio", label: t("nav.tabs.portfolio") },
           ]}
         />
       ) : null}
@@ -559,68 +396,6 @@ function Brand({
   );
 }
 
-function AccountPanel({
-  email,
-  languageLabels,
-  languageLabel,
-  locale,
-  logoutLabel,
-  logoutPendingLabel,
-  roleLabel,
-  switchThemeLabel,
-  theme,
-  themeLabel,
-  themeLabels,
-}: {
-  email: string | null;
-  languageLabels: Record<Locale, string>;
-  languageLabel: string;
-  locale: Locale;
-  logoutLabel: string;
-  logoutPendingLabel: string;
-  roleLabel: string;
-  switchThemeLabel: string;
-  theme: ThemePreference;
-  themeLabel: string;
-  themeLabels: Record<ThemePreference, string>;
-}) {
-  return (
-    <div className="min-w-0 max-w-full space-y-2 overflow-hidden border-t border-slate-200 bg-slate-50/70 px-4 py-3">
-      <div className="pill-controls grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2">
-        <LanguageSwitcher
-          compact
-          currentLocale={locale}
-          label={languageLabel}
-          labels={languageLabels}
-        />
-        <ThemeToggle
-          compact
-          currentTheme={theme}
-          label={themeLabel}
-          labels={themeLabels}
-          showLabel={false}
-          switchLabel={switchThemeLabel}
-        />
-      </div>
-      <div className="flex min-w-0 items-center gap-2">
-        <div className="min-w-0 flex-1 text-xs leading-snug text-slate-600">
-          <p className="truncate" title={email ?? undefined}>{email}</p>
-          <p className="truncate font-semibold text-slate-900">{roleLabel}</p>
-        </div>
-        <form action={logout} className="shrink-0">
-          <PendingSubmitButton
-            className="btn btn-secondary min-h-8! px-3! py-1.5! text-xs!"
-            pendingLabel={logoutPendingLabel}
-            toastMessage={logoutPendingLabel}
-          >
-            {logoutLabel}
-          </PendingSubmitButton>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 function MobileAccount({
   email,
   languageLabels,
@@ -658,7 +433,7 @@ function MobileAccount({
         {profileLabel}
         <PendingLinkIndicator />
       </Link>
-      <div className="grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+      <div className="pill-controls grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
         <LanguageSwitcher
           currentLocale={locale}
           label={languageLabel}
@@ -818,4 +593,35 @@ function formatRole(role: Role, t: (key: string) => string) {
   }
 
   return role === "teacher" ? t("roles.teacher") : t("roles.student");
+}
+
+function getTopTabs(
+  role: string | null,
+  isPlatformAdmin: boolean,
+  t: (key: string) => string,
+): TopTab[] {
+  if (!role && isPlatformAdmin) {
+    return [
+      { exact: true, href: "/super-admin", icon: "home", label: t("nav.tabs.platform") },
+      { href: "/super-admin/schools", icon: "schools", label: t("nav.tabs.schools") },
+      { href: "/super-admin/connections", icon: "events", label: t("nav.tabs.connections") },
+      { href: "/super-admin/audit-log", icon: "audit", label: t("nav.tabs.audit") },
+    ];
+  }
+
+  if (role === "student") {
+    return [
+      { exact: true, href: "/dashboard", icon: "home", label: t("nav.tabs.home") },
+      { href: "/events", icon: "events", label: t("nav.tabs.events") },
+      { href: "/clubs", icon: "clubs", label: t("nav.tabs.clubs") },
+      { href: "/portfolio", icon: "portfolio", label: t("nav.tabs.portfolio") },
+    ];
+  }
+
+  return [
+    { exact: true, href: "/dashboard", icon: "home", label: t("nav.tabs.home") },
+    { href: "/events", icon: "events", label: t("nav.tabs.events") },
+    { href: "/students", icon: "students", label: t("nav.tabs.students") },
+    { href: "/approvals", icon: "approvals", label: t("nav.tabs.approvals") },
+  ];
 }

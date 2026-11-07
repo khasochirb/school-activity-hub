@@ -1863,10 +1863,18 @@ export const mn = {
     superAdmin: "Платформын админ",
     tabs: {
       activities: "Үйл ажиллагаа",
+      approvals: "Зөвшөөрөл",
+      audit: "Аудитын бүртгэл",
       clubs: "Клуб",
+      connections: "Холболт",
+      events: "Арга хэмжээ",
       home: "Нүүр",
       label: "Үндсэн цэс",
+      platform: "Платформ",
+      portfolio: "Портфолио",
       profile: "Профайл",
+      schools: "Сургуулиуд",
+      students: "Сурагчид",
     },
   },
   news: {

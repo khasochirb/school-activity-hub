@@ -3505,3 +3505,173 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 .app-surface td .btn {
   white-space: nowrap;
 }
+
+/* ==========================================================================
+   Clean redesign: warm canvas, soft glow, hairline cards, top bar with tabs.
+   Signed-out pages (.auth-shell) keep their own design.
+   ========================================================================== */
+:root {
+  --background: #f5f4f1;
+  --card-soft: #f1f0ec;
+  --border: rgba(19, 21, 23, 0.09);
+  --border-strong: rgba(19, 21, 23, 0.16);
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --card-shadow: 0 1px 2px rgba(19, 21, 23, 0.04);
+  --lift-shadow: 0 2px 4px rgba(19, 21, 23, 0.06), 0 12px 32px rgba(19, 21, 23, 0.08);
+  --clean-glow-a: #b9c4ff;
+  --clean-glow-b: #ffe2a3;
+}
+
+html.dark,
+html[data-theme="dark"] {
+  --background: #0f141f;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --clean-glow-a: #23306b;
+  --clean-glow-b: #4a3a12;
+}
+
+.app-surface {
+  position: relative;
+  isolation: isolate;
+  background: var(--background);
+}
+
+.app-surface::before {
+  content: "";
+  position: fixed;
+  inset: -20vh -10vw auto;
+  z-index: -1;
+  height: 70vh;
+  pointer-events: none;
+  background:
+    radial-gradient(closest-side at 30% 50%, color-mix(in srgb, var(--clean-glow-a) 55%, transparent), transparent),
+    radial-gradient(closest-side at 75% 40%, color-mix(in srgb, var(--clean-glow-b) 50%, transparent), transparent);
+  filter: blur(30px);
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-surface::before {
+    display: none;
+  }
+}
+
+/* Top bar */
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 78%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.app-topbar-inner {
+  display: flex;
+  min-width: 0;
+  max-width: 72rem;
+  align-items: center;
+  gap: 18px;
+  margin-inline: auto;
+  padding: 10px 16px;
+}
+
+@media (min-width: 640px) {
+  .app-topbar-inner {
+    padding-inline: 24px;
+  }
+}
+
+.app-topbar-inner > :last-child {
+  margin-left: auto;
+}
+
+.app-topbar .brand-mark {
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
+.app-topbar :is(p) {
+  display: none;
+}
+
+.top-tabs {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .top-tabs {
+    display: flex;
+    gap: 4px;
+  }
+}
+
+.top-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease;
+}
+
+.top-tab svg {
+  height: 17px;
+  width: 17px;
+}
+
+.top-tab:hover {
+  background: var(--card-soft);
+  color: var(--foreground);
+}
+
+.top-tab[aria-current="page"] {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.top-tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Cards, buttons and headings */
+.app-surface .section-card,
+.app-surface .page-header {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+}
+
+.app-surface .btn {
+  border-radius: var(--radius-control);
+}
+
+.app-surface :is(.section-title, h2.section-title)::before {
+  content: "";
+  display: inline-block;
+  height: 1em;
+  width: 5px;
+  margin-right: 8px;
+  vertical-align: -0.12em;
+  border-radius: 3px;
+  background: var(--sun);
+}
+
+.top-tab .pending-link-indicator[data-pending="false"] {
+  display: none;
+}
+
+/* Page titles stand on the canvas, not in a box. */
+.app-surface .page-header {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}

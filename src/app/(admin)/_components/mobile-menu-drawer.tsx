@@ -178,7 +178,7 @@ export function MobileMenuDrawer({
   const drawer =
     open && typeof document !== "undefined"
       ? createPortal(
-          <div className="fixed inset-0 z-[80] lg:hidden">
+          <div className="fixed inset-0 z-[80]">
             <button
               aria-label={closeLabel}
               className={`mobile-drawer-backdrop absolute inset-0 cursor-pointer bg-slate-950/55 ${
@@ -223,7 +223,7 @@ export function MobileMenuDrawer({
       : null;
 
   return (
-    <div className="shrink-0 lg:hidden">
+    <div className="shrink-0">
       <button
         aria-controls={panelId}
         aria-expanded={open}

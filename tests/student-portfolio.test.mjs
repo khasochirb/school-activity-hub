@@ -137,6 +137,7 @@ test("portfolio text exists in English and Mongolian and students can find it", 
     assert.match(dictionary, /bannerClassmate:/);
     assert.match(dictionary, /noRoster:/);
   }
-  assert.match(shell, /href: "\/portfolio", labelKey: "nav\.portfolio", roles: \["student"\]/);
+  assert.match(shell, /href: "\/portfolio", labelKey: "nav\.portfolio"/);
+  assert.match(shell, /href: "\/portfolio", icon: "portfolio", label: t\("nav\.tabs\.portfolio"\)/);
   assert.match(read("src/app/(admin)/students/page.tsx"), /\/portfolio\/students\/\$\{student\.id\}/);
 });

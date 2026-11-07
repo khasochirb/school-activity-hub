@@ -23,7 +23,7 @@ test("only students get the phone tab bar, with four tabs", () => {
   const tabBar = read("src/app/(admin)/_components/student-tab-bar.tsx");
 
   assert.match(shell, /profile\?\.role === "student" \? \(\s*<StudentTabBar/);
-  for (const href of ["/dashboard", "/events", "/clubs", "/profile"]) {
+  for (const href of ["/dashboard", "/events", "/clubs", "/portfolio"]) {
     assert.match(shell, new RegExp(`href: "${href}", label: t\\("nav\\.tabs\\.`));
   }
   assert.match(tabBar, /lg:hidden/);

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { ProtectedAppLink } from "./protected-app-link";
 
 export type StudentTab = {
-  href: "/clubs" | "/dashboard" | "/events" | "/profile";
+  href: "/clubs" | "/dashboard" | "/events" | "/portfolio";
   label: string;
 };
 
@@ -107,8 +107,10 @@ function TabIcon({
 
   return (
     <svg {...common}>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6" />
+      <rect height="7" rx="2" width="7" x="3.5" y="3.5" />
+      <rect height="7" rx="2" width="7" x="13.5" y="3.5" />
+      <rect height="7" rx="2" width="7" x="3.5" y="13.5" />
+      <rect height="7" rx="2" width="7" x="13.5" y="13.5" />
     </svg>
   );
 }
