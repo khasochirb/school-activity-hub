@@ -547,7 +547,7 @@ function ClubRequestActions({
           <form action={archiveClubRequest}>
             <input name="club_request_id" type="hidden" value={request.id} />
             <PendingSubmitButton
-              className="btn btn-secondary min-h-10 w-full sm:w-auto"
+              className="btn btn-quiet min-h-10 w-full sm:w-auto"
               pendingLabel={labels.archiving}
               toastMessage={labels.archiving}
             >

@@ -275,10 +275,11 @@ export default async function StudentsPage({
                           {statusLabel(student.status, t)}
                         </StatusBadge>
                       </td>
-                      <td className="px-4 py-3 text-zinc-700">
+                      <td className="whitespace-nowrap px-4 py-3 text-zinc-700">
                         {formatDate(student.created_at, locale)}
                       </td>
-                      <td className="flex flex-wrap items-center gap-2 px-4 py-3">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 whitespace-nowrap">
                         <Link
                           className="btn btn-secondary min-h-9 px-3"
                           href={`/portfolio/students/${student.id}`}
@@ -296,6 +297,7 @@ export default async function StudentsPage({
                           }}
                           student={student}
                         />
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -425,7 +427,7 @@ function InactiveForm({
     <form action={markStudentInactive}>
       <input name="student_id" type="hidden" value={student.id} />
       <PendingSubmitButton
-        className="btn btn-secondary min-h-9 px-3"
+        className="btn btn-quiet min-h-9 px-3"
         pendingLabel={labels.saving}
         toastMessage={labels.saving}
       >

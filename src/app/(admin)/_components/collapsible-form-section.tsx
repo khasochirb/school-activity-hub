@@ -15,7 +15,7 @@ type ButtonVariant = "primary" | "secondary";
 
 export function CollapsibleFormSection({
   children,
-  collapsedSummary = true,
+  collapsedSummary = false,
   description,
   hideLabel,
   id,

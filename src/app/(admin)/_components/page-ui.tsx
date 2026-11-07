@@ -126,7 +126,7 @@ export function HeaderActionLink({
 
 export function CollapsibleFormSection({
   children,
-  collapsedSummary = true,
+  collapsedSummary = false,
   description,
   hideLabel,
   id,
@@ -204,11 +204,11 @@ export function FilterPanel({
       >
         {children}
         <div className="compact-filter-actions">
-          <button className="btn btn-primary min-h-11 md:min-h-10" type="submit">
+          <button className="btn btn-secondary min-h-11 md:min-h-10" type="submit">
             {submitLabel}
           </button>
           <Link
-            className="btn btn-secondary min-h-11 gap-2 md:min-h-10"
+            className="btn btn-quiet min-h-11 gap-2 md:min-h-10"
             href={clearHref}
             prefetch={false}
           >
@@ -216,10 +216,10 @@ export function FilterPanel({
             <PendingLinkIndicator />
           </Link>
         </div>
+        <p className="filter-result-count text-sm text-slate-600">
+          {resultCountLabel}
+        </p>
       </form>
-      <p className="mt-2 text-sm font-medium text-slate-600">
-        {resultCountLabel}
-      </p>
     </section>
   );
 }
