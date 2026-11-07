@@ -71,12 +71,14 @@ export const en = {
     },
     login: {
       description:
-        "Use your school activity account to manage or join verified school activities.",
+        "Sign in with your email and password.",
       email: "Email",
       eyebrow: "Account access",
       failed: "Sign in failed. Check your email and password, then try again.",
       forgotPassword: "Forgot password?",
+      hidePassword: "Hide",
       password: "Password",
+      showPassword: "Show",
       signingIn: "Signing in...",
       signIn: "Sign in",
       title: "Sign in",

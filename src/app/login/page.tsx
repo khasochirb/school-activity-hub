@@ -29,7 +29,6 @@ export default async function LoginPage() {
   return (
     <AuthShell
       description={t("auth.login.description")}
-      eyebrow={t("auth.login.eyebrow")}
       title={t("auth.login.title")}
     >
       <LoginForm
@@ -37,7 +36,10 @@ export default async function LoginPage() {
           email: t("auth.login.email"),
           failed: t("auth.login.failed"),
           forgotPassword: t("auth.login.forgotPassword"),
+          hidePassword: t("auth.login.hidePassword"),
+          joinWithCode: t("auth.join.title"),
           password: t("auth.login.password"),
+          showPassword: t("auth.login.showPassword"),
           signingIn: t("auth.login.signingIn"),
           signIn: t("auth.login.signIn"),
         }}
