@@ -111,7 +111,7 @@ export function StudentProfile({
           ) : (
             <div className="mt-2 flex flex-col items-start gap-3">
               <p className="text-sm text-zinc-600">{t("studentProfile.clubs.empty")}</p>
-              <Link className="btn btn-primary min-h-10 px-4 text-sm" href="/clubs" prefetch={false}>
+              <Link className="btn btn-soft min-h-10 px-4 text-sm" href="/clubs" prefetch={false}>
                 {t("studentProfile.clubs.find")}
               </Link>
             </div>

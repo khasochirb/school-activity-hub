@@ -490,7 +490,7 @@ function ConnectionActions({
       >
         <input name="connection_id" type="hidden" value={connection.id} />
         <PendingSubmitButton
-          className="btn btn-primary h-10 w-full sm:w-auto"
+          className="btn btn-soft h-10 w-full sm:w-auto"
           name="decision"
           pendingLabel={labels.approving}
           value="approve"

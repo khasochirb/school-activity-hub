@@ -703,7 +703,7 @@ export default async function EventsPage({
                 ))}
               </select>
             </label>
-            <button className="btn btn-primary min-h-11" type="submit">
+            <button className="btn btn-secondary min-h-11" type="submit">
               {t("common.open")}
             </button>
           </form>

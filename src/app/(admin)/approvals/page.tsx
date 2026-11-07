@@ -245,7 +245,7 @@ export default async function ApprovalsPage({
                   <form action={approveEvent}>
                     <input name="event_id" type="hidden" value={event.id} />
                     <PendingSubmitButton
-                      className="btn btn-primary min-h-9 px-3"
+                      className="btn btn-soft min-h-9 px-3"
                       pendingLabel={t("approvals.actions.approving")}
                       toastMessage={t("approvals.actions.approving")}
                     >

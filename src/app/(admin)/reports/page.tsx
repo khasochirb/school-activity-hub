@@ -65,7 +65,7 @@ export default async function ReportsPage({
             ))}
           </select>
         </label>
-        <button className="btn btn-primary min-h-11" type="submit">{t("common.open")}</button>
+        <button className="btn btn-secondary min-h-11" type="submit">{t("common.open")}</button>
       </form>
     </section>
   ) : null;
@@ -382,7 +382,7 @@ function ReportFilters({
           <FilterDate defaultValue={customTo} label={labels.to} name="to" />
         </div>
         <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 sm:col-span-2 sm:flex-row sm:flex-wrap sm:items-center lg:col-span-4">
-          <button className="btn btn-primary min-h-11" type="submit">{labels.filter}</button>
+          <button className="btn btn-secondary min-h-11" type="submit">{labels.filter}</button>
           <Link className="btn btn-secondary min-h-11" href={`/reports?school=${schoolId}`} prefetch={false}>{labels.clear}</Link>
           <p className="min-w-0 break-words text-sm font-semibold leading-6 text-slate-600 sm:ml-auto">{labels.dateRange}: {rangeLabel}</p>
         </div>

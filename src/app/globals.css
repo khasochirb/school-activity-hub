@@ -4055,3 +4055,15 @@ html[data-theme="dark"] {
     aspect-ratio: 16 / 5;
   }
 }
+
+/* Clean redesign: tables match the hairline cards */
+.app-surface tbody tr {
+  border-color: var(--border);
+  transition: background 0.12s ease;
+}
+.app-surface tbody tr:hover {
+  background: var(--card-soft);
+}
+.app-surface thead {
+  border-color: var(--border);
+}
