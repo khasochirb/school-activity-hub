@@ -4714,7 +4714,7 @@ on conflict (id) do update set
   allowed_mime_types = excluded.allowed_mime_types;
 
 -- Classmates in clubs: under each club, a student sees which classmates from
--- their own class are members ("Болд Б., Сараа Т. +2"). Students join clubs
+-- their own class are members ("Б. Болд, Т. Сараа +2"). Students join clubs
 -- their friends are in.
 --
 -- Access model
@@ -4742,8 +4742,9 @@ as $$
   )
   select
     cm.club_id,
-    btrim(coalesce(nullif(btrim(classmate.preferred_name), ''), classmate.first_name))
-      || ' ' || upper(left(btrim(classmate.last_name), 1)) || '.' as display_name
+    -- Mongolian order: the family-name initial first, then the given name («Б. Болд»).
+    upper(left(btrim(classmate.last_name), 1)) || '. '
+      || btrim(coalesce(nullif(btrim(classmate.preferred_name), ''), classmate.first_name)) as display_name
   from me
   join public.club_memberships cm
     on cm.school_id = me.school_id

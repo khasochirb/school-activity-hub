@@ -27,7 +27,8 @@ test("classmates are limited to the student's own school and class, never themse
 
 test("only a first name and family initial leave the database, and students can opt out", () => {
   assert.match(fn, /returns table \(club_id uuid, display_name text\)/);
-  assert.match(fn, /upper\(left\(btrim\(classmate\.last_name\), 1\)\) \|\| '\.'/);
+  // Mongolian order: «Б. Болд».
+  assert.match(fn, /upper\(left\(btrim\(classmate\.last_name\), 1\)\) \|\| '\. '\s+\|\| btrim\(coalesce/);
   assert.match(fn, /and classmate\.show_name_to_classmates/);
   assert.match(migration, /revoke all on function public\.get_club_classmates\(uuid\[\]\) from public, anon;/);
   assert.match(read("supabase/schema.sql"), /show_name_to_classmates boolean not null default true/);
