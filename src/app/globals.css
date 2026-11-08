@@ -5693,3 +5693,20 @@ html[data-theme="dark"] .cl-safenotice {
   background: rgb(69 26 3 / 0.3);
   color: #fef3c7;
 }
+.cl-schoolhero {
+  display: flex;
+  flex-direction: column;
+}
+.cl-schoolav {
+  display: grid;
+  width: 84px;
+  height: 84px;
+  flex: none;
+  place-items: center;
+  border: 4px solid var(--background);
+  border-radius: 20px;
+  background: var(--primary);
+  color: var(--primary-contrast, #fff);
+  font-size: 26px;
+  font-weight: 800;
+}

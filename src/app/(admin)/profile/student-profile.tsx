@@ -33,7 +33,7 @@ export function StudentProfileHero({
         <span aria-hidden="true" className="cl-pfav">
           {initialsForName(displayName)}
         </span>
-        <div className="min-w-0 pt-8">
+        <div className="min-w-0 pt-14">
           <h1>{displayName}</h1>
           {gradeLine ? <p>{gradeLine}</p> : null}
         </div>

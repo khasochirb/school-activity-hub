@@ -1213,6 +1213,7 @@ export const mn = {
         dateRange: "Огнооны хүрээ",
         from: "Эхлэх",
         last30Days: "Сүүлийн 30 хоног",
+        moreFilters: "Бусад шүүлтүүр",
         last90Days: "Сүүлийн 90 хоног",
         school: "Сургууль",
         to: "Дуусах",
@@ -1485,6 +1486,23 @@ export const mn = {
     title: "Ажилтнууд",
   },
   settings: {
+    page: {
+      checkClub: "Анхны клуб үүсгэсэн",
+      checkDetails: "Сургуулийн мэдээлэл",
+      checkInvites: "Урилгын код тараасан",
+      checkPartner: "Түнш сургууль",
+      checkStudents: "Сурагчдыг оруулсан",
+      checkTeachers: "Багш нар нэмсэн",
+      checklist: "Тохируулгын жагсаалт",
+      clubs: "Клуб",
+      done: "Болсон",
+      network: "Сургуулийн сүлжээ",
+      next: "Дараагийнх",
+      partnerCount: "Холбогдсон {count} түнш сургууль",
+      partners: "Түнш сургууль",
+      staff: "Ажилтан",
+      students: "Жагсаалтын сурагч",
+    },
     actions: {
       save: "Сургуулийн тохиргоо хадгалах",
     },
@@ -2330,6 +2348,16 @@ export const mn = {
     },
   },
   superAdmin: {
+    page: {
+      allClear: "Одоогоор хүлээгдэж буй зүйл алга.",
+      byProvince: "Аймгаар",
+      mode: "Платформын админы горим",
+      needsAttention: "Анхаарах зүйл",
+      newSchool: "Шинэ сургууль",
+      noSchools: "Сургууль алга.",
+      pendingConnections: "сургуулийн холболт шийдвэр хүлээж байна",
+      schools: "Сургуулиуд",
+    },
     accessRequired: "Платформын эрх шаардлагатай",
     actions: {
       backToSchools: "Сургуулиуд руу буцах",

@@ -1883,6 +1883,7 @@ export const en = {
         dateRange: "Date range",
         from: "From",
         last30Days: "Last 30 days",
+        moreFilters: "More filters",
         last90Days: "Last 90 days",
         school: "School",
         to: "To",
@@ -2156,6 +2157,23 @@ export const en = {
     title: "Staff",
   },
   settings: {
+    page: {
+      checkClub: "First club created",
+      checkDetails: "School details",
+      checkInvites: "Invite codes handed out",
+      checkPartner: "A partner school",
+      checkStudents: "Students imported",
+      checkTeachers: "Teachers added",
+      checklist: "Setup checklist",
+      clubs: "Clubs",
+      done: "Done",
+      network: "School network",
+      next: "Next",
+      partnerCount: "{count} connected partner schools",
+      partners: "Partner schools",
+      staff: "Staff",
+      students: "Students on roster",
+    },
     actions: {
       save: "Save school settings",
     },
@@ -2335,6 +2353,16 @@ export const en = {
     },
   },
   superAdmin: {
+    page: {
+      allClear: "Nothing is waiting right now.",
+      byProvince: "Schools by province",
+      mode: "Platform administrator mode",
+      needsAttention: "Needs attention",
+      newSchool: "New school",
+      noSchools: "No schools yet.",
+      pendingConnections: "school connections waiting for a decision",
+      schools: "Schools",
+    },
     accessRequired: "Platform access required",
     actions: {
       backToSchools: "Back to schools",

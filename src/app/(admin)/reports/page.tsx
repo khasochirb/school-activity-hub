@@ -21,6 +21,7 @@ import {
   getReportAccessContext,
   getReportExplorerData,
 } from "./report-explorer-data";
+import { PageHead } from "../_components/clean-ui";
 import { ReportTabs, type ReportTab } from "./report-tabs";
 import { StudentReportRoster } from "./student-report-roster";
 
@@ -115,17 +116,16 @@ export default async function ReportsPage({
     : t("reports.explorer.filters.allTime");
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
+    <div className="cl-page">
+      <PageHead
+        action={
           access.isPlatformAdmin ? undefined : (
             <HeaderActionLink href="#export-reports">
               {t("reports.sections.exportReports")}
             </HeaderActionLink>
           )
         }
-        description={t("reports.explorer.description")}
-        eyebrow={access.schoolName ?? t("reports.eyebrow")}
+        subtitle={[access.schoolName, rangeLabel].filter(Boolean).join(" · ")}
         title={t("reports.explorer.title")}
       />
       {platformSelector}
@@ -153,6 +153,7 @@ export default async function ReportsPage({
           from: t("reports.explorer.filters.from"),
           last30: t("reports.explorer.filters.last30Days"),
           last90: t("reports.explorer.filters.last90Days"),
+          moreFilters: t("reports.explorer.filters.moreFilters"),
           recorded: t("reports.explorer.filters.attendanceRecorded"),
           to: t("reports.explorer.filters.to"),
         }}
@@ -291,11 +292,11 @@ function OverviewPanel({
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="cl-stats">
         {metrics.map(([label, value]) => (
-          <article className="stat-card" key={label}>
-            <p className="stat-label">{label}</p>
-            <p className="stat-value dashboard-metric-value-enter">{value}</p>
+          <article className="cl-card cl-stat" key={label}>
+            <span className="cl-muted">{label}</span>
+            <b className="dashboard-metric-value-enter">{value}</b>
           </article>
         ))}
       </section>
@@ -356,37 +357,63 @@ function ReportFilters({
   rangeLabel: string;
   schoolId: string;
 }) {
+  const rangeHref = (value: DateRangePreset) => {
+    const query = new URLSearchParams({ range: value, school: schoolId, tab: initialTab });
+    if (category) query.set("category", category);
+    if (eventId) query.set("event", eventId);
+    if (attendance !== "all") query.set("attendance", attendance);
+    return `/reports?${query.toString()}`;
+  };
+
   return (
-    <section className="section-card section-card-padded min-w-0">
-      <form
-        action="/reports"
-        className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        <input name="school" type="hidden" value={schoolId} />
-        <input data-report-tab-input="true" name="tab" type="hidden" value={initialTab} />
-        <FilterSelect defaultValue={range} label={labels.dateRange} name="range" options={[
-          { label: labels.last30, value: "30" },
-          { label: labels.last90, value: "90" },
-          { label: labels.allTime, value: "all" },
-          { label: labels.customRange, value: "custom" },
-        ]} />
-        <FilterSelect defaultValue={category} label={labels.category} name="category" options={[{ label: labels.all, value: "" }, ...categoryOptions]} />
-        <FilterSelect className="sm:col-span-2 lg:col-span-2" defaultValue={eventId} label={labels.event} name="event" options={[{ label: labels.all, value: "" }, ...eventOptions.map((event) => ({ label: event.title, value: event.id }))]} />
-        <FilterSelect defaultValue={attendance} label={labels.attendance} name="attendance" options={[
-          { label: labels.all, value: "all" },
-          { label: labels.recorded, value: "recorded" },
-          { label: labels.attendanceNotRecorded, value: "not_recorded" },
-        ]} />
-        <div className="grid min-w-0 gap-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-2">
-          <FilterDate defaultValue={customFrom} label={labels.from} name="from" />
-          <FilterDate defaultValue={customTo} label={labels.to} name="to" />
-        </div>
-        <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--card-soft)] p-3 sm:col-span-2 sm:flex-row sm:flex-wrap sm:items-center lg:col-span-4">
-          <button className="btn btn-secondary min-h-11" type="submit">{labels.filter}</button>
-          <Link className="btn btn-secondary min-h-11" href={`/reports?school=${schoolId}`} prefetch={false}>{labels.clear}</Link>
-          <p className="min-w-0 break-words text-sm font-semibold leading-6 text-slate-600 sm:ml-auto">{labels.dateRange}: {rangeLabel}</p>
-        </div>
-      </form>
+    <section className="flex min-w-0 flex-col gap-3">
+      <nav aria-label={labels.dateRange} className="cl-filters">
+        {([
+          ["all", labels.allTime],
+          ["30", labels.last30],
+          ["90", labels.last90],
+          ["custom", labels.customRange],
+        ] as const).map(([value, label]) => (
+          <Link
+            aria-current={range === value ? "page" : undefined}
+            className="cl-chip"
+            href={rangeHref(value)}
+            key={value}
+            prefetch={false}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+      <details className="cl-decline" open={range === "custom" || Boolean(category || eventId) || attendance !== "all"}>
+        <summary className="cl-widget-link">{labels.moreFilters}</summary>
+        <form
+          action="/reports"
+          className="cl-card mt-3 grid min-w-0 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          <input name="school" type="hidden" value={schoolId} />
+          <input data-report-tab-input="true" name="tab" type="hidden" value={initialTab} />
+          <input name="range" type="hidden" value={range} />
+          <FilterSelect defaultValue={category} label={labels.category} name="category" options={[{ label: labels.all, value: "" }, ...categoryOptions]} />
+          <FilterSelect className="sm:col-span-2 lg:col-span-2" defaultValue={eventId} label={labels.event} name="event" options={[{ label: labels.all, value: "" }, ...eventOptions.map((event) => ({ label: event.title, value: event.id }))]} />
+          <FilterSelect defaultValue={attendance} label={labels.attendance} name="attendance" options={[
+            { label: labels.all, value: "all" },
+            { label: labels.recorded, value: "recorded" },
+            { label: labels.attendanceNotRecorded, value: "not_recorded" },
+          ]} />
+          {range === "custom" ? (
+            <div className="grid min-w-0 gap-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-2">
+              <FilterDate defaultValue={customFrom} label={labels.from} name="from" />
+              <FilterDate defaultValue={customTo} label={labels.to} name="to" />
+            </div>
+          ) : null}
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-4">
+            <button className="btn btn-secondary min-h-11" type="submit">{labels.filter}</button>
+            <Link className="btn btn-quiet min-h-11" href={`/reports?school=${schoolId}`} prefetch={false}>{labels.clear}</Link>
+            <p className="min-w-0 break-words text-sm text-[var(--muted)] sm:ml-auto">{labels.dateRange}: {rangeLabel}</p>
+          </div>
+        </form>
+      </details>
     </section>
   );
 }

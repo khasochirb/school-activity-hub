@@ -11,9 +11,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   EmptyState,
   HeaderActionLink,
-  PageHeader,
   StatusBadge,
 } from "../_components/page-ui";
+import { ClubAvatar, PageHead, Section, Widget } from "../_components/clean-ui";
 
 type CountResult = {
   count: number | null;
@@ -86,6 +86,30 @@ export default async function SuperAdminPage() {
       limit: 5,
     }),
   ]);
+  const [{ data: schoolRows }, pendingConnectionsResult] = await Promise.all([
+    admin
+      .from("schools")
+      .select("id, name, slug, province, status")
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .returns<Array<{ id: string; name: string; province: string | null; slug: string; status: string }>>(),
+    admin
+      .from("school_connections")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+  ]);
+  const schoolList = schoolRows ?? [];
+  const pendingConnections = pendingConnectionsResult.count ?? 0;
+  const provinceCounts = Array.from(
+    schoolList.reduce((counts, school) => {
+      const key = school.province?.trim() || "-";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>()),
+  )
+    .map(([province, count]) => ({ count, province }))
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 6);
   const recentAuditLogs = auditLogResult.logs;
   const schoolIds = uniqueStrings(
     recentAuditLogs.map((log) => log.target_school_id),
@@ -111,103 +135,145 @@ export default async function SuperAdminPage() {
   ];
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
-          <>
-            <HeaderActionLink href="/super-admin/schools" prefetch={false}>
-              {t("superAdmin.actions.viewSchools")}
+    <div className="cl-page">
+      <div className="flex flex-col gap-2">
+        <span className="cl-tag self-start" data-tone="blue">
+          {t("superAdmin.page.mode")}
+        </span>
+        <PageHead
+          action={
+            <HeaderActionLink href="/super-admin/schools/new" prefetch={false}>
+              + {t("superAdmin.page.newSchool")}
             </HeaderActionLink>
-            <HeaderActionLink
-              href="/super-admin/connections"
-              prefetch={false}
-              variant="secondary"
-            >
-              {t("superAdmin.actions.viewConnections")}
-            </HeaderActionLink>
-          </>
-        }
-        description={t("superAdmin.dashboard.description")}
-        eyebrow={t("nav.superAdmin")}
-        title={t("superAdmin.dashboard.title")}
-      />
+          }
+          subtitle={t("superAdmin.dashboard.description")}
+          title={t("superAdmin.dashboard.title")}
+        />
+      </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="cl-stats">
         {metrics.map((metric) => (
-          <MetricCard
-            key={metric.label}
-            label={metric.label}
-            value={metric.value}
-          />
+          <MetricCard key={metric.label} label={metric.label} value={metric.value} />
         ))}
       </section>
 
-      <section className="section-card">
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">
-              {t("superAdmin.auditLog.recentActions")}
-            </h2>
-            <p className="section-description">
-              {t("superAdmin.auditLog.description")}
-            </p>
-          </div>
-          <HeaderActionLink
-            href="/super-admin/audit-log"
-            prefetch={false}
-            variant="secondary"
+      <div className="cl-split">
+        <div className="cl-main">
+          <Section
+            link={{ href: "/super-admin/schools", label: t("superAdmin.actions.viewSchools") }}
+            title={t("superAdmin.page.schools")}
           >
-            {t("nav.auditLog")}
-          </HeaderActionLink>
+            {schoolList.length ? (
+              <div className="cl-egrid">
+                {schoolList.slice(0, 6).map((school) => (
+                  <Link
+                    className="cl-card cl-row items-start"
+                    href={`/super-admin/schools/${school.id}`}
+                    key={school.id}
+                    prefetch={false}
+                  >
+                    <ClubAvatar category={null} name={school.name} size={44} />
+                    <span className="cl-grow">
+                      <span className="cl-row-title">{school.name}</span>
+                      <span className="cl-row-sub">
+                        {[school.province, school.slug].filter(Boolean).join(" · ")}
+                      </span>
+                      <span
+                        className="cl-tag mt-2"
+                        data-tone={school.status === "active" ? "ok" : undefined}
+                      >
+                        {t(`status.${school.status}`)}
+                      </span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="cl-card cl-empty">{t("superAdmin.page.noSchools")}</p>
+            )}
+          </Section>
+
+          <Section
+            link={{ href: "/super-admin/audit-log", label: t("nav.auditLog") }}
+            title={t("superAdmin.auditLog.recentActions")}
+          >
+          {auditLogResult.state === "unavailable" ? (
+            <div className="p-4">
+              <EmptyState
+                description={t("superAdmin.auditLog.unavailableDescription")}
+                title={t("superAdmin.auditLog.unavailableTitle")}
+              />
+            </div>
+          ) : auditLogResult.state === "error" ? (
+            <div className="p-4">
+              <EmptyState
+                description={t("superAdmin.auditLog.loadFailedDescription")}
+                title={t("common.somethingWentWrong")}
+              />
+            </div>
+          ) : recentAuditLogs.length === 0 ? (
+            <div className="p-4">
+              <div className="empty-state">
+                <p className="text-sm font-bold text-slate-950">
+                  {t("superAdmin.auditLog.noRecentActions")}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="cl-card cl-rows">
+              {recentAuditLogs.map((log) => (
+                <RecentAuditLogCard
+                  key={log.id}
+                  locale={locale}
+                  log={log}
+                  schoolById={schoolById}
+                  t={t}
+                />
+              ))}
+            </div>
+          )}
+          </Section>
         </div>
 
-        {auditLogResult.state === "unavailable" ? (
-          <div className="p-4">
-            <EmptyState
-              description={t("superAdmin.auditLog.unavailableDescription")}
-              title={t("superAdmin.auditLog.unavailableTitle")}
-            />
-          </div>
-        ) : auditLogResult.state === "error" ? (
-          <div className="p-4">
-            <EmptyState
-              description={t("superAdmin.auditLog.loadFailedDescription")}
-              title={t("common.somethingWentWrong")}
-            />
-          </div>
-        ) : recentAuditLogs.length === 0 ? (
-          <div className="p-4">
-            <div className="empty-state">
-              <p className="text-sm font-bold text-slate-950">
-                {t("superAdmin.auditLog.noRecentActions")}
+        <aside className="cl-side">
+          <Widget
+            link={{ href: "/super-admin/connections", label: t("superAdmin.actions.viewConnections") }}
+            title={t("superAdmin.page.needsAttention")}
+          >
+            {pendingConnections ? (
+              <p className="text-sm">
+                <b>{pendingConnections}</b> {t("superAdmin.page.pendingConnections")}
               </p>
-            </div>
-          </div>
-        ) : (
-          <div className="divide-y divide-zinc-200">
-            {recentAuditLogs.map((log) => (
-              <RecentAuditLogCard
-                key={log.id}
-                locale={locale}
-                log={log}
-                schoolById={schoolById}
-                t={t}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+            ) : (
+              <p className="text-sm text-[var(--muted)]">{t("superAdmin.page.allClear")}</p>
+            )}
+          </Widget>
+          {provinceCounts.length ? (
+            <Widget title={t("superAdmin.page.byProvince")}>
+              {provinceCounts.map((item) => (
+                <div className="cl-goal" key={item.province}>
+                  <div>
+                    <span>{item.province}</span>
+                    <b>{item.count}</b>
+                  </div>
+                  <div className="cl-bar">
+                    <i style={{ width: `${(item.count / provinceCounts[0].count) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </Widget>
+          ) : null}
+        </aside>
+      </div>
     </div>
   );
 }
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <article className="section-card section-card-padded">
-      <p className="text-sm font-semibold text-slate-600">{label}</p>
-      <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-        {value.toLocaleString()}
-      </p>
+    <article className="cl-card cl-stat">
+      <span className="cl-muted">{label}</span>
+      <b>{value.toLocaleString()}</b>
     </article>
   );
 }
@@ -232,7 +298,7 @@ function RecentAuditLogCard({
     : undefined;
 
   return (
-    <article className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+    <article className="cl-row items-start">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge variant="info">{auditActionLabel(log.action, t)}</StatusBadge>
@@ -247,11 +313,7 @@ function RecentAuditLogCard({
           {metadataSummary(log.metadata, t)}
         </p>
       </div>
-      <Link
-        className="btn btn-secondary h-10 w-full sm:w-auto"
-        href="/super-admin/audit-log"
-        prefetch={false}
-      >
+      <Link className="cl-widget-link ml-auto shrink-0" href="/super-admin/audit-log" prefetch={false}>
         {t("common.viewDetails")}
       </Link>
     </article>
