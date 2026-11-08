@@ -3,6 +3,7 @@
 import { useState, useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { ActionToast } from "@/components/toast-provider";
+import { toSlug } from "@/lib/slug";
 import {
   createPlatformSchool,
   type CreateSchoolState,
@@ -197,10 +198,3 @@ function SubmitButton({
   );
 }
 
-function toSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
-}

@@ -116,6 +116,7 @@ export async function createPlatformSchool(
       province: province || null,
       slug,
       status,
+      timezone: "Asia/Ulaanbaatar",
     })
     .select("id")
     .single<NewSchool>();

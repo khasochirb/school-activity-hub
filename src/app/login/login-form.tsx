@@ -18,7 +18,13 @@ export type LoginFormLabels = {
   signIn: string;
 };
 
-export function LoginForm({ labels }: { labels: LoginFormLabels }) {
+export function LoginForm({
+  labels,
+  nextPath = null,
+}: {
+  labels: LoginFormLabels;
+  nextPath?: string | null;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +58,7 @@ export function LoginForm({ labels }: { labels: LoginFormLabels }) {
       return;
     }
 
-    router.push("/dashboard");
+    router.push(nextPath ?? "/dashboard");
     router.refresh();
   }
 

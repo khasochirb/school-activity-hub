@@ -158,7 +158,7 @@ create table if not exists public.schools (
   name text not null,
   slug text not null unique,
   province text,
-  timezone text not null default 'America/Vancouver',
+  timezone text not null default 'Asia/Ulaanbaatar',
   status public.school_status not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

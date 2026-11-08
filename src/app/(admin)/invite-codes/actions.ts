@@ -90,6 +90,7 @@ export async function generateInviteCode(
         .eq("id", studentId)
         .eq("school_id", profile.school_id)
         .eq("status", "active")
+        .is("profile_id", null)
         .maybeSingle<{ id: string }>(),
   );
 

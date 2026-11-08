@@ -157,7 +157,7 @@ function CategoryOpportunitiesChart({
           </div>
           <AccessibleDataTable
             countLabel={t("dashboard.analytics.count")}
-            labelHeading={t("common.category")}
+            labelHeading={t("filters.category")}
             rows={rows}
             title={t("dashboard.analytics.opportunitiesByCategory.title")}
           />
