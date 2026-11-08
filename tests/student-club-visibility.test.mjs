@@ -51,5 +51,5 @@ test("student home lists the student's clubs and the open ones before interests"
 test("students do not see the staff instructions on the clubs page", () => {
   const page = read("src/app/(admin)/clubs/page.tsx");
 
-  assert.match(page, /description=\{isStaff \? t\("clubs\.description"\) : undefined\}/);
+  assert.match(page, /isStaff\s+\? t\("clubs\.description"\)\s+: tf\("clubs\.list\.subtitle"/);
 });

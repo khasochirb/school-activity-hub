@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { getActivityCategoryTone } from "@/lib/activity-category-styles";
+import { categoryColor } from "@/lib/ui/category-colors";
+import { formatDate } from "@/lib/i18n/date-format";
+import { ActionMenu } from "../_components/action-menu";
+import { CategoryLabel, ClubAvatar, Cover, PageHead } from "../_components/clean-ui";
 import { redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
-import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ShareClubButton } from "@/components/share-club-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -38,17 +40,12 @@ import {
   leaveClub,
 } from "./actions";
 import {
-  CategoryBadge,
   CollapsibleFormSection,
   DetailsDisclosure,
   EmptyState,
-  FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
   PaginationControls,
-  PageHeader,
-  SearchField,
-  SelectFilter,
   StatusBadge,
 } from "../_components/page-ui";
 import { CreateClubForm } from "./create-club-form";
@@ -76,6 +73,7 @@ type ClubPracticalDetails = {
   club_id: string;
   cost_notes: string | null;
   first_visit_free: boolean | null;
+  banner_path: string | null;
   logo_path: string | null;
   meeting_location: string | null;
   meeting_schedule: string | null;
@@ -231,7 +229,7 @@ export default async function ClubsPage({
         supabase
           .from("club_profiles")
           .select(
-            "club_id, meeting_schedule, meeting_location, cost_notes, beginners_welcome, first_visit_free, logo_path, updated_at",
+            "club_id, meeting_schedule, meeting_location, cost_notes, beginners_welcome, first_visit_free, logo_path, banner_path, updated_at",
           )
           .in("club_id", detailClubIds)
           .returns<ClubPracticalDetails[]>(),
@@ -250,15 +248,19 @@ export default async function ClubsPage({
     label: categoryLabel(category, t),
     value: category,
   }));
+  const [nextEventByClub, memberCountByClub] = await Promise.all([
+    getNextEventByClub(supabase, profile.school_id, clubIds),
+    getMemberCounts(supabase, clubIds),
+  ]);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
+    <div className="cl-page">
+      <PageHead
+        action={
           isStaff ? (
             <>
               <Link
-                className="btn btn-quiet min-h-11"
+                className="cl-btn-soft"
                 href="/print/clubs"
                 prefetch={false}
                 target="_blank"
@@ -271,8 +273,11 @@ export default async function ClubsPage({
             </>
           ) : undefined
         }
-        description={isStaff ? t("clubs.description") : undefined}
-        eyebrow={t("clubs.eyebrow")}
+        subtitle={
+          isStaff
+            ? t("clubs.description")
+            : tf("clubs.list.subtitle", { count: clubRows.length })
+        }
         title={t("clubs.title")}
       />
 
@@ -337,125 +342,138 @@ export default async function ClubsPage({
             label: categoryLabel(category, t),
           })),
         ]}
-      />
-
-      <FilterPanel
-        action="/clubs"
-        clearHref="/clubs"
-        clearLabel={t("filters.clear")}
-        resultCountLabel={tf("filters.showingResults", {
-          count: clubRows.length,
-        })}
-        submitLabel={t("filters.filter")}
       >
-        <SearchField
-          defaultValue={searchQuery}
-          label={t("filters.search")}
-          placeholder={t("filters.searchClubs")}
-        />
-        {selectedCategory ? (
-          <input name="category" type="hidden" value={selectedCategory} />
-        ) : null}
         {isStaff ? (
-          <SelectFilter
-            defaultValue={selectedStatus}
+          <ActionMenu
+            buttonClassName="cl-chip"
+            buttonLabel={`${t("filters.status")}: ${statusLabel(selectedStatus === "all" ? "all" : selectedStatus, t)}`}
+            items={(["active", "archived", "all"] as const).map((status) => ({
+              href: clubsPageHref(1, {
+                category: selectedCategory ?? "",
+                q: searchQuery,
+                status,
+              }),
+              label: status === "all" ? t("filters.all") : statusLabel(status, t),
+            }))}
             label={t("filters.status")}
-            name="status"
-            options={[
-              { label: t("filters.all"), value: "all" },
-              { label: t("status.active"), value: "active" },
-              { label: t("status.archived"), value: "archived" },
-            ]}
           />
         ) : null}
-      </FilterPanel>
+        <form action="/clubs" className="cl-search" role="search">
+          <SearchIcon />
+          <span className="sr-only">{t("filters.search")}</span>
+          <input
+            defaultValue={searchQuery}
+            name="q"
+            placeholder={t("filters.searchClubs")}
+            type="search"
+          />
+          {selectedCategory ? (
+            <input name="category" type="hidden" value={selectedCategory} />
+          ) : null}
+          {selectedStatus !== "active" ? (
+            <input name="status" type="hidden" value={selectedStatus} />
+          ) : null}
+        </form>
+      </CategoryChips>
 
-      <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">{t("clubs.active.title")}</h2>
-          {clubsError ? (
-            <p className="mt-2 text-sm text-red-600">
-              {tf("clubs.errors.loadFailed", {
-                error: t("common.somethingWentWrong"),
-              })}
-            </p>
-          ) : null}
-          {profile.role === "student" && !currentStudent ? (
-            <p className="mt-2 text-sm text-zinc-600">
-              {t("clubs.student.noRosterWarning")}
-            </p>
-          ) : null}
-        </div>
+      <section className="flex min-w-0 flex-col gap-4">
+        {clubsError ? (
+          <p className="notice-box notice-warning">
+            {tf("clubs.errors.loadFailed", {
+              error: t("common.somethingWentWrong"),
+            })}
+          </p>
+        ) : null}
+        {profile.role === "student" && !currentStudent ? (
+          <p className="notice-box notice-warning">
+            {t("clubs.student.noRosterWarning")}
+          </p>
+        ) : null}
         {clubRows.length ? (
-          <div className="club-grid">
+          <div className="cl-clubgrid">
             {clubRows.map((club) => {
               const clubMemberships = membershipsByClub.get(club.id) ?? [];
               const isJoined = currentStudentMemberships.has(club.id);
-              const isStudentView = profile.role === "student";
+              const details = detailsByClub.get(club.id);
+              const media = (kind: "banner" | "logo") =>
+                (kind === "banner" ? details?.banner_path : details?.logo_path)
+                  ? `/clubs/${club.id}/media/${kind}?v=${encodeURIComponent(details?.updated_at ?? "")}`
+                  : null;
+              const next = nextEventByClub.get(club.id);
+              const members = memberCountByClub.get(club.id);
 
               return (
-                <article className="club-card" key={club.id}>
+                <article className="cl-card cl-club" key={club.id}>
                   <Link
                     aria-hidden="true"
-                    className="club-card-cover"
-                    data-category-tone={getActivityCategoryTone(club.category)}
+                    className="cl-club-banner"
                     href={`/clubs/${club.id}`}
                     prefetch={false}
                     tabIndex={-1}
                   >
-                    {detailsByClub.get(club.id)?.logo_path ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        alt=""
-                        src={`/clubs/${club.id}/media/logo?v=${encodeURIComponent(
-                          detailsByClub.get(club.id)?.updated_at ?? "",
-                        )}`}
-                      />
-                    ) : (
-                      <span className="club-card-initials">
-                        {clubInitials(club.name)}
-                      </span>
-                    )}
-                  </Link>
-                  <div className="club-card-body">
-                    <h3 className="club-card-title">
-                      <Link
-                        aria-label={tf("clubs.profile.actions.viewNamedClub", {
-                          club: club.name,
-                        })}
-                        className="inline-flex min-w-0 items-center gap-2 break-words hover:text-[var(--primary-strong)]"
-                        href={`/clubs/${club.id}`}
-                        prefetch={false}
-                      >
-                        <span className="break-words">{club.name}</span>
-                        <PendingLinkIndicator />
-                      </Link>
-                    </h3>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {club.category ? (
-                        <CategoryBadge category={club.category}>
-                          {categoryLabel(club.category, t)}
-                        </CategoryBadge>
-                      ) : null}
-                      {isStaff || club.status !== "active" ? (
-                        <StatusBadge status={club.status}>
-                          {statusLabel(club.status, t)}
-                        </StatusBadge>
-                      ) : null}
-                      {isStudentView && isJoined ? (
-                        <StatusBadge variant="success">
-                          {t("clubs.memberRoles.member")}
-                        </StatusBadge>
-                      ) : null}
-                    </div>
-                    {club.description ? (
-                      <p className="club-card-description">{club.description}</p>
-                    ) : null}
-                    <ClubPracticalFacts
-                      details={detailsByClub.get(club.id)}
-                      t={t}
+                    <Cover
+                      category={club.category}
+                      className="absolute inset-0"
+                      imageUrl={media("banner")}
+                      initials=""
                     />
-                    <div className="club-card-foot">
+                    <span className="cl-club-logo">
+                      <ClubAvatar
+                        category={club.category}
+                        logoUrl={media("logo")}
+                        name={club.name}
+                        size={40}
+                      />
+                    </span>
+                  </Link>
+                  <div className="cl-club-body">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="cl-club-title">
+                        <Link
+                          aria-label={tf("clubs.profile.actions.viewNamedClub", {
+                            club: club.name,
+                          })}
+                          className="hover:text-[var(--primary-strong)]"
+                          href={`/clubs/${club.id}`}
+                          prefetch={false}
+                        >
+                          {club.name}
+                        </Link>
+                      </h3>
+                      <CategoryLabel
+                        category={club.category}
+                        label={club.category ? categoryLabel(club.category, t) : null}
+                      />
+                    </div>
+                    {isStaff && club.status !== "active" ? (
+                      <span className="cl-tag" data-tone="warn">
+                        {statusLabel(club.status, t)}
+                      </span>
+                    ) : null}
+                    {club.description ? (
+                      <p className="cl-club-desc">{club.description}</p>
+                    ) : null}
+                    {next ? (
+                      <Link className="cl-club-next" href={`/events/${next.id}`} prefetch={false}>
+                        {t("clubs.list.next")}: <b>{next.title}</b> ·{" "}
+                        {formatDate(next.starts_at, locale)}
+                      </Link>
+                    ) : details?.meeting_schedule ? (
+                      <p className="cl-club-next">
+                        {t("studentProfile.clubFacts.when")}: <b>{details.meeting_schedule}</b>
+                      </p>
+                    ) : null}
+                    {members !== undefined ? (
+                      <p className="cl-club-meta">
+                        {tf("clubs.profile.membership.memberCountValue", { count: members })}
+                      </p>
+                    ) : null}
+                    <div className="cl-club-foot">
+                      {isJoined ? (
+                        <span className="cl-tag" data-tone="ok">
+                          ✓ {t("clubs.memberRoles.member")}
+                        </span>
+                      ) : null}
                       <ClubActions
                         club={club}
                         currentStudent={currentStudent}
@@ -476,12 +494,18 @@ export default async function ClubsPage({
                         }}
                         role={profile.role}
                       />
+                      <ActionMenu
+                        items={[
+                          { href: `/clubs/${club.id}`, label: t("clubs.list.open") },
+                          ...(isStaff
+                            ? [{ href: `/clubs/${club.id}/edit`, label: t("clubs.profile.actions.edit") }]
+                            : []),
+                        ]}
+                        label={t("common.moreActions")}
+                      />
                     </div>
-                  {isStaff ? (
-                    <DetailsDisclosure label={t("common.viewDetails")}>
-                      <h4 className="text-sm font-medium text-zinc-950">
-                        {t("clubs.members.title")}
-                      </h4>
+                    {isStaff ? (
+                      <DetailsDisclosure label={t("clubs.members.title")}>
                       {clubMemberships.length ? (
                         <ul className="mt-2 flex flex-col gap-2">
                           {clubMemberships.map((membership) => (
@@ -525,7 +549,7 @@ export default async function ClubsPage({
                         </p>
                       )}
                     </DetailsDisclosure>
-                  ) : null}
+                    ) : null}
                   </div>
                 </article>
               );
@@ -803,9 +827,11 @@ function ClubsForYouSection({
 // One tap per category: the chips scroll sideways on phones instead of
 // wrapping, and the selected one is marked for screen readers.
 function CategoryChips({
+  children,
   label,
   links,
 }: {
+  children?: React.ReactNode;
   label: string;
   links: Array<{
     active: boolean;
@@ -815,28 +841,94 @@ function CategoryChips({
   }>;
 }) {
   return (
-    <nav aria-label={label} className="-mx-4 w-0 min-w-[calc(100%+2rem)] overflow-x-auto px-4 sm:mx-0 sm:min-w-full sm:px-0">
-      <ul className="flex w-max gap-2 pb-1 sm:w-auto sm:flex-wrap">
+    <div className="cl-filters">
+      <nav aria-label={label} className="contents">
         {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              aria-current={link.active ? "page" : undefined}
-              className={[
-                "inline-flex min-h-10 items-center whitespace-nowrap rounded-full border px-4 text-sm font-semibold",
-                link.active
-                  ? "border-[var(--primary)] bg-[var(--primary)] text-white"
-                  : "border-[var(--border)] bg-[var(--card)] text-slate-700 hover:border-[var(--primary-border)]",
-              ].join(" ")}
-              href={link.href}
-              prefetch={false}
-            >
-              {link.label}
-            </Link>
-          </li>
+          <Link
+            aria-current={link.active ? "page" : undefined}
+            className="cl-chip"
+            data-c={link.category ? "" : undefined}
+            href={link.href}
+            key={link.href}
+            prefetch={false}
+            style={
+              link.category
+                ? ({ "--c": categoryColor(link.category) } as React.CSSProperties)
+                : undefined
+            }
+          >
+            {link.label}
+          </Link>
         ))}
-      </ul>
-    </nav>
+      </nav>
+      {children}
+    </div>
   );
+}
+
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+type NextClubEvent = { id: string; starts_at: string; title: string };
+
+// The next approved event for each club, for the "Next:" line on cards.
+async function getNextEventByClub(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+  clubIds: string[],
+) {
+  const next = new Map<string, NextClubEvent>();
+
+  if (!clubIds.length) return next;
+
+  const { data } = await timeServer("clubs.query.next-events", () =>
+    supabase
+      .from("events")
+      .select("id, title, starts_at, club_id")
+      .eq("school_id", schoolId)
+      .eq("status", "approved")
+      .in("club_id", clubIds)
+      .gte("starts_at", new Date().toISOString())
+      .order("starts_at", { ascending: true })
+      .limit(100)
+      .returns<Array<NextClubEvent & { club_id: string }>>(),
+  );
+
+  for (const event of data ?? []) {
+    if (!next.has(event.club_id)) next.set(event.club_id, event);
+  }
+
+  return next;
+}
+
+// Member counts through the same checked function the club page uses, so
+// students see real numbers without reading other students' memberships.
+async function getMemberCounts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clubIds: string[],
+) {
+  const counts = new Map<string, number>();
+  const results = await timeServer("clubs.query.member-counts", () =>
+    Promise.all(
+      clubIds.map((clubId) =>
+        supabase.rpc("get_club_member_count", { target_club_id: clubId }),
+      ),
+    ),
+  );
+
+  results.forEach((result, index) => {
+    if (!result.error && result.data !== null) {
+      counts.set(clubIds[index], Number(result.data));
+    }
+  });
+
+  return counts;
 }
 
 function clubShareText(
@@ -938,12 +1030,6 @@ function memberRoleLabel(
   }
 
   return t("clubs.memberRoles.member");
-}
-
-function clubInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-
-  return (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
 }
 
 function categoryLabel(category: string, t: (key: string) => string) {

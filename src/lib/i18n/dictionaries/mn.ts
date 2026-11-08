@@ -224,6 +224,11 @@ export const mn = {
     volunteering: "Сайн дурын ажил",
   },
   clubs: {
+    list: {
+      next: "Дараагийнх",
+      open: "Клубыг нээх",
+      subtitle: "{count} клуб · шинэ хүмүүстэй танилцаж, шинэ зүйл туршаарай",
+    },
     actions: {
       archive: "Клуб архивлах",
       archiving: "Архивлаж байна...",
@@ -414,6 +419,10 @@ export const mn = {
         plum: "Даруухан нил ягаан",
         sky: "Тайван цэнхэр",
         warm: "Дулаан улбар шар",
+      },
+      statline: {
+        members: "гишүүн",
+        upcoming: "удахгүй болох үйл ажиллагаа",
       },
       tabs: {
         about: "Тухай",

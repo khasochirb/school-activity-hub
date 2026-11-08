@@ -15,14 +15,14 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
-import { formatDateTime, formatTime } from "@/lib/i18n/date-format";
+import { formatCalendarDateBadge, formatTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import {
-  CategoryBadge,
   StatusBadge,
 } from "../../_components/page-ui";
 import { DetailTabs } from "../../_components/detail-tabs";
+import { CategoryLabel, Cover } from "../../_components/clean-ui";
 import { joinClub, leaveClub } from "../actions";
 
 type Club = {
@@ -191,10 +191,18 @@ export default async function ClubProfilePage({
   const showIncompleteNotice = details.completedCount < 3;
   const profileUpdated = getFirst((await searchParams).updated) === "1";
   const canManageProfile = canEdit === true || isLeader || isOwnSchoolStaff;
-  const themeClass = getThemeClass(profile?.theme_key ?? "warm");
   const bannerUrl = getMediaUrl(club.id, "banner", profile);
   const logoUrl = getMediaUrl(club.id, "logo", profile);
 
+  const aboutFacts = [
+    { label: t("clubs.profile.sections.meetingSchedule"), value: profile?.meeting_schedule },
+    { label: t("clubs.profile.sections.meetingLocation"), value: profile?.meeting_location },
+    { label: t("clubs.profile.fields.costNotes"), value: profile?.cost_notes },
+    { label: t("clubs.profile.fields.materialsNotes"), value: profile?.materials_notes },
+    { label: t("clubs.profile.sections.eligibility"), value: profile?.eligibility_notes },
+    { label: t("clubs.profile.sections.commitment"), value: profile?.commitment_notes },
+    { label: t("clubs.profile.sections.accessibility"), value: profile?.accessibility_notes },
+  ].filter((fact): fact is { label: string; value: string } => Boolean(fact.value));
   const hasAboutDetails = Boolean(
     details.about ||
       profile?.meeting_schedule ||
@@ -207,19 +215,14 @@ export default async function ClubProfilePage({
   );
 
   return (
-    <div className="page-stack">
-      <section className={`overflow-hidden rounded-xl border shadow-sm ${themeClass}`}>
-        <Link
-          className="m-4 mb-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary-strong)] sm:m-6 sm:mb-0"
-          href="/clubs"
-          prefetch={false}
-        >
-          {t("clubs.profile.actions.backToClubs")}
-          <PendingLinkIndicator />
-        </Link>
+    <div className="cl-page">
+      <Link className="cl-back" href="/clubs" prefetch={false}>
+        ← {t("clubs.title")}
+      </Link>
+      <section className="cl-clubhero">
         <div
           aria-label={tf("clubs.profile.media.bannerAlt", { club: club.name })}
-          className="relative mx-4 mt-4 aspect-[3/1] min-h-28 max-h-72 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card-soft)] sm:mx-6"
+          className="relative aspect-[3/1] max-h-72 overflow-hidden rounded-2xl bg-[var(--card-soft)]"
           role={bannerUrl ? undefined : "img"}
         >
           {bannerUrl ? (
@@ -233,10 +236,15 @@ export default async function ClubProfilePage({
               unoptimized
             />
           ) : (
-            <div className="h-full w-full bg-[linear-gradient(135deg,var(--card-soft),var(--primary-soft))]" />
+            <Cover
+              category={club.category}
+              className="absolute inset-0"
+              imageUrl={null}
+              initials=""
+            />
           )}
         </div>
-        <div className="flex flex-col gap-5 p-4 pt-0 sm:p-6 sm:pt-0 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-4 px-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-1 items-start gap-4">
             <div
               aria-label={tf("clubs.profile.media.logoAlt", { club: club.name })}
@@ -259,8 +267,7 @@ export default async function ClubProfilePage({
               )}
             </div>
             <div className="min-w-0 pt-3">
-              <p className="page-eyebrow">{t("clubs.profile.clubPage")}</p>
-              <h1 className="font-display break-words text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">
+              <h1 className="break-words text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-[2.1rem]">
                 {club.name}
               </h1>
               {profile?.tagline ? (
@@ -269,16 +276,13 @@ export default async function ClubProfilePage({
                 </p>
               ) : null}
               <div className="mt-4 flex flex-wrap gap-2">
-                {club.category ? (
-                  <CategoryBadge category={club.category}>
-                    {categoryLabel(club.category, t)}
-                  </CategoryBadge>
+                <CategoryLabel
+                  category={club.category}
+                  label={club.category ? categoryLabel(club.category, t) : null}
+                />
+                {club.status !== "active" ? (
+                  <StatusBadge status={club.status}>{t("status.archived")}</StatusBadge>
                 ) : null}
-                <StatusBadge status={club.status}>
-                  {club.status === "active"
-                    ? t("status.active")
-                    : t("status.archived")}
-                </StatusBadge>
                 {profile?.beginners_welcome ? (
                   <StatusBadge variant="info">
                     {t("clubs.profile.fields.beginnersWelcome")}
@@ -314,6 +318,7 @@ export default async function ClubProfilePage({
             ) : null}
             {club.status === "active" ? (
               <ShareClubButton
+                className="cl-btn-soft min-h-11"
                 clubId={club.id}
                 labels={{
                   copied: t("clubs.share.copied"),
@@ -340,7 +345,7 @@ export default async function ClubProfilePage({
             ) : null}
             {canManageProfile ? (
               <Link
-                className="btn btn-secondary min-h-11 gap-2"
+                className="cl-btn-soft min-h-11"
                 href={`/clubs/${club.id}/edit`}
                 prefetch={false}
               >
@@ -351,6 +356,17 @@ export default async function ClubProfilePage({
           </div>
         </div>
       </section>
+
+      <p className="cl-statline">
+        <span>
+          <b>{Number(memberCount ?? 0)}</b>
+          {t("clubs.profile.statline.members")}
+        </span>
+        <span>
+          <b>{eventRows.length}</b>
+          {t("clubs.profile.statline.upcoming")}
+        </span>
+      </p>
 
       {actor.profile?.role === "student" &&
       club.status === "active" &&
@@ -397,64 +413,17 @@ export default async function ClubProfilePage({
                 content: (
                   <div className="detail-tab-stack">
                     {details.about ? (
-                      <ProfileSection title={t("clubs.profile.sections.about")}>
-                        {details.about}
-                      </ProfileSection>
+                      <p className="cl-evabout">{details.about}</p>
                     ) : null}
-
-                    {profile?.meeting_schedule || profile?.meeting_location ? (
-                      <section className="grid gap-4 md:grid-cols-2">
-                        {profile.meeting_schedule ? (
-                          <ProfileSection title={t("clubs.profile.sections.meetingSchedule")}>
-                            {profile.meeting_schedule}
-                          </ProfileSection>
-                        ) : null}
-                        {profile.meeting_location ? (
-                          <ProfileSection title={t("clubs.profile.sections.meetingLocation")}>
-                            {profile.meeting_location}
-                          </ProfileSection>
-                        ) : null}
-                      </section>
-                    ) : null}
-
-                    {profile?.eligibility_notes ? (
-                      <ProfileSection title={t("clubs.profile.sections.eligibility")}>
-                        {profile.eligibility_notes}
-                      </ProfileSection>
-                    ) : null}
-
-                    {profile?.commitment_notes ? (
-                      <ProfileSection title={t("clubs.profile.sections.commitment")}>
-                        {profile.commitment_notes}
-                      </ProfileSection>
-                    ) : null}
-
-                    {profile?.accessibility_notes ? (
-                      <ProfileSection title={t("clubs.profile.sections.accessibility")}>
-                        {profile.accessibility_notes}
-                      </ProfileSection>
-                    ) : null}
-
-                    {profile?.cost_notes || profile?.materials_notes ? (
-                      <section className="section-card section-card-padded">
-                        <h2 className="section-title">
-                          {t("clubs.profile.sections.costMaterials")}
-                        </h2>
-                        <dl className="mt-3 grid gap-4 sm:grid-cols-2">
-                          {profile.cost_notes ? (
-                            <DetailItem
-                              label={t("clubs.profile.fields.costNotes")}
-                              value={profile.cost_notes}
-                            />
-                          ) : null}
-                          {profile.materials_notes ? (
-                            <DetailItem
-                              label={t("clubs.profile.fields.materialsNotes")}
-                              value={profile.materials_notes}
-                            />
-                          ) : null}
-                        </dl>
-                      </section>
+                    {aboutFacts.length ? (
+                      <div className="cl-facts">
+                        {aboutFacts.map((fact) => (
+                          <div className="cl-card" key={fact.label}>
+                            <span>{fact.label}</span>
+                            <b className="whitespace-pre-line">{fact.value}</b>
+                          </div>
+                        ))}
+                      </div>
                     ) : null}
                     {!hasAboutDetails ? (
                       <p className="section-card section-card-padded text-sm text-slate-600">
@@ -468,57 +437,44 @@ export default async function ClubProfilePage({
               },
               {
                 content: (
-                    <section className="section-card">
-                      <div className="section-header">
-                        <h2 className="section-title">
-                          {t("clubs.profile.sections.upcomingActivities")}
-                        </h2>
-                      </div>
-                      {eventRows.length ? (
-                        <ul className="divide-y divide-[var(--border)]">
-                          {eventRows.map((event) => {
-                            const registration = registrationByEvent.get(event.id);
+                  <div className="cl-card cl-rows">
+                    {eventRows.length ? (
+                      eventRows.map((event) => {
+                        const registration = registrationByEvent.get(event.id);
+                        const tile = formatCalendarDateBadge(event.starts_at, locale);
 
-                            return (
-                              <li className="p-4" key={event.id}>
-                                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                  <div className="min-w-0">
-                                    <Link
-                                      className="font-bold text-slate-950 hover:text-[var(--primary-strong)]"
-                                      href={`/events/${event.id}`}
-                                      prefetch={false}
-                                    >
-                                      <span className="break-words">{event.title}</span>
-                                      <PendingLinkIndicator />
-                                    </Link>
-                                    <p className="mt-1 text-sm text-slate-600">
-                                      {formatDateTime(event.starts_at, locale)} -{" "}
-                                      {formatTime(event.ends_at, locale)}
-                                    </p>
-                                    {event.location ? (
-                                      <p className="mt-1 break-words text-sm text-slate-600">
-                                        {event.location}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                  {registration ? (
-                                    <StatusBadge variant="success">
-                                      {registration === "attended"
-                                        ? t("events.registration.checkedIn")
-                                        : t("events.registration.youAreRegistered")}
-                                    </StatusBadge>
-                                  ) : null}
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : (
-                        <p className="p-4 text-sm text-slate-600">
-                          {t("clubs.profile.upcomingEmpty")}
-                        </p>
-                      )}
-                    </section>
+                        return (
+                          <Link
+                            className="cl-row"
+                            href={`/events/${event.id}`}
+                            key={event.id}
+                            prefetch={false}
+                          >
+                            <span aria-hidden="true" className="cl-dtile">
+                              <span>{tile.month}</span>
+                              <b>{Number(tile.day)}</b>
+                            </span>
+                            <span className="cl-grow">
+                              <span className="cl-row-title">{event.title}</span>
+                              <span className="cl-row-sub">
+                                {formatTime(event.starts_at, locale)}–{formatTime(event.ends_at, locale)}
+                                {event.location ? ` · ${event.location}` : ""}
+                              </span>
+                            </span>
+                            {registration ? (
+                              <span className="cl-tag" data-tone="ok">
+                                {registration === "attended"
+                                  ? t("events.registration.checkedIn")
+                                  : t("dashboard.home.going")}
+                              </span>
+                            ) : null}
+                          </Link>
+                        );
+                      })
+                    ) : (
+                      <p className="cl-empty">{t("clubs.profile.upcomingEmpty")}</p>
+                    )}
+                  </div>
                 ),
                 id: "events",
                 label: tf("clubs.profile.tabs.events", { count: eventRows.length }),
@@ -586,23 +542,6 @@ export default async function ClubProfilePage({
   );
 }
 
-function ProfileSection({
-  children,
-  title,
-}: {
-  children: string;
-  title: string;
-}) {
-  return (
-    <section className="section-card section-card-padded">
-      <h2 className="section-title">{title}</h2>
-      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
-        {children}
-      </p>
-    </section>
-  );
-}
-
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
@@ -654,20 +593,6 @@ function getProfileDetails(club: Club, profile: ClubProfileRow | null) {
     about: profile?.about ?? club.description,
     completedCount: values.filter(Boolean).length,
   };
-}
-
-function getThemeClass(theme: ClubProfileTheme) {
-  const themes: Record<ClubProfileTheme, string> = {
-    forest:
-      "border-emerald-300/60 bg-[linear-gradient(135deg,var(--card),var(--card-soft))]",
-    plum:
-      "border-fuchsia-300/50 bg-[linear-gradient(135deg,var(--card),var(--card-soft))]",
-    sky: "border-sky-300/60 bg-[linear-gradient(135deg,var(--card),var(--card-soft))]",
-    warm:
-      "border-[color:var(--primary)] bg-[linear-gradient(135deg,var(--card),var(--primary-soft))]",
-  };
-
-  return themes[theme];
 }
 
 function getMediaUrl(

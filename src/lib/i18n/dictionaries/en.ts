@@ -234,6 +234,11 @@ export const en = {
     volunteering: "Volunteering",
   },
   clubs: {
+    list: {
+      next: "Next",
+      open: "Open club",
+      subtitle: "{count} clubs · meet new people, try something new",
+    },
     actions: {
       archive: "Archive club",
       archiving: "Archiving...",
@@ -423,6 +428,10 @@ export const en = {
         plum: "Muted plum",
         sky: "Calm blue",
         warm: "Warm amber",
+      },
+      statline: {
+        members: "members",
+        upcoming: "upcoming events",
       },
       tabs: {
         about: "About",
