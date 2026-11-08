@@ -6,6 +6,7 @@ import { parseActivityCategory } from "@/lib/activity-categories";
 import { logServerError } from "@/lib/errors/server-error";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { toSlug } from "@/lib/slug";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
 
@@ -372,7 +373,7 @@ async function createUniqueClubSlug(
   title: string,
   schoolId: string,
 ) {
-  const baseSlug = toSlug(title);
+  const baseSlug = toSlug(title) || "club";
 
   if (baseSlug.length < 3) {
     return null;
@@ -414,12 +415,3 @@ function revalidateClubRequestPaths() {
   revalidatePath("/clubs");
 }
 
-function toSlug(value: string) {
-  const slug = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
-
-  return slug || "club";
-}

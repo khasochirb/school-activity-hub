@@ -733,8 +733,10 @@ function createAttendanceCheckinsCsv(
   );
 }
 
+// The byte-order mark makes Excel read the file as UTF-8. Without it Excel
+// assumes the Windows code page and Cyrillic names come out garbled.
 function createCsv(headers: string[], rows: string[][]) {
-  return [
+  return "\uFEFF" + [
     headers.map(escapeCsvCell).join(","),
     ...rows.map((row) => row.map(escapeCsvCell).join(",")),
   ].join("\n");

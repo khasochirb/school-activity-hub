@@ -1,6 +1,6 @@
 export type EventBrowseView = "list" | "month" | "week";
 
-export const DEFAULT_EVENT_TIME_ZONE = "America/Vancouver";
+export const DEFAULT_EVENT_TIME_ZONE = "Asia/Ulaanbaatar";
 
 const dayKeyPattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 const monthPattern = /^(\d{4})-(\d{2})$/;

@@ -688,7 +688,7 @@ export default async function EventDetailPage({
             </dl>
           </article>
 
-          {canManageEvent ? (
+          {canManageEvent && event.status === "approved" ? (
             <article className="section-card section-card-padded order-6 lg:order-none">
               <h2 className="section-title">{t("events.detail.management")}</h2>
               <p className="section-description">{t("events.detail.staffTools")}</p>
@@ -708,7 +708,7 @@ export default async function EventDetailPage({
             </article>
           ) : null}
 
-          {canManageEvent ? (
+          {canManageEvent && event.status === "approved" ? (
             <article className="section-card section-card-padded order-7 lg:order-none">
               <h2 className="section-title">{t("events.detail.sharing")}</h2>
               <p className="section-description">
@@ -847,6 +847,10 @@ function PrimaryActionPanel({
   userSchoolId: string;
 }) {
   if (isStaff && isOwnSchoolEvent) {
+    if (event.status !== "approved") {
+      return null;
+    }
+
     return (
       <Link
         className="btn btn-primary min-h-10 w-full px-3"
@@ -1156,6 +1160,7 @@ function canCurrentStudentRegister(
   return (
     Boolean(currentStudent) &&
     event.status === "approved" &&
+    new Date(event.starts_at).getTime() >= Date.now() &&
     (event.school_id === userSchoolId ||
       event.allow_connected_school_registration)
   );

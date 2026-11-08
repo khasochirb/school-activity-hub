@@ -1,13 +1,19 @@
 import { AuthShell } from "@/components/auth-shell";
 import { redirect } from "next/navigation";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "./login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const nextPath = safeNextPath((await searchParams).next);
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
@@ -21,7 +27,7 @@ export default async function LoginPage() {
   if (user) {
     redirect(
       (await timeServer("login.query.has-any-school", () => hasAnySchool()))
-        ? "/dashboard"
+        ? (nextPath ?? "/dashboard")
         : "/setup",
     );
   }
@@ -32,6 +38,7 @@ export default async function LoginPage() {
       title={t("auth.login.title")}
     >
       <LoginForm
+        nextPath={nextPath}
         labels={{
           email: t("auth.login.email"),
           failed: t("auth.login.failed"),

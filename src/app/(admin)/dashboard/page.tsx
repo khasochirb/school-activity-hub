@@ -986,9 +986,7 @@ function NextSteps({
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
 }) {
-  const inviteCodesMissing =
-    analytics.activeStudents > 0 &&
-    analytics.activeInviteCodes < analytics.activeStudents;
+  const inviteCodesMissing = analytics.studentsWithoutInviteCodes > 0;
   const steps = [
     {
       action: t("dashboard.nextSteps.steps.addStudents.title"),
@@ -1478,6 +1476,7 @@ async function getStaffAnalytics(
   ).toISOString();
   const [
     activeStudents,
+    studentsWithoutAccounts,
     activeInviteCodes,
     activeClubs,
     upcomingRegistrations,
@@ -1488,6 +1487,7 @@ async function getStaffAnalytics(
     pendingApprovals,
   ] = await Promise.all([
     getActiveStudentCount(admin, schoolId),
+    getActiveStudentCount(admin, schoolId, { withoutAccount: true }),
     getActiveInviteCodeCount(admin, schoolId, now),
     getActiveClubCount(admin, schoolId),
     getUpcomingRegistrationCount(admin, schoolId, now),
@@ -1499,7 +1499,7 @@ async function getStaffAnalytics(
   ]);
   const activitySummary = buildDashboardActivitySummary(activityEvents, nowDate);
   const studentsWithoutInviteCodes = Math.max(
-    activeStudents - activeInviteCodes,
+    studentsWithoutAccounts - activeInviteCodes,
     0,
   );
 
@@ -1768,15 +1768,21 @@ async function getCurrentStudent(
 async function getActiveStudentCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
+  { withoutAccount = false }: { withoutAccount?: boolean } = {},
 ) {
   const { count } = await timeServer(
-    "dashboard.query.active-student-count",
-    () =>
-      admin
+    withoutAccount
+      ? "dashboard.query.students-without-account-count"
+      : "dashboard.query.active-student-count",
+    () => {
+      const query = admin
         .from("student_rosters")
         .select("id", { count: "exact", head: true })
         .eq("school_id", schoolId)
-        .eq("status", "active"),
+        .eq("status", "active");
+
+      return withoutAccount ? query.is("profile_id", null) : query;
+    },
   );
 
   return count ?? 0;

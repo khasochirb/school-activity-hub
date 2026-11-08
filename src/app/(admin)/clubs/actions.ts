@@ -9,6 +9,7 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { toSlug } from "@/lib/slug";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -321,10 +322,3 @@ function isStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
 }
 
-function toSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
-}
