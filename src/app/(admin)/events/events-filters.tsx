@@ -1,12 +1,7 @@
 import Link from "next/link";
-import { PendingLinkIndicator } from "@/components/pending-link-indicator";
-import { getActivityCategoryTone } from "@/lib/activity-category-styles";
-import { SearchField, SelectFilter } from "../_components/page-ui";
-
-export type EventsFilterOption = {
-  label: string;
-  value: string;
-};
+import type { CSSProperties } from "react";
+import { categoryColor } from "@/lib/ui/category-colors";
+import { ActionMenu, type ActionMenuItem } from "../_components/action-menu";
 
 export type EventsChipLink = {
   active: boolean;
@@ -20,189 +15,114 @@ export type EventsActiveFilter = {
   label: string;
 };
 
-export type EventsFiltersLabels = {
-  audience: string;
-  category: string;
-  clear: string;
-  filter: string;
-  hideFilters: string;
-  search: string;
-  searchEvents: string;
-  school: string;
-  showFilters: string;
-  status: string;
-  time: string;
-};
-
-export function EventsFilters({
-  activeFilters,
-  audienceLinks,
+// The draft's only filter UI: one row of chips, a menu for the rarer
+// filters, and one search box.
+export function EventsChipBar({
   categoryLinks,
-  clearHref,
-  labels,
-  month,
-  resultCountLabel,
-  searchQuery,
-  selectedAudience,
-  selectedCategory,
-  selectedStatus,
-  selectedSchool,
-  selectedTime,
-  statusOptions,
-  schoolOptions,
-  timeContextMessage,
-  timeOptions,
-  view,
-  week,
+  label,
+  menuItems,
+  menuLabel,
+  timeLinks,
 }: {
-  activeFilters: EventsActiveFilter[];
-  audienceLinks: EventsChipLink[];
   categoryLinks: EventsChipLink[];
-  clearHref: string;
-  labels: EventsFiltersLabels;
-  month: string;
-  resultCountLabel: string;
-  searchQuery: string;
-  selectedAudience: string;
-  selectedCategory: string;
-  selectedStatus: string;
-  selectedSchool: string;
-  selectedTime: string;
-  statusOptions: EventsFilterOption[];
-  schoolOptions: EventsFilterOption[];
-  timeContextMessage?: string;
-  timeOptions: EventsFilterOption[];
-  view: "list" | "month" | "week";
-  week: string;
+  label: string;
+  menuItems: ActionMenuItem[];
+  menuLabel: string;
+  timeLinks: EventsChipLink[];
 }) {
   return (
-    <section className="events-filters min-w-0">
-      <ChipRow label={labels.audience} links={audienceLinks} />
+    <nav aria-label={label} className="cl-filters">
+      {timeLinks.map((link) => (
+        <Chip key={link.href} link={link} />
+      ))}
       {categoryLinks.length > 1 ? (
-        <ChipRow label={labels.category} links={categoryLinks} />
+        <>
+          <span aria-hidden="true" className="cl-filters-divider" />
+          {categoryLinks.map((link) => (
+            <Chip key={link.href} link={link} />
+          ))}
+        </>
       ) : null}
-      <form action="/events" className="events-filter-form">
-        <SearchField
-          defaultValue={searchQuery}
-          label={labels.search}
-          placeholder={labels.searchEvents}
-        />
-        <details className="events-filter-details animated-native-details group min-w-0">
-          <summary className="events-filter-toggle">
-            <span className="group-open:hidden">{labels.showFilters}</span>
-            <span className="hidden group-open:inline">{labels.hideFilters}</span>
-            <span aria-hidden="true" className="text-lg leading-none">
-              +
-            </span>
-          </summary>
-          <div className="events-filter-more">
-            {schoolOptions.length ? (
-              <SelectFilter
-                defaultValue={selectedSchool}
-                label={labels.school}
-                name="school"
-                options={schoolOptions}
-              />
-            ) : null}
-            <input name="scope" type="hidden" value={selectedAudience} />
-            {selectedCategory ? (
-              <input name="category" type="hidden" value={selectedCategory} />
-            ) : null}
-            {view === "month" ? (
-              <input name="time" type="hidden" value={selectedTime} />
-            ) : (
-              <SelectFilter
-                defaultValue={selectedTime}
-                label={labels.time}
-                name="time"
-                options={timeOptions}
-              />
-            )}
-            {statusOptions.length ? (
-              <SelectFilter
-                defaultValue={selectedStatus}
-                label={labels.status}
-                name="status"
-                options={statusOptions}
-              />
-            ) : null}
-            {view === "month" ? (
-              <>
-                <input name="view" type="hidden" value="month" />
-                <input name="month" type="hidden" value={month} />
-              </>
-            ) : view === "week" ? (
-              <>
-                <input name="view" type="hidden" value="week" />
-                <input name="week" type="hidden" value={week} />
-              </>
-            ) : null}
-            <div className="compact-filter-actions">
-              <button className="btn btn-secondary min-h-11 md:min-h-10" type="submit">
-                {labels.filter}
-              </button>
-              <Link
-                className="btn btn-secondary min-h-11 gap-2 md:min-h-10"
-                href={clearHref}
-                prefetch={false}
-              >
-                {labels.clear}
-                <PendingLinkIndicator />
-              </Link>
-            </div>
-          </div>
-        </details>
-      </form>
+      {menuItems.length ? (
+        <span className="ml-auto">
+          <ActionMenu
+            buttonClassName="cl-chip"
+            buttonLabel={menuLabel}
+            items={menuItems}
+            label={menuLabel}
+          />
+        </span>
+      ) : null}
+    </nav>
+  );
+}
 
+function Chip({ link }: { link: EventsChipLink }) {
+  return (
+    <Link
+      aria-current={link.active ? "page" : undefined}
+      className="cl-chip"
+      data-c={link.category ? "" : undefined}
+      href={link.href}
+      prefetch={false}
+      style={
+        link.category
+          ? ({ "--c": categoryColor(link.category) } as CSSProperties)
+          : undefined
+      }
+    >
+      {link.label}
+    </Link>
+  );
+}
+
+export function EventsSearch({
+  activeFilters,
+  clearLabel,
+  hidden,
+  label,
+  placeholder,
+  searchQuery,
+}: {
+  activeFilters: EventsActiveFilter[];
+  clearLabel: string;
+  /** Current filters, carried over when a search is submitted. */
+  hidden: Record<string, string>;
+  label: string;
+  placeholder: string;
+  searchQuery: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <form action="/events" role="search">
+        <label className="cl-search cl-search-wide">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <span className="sr-only">{label}</span>
+          <input defaultValue={searchQuery} name="q" placeholder={placeholder} type="search" />
+        </label>
+        {Object.entries(hidden).map(([name, value]) =>
+          value ? <input key={name} name={name} type="hidden" value={value} /> : null,
+        )}
+      </form>
       {activeFilters.length ? (
-        <div className="flex min-w-0 flex-wrap gap-2" aria-label={labels.filter}>
+        <div aria-label={label} className="flex min-w-0 flex-wrap gap-2">
           {activeFilters.map((filter) => (
             <Link
-              aria-label={`${labels.clear}: ${filter.label}`}
-              className="interactive-chip inline-flex min-h-9 max-w-full items-center gap-1 rounded-full border border-[var(--primary)]/60 bg-[var(--primary-soft)] px-3 py-1 text-sm font-bold text-[var(--primary-strong)] hover:border-[var(--primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+              aria-label={`${clearLabel}: ${filter.label}`}
+              className="cl-tag"
+              data-tone="blue"
               href={filter.href}
               key={`${filter.label}-${filter.href}`}
               prefetch={false}
             >
-              <span className="min-w-0 break-words">{filter.label}</span>
-              <span aria-hidden="true">&times;</span>
+              {filter.label} ×
             </Link>
           ))}
         </div>
       ) : null}
-
-      {timeContextMessage ? (
-        <p className="text-sm text-slate-600">{timeContextMessage}</p>
-      ) : null}
-
-      <p className="text-sm font-semibold text-slate-600">
-        {resultCountLabel}
-      </p>
-    </section>
-  );
-}
-
-function ChipRow({ label, links }: { label: string; links: EventsChipLink[] }) {
-  return (
-    <nav aria-label={label} className="events-chip-row">
-      <ul>
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              aria-current={link.active ? "page" : undefined}
-              className="events-chip"
-              data-category-tone={
-                link.category ? getActivityCategoryTone(link.category) : undefined
-              }
-              href={link.href}
-              prefetch={false}
-            >
-              {link.category ? <i aria-hidden="true" /> : null}
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    </div>
   );
 }

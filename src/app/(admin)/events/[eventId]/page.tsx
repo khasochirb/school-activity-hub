@@ -20,13 +20,11 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import {
-  formatCalendarDateBadge,
   formatDate,
   formatDateTime,
   formatLongDate,
   formatTime,
 } from "@/lib/i18n/date-format";
-import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import { getEventPosterLabels } from "@/lib/events/event-poster-labels";
@@ -52,10 +50,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   CategoryBadge,
-  HeaderActionLink,
   StatusBadge,
 } from "../../_components/page-ui";
 import { DetailTabs } from "../../_components/detail-tabs";
+import { ActionMenu } from "../../_components/action-menu";
+import { CategoryLabel, ClubAvatar, Cover } from "../../_components/clean-ui";
 import {
   cancelEvent,
   cancelEventRegistration,
@@ -302,91 +301,97 @@ export default async function EventDetailPage({
   };
 
   return (
-    <div className="page-stack">
-      <section className="event-hero">
-        <div className="event-hero-top">
-          <HeaderActionLink href="/events" variant="secondary">
-            {t("common.backToEvents")}
-          </HeaderActionLink>
-          <span className="page-eyebrow">{t("events.detail.overview")}</span>
+    <div className="cl-page">
+      <Link className="cl-back" href="/events" prefetch={false}>
+        ← {t("events.title")}
+      </Link>
+
+      <section className="cl-evhero">
+        <div className="cl-evcover">
+          {event.poster_path ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={t("events.poster.alt").replace("{event}", event.title)}
+              src={getEventPosterDeliveryUrl(event.id, event.poster_path)}
+            />
+          ) : (
+            <Cover
+              category={event.category}
+              className="absolute inset-0"
+              imageUrl={null}
+              initials={getHeroInitials(club?.name ?? ownerSchoolName ?? event.title)}
+            />
+          )}
+        </div>
+        <div className="cl-evinfo">
+          <CategoryLabel
+            category={event.category}
+            label={event.category ? categoryLabel(event.category, t) : null}
+          />
+          <h1>{event.title}</h1>
+          <p>
+            {formatLongDate(event.starts_at, locale)} · {formatTime(event.starts_at, locale)}–
+            {formatTime(event.ends_at, locale)}
+          </p>
+          <p className="cl-evcount">
+            <b>{registeredCount}</b> {t("dashboard.home.goingCount")}
+            {event.capacity
+              ? ` · ${tf("events.detail.spotsLeft", {
+                  count: Math.max(event.capacity - registeredCount, 0),
+                })}`
+              : ""}
+          </p>
+          <EventBadges
+            clubName={club?.name ?? null}
+            event={event}
+            ownerSchoolName={ownerSchoolName}
+            permissionStatus={currentRegistration?.permission_status}
+            registrationStatus={currentRegistration?.status}
+            sharedSchoolIds={sharedSchoolIds}
+            showOwner={!isOwnSchoolEvent}
+            t={t}
+            tf={tf}
+          />
           {isPlatformAdmin ? (
             <StatusBadge variant="warning">
               {t("events.platform.mode")}: {ownerSchoolName}
             </StatusBadge>
           ) : null}
         </div>
-        <div className="event-hero-grid">
-          <div
-            className="event-hero-cover"
-            data-category-tone={getActivityCategoryTone(event.category)}
-          >
-            {event.poster_path ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt={t("events.poster.alt").replace("{event}", event.title)}
-                src={getEventPosterDeliveryUrl(event.id, event.poster_path)}
-              />
-            ) : (
-              <span
-                aria-label={t("events.poster.noPoster")}
-                className="event-card-poster-fallback event-hero-fallback"
-                role="img"
-              >
-                <span
-                  aria-hidden="true"
-                  className="event-card-category-mark flex h-20 w-20 items-center justify-center rounded-2xl border text-2xl font-black"
-                >
-                  {getHeroInitials(club?.name ?? ownerSchoolName ?? event.title)}
-                </span>
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 space-y-4">
-            <h1 className="event-hero-title">{event.title}</h1>
-            <div className="event-hero-meta">
-              <span aria-hidden="true" className="event-date-tile">
-                <span>{formatCalendarDateBadge(event.starts_at, locale).month}</span>
-                <b>{Number(formatCalendarDateBadge(event.starts_at, locale).day)}</b>
-              </span>
-              <div className="min-w-0">
-                <p className="event-hero-meta-main">
-                  {formatLongDate(event.starts_at, locale)}
-                </p>
-                <p className="event-hero-meta-sub">
-                  {formatTime(event.starts_at, locale)} &ndash;{" "}
-                  {formatTime(event.ends_at, locale)}
-                </p>
-              </div>
-            </div>
-            <div className="event-hero-meta">
-              <span aria-hidden="true" className="event-icon-tile">
-                <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 24 24">
-                  <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" />
-                  <circle cx="12" cy="9.5" r="2.5" />
-                </svg>
-              </span>
-              <div className="min-w-0">
-                <p className="event-hero-meta-main">{event.location || "-"}</p>
-                <p className="event-hero-meta-sub">
-                  {club ? `${club.name} \u00b7 ` : ""}
-                  {ownerSchoolName}
-                </p>
-              </div>
-            </div>
-            <EventBadges
-              clubName={club?.name ?? null}
-              event={event}
-              ownerSchoolName={ownerSchoolName}
-              permissionStatus={currentRegistration?.permission_status}
-              registrationStatus={currentRegistration?.status}
-              sharedSchoolIds={sharedSchoolIds}
-              showOwner={!isOwnSchoolEvent}
-              t={t}
-              tf={tf}
+        {canManageEvent ? (
+          <span className="cl-evmenu">
+            <ActionMenu
+              items={[
+                { href: `/events/${event.id}/attendance`, label: t("dashboard.home.attendanceQr") },
+                { href: "#manage", label: t("events.detail.tabs.manage") },
+              ]}
+              label={t("common.moreActions")}
             />
-          </div>
-        </div>
+          </span>
+        ) : null}
       </section>
+
+      <div className="cl-facts">
+        <div className="cl-card">
+          <span>{t("events.detail.facts.when")}</span>
+          <b>
+            {formatInZone(event.starts_at, locale, { weekday: "long" })},{" "}
+            {formatTime(event.starts_at, locale)}
+          </b>
+        </div>
+        <div className="cl-card">
+          <span>{t("events.detail.facts.where")}</span>
+          <b>{event.location || "-"}</b>
+        </div>
+        <div className="cl-card">
+          <span>{t("events.practicalDetails.cost")}</span>
+          <b>{costLabel}</b>
+        </div>
+        <div className="cl-card">
+          <span>{t("events.detail.facts.level")}</span>
+          <b>{experienceLevelLabel(event.experience_level, t)}</b>
+        </div>
+      </div>
 
       <section className="event-detail-split">
         <div className="min-w-0">
@@ -406,12 +411,36 @@ export default async function EventDetailPage({
                         </p>
                       </div>
                     ) : null}
-                    <article className="section-card section-card-padded">
-                      <h2 className="section-title">{t("events.form.description")}</h2>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-700">
-                        {event.description || t("events.detail.noDescription")}
-                      </p>
-                    </article>
+                    <p className="cl-evabout">
+                      {event.description || t("events.detail.noDescription")}
+                    </p>
+                    {club ? (
+                      <Link className="cl-card cl-row" href={`/clubs/${club.id}`} prefetch={false}>
+                        <ClubAvatar category={event.category} name={club.name} size={48} />
+                        <span className="cl-grow">
+                          <span className="cl-row-sub">{t("events.card.hostedBy")}</span>
+                          <span className="cl-row-title">{club.name}</span>
+                        </span>
+                        <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+                          <path d="M9 6l6 6-6 6" />
+                        </svg>
+                      </Link>
+                    ) : (
+                      <div className="cl-card cl-row">
+                        <span className="cl-grow">
+                          <span className="cl-row-sub">{t("events.card.hostedBy")}</span>
+                          <span className="cl-row-title">{ownerSchoolName}</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ),
+                id: "about",
+                label: t("events.detail.tabs.about"),
+              },
+              {
+                content: (
+                  <div className="detail-tab-stack">
                     <article className="section-card section-card-padded">
                       <h2 className="section-title">{t("events.detail.eventInformation")}</h2>
                       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
@@ -441,14 +470,6 @@ export default async function EventDetailPage({
                         </DetailItem>
                       </dl>
                     </article>
-                  </div>
-                ),
-                id: "about",
-                label: t("events.detail.tabs.about"),
-              },
-              {
-                content: (
-                  <div className="detail-tab-stack">
                     <article className="section-card section-card-padded">
                       <h2 className="section-title">{t("events.formGroups.whoCanAttend")}</h2>
                       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
@@ -500,29 +521,7 @@ export default async function EventDetailPage({
                         ) : null}
                       </dl>
                     </article>
-                    <article className="section-card section-card-padded">
-                      <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
-                      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                        <DetailItem label={t("events.card.safety")}>
-                          {riskLabel(event.risk_level, t)}
-                        </DetailItem>
-                        <DetailItem label={t("events.card.permission")}>
-                          {event.permission_required
-                            ? t("events.permission.mayBeRequired")
-                            : t("events.permission.notRequired")}
-                        </DetailItem>
-                      </dl>
-                      {event.permission_note ? (
-                        <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
-                          <h3 className="text-sm font-semibold text-zinc-950">
-                            {t("events.permission.note")}
-                          </h3>
-                          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700">
-                            {event.permission_note}
-                          </p>
-                        </div>
-                      ) : null}
-                    </article>
+
                     <article className="section-card section-card-padded">
                       <h2 className="section-title">{t("events.detail.timeline")}</h2>
                       <dl className="mt-3 grid gap-3 text-sm">
@@ -554,6 +553,37 @@ export default async function EventDetailPage({
                 ),
                 id: "details",
                 label: t("events.detail.tabs.details"),
+              },
+              {
+                content: (
+                  <div className="detail-tab-stack">
+                    <article className="section-card section-card-padded">
+                      <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
+                      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        <DetailItem label={t("events.card.safety")}>
+                          {riskLabel(event.risk_level, t)}
+                        </DetailItem>
+                        <DetailItem label={t("events.card.permission")}>
+                          {event.permission_required
+                            ? t("events.permission.mayBeRequired")
+                            : t("events.permission.notRequired")}
+                        </DetailItem>
+                      </dl>
+                      {event.permission_note ? (
+                        <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-3">
+                          <h3 className="text-sm font-semibold text-zinc-950">
+                            {t("events.permission.note")}
+                          </h3>
+                          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700">
+                            {event.permission_note}
+                          </p>
+                        </div>
+                      ) : null}
+                    </article>
+                  </div>
+                ),
+                id: "safety",
+                label: t("events.detail.tabs.safety"),
               },
               ...(canManageEvent
                 ? [
@@ -689,70 +719,48 @@ export default async function EventDetailPage({
         </div>
 
         <aside className="event-detail-side">
-          <article className="section-card section-card-padded">
-            <h2 className="section-title">{t("common.primaryAction")}</h2>
-            <div className="mt-3">
-              <PrimaryActionPanel
-                currentRegistration={currentRegistration}
-                currentStudent={currentStudent}
-                event={event}
-                isFull={isFull}
-                isOwnSchoolEvent={canManageEvent}
-                isStaff={isStaff}
-                t={t}
-                userSchoolId={profile.school_id}
-              />
-              <div className="mt-3 border-t border-[var(--border)] pt-3">
-                <EventCalendarActions
-                  calendarDownloadUrl={calendarLinks.calendarDownloadUrl}
-                  googleCalendarUrl={calendarLinks.googleCalendarUrl}
-                  labels={{
-                    addToCalendar: t("events.calendarActions.add"),
-                    downloadCalendarFile: t("events.calendarActions.download"),
-                    googleCalendar: t("events.calendarActions.google"),
-                    registeredSuggestion: t(
-                      "events.calendarActions.registeredSuggestion",
-                    ),
-                  }}
-                  showRegisteredSuggestion={
-                    currentRegistration?.status === "registered" ||
-                    currentRegistration?.status === "attended"
-                  }
-                />
-              </div>
-            </div>
-          </article>
-
-          <article className="section-card section-card-padded">
-            <h2 className="section-title">{t("events.detail.registrationSummary")}</h2>
-            <dl className="mt-3 grid gap-3 text-sm">
-              <DetailItem label={t("events.card.registration")}>
-                {tf("events.registration.count", { count: registeredCount })}
-                {event.capacity
-                  ? ` ${tf("events.registration.maxSuffix", {
-                      count: event.capacity,
-                    })}`
-                  : ""}
-              </DetailItem>
-              <DetailItem label={t("events.card.maxParticipants")}>
-                {event.capacity ?? t("events.capacity.noLimit")}
-              </DetailItem>
-              {currentStudent ? (
-                <DetailItem label={t("filters.status")}>
-                  {currentRegistration?.status === "attended"
-                    ? t("events.detail.youHaveCheckedIn")
-                    : currentRegistration?.status === "registered"
-                      ? t("events.registration.youAreRegistered")
-                      : t("events.registration.notJoined")}
-                </DetailItem>
-              ) : null}
-              {currentRegistration && event.permission_required ? (
-                <DetailItem label={t("events.card.permission")}>
-                  {permissionLabel(currentRegistration.permission_status, t)}
-                </DetailItem>
-              ) : null}
-            </dl>
-          </article>
+          <div className="cl-card cl-panel">
+            <p className="cl-panel-big">
+              {costLabel} ·{" "}
+              {event.eligibility_notes ?? t("events.detail.openToAll")}
+            </p>
+            <p className="text-sm text-[var(--muted)]">
+              {event.capacity
+                ? tf("events.detail.spotsLeft", {
+                    count: Math.max(event.capacity - registeredCount, 0),
+                  })
+                : tf("events.registration.count", { count: registeredCount })}
+              {currentRegistration && event.permission_required
+                ? ` · ${permissionLabel(currentRegistration.permission_status, t)}`
+                : ""}
+            </p>
+            <PrimaryActionPanel
+              currentRegistration={currentRegistration}
+              currentStudent={currentStudent}
+              event={event}
+              isFull={isFull}
+              isOwnSchoolEvent={canManageEvent}
+              isStaff={isStaff}
+              t={t}
+              userSchoolId={profile.school_id}
+            />
+            <EventCalendarActions
+              calendarDownloadUrl={calendarLinks.calendarDownloadUrl}
+              googleCalendarUrl={calendarLinks.googleCalendarUrl}
+              labels={{
+                addToCalendar: t("events.calendarActions.add"),
+                downloadCalendarFile: t("events.calendarActions.download"),
+                googleCalendar: t("events.calendarActions.google"),
+                registeredSuggestion: t(
+                  "events.calendarActions.registeredSuggestion",
+                ),
+              }}
+              showRegisteredSuggestion={
+                currentRegistration?.status === "registered" ||
+                currentRegistration?.status === "attended"
+              }
+            />
+          </div>
         </aside>
       </section>
     </div>
@@ -1542,4 +1550,14 @@ function categoryLabel(category: string, t: Translate) {
 function getHeroInitials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
   return (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
+}
+
+function formatInZone(
+  value: string,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+) {
+  return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", options).format(
+    new Date(value),
+  );
 }

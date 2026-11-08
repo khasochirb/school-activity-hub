@@ -69,13 +69,11 @@ test("Events query bypasses only the Month time predicate", () => {
 });
 
 test("Month hides the Time control and chip while retaining its URL value", () => {
-  const filters = read("src/app/(admin)/events/events-filters.tsx");
   const page = read("src/app/(admin)/events/page.tsx");
 
-  assert.match(filters, /view === "month" \? \([\s\S]*<input name="time" type="hidden" value=\{selectedTime\}/);
-  assert.match(filters, /: \([\s\S]*<SelectFilter[\s\S]*name="time"/);
+  // Search keeps the current time filter as a hidden field in every view.
+  assert.match(page, /time: filterUrlState\.time,/);
   assert.match(page, /isEventTimeFilterActive\(state\.view, state\.time\)/);
-  assert.match(page, /month=\$\{selectedMonth\}&time=\$\{selectedTime\}/);
 });
 
 test("Month calendar has neutral bilingual context and timezone-aware grouping", () => {

@@ -6,16 +6,21 @@ import {
   useCallback,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent,
 } from "react";
 import {
-  EventPrimaryAction,
   EventQuickViewModal,
   type EventQuickViewItem,
   type EventQuickViewLabels,
 } from "@/components/events/event-quick-view-modal";
 import { getActivityCategoryTone } from "@/lib/activity-category-styles";
-import { CategoryBadge, StatusBadge } from "../_components/page-ui";
+import { joinEvent } from "@/app/(admin)/events/actions";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { categoryColor } from "@/lib/ui/category-colors";
+import { ActionMenu } from "../_components/action-menu";
+
+const colorVar = (color: string) => ({ "--c": color }) as CSSProperties;
 
 export type EventBrowserItem = EventQuickViewItem & {
   categoryValue: string | null;
@@ -35,7 +40,12 @@ export type EventBrowserItem = EventQuickViewItem & {
 };
 
 export type EventBrowserLabels = EventQuickViewLabels & {
+  goingCount: string;
+  join: string;
+  moreActions: string;
   myClub: string;
+  openEvent: string;
+  spotsLeft: string;
   noPoster: string;
   partnerSchool: string;
   posterAlt: string;
@@ -62,16 +72,19 @@ export function EventBrowser({
 
   return (
     <>
-      <div className="event-timeline p-3 sm:p-5">
+      <div className="cl-tl">
         {groupByDay(items).map((day) => (
           <section
             aria-label={`${day.label}, ${day.weekday}`}
-            className="event-day"
+            className="cl-tlday"
             key={day.key}
           >
-            <p className="event-day-head">
-              {day.label}
-              <span>{day.weekday}</span>
+            <p className="cl-tlhead">
+              <span aria-hidden="true" className="cl-dtile">
+                <span>{day.month}</span>
+                <b>{day.dayOfMonth}</b>
+              </span>
+              <small>{day.weekday}</small>
             </p>
             <div className="flex min-w-0 flex-col gap-3">
               {day.items.map((item) => (
@@ -127,79 +140,97 @@ function EventCard({
 
   return (
     <article
-      className="event-tl-card interactive-card group"
+      className="cl-card cl-tlcard interactive-card group"
       data-category-tone={categoryTone}
       onClick={handleCardClick}
     >
       <div className="min-w-0">
-        <p className="event-tl-time">{item.timeRangeLabel}</p>
+        <span className="cl-time">{item.timeRangeLabel}</span>
         <Link
-          className="event-tl-title focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+          className="cl-tl-title focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
           href={`/events/${item.id}`}
         >
           {item.title}
         </Link>
-        <p className="event-tl-row">
-          <span aria-hidden="true" className="event-tl-host-mark">
+        <p className="cl-ri">
+          <span
+            aria-hidden="true"
+            className="cl-clubav"
+            style={{ ...colorVar(categoryColor(item.categoryValue)), fontSize: 9, height: 18, width: 18, borderRadius: 5 }}
+          >
             {item.visualInitials.slice(0, 1)}
           </span>
           <span className="min-w-0 break-words">{item.hostName}</span>
         </p>
-        <p className="event-tl-row">
-          <PinIcon />
-          <span className="min-w-0 break-words">{item.location || "-"}</span>
-        </p>
-
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {isRegistered ? (
-            <StatusBadge variant="success">{labels.registered}</StatusBadge>
-          ) : null}
-          {item.status !== "approved" ? (
-            <StatusBadge status={item.status}>{item.statusLabel}</StatusBadge>
-          ) : null}
+        {item.location ? (
+          <p className="cl-ri">
+            <PinIcon />
+            <span className="min-w-0 break-words">{item.location}</span>
+          </p>
+        ) : null}
+        {item.cancellationNotice || item.status !== "approved" || item.isPartnerEvent ? (
+          <p className="mt-2 flex flex-wrap gap-1.5">
+            {item.cancellationNotice ? (
+              <span className="cl-tag" data-tone="warn">{labels.scheduleUpdate}</span>
+            ) : null}
+            {item.status !== "approved" ? (
+              <span className="cl-tag" data-tone="warn">{item.statusLabel}</span>
+            ) : null}
+            {item.isPartnerEvent ? (
+              <span className="cl-tag" data-tone="blue">{labels.partnerSchool}</span>
+            ) : null}
+          </p>
+        ) : null}
+        <div className="cl-tl-ft">
           {item.categoryLabel ? (
-            <CategoryBadge category={item.categoryValue}>
+            <span className="cl-cat" style={colorVar(categoryColor(item.categoryValue))}>
               {item.categoryLabel}
-            </CategoryBadge>
-          ) : null}
-          {item.isMyClubEvent ? (
-            <StatusBadge variant="info">{labels.myClub}</StatusBadge>
-          ) : null}
-          {item.isPartnerEvent ? (
-            <StatusBadge variant="info">{labels.partnerSchool}</StatusBadge>
-          ) : null}
-          {item.permissionRequired ? (
-            <StatusBadge variant="warning">{labels.permissionRequired}</StatusBadge>
-          ) : null}
-          {item.experienceLabel ? (
-            <StatusBadge variant="info">{item.experienceLabel}</StatusBadge>
-          ) : null}
-          {item.hasEligibilityInfo ? (
-            <StatusBadge>{labels.eligibility}</StatusBadge>
-          ) : null}
-          {item.cancellationNotice ? (
-            <StatusBadge variant="warning">{labels.scheduleUpdate}</StatusBadge>
-          ) : null}
-        </div>
-
-        <p className="event-tl-facts">
-          <span>
-            {labels.cost}: {item.costLabel}
-          </span>
-          <span>
-            {labels.registration}: {item.attendeeCount}
-            {item.capacity === null ? "" : ` / ${item.capacity}`}
-          </span>
-          {item.remainingSpaces !== null ? (
-            <span>
-              {labels.spacesRemaining}: {item.remainingSpaces}
             </span>
           ) : null}
-          {item.registrationStateLabel ? (
-            <span>{item.registrationStateLabel}</span>
-          ) : null}
-        </p>
-
+          <span className="cl-tl-meta">
+            {labels.goingCount.replace("{count}", String(item.attendeeCount))}
+            {item.remainingSpaces !== null
+              ? ` · ${labels.spotsLeft.replace("{count}", String(item.remainingSpaces))}`
+              : ""}
+            {item.costType && item.costType !== "free" ? ` · ${item.costLabel}` : ""}
+          </span>
+          <span className="cl-tl-action">
+            {item.isStaff ? (
+              <ActionMenu
+                items={[
+                  { href: `/events/${item.id}`, label: labels.openEvent },
+                  ...(item.canManageEvent
+                    ? [{ href: `/events/${item.id}/attendance`, label: labels.attendanceQr }]
+                    : []),
+                ]}
+                label={labels.moreActions}
+              />
+            ) : isRegistered ? (
+              <span className="cl-btn-soft cl-btn-done">✓ {labels.registered}</span>
+            ) : item.status === "approved" && item.hasCurrentStudent && item.canRegister ? (
+              <form action={joinEvent}>
+                <input name="event_id" type="hidden" value={item.id} />
+                <PendingSubmitButton
+                  className="cl-btn-soft disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={item.isFull}
+                  pendingLabel={labels.joining}
+                  toastMessage={labels.joining}
+                >
+                  {item.isFull ? labels.registrationFull : labels.join}
+                </PendingSubmitButton>
+              </form>
+            ) : (
+              <button
+                className="cl-btn-soft"
+                onClick={(event) => onOpen(event.currentTarget)}
+                ref={registerTrigger}
+                type="button"
+              >
+                {labels.viewEvent}
+              </button>
+            )}
+          </span>
+        </div>
       </div>
 
       <div className="event-tl-cover" data-category-tone={categoryTone}>
@@ -209,41 +240,20 @@ function EventCard({
             className="object-cover"
             fill
             onError={() => setPosterFailed(true)}
-            sizes="(max-width: 639px) 96px, 132px"
+            sizes="(max-width: 639px) 104px, 124px"
             src={item.posterUrl}
             unoptimized
           />
         ) : (
           <div
             aria-label={labels.noPoster}
-            className="event-card-poster-fallback flex h-full w-full items-center justify-center"
+            className="event-card-poster-fallback cl-cover h-full w-full"
             role="img"
+            style={colorVar(categoryColor(item.categoryValue))}
           >
-            <span
-              aria-hidden="true"
-              className="event-card-category-mark flex h-12 w-12 items-center justify-center rounded-xl border text-base font-black"
-            >
-              {item.visualInitials}
-            </span>
+            <span aria-hidden="true">{item.visualInitials}</span>
           </div>
         )}
-      </div>
-
-      <div
-        className="event-tl-actions"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          className="btn btn-secondary min-h-10 w-full sm:w-auto"
-          onClick={(event) => onOpen(event.currentTarget)}
-          ref={registerTrigger}
-          type="button"
-        >
-          {labels.viewEvent}
-        </button>
-        <div className="w-full sm:w-auto">
-          <EventPrimaryAction item={item} labels={labels} />
-        </div>
       </div>
     </article>
   );
@@ -269,9 +279,11 @@ function PinIcon() {
 
 function groupByDay(items: EventBrowserItem[]) {
   const days: {
+    dayOfMonth: string;
     items: EventBrowserItem[];
     key: string;
     label: string;
+    month: string;
     weekday: string;
   }[] = [];
   for (const item of items) {
@@ -279,9 +291,11 @@ function groupByDay(items: EventBrowserItem[]) {
     if (last && last.key === item.dayKey) last.items.push(item);
     else
       days.push({
+        dayOfMonth: item.posterDay,
         items: [item],
         key: item.dayKey,
         label: item.dayLabel,
+        month: item.posterMonth,
         weekday: item.weekdayLabel,
       });
   }

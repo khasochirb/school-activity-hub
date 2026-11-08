@@ -1167,6 +1167,17 @@ export const en = {
     title: "Students",
   },
   events: {
+    list: {
+      byCategory: "By category",
+      goingCount: "{count} going",
+      moreFilters: "Filters",
+      myEvents: "My events",
+      nothingYet: "Nothing yet. Join something!",
+      searchPlaceholder: "Search events or clubs",
+      subtitle: "{count} upcoming at {school} · {mine} on your list",
+      subtitleStaff: "{count} upcoming at {school}",
+      yourEvents: "Your events",
+    },
     actions: {
       attendanceQr: "Attendance and QR",
       cancel: "Cancel event",
@@ -1231,6 +1242,13 @@ export const en = {
     description:
       "Create approved activities, manage student registrations, and open attendance check-in when an event begins.",
     detail: {
+      facts: {
+        level: "Level",
+        when: "When",
+        where: "Where",
+      },
+      openToAll: "open to all students",
+      spotsLeft: "{count} spots left",
       approvedAt: "Approved",
       attendance: "Attendance",
       createdAt: "Created",
@@ -1251,6 +1269,7 @@ export const en = {
         about: "About",
         details: "Details",
         label: "Event sections",
+        safety: "Safety",
         manage: "Manage",
       },
     },

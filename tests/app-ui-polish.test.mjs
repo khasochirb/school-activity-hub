@@ -36,7 +36,10 @@ test("archive, deactivate and revoke buttons are quiet", () => {
   assert.match(css, /\.btn-quiet \{/);
 });
 
-test("events filters are open on desktop", () => {
-  assert.match(read("src/app/(admin)/events/events-filters.tsx"), /className="events-filter-details /);
-  assert.match(css, /\.events-filter-details::details-content \{[^}]*content-visibility: visible;/);
+test("events filters are one visible row of chips and one search box", () => {
+  const filters = read("src/app/(admin)/events/events-filters.tsx");
+
+  assert.match(filters, /className="cl-filters"/);
+  assert.match(filters, /className="cl-search cl-search-wide"/);
+  assert.doesNotMatch(filters, /<details/);
 });

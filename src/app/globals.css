@@ -4960,3 +4960,239 @@ a.cl-stat:hover {
   font-size: 11px;
   font-weight: 700;
 }
+
+/* Events timeline: a date tile per day, cards with a square cover */
+.cl-filters-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--cl-line-strong);
+}
+.cl-tl {
+  display: flex;
+  flex-direction: column;
+}
+.cl-tlday {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 0 0 26px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.cl-tlhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cl-tlhead small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+@media (min-width: 900px) {
+  .cl-tlday {
+    gap: 20px;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
+  .cl-tlday::before {
+    position: absolute;
+    top: 64px;
+    bottom: -4px;
+    left: 26px;
+    border-left: 2px dashed var(--cl-line-strong);
+    content: "";
+  }
+  .cl-tlday:last-child::before {
+    bottom: 26px;
+  }
+  .cl-tlhead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+.cl-tlcard {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  cursor: pointer;
+}
+@media (min-width: 640px) {
+  .cl-tlcard {
+    grid-template-columns: minmax(0, 1fr) 124px;
+  }
+}
+.cl-tlcard:hover {
+  box-shadow: var(--cl-shadow-lift);
+}
+.cl-time {
+  font-size: 14px;
+  color: var(--muted);
+}
+.cl-tl-title {
+  display: block;
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--foreground);
+  text-decoration: none;
+}
+.cl-tl-title:hover {
+  color: var(--primary-strong);
+}
+.cl-ri {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.cl-ri svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.cl-tl-ft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.cl-tl-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+.cl-tl-action {
+  margin-left: auto;
+}
+.cl-tlcard .event-tl-cover {
+  position: relative;
+  align-self: start;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.cl-tlcard .event-tl-cover .cl-cover {
+  position: absolute;
+  inset: 0;
+}
+
+/* Event page: hero with square cover, facts row, one action panel */
+.cl-back {
+  align-self: flex-start;
+  margin-bottom: -12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+}
+.cl-back:hover {
+  color: var(--foreground);
+}
+.cl-evhero {
+  position: relative;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 760px) {
+  .cl-evhero {
+    align-items: center;
+    grid-template-columns: 17rem minmax(0, 1fr);
+  }
+}
+.cl-evcover {
+  position: relative;
+  aspect-ratio: 1;
+  max-width: 20rem;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: var(--cl-shadow-lift);
+}
+.cl-evcover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cl-evinfo {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.cl-evinfo h1 {
+  font-size: clamp(1.8rem, 4.5vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.cl-evinfo > p {
+  font-size: 16px;
+  color: var(--muted);
+}
+.cl-evinfo .cl-evcount {
+  font-size: 14px;
+}
+.cl-evcount b {
+  color: var(--foreground);
+}
+.cl-evmenu {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.cl-facts {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+.cl-facts .cl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.cl-facts b {
+  font-size: 14.5px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.cl-evabout {
+  font-size: 16px;
+  line-height: 1.65;
+  white-space: pre-line;
+  color: var(--foreground);
+}
+.cl-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+.cl-panel-big {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.cl-panel .btn {
+  width: 100%;
+}
+.cl-page .detail-tab-list {
+  border-color: var(--cl-line);
+}
+.cl-evcover .cl-cover {
+  position: absolute;
+  inset: 0;
+}

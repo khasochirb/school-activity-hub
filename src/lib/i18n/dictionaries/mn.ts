@@ -513,6 +513,17 @@ export const mn = {
     },
   },
   events: {
+    list: {
+      byCategory: "Ангиллаар",
+      goingCount: "{count} очно",
+      moreFilters: "Шүүлтүүр",
+      myEvents: "Миний үйл ажиллагаа",
+      nothingYet: "Одоогоор алга. Нэгдээрэй!",
+      searchPlaceholder: "Үйл ажиллагаа эсвэл клуб хайх",
+      subtitle: "{school}-д удахгүй {count} · таны жагсаалтад {mine}",
+      subtitleStaff: "{school}-д удахгүй {count}",
+      yourEvents: "Таны үйл ажиллагаа",
+    },
     actions: {
       attendanceQr: "QR ирц",
       cancel: "Үйл ажиллагааг цуцлах",
@@ -577,6 +588,13 @@ export const mn = {
     description:
       "Батлагдсан үйл ажиллагаа үүсгэж, сурагчдын бүртгэлийг удирдаж, үйл ажиллагаа эхлэхэд ирцийн бүртгэл нээнэ үү.",
     detail: {
+      facts: {
+        level: "Түвшин",
+        when: "Хэзээ",
+        where: "Хаана",
+      },
+      openToAll: "бүх сурагчдад нээлттэй",
+      spotsLeft: "{count} суудал үлдсэн",
       approvedAt: "Батлагдсан",
       attendance: "Ирц",
       createdAt: "Үүссэн",
@@ -597,6 +615,7 @@ export const mn = {
         about: "Тухай",
         details: "Дэлгэрэнгүй",
         label: "Үйл ажиллагааны хэсгүүд",
+        safety: "Аюулгүй байдал",
         manage: "Удирдах",
       },
     },
