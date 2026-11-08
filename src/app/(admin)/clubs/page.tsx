@@ -29,6 +29,8 @@ import {
   matchClubsToInterests,
   type ClubsForInterests,
 } from "@/lib/students/student-journey";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   archiveClub,
@@ -195,6 +197,21 @@ export default async function ClubsPage({
     : { data: [] };
 
   const isStudent = profile.role === "student";
+  const memberCountByClub = new Map<string, number>();
+  if (isStudent && clubIds.length) {
+    const { data: memberRows } = await timeServer("clubs.query.member-counts", () =>
+      createAdminClient()
+        .from("club_memberships")
+        .select("club_id")
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .in("club_id", clubIds)
+        .returns<Array<{ club_id: string }>>(),
+    );
+    for (const row of memberRows ?? []) {
+      memberCountByClub.set(row.club_id, (memberCountByClub.get(row.club_id) ?? 0) + 1);
+    }
+  }
   const hasActiveFilters = Boolean(searchQuery || selectedCategory || page > 1);
   const [studentInterests, schoolClubsResult] = isStudent
     ? await Promise.all([
@@ -400,6 +417,8 @@ export default async function ClubsPage({
                   key={club.id}
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                    {isStudentView ? <ClubTile category={club.category} name={club.name} /> : null}
                     <div className="min-w-0">
                       <h3 className={isStudentView ? "text-xl font-semibold text-zinc-950" : "text-lg font-semibold text-zinc-950"}>
                         <Link
@@ -429,6 +448,12 @@ export default async function ClubsPage({
                           </StatusBadge>
                         ) : null}
                       </div>
+                      {isStudentView ? (
+                        <p className="mt-2 text-sm font-medium text-slate-600">
+                          {tf("news.members", { count: memberCountByClub.get(club.id) ?? 0 })}
+                        </p>
+                      ) : null}
+                    </div>
                     </div>
                     <ClubActions
                       club={club}
@@ -452,7 +477,12 @@ export default async function ClubsPage({
                     />
                   </div>
                   {club.description ? (
-                    <p className="mt-3 text-base leading-7 text-zinc-600 sm:text-sm sm:leading-6">
+                    <p
+                      className={[
+                        "mt-3 text-base leading-7 text-zinc-600 sm:text-sm sm:leading-6",
+                        isStudentView ? "line-clamp-3" : "",
+                      ].join(" ")}
+                    >
                       {club.description}
                     </p>
                   ) : null}
@@ -561,6 +591,18 @@ export default async function ClubsPage({
         ) : null}
       </section>
     </div>
+  );
+}
+
+function ClubTile({ category, name }: { category: string | null; name: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="club-tile grid h-14 w-14 shrink-0 place-items-center rounded-2xl border text-xl font-bold"
+      data-category-tone={getActivityCategoryTone(category)}
+    >
+      {Array.from(name.trim())[0]?.toUpperCase() ?? "?"}
+    </span>
   );
 }
 
