@@ -32,17 +32,19 @@ export function EventsChipBar({
 }) {
   return (
     <nav aria-label={label} className="cl-filters">
-      {timeLinks.map((link) => (
-        <Chip key={link.href} link={link} />
-      ))}
-      {categoryLinks.length > 1 ? (
-        <>
-          <span aria-hidden="true" className="cl-filters-divider" />
-          {categoryLinks.map((link) => (
-            <Chip key={link.href} link={link} />
-          ))}
-        </>
-      ) : null}
+      <div className="cl-chip-scroll">
+        {timeLinks.map((link) => (
+          <Chip key={link.href} link={link} />
+        ))}
+        {categoryLinks.length > 1 ? (
+          <>
+            <span aria-hidden="true" className="cl-filters-divider" />
+            {categoryLinks.map((link) => (
+              <Chip key={link.href} link={link} />
+            ))}
+          </>
+        ) : null}
+      </div>
       {menuItems.length ? (
         <span className="ml-auto">
           <ActionMenu

@@ -26,14 +26,12 @@ export function TopBarClock({
   let label: string;
 
   try {
-    const time = new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
-      hour: "numeric",
+    label = new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-GB", {
+      hour: "2-digit",
+      hourCycle: "h23",
       minute: "2-digit",
       timeZone,
     }).format(now);
-    const city = timeZone.split("/").pop()?.replace(/_/g, " ") ?? "";
-
-    label = `${time} ${city}`;
   } catch {
     return <span className="topbar-clock" />;
   }

@@ -367,7 +367,7 @@ export async function AppShell({
           label={t("nav.tabs.label")}
           tabs={[
             { href: "/dashboard", label: t("nav.tabs.home") },
-            { href: "/events", label: t("nav.tabs.events") },
+            { href: "/events", label: t("nav.tabs.activities") },
             { href: "/clubs", label: t("nav.tabs.clubs") },
             profile.role === "student"
               ? { href: "/portfolio", label: t("nav.tabs.portfolio") }
@@ -404,7 +404,7 @@ function Brand({
       >
         <BrandGlyph />
       </Link>
-      <div className="min-w-0 max-w-full">
+      <div className="brand-text min-w-0 max-w-full">
         <Link
           className={
             compact
@@ -646,7 +646,7 @@ function getTopTabs(
   if (role === "student") {
     return [
       { exact: true, href: "/dashboard", icon: "home", label: t("nav.tabs.home") },
-      { href: "/events", icon: "events", label: t("nav.tabs.events") },
+      { href: "/events", icon: "events", label: t("nav.tabs.activities") },
       { href: "/clubs", icon: "clubs", label: t("nav.tabs.clubs") },
       { href: "/portfolio", icon: "portfolio", label: t("nav.tabs.portfolio") },
     ];
@@ -654,7 +654,8 @@ function getTopTabs(
 
   return [
     { exact: true, href: "/dashboard", icon: "home", label: t("nav.tabs.home") },
-    { href: "/events", icon: "events", label: t("nav.tabs.events") },
+    { href: "/events", icon: "events", label: t("nav.tabs.activities") },
+    { href: "/clubs", icon: "clubs", label: t("nav.tabs.clubs") },
     { href: "/students", icon: "students", label: t("nav.tabs.students") },
     { href: "/approvals", icon: "approvals", label: t("nav.tabs.approvals") },
   ];

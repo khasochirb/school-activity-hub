@@ -15,6 +15,8 @@ import {
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { archiveClub } from "../../actions";
 import { ClubMediaManager } from "./club-media-manager";
 import { ClubProfileForm } from "./club-profile-form";
 
@@ -22,6 +24,7 @@ type Club = {
   id: string;
   name: string;
   school_id: string;
+  status: string;
 };
 
 type ClubProfileRow = {
@@ -72,7 +75,7 @@ export default async function EditClubProfilePage({
   const [{ data: club }, { data: canEdit }] = await Promise.all([
     supabase
       .from("clubs")
-      .select("id, school_id, name")
+      .select("id, school_id, name, status")
       .eq("id", clubId)
       .maybeSingle<Club>(),
     supabase.rpc("current_user_can_edit_club_profile", {
@@ -193,6 +196,27 @@ export default async function EditClubProfilePage({
           }}
         />
       </section>
+
+      {(actor.profile?.role === "school_admin" || actor.profile?.role === "teacher") &&
+      club.status === "active" ? (
+        <section className="section-card section-card-padded">
+          <h2 className="section-title">{t("feedback.archiveClub")}</h2>
+          <p className="section-description">{t("feedback.cannotBeUndone")}</p>
+          <form action={archiveClub} className="mt-3">
+            <input name="club_id" type="hidden" value={club.id} />
+            <ConfirmSubmitButton
+              cancelLabel={t("common.cancel")}
+              className="btn btn-quiet min-h-10 px-4"
+              confirmDescription={t("feedback.cannotBeUndone")}
+              confirmLabel={t("feedback.confirm")}
+              confirmTitle={t("feedback.archiveClub")}
+              pendingLabel={t("clubs.actions.archiving")}
+            >
+              {t("clubs.actions.archive")}
+            </ConfirmSubmitButton>
+          </form>
+        </section>
+      ) : null}
     </div>
   );
 }

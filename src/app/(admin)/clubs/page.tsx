@@ -4,7 +4,6 @@ import { formatDate } from "@/lib/i18n/date-format";
 import { ActionMenu } from "../_components/action-menu";
 import { CategoryLabel, ClubAvatar, Cover, PageHead } from "../_components/clean-ui";
 import { redirect } from "next/navigation";
-import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ShareClubButton } from "@/components/share-club-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -36,7 +35,6 @@ import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
-  archiveClub,
   assignClubLeader,
   joinClub,
   leaveClub,
@@ -497,6 +495,7 @@ export default async function ClubsPage({
                         labels={{
                           archive: t("clubs.actions.archive"),
                           archived: t("status.archived"),
+                          open: t("clubs.list.open"),
                           archiving: t("clubs.actions.archiving"),
                           cancel: t("common.cancel"),
                           confirm: t("feedback.confirm"),
@@ -648,6 +647,7 @@ function ClubActions({
   labels: {
     archive: string;
     archived: string;
+    open: string;
     archiving: string;
     cancel: string;
     confirm: string;
@@ -665,20 +665,11 @@ function ClubActions({
       return <span className="text-sm text-zinc-500">{labels.archived}</span>;
     }
 
+    // Archiving cannot be undone, so it lives on the club's edit page, not on every card.
     return (
-      <form action={archiveClub}>
-        <input name="club_id" type="hidden" value={club.id} />
-        <ConfirmSubmitButton
-          cancelLabel={labels.cancel}
-          className="btn btn-quiet min-h-9 px-3"
-          confirmDescription={labels.confirmDescription}
-          confirmLabel={labels.confirm}
-          confirmTitle={labels.confirmArchive}
-          pendingLabel={labels.archiving}
-        >
-          {labels.archive}
-        </ConfirmSubmitButton>
-      </form>
+      <Link className="btn btn-secondary min-h-9 px-3" href={`/clubs/${club.id}`} prefetch={false}>
+        {labels.open}
+      </Link>
     );
   }
 
@@ -869,7 +860,7 @@ function CategoryChips({
 }) {
   return (
     <div className="cl-filters">
-      <nav aria-label={label} className="contents">
+      <nav aria-label={label} className="cl-chip-scroll">
         {links.map((link) => (
           <Link
             aria-current={link.active ? "page" : undefined}

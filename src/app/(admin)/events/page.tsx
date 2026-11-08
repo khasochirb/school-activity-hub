@@ -446,6 +446,11 @@ export default async function EventsPage({
   const schoolNameById = new Map(
     ownerSchools.map((school) => [school.id, school.name]),
   );
+  // The page subtitle names the user's own school, which the list above leaves out.
+  const ownSchoolName =
+    schoolNameById.get(profile.school_id) ??
+    (await getSchoolsById(admin, [profile.school_id]))[0]?.name ??
+    "";
   const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
   const responsibleStaffById = new Map(
     responsibleStaffProfiles.map((staff) => [staff.id, staff]),
@@ -694,7 +699,7 @@ export default async function EventsPage({
         subtitle={tf(isStaff ? "events.list.subtitleStaff" : "events.list.subtitle", {
           count: events.length,
           mine: myEventItems.length,
-          school: schoolNameById.get(profile.school_id) ?? "",
+          school: ownSchoolName,
         })}
         title={t("events.title")}
       />

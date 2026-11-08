@@ -6269,3 +6269,39 @@ html[data-theme="dark"] .cl-land::before {
     padding-inline: 0;
   }
 }
+
+/* Top bar: tab labels stay on one line; the long app name gives way first. */
+.top-tab {
+  white-space: nowrap;
+}
+
+@media (max-width: 1279px) {
+  .app-topbar .brand-text {
+    display: none;
+  }
+}
+
+/* Category chips: one row that scrolls sideways, fading at the right edge,
+   instead of two or three wrapping rows. Only the chips scroll: a menu next to
+   them stays outside the scroller so its dropdown is not clipped. */
+.cl-chip-scroll {
+  display: flex;
+  flex: 1 1 18rem;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  padding-block: 2px;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+
+.cl-chip-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.cl-chip-scroll > .cl-chip,
+.cl-chip-scroll > .cl-filters-divider {
+  flex-shrink: 0;
+}

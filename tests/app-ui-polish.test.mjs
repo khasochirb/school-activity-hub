@@ -30,7 +30,8 @@ test("create forms open from the header button instead of a second card", () => 
 });
 
 test("archive, deactivate and revoke buttons are quiet", () => {
-  assert.match(read("src/app/(admin)/clubs/page.tsx"), /btn btn-quiet min-h-9 px-3"\r?\n\s+confirmDescription/);
+  // Club archive lives on the club's edit page, not on every card.
+  assert.match(read("src/app/(admin)/clubs/[clubId]/edit/page.tsx"), /btn btn-quiet min-h-10 px-4"\r?\n\s+confirmDescription/);
   assert.match(read("src/app/(admin)/staff/page.tsx"), /btn btn-quiet/);
   assert.match(read("src/app/(admin)/students/page.tsx"), /<PendingSubmitButton\s+className="btn btn-quiet/);
   assert.match(css, /\.btn-quiet \{/);
