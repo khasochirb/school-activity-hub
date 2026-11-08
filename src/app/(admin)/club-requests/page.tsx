@@ -398,7 +398,7 @@ export default async function ClubRequestsPage({
                       {request.converted_club_id ? (
                         <Link
                           className="mt-2 inline-flex cursor-pointer text-sm font-bold text-teal-700 hover:text-teal-800"
-                          href={`/clubs?q=${encodeURIComponent(request.title)}`}
+                          href={`/clubs/${request.converted_club_id}`}
                           prefetch={false}
                         >
                           {t("clubRequests.messages.becameClub")}
@@ -407,7 +407,9 @@ export default async function ClubRequestsPage({
                     </div>
                   ) : null}
 
-                  {request.status === "rejected" && request.rejection_reason ? (
+                  {request.status === "rejected" &&
+                  request.rejection_reason &&
+                  (isStaff || request.created_by_profile_id === profile.id) ? (
                     <div className="notice-box notice-danger mt-3">
                       <p className="font-bold">
                         {t("clubRequests.fields.rejectionReason")}

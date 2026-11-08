@@ -211,7 +211,7 @@ export default async function InviteCodesPage({
             plainCodeLabel: t("invites.single.plainCodeLabel"),
             studentLabel: t("invites.single.studentLabel"),
           }}
-          students={activeStudents ?? []}
+          students={(activeStudents ?? []).filter((student) => !student.profile_id)}
         />
       </CollapsibleFormSection>
 

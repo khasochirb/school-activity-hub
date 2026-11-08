@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ToastProvider } from "@/components/toast-provider";
 import { getCurrentTheme } from "@/lib/get-theme";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
@@ -24,8 +24,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("app.name"),
     description: t("metadata.description"),
+    // Opened from the home screen on an iPhone, the app runs full screen.
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: t("app.shortName"),
+    },
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1120" },
+  ],
+};
 
 export default async function RootLayout({
   children,

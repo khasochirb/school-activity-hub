@@ -4,12 +4,12 @@ import { usePathname } from "next/navigation";
 import { ProtectedAppLink } from "./protected-app-link";
 
 export type StudentTab = {
-  href: "/clubs" | "/dashboard" | "/events" | "/portfolio";
+  href: "/clubs" | "/dashboard" | "/events" | "/portfolio" | "/students";
   label: string;
 };
 
-// Phone-only bottom navigation for students: the four places they return to.
-// Everything else stays in the menu drawer.
+// Phone-only bottom navigation: the four places a student (or staff member)
+// returns to, as a floating bar. Everything else stays in the menu drawer.
 export function StudentTabBar({
   label,
   tabs,
@@ -22,9 +22,9 @@ export function StudentTabBar({
   return (
     <nav
       aria-label={label}
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur lg:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] lg:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4">
+      <ul className="pointer-events-auto mx-auto grid max-w-md grid-cols-4 gap-1 rounded-[1.4rem] border border-slate-200/80 bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.16)] backdrop-blur">
         {tabs.map((tab) => {
           const active = isActiveTab(tab.href, pathname);
 
@@ -33,9 +33,9 @@ export function StudentTabBar({
               <ProtectedAppLink
                 aria-current={active ? "page" : undefined}
                 className={[
-                  "relative flex h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[0.7rem] leading-tight [&>span:last-child]:absolute [&>span:last-child]:right-3 [&>span:last-child]:top-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--primary)]",
+                  "relative flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[0.7rem] leading-tight transition-colors [&>span:last-child]:absolute [&>span:last-child]:right-3 [&>span:last-child]:top-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--primary)]",
                   active
-                    ? "font-extrabold text-[var(--primary-strong)]"
+                    ? "bg-[var(--primary-soft)] font-extrabold text-[var(--primary-strong)]"
                     : "font-semibold text-slate-500",
                 ].join(" ")}
                 href={tab.href}
@@ -91,6 +91,16 @@ function TabIcon({
       <svg {...common}>
         <rect height="17" rx="2" width="18" x="3" y="4" />
         <path d="M3 9h18M8 2v4M16 2v4" />
+      </svg>
+    );
+  }
+
+  if (href === "/students") {
+    return (
+      <svg {...common}>
+        <rect height="16" rx="2" width="18" x="3" y="4" />
+        <circle cx="9" cy="10" r="2.2" />
+        <path d="M5.8 16c.5-1.8 1.7-2.8 3.2-2.8s2.7 1 3.2 2.8M14.5 9h4M14.5 13h4" />
       </svg>
     );
   }

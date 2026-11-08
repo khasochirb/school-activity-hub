@@ -356,20 +356,22 @@ export async function AppShell({
         <main
           className={[
             "app-main mx-auto w-full max-w-[72rem] px-4 py-5 sm:px-6 sm:py-6 lg:py-8",
-            profile?.role === "student" ? "pb-24 lg:pb-6" : "",
+            profile ? "pb-28 lg:pb-8" : "",
           ].join(" ")}
         >
           <RouteContentTransition>{children}</RouteContentTransition>
         </main>
       </div>
-      {profile?.role === "student" ? (
+      {profile ? (
         <StudentTabBar
           label={t("nav.tabs.label")}
           tabs={[
             { href: "/dashboard", label: t("nav.tabs.home") },
             { href: "/events", label: t("nav.tabs.events") },
             { href: "/clubs", label: t("nav.tabs.clubs") },
-            { href: "/portfolio", label: t("nav.tabs.portfolio") },
+            profile.role === "student"
+              ? { href: "/portfolio", label: t("nav.tabs.portfolio") }
+              : { href: "/students", label: t("nav.students") },
           ]}
         />
       ) : null}

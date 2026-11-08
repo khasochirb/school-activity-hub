@@ -676,6 +676,7 @@ export default async function EventDetailPage({
                             <h2 className="section-title">{t("events.formGroups.safetyPermissions")}</h2>
                             <SafetyForm event={event} t={t} />
                           </article>
+                          {canManageEvent && event.status === "approved" ? (
                           <article className="section-card section-card-padded">
                             <h2 className="section-title">{t("events.detail.sharing")}</h2>
                             <p className="section-description">
@@ -690,6 +691,8 @@ export default async function EventDetailPage({
                               />
                             </div>
                           </article>
+                          ) : null}
+                          {canManageEvent && event.status === "approved" ? (
                           <article className="section-card section-card-padded">
                             <h2 className="section-title">{t("events.detail.management")}</h2>
                             <p className="section-description">{t("events.detail.staffTools")}</p>
@@ -707,6 +710,7 @@ export default async function EventDetailPage({
                               </ConfirmSubmitButton>
                             </form>
                           </article>
+                          ) : null}
                         </div>
                       ),
                       id: "manage",
@@ -856,6 +860,10 @@ function PrimaryActionPanel({
   userSchoolId: string;
 }) {
   if (isStaff && isOwnSchoolEvent) {
+    if (event.status !== "approved") {
+      return null;
+    }
+
     return (
       <Link
         className="btn btn-primary min-h-10 w-full px-3"
@@ -1165,6 +1173,7 @@ function canCurrentStudentRegister(
   return (
     Boolean(currentStudent) &&
     event.status === "approved" &&
+    new Date(event.starts_at).getTime() >= Date.now() &&
     (event.school_id === userSchoolId ||
       event.allow_connected_school_registration)
   );

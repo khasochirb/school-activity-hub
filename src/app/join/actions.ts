@@ -7,6 +7,7 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { logServerError } from "@/lib/errors/server-error";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -114,10 +115,9 @@ export async function redeemInviteCode(
     });
 
   if (createUserError || !createdUser.user) {
+    logServerError("Join account creation failed", createUserError);
     return {
-      message:
-        createUserError?.message ??
-        t("auth.join.errors.accountCreateFailed"),
+      message: t("auth.join.errors.accountCreateFailed"),
       success: false,
     };
   }
@@ -158,10 +158,9 @@ export async function redeemInviteCode(
 
   if (linkError || !linkedStudent) {
     await cleanupCreatedStudentAccount(userId, invite.school_id);
+    logServerError("Join roster link failed", linkError);
     return {
-      message:
-        linkError?.message ??
-        t("auth.join.errors.rosterClaimed"),
+      message: t("auth.join.errors.rosterClaimed"),
       success: false,
     };
   }
@@ -186,10 +185,9 @@ export async function redeemInviteCode(
 
   if (redeemError || !redeemedInvite) {
     await cleanupCreatedStudentAccount(userId, invite.school_id);
+    logServerError("Join invite redeem failed", redeemError);
     return {
-      message:
-        redeemError?.message ??
-        t("auth.join.errors.inviteUsedDuringSignup"),
+      message: t("auth.join.errors.inviteUsedDuringSignup"),
       success: false,
     };
   }

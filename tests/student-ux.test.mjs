@@ -18,11 +18,13 @@ function functionBody(source, name) {
   return source.slice(start, ends.length ? Math.min(...ends) : undefined);
 }
 
-test("only students get the phone tab bar, with four tabs", () => {
+test("signed-in users get the phone tab bar, with four tabs", () => {
   const shell = read("src/app/(admin)/_components/app-shell.tsx");
   const tabBar = read("src/app/(admin)/_components/student-tab-bar.tsx");
 
-  assert.match(shell, /profile\?\.role === "student" \? \(\s*<StudentTabBar/);
+  assert.match(shell, /\{profile \? \(\s*<StudentTabBar/);
+  // Staff get Students where students get Portfolio.
+  assert.match(shell, /: \{ href: "\/students", label: t\("nav\.students"\) \}/);
   for (const href of ["/dashboard", "/events", "/clubs", "/portfolio"]) {
     assert.match(shell, new RegExp(`href: "${href}", label: t\\("nav\\.tabs\\.`));
   }

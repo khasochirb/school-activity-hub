@@ -32,6 +32,8 @@ import {
   matchClubsToInterests,
   type ClubsForInterests,
 } from "@/lib/students/student-journey";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   archiveClub,
@@ -196,6 +198,21 @@ export default async function ClubsPage({
     : { data: [] };
 
   const isStudent = profile.role === "student";
+  const memberCountByClub = new Map<string, number>();
+  if (clubIds.length) {
+    const { data: memberRows } = await timeServer("clubs.query.member-counts", () =>
+      createAdminClient()
+        .from("club_memberships")
+        .select("club_id")
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .in("club_id", clubIds)
+        .returns<Array<{ club_id: string }>>(),
+    );
+    for (const row of memberRows ?? []) {
+      memberCountByClub.set(row.club_id, (memberCountByClub.get(row.club_id) ?? 0) + 1);
+    }
+  }
   const hasActiveFilters = Boolean(searchQuery || selectedCategory || page > 1);
   const [studentInterests, schoolClubsResult] = isStudent
     ? await Promise.all([
@@ -248,10 +265,7 @@ export default async function ClubsPage({
     label: categoryLabel(category, t),
     value: category,
   }));
-  const [nextEventByClub, memberCountByClub] = await Promise.all([
-    getNextEventByClub(supabase, profile.school_id, clubIds),
-    getMemberCounts(supabase, clubIds),
-  ]);
+  const nextEventByClub = await getNextEventByClub(supabase, profile.school_id, clubIds);
 
   return (
     <div className="cl-page">
@@ -400,7 +414,6 @@ export default async function ClubsPage({
                   ? `/clubs/${club.id}/media/${kind}?v=${encodeURIComponent(details?.updated_at ?? "")}`
                   : null;
               const next = nextEventByClub.get(club.id);
-              const members = memberCountByClub.get(club.id);
 
               return (
                 <article className="cl-card cl-club" key={club.id}>
@@ -418,12 +431,16 @@ export default async function ClubsPage({
                       initials=""
                     />
                     <span className="cl-club-logo">
-                      <ClubAvatar
-                        category={club.category}
-                        logoUrl={media("logo")}
-                        name={club.name}
-                        size={40}
-                      />
+                      {media("logo") ? (
+                        <ClubAvatar
+                          category={club.category}
+                          logoUrl={media("logo")}
+                          name={club.name}
+                          size={40}
+                        />
+                      ) : (
+                        <ClubTile category={club.category} name={club.name} />
+                      )}
                     </span>
                   </Link>
                   <div className="cl-club-body">
@@ -463,11 +480,9 @@ export default async function ClubsPage({
                         {t("studentProfile.clubFacts.when")}: <b>{details.meeting_schedule}</b>
                       </p>
                     ) : null}
-                    {members !== undefined ? (
-                      <p className="cl-club-meta">
-                        {tf("clubs.profile.membership.memberCountValue", { count: members })}
-                      </p>
-                    ) : null}
+                    <p className="cl-club-meta">
+                      {tf("news.members", { count: memberCountByClub.get(club.id) ?? 0 })}
+                    </p>
                     <div className="cl-club-foot">
                       {isJoined ? (
                         <span className="cl-tag" data-tone="ok">
@@ -603,6 +618,18 @@ export default async function ClubsPage({
         ) : null}
       </section>
     </div>
+  );
+}
+
+function ClubTile({ category, name }: { category: string | null; name: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="club-tile grid h-14 w-14 shrink-0 place-items-center rounded-2xl border text-xl font-bold"
+      data-category-tone={getActivityCategoryTone(category)}
+    >
+      {Array.from(name.trim())[0]?.toUpperCase() ?? "?"}
+    </span>
   );
 }
 
@@ -905,30 +932,6 @@ async function getNextEventByClub(
   }
 
   return next;
-}
-
-// Member counts through the same checked function the club page uses, so
-// students see real numbers without reading other students' memberships.
-async function getMemberCounts(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  clubIds: string[],
-) {
-  const counts = new Map<string, number>();
-  const results = await timeServer("clubs.query.member-counts", () =>
-    Promise.all(
-      clubIds.map((clubId) =>
-        supabase.rpc("get_club_member_count", { target_club_id: clubId }),
-      ),
-    ),
-  );
-
-  results.forEach((result, index) => {
-    if (!result.error && result.data !== null) {
-      counts.set(clubIds[index], Number(result.data));
-    }
-  });
-
-  return counts;
 }
 
 function clubShareText(

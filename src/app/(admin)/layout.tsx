@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getCurrentPlatformAdminIdentity } from "@/lib/auth/platform-admin";
+import { getCurrentPlatformAdminProfile } from "@/lib/auth/platform-admin";
 import { getCurrentSafeguardingAccess } from "@/lib/auth/sensitive-workflows";
 import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
@@ -38,9 +38,11 @@ export default async function AdminLayout({
         .from("profiles")
         .select("role, school_id, full_name, schools(name, timezone)")
         .eq("id", user.id)
+        // A deactivated account gets no role menu: every link would dead-end.
+        .eq("status", "active")
         .maybeSingle<AppShellProfile>(),
     ),
-    getCurrentPlatformAdminIdentity(),
+    getCurrentPlatformAdminProfile(),
     getCurrentSafeguardingAccess(),
   ]);
 
