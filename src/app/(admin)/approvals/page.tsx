@@ -28,14 +28,10 @@ import { getSearchParam, matchesSearch } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  CategoryBadge,
-  DetailsDisclosure,
-  EmptyState,
-  FilterPanel,
   NoResultsState,
-  PageHeader,
-  SearchField,
 } from "../_components/page-ui";
+import Link from "next/link";
+import { CategoryLabel, Cover, initialsOf, PageHead } from "../_components/clean-ui";
 import { approveEvent, rejectEvent } from "./actions";
 
 type PendingEvent = {
@@ -88,6 +84,7 @@ type Translate = (key: string) => string;
 
 type ApprovalsSearchParams = {
   q?: string | string[];
+  selected?: string | string[];
 };
 
 export default async function ApprovalsPage({
@@ -190,123 +187,116 @@ export default async function ApprovalsPage({
     matchesSearch(searchQuery, [event.title, event.location, event.category]),
   );
 
+  const selectedId = getSearchParam(params.selected);
+  const selected =
+    filteredEvents.find((event) => event.id === selectedId) ?? filteredEvents[0] ?? null;
+  const hrefFor = (eventId: string) =>
+    `/approvals?selected=${eventId}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ""}`;
+
   return (
-    <div className="page-stack">
-      <PageHeader
-        description={t("approvals.description")}
+    <div className="cl-page">
+      <PageHead
+        subtitle={tf("approvals.list.subtitle", { count: pendingQueue.length })}
         title={t("approvals.title")}
       />
 
-      <FilterPanel
-        action="/approvals"
-        clearHref="/approvals"
-        clearLabel={t("filters.clear")}
-        resultCountLabel={tf("filters.showingResults", {
-          count: filteredEvents.length,
-        })}
-        submitLabel={t("filters.filter")}
-      >
-        <SearchField
-          defaultValue={searchQuery}
-          label={t("filters.search")}
-          placeholder={t("filters.searchEvents")}
-        />
-      </FilterPanel>
-
-      <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">{t("approvals.pending.title")}</h2>
+      {pendingQueue.length > 4 || searchQuery ? (
+        <div className="cl-filters">
+          <form action="/approvals" className="cl-search cl-search-wide" role="search">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <span className="sr-only">{t("filters.search")}</span>
+            <input defaultValue={searchQuery} name="q" placeholder={t("filters.searchEvents")} type="search" />
+          </form>
         </div>
-        {eventsError ? (
-          <div className="p-4">
-            <div className="error-box" role="alert">
-              {tf("approvals.errors.loadFailed", {
-                error: t("common.somethingWentWrong"),
-              })}
-            </div>
-          </div>
-        ) : pendingQueue.length && filteredEvents.length ? (
-          <div className="grid gap-3 p-3">
+      ) : null}
+
+      {eventsError ? (
+        <div className="error-box" role="alert">
+          {tf("approvals.errors.loadFailed", {
+            error: t("common.somethingWentWrong"),
+          })}
+        </div>
+      ) : selected ? (
+        <div className="cl-inbox">
+          <nav aria-label={t("approvals.pending.title")} className="cl-card cl-rows self-start overflow-hidden">
             {filteredEvents.map((event) => (
-              <article
-                className="rounded-lg border border-zinc-200 p-4"
+              <Link
+                aria-current={event.id === selected.id ? "page" : undefined}
+                className="cl-row cl-inbox-row"
+                href={hrefFor(event.id)}
                 key={event.id}
+                prefetch={false}
+                scroll={false}
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-zinc-950">
-                      {event.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-zinc-600">
-                      {formatDateTime(event.starts_at, locale)} -{" "}
-                      {formatTime(event.ends_at, locale)}
-                    </p>
-                  </div>
-                  <form action={approveEvent}>
-                    <input name="event_id" type="hidden" value={event.id} />
-                    <PendingSubmitButton
-                      className="btn btn-soft min-h-9 px-3"
-                      pendingLabel={t("approvals.actions.approving")}
-                      toastMessage={t("approvals.actions.approving")}
-                    >
-                      {t("approvals.actions.approve")}
-                    </PendingSubmitButton>
-                  </form>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge>{t("status.pendingApproval")}</Badge>
-                  <EventCompletenessBadge
-                    labels={completenessLabels}
-                    result={getApprovalEventCompleteness(event)}
-                  />
-                  {actor.isPlatformAdmin ? (
-                    <Badge>
-                      {schoolNameById.get(event.school_id) ??
-                        t("events.platform.school")}
-                    </Badge>
-                  ) : null}
-                  {event.category ? (
-                    <CategoryBadge category={event.category}>
-                      {categoryLabel(event.category, t)}
-                    </CategoryBadge>
-                  ) : null}
-                  {event.club_id ? (
-                    <Badge>
-                      {clubNameById.get(event.club_id) ??
-                        t("approvals.fallback.clubEvent")}
-                    </Badge>
-                  ) : null}
-                  <Badge variant={riskBadgeVariant(event.risk_level)}>
-                    {riskLabel(event.risk_level, t)}
-                  </Badge>
-                  {event.permission_required ? (
-                    <Badge variant="warning">
-                      {t("events.permission.required")}
-                    </Badge>
-                  ) : null}
-                  {event.experience_level ? (
-                    <Badge>{experienceLevelLabel(event.experience_level, t)}</Badge>
-                  ) : null}
-                  <Badge>
-                    {formatEventCost(
-                      {
-                        costAmount: event.cost_amount,
-                        costCurrency: event.cost_currency,
-                        costType: event.cost_type,
-                      },
-                      locale,
-                      {
-                        free: t("events.practicalDetails.free"),
-                        notSpecified: t(
-                          "events.practicalDetails.costNotSpecified",
-                        ),
-                        variable: t("events.practicalDetails.variableCost"),
-                      },
-                    )}
-                  </Badge>
-                </div>
-                <DetailsDisclosure label={t("common.viewDetails")}>
-                  <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <span className="cl-grow">
+                  <span className="cl-row-title">{event.title}</span>
+                  <span className="cl-row-sub">
+                    {(event.club_id && clubNameById.get(event.club_id)) ||
+                      (actor.isPlatformAdmin ? schoolNameById.get(event.school_id) : null) ||
+                      t("approvals.fallback.clubEvent")}{" "}
+                    · {formatDate(event.starts_at, locale)}
+                  </span>
+                </span>
+                <CategoryLabel
+                  category={event.category}
+                  label={event.category ? categoryLabel(event.category, t) : null}
+                />
+              </Link>
+            ))}
+          </nav>
+
+          <article className="cl-card cl-panel cl-approval">
+            <div className="flex items-center gap-4">
+              <Cover
+                category={selected.category}
+                className="cl-approval-cover"
+                imageUrl={null}
+                initials={initialsOf(
+                  (selected.club_id && clubNameById.get(selected.club_id)) || selected.title,
+                )}
+              />
+              <div className="min-w-0">
+                <CategoryLabel
+                  category={selected.category}
+                  label={selected.category ? categoryLabel(selected.category, t) : null}
+                />
+                <h2 className="mt-1 text-[22px] font-bold leading-tight text-[var(--foreground)]">
+                  {selected.title}
+                </h2>
+                <p className="text-sm text-[var(--muted)]">
+                  {formatDateTime(selected.starts_at, locale)} – {formatTime(selected.ends_at, locale)}
+                  {selected.location ? ` · ${selected.location}` : ""}
+                </p>
+              </div>
+            </div>
+            <EventCompletenessBadge
+              labels={completenessLabels}
+              result={getApprovalEventCompleteness(selected)}
+            />
+            {[selected].map((event) => (
+              <div className="cl-approval-details" key={event.id}>
+                <dl className="cl-kv">
+                    <div>
+                      <dt className="text-zinc-500">{t("events.practicalDetails.cost")}</dt>
+                      <dd className="text-zinc-800">
+                        {formatEventCost(
+                          {
+                            costAmount: event.cost_amount,
+                            costCurrency: event.cost_currency,
+                            costType: event.cost_type,
+                          },
+                          locale,
+                          {
+                            free: t("events.practicalDetails.free"),
+                            notSpecified: t("events.practicalDetails.costNotSpecified"),
+                            variable: t("events.practicalDetails.variableCost"),
+                          },
+                        )}
+                      </dd>
+                    </div>
                     <div>
                       <dt className="text-zinc-500">
                         {t("approvals.event.location")}
@@ -442,10 +432,27 @@ export default async function ApprovalsPage({
                       {event.description}
                     </p>
                   ) : null}
-                </DetailsDisclosure>
+                
+              </div>
+            ))}
+            <div className="flex flex-wrap items-start gap-2">
+              <form action={approveEvent}>
+                <input name="event_id" type="hidden" value={selected.id} />
+                <PendingSubmitButton
+                  className="btn btn-primary min-h-11 px-5"
+                  pendingLabel={t("approvals.actions.approving")}
+                  toastMessage={t("approvals.actions.approving")}
+                >
+                  {t("approvals.actions.approve")}
+                </PendingSubmitButton>
+              </form>
+              <details className="cl-decline">
+                <summary className="btn btn-quiet min-h-11">
+                  {t("approvals.actions.reject")}…
+                </summary>
                 <form action={rejectEvent} className="mt-3 flex max-w-xl flex-col gap-3">
-                  <input name="event_id" type="hidden" value={event.id} />
-                  <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800">
+                  <input name="event_id" type="hidden" value={selected.id} />
+                  <label className="flex flex-col gap-2 text-sm font-medium text-[var(--foreground)]">
                     {t("approvals.reject.reasonLabel")}
                     <textarea
                       className="min-h-20 rounded-md border border-zinc-300 px-3 py-2 text-base outline-none transition focus:border-zinc-900"
@@ -460,59 +467,25 @@ export default async function ApprovalsPage({
                     {t("approvals.actions.reject")}
                   </PendingSubmitButton>
                 </form>
-              </article>
-            ))}
-          </div>
-        ) : pendingQueue.length && searchQuery ? (
-          <div className="p-4">
-            <NoResultsState
-              clearHref="/approvals"
-              clearLabel={t("filters.clear")}
-              description={t("filters.noResultsDescription")}
-              title={t("filters.noResults")}
-            />
-          </div>
-        ) : (
-          <div className="p-4">
-            <EmptyState
-              description={t("approvals.empty.description")}
-              title={t("approvals.empty.title")}
-            />
-          </div>
-        )}
-      </section>
+              </details>
+            </div>
+          </article>
+        </div>
+      ) : pendingQueue.length && searchQuery ? (
+        <NoResultsState
+          clearHref="/approvals"
+          clearLabel={t("filters.clear")}
+          description={t("filters.noResultsDescription")}
+          title={t("filters.noResults")}
+        />
+      ) : (
+        <div className="cl-card cl-empty">
+          <b className="block text-[var(--foreground)]">{t("approvals.empty.title")}</b>
+          <p className="mt-1">{t("approvals.empty.description")}</p>
+        </div>
+      )}
     </div>
   );
-}
-
-function Badge({
-  children,
-  variant = "default",
-}: {
-  children: React.ReactNode;
-  variant?: "danger" | "default" | "warning";
-}) {
-  return (
-    <span
-      className={
-        variant === "danger"
-          ? "rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700"
-          : variant === "warning"
-            ? "rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800"
-            : "rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
-      }
-    >
-      {children}
-    </span>
-  );
-}
-
-function riskBadgeVariant(riskLevel: PendingEvent["risk_level"]) {
-  return riskLevel === "high"
-    ? "danger"
-    : riskLevel === "medium"
-      ? "warning"
-      : "default";
 }
 
 function getApprovalEventCompleteness(event: PendingEvent) {

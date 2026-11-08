@@ -19,15 +19,13 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CollapsibleFormSection,
   EmptyState,
-  DetailsDisclosure,
-  FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
   PaginationControls,
-  PageHeader,
-  SelectFilter,
-  StatusBadge,
 } from "../_components/page-ui";
+import Link from "next/link";
+import { ActionMenu } from "../_components/action-menu";
+import { PageHead, Widget } from "../_components/clean-ui";
 import { revokeInviteCode } from "./actions";
 import { BulkGenerateInviteForm } from "./bulk-generate-invite-form";
 import { GenerateInviteForm } from "./generate-invite-form";
@@ -148,24 +146,46 @@ export default async function InviteCodesPage({
     INVITE_CODES_PAGE_SIZE,
   );
   const filteredInviteCodes = inviteHistory;
+  const activeRoster = activeStudents ?? [];
+  const waitingStudents = activeRoster.filter((student) => !student.profile_id);
+  const joinedCount = activeRoster.length - waitingStudents.length;
+  const joinedPercent = activeRoster.length
+    ? Math.round((joinedCount / activeRoster.length) * 100)
+    : 0;
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
-          <>
-            <FormSectionToggleButton targetId="generate-invite">
-              {t("invites.actions.generate")}
-            </FormSectionToggleButton>
-            <FormSectionToggleButton targetId="bulk-generate" variant="secondary">
-              {t("invites.actions.bulkGenerateShort")}
-            </FormSectionToggleButton>
-          </>
+    <div className="cl-page">
+      <PageHead
+        action={
+          <ActionMenu
+            buttonClassName="btn btn-primary min-h-11 gap-1.5"
+            buttonLabel={<>+ {t("invites.list.generate")}</>}
+            items={[
+              { href: "#generate-invite", label: t("invites.actions.generate") },
+              { href: "#bulk-generate", label: t("invites.actions.bulkGenerateShort") },
+            ]}
+            label={t("invites.list.generate")}
+          />
         }
-        description={t("invites.description")}
-        eyebrow={t("invites.eyebrow")}
+        subtitle={tf("invites.list.subtitle", {
+          joined: joinedCount,
+          total: activeRoster.length,
+          waiting: waitingStudents.length,
+        })}
         title={t("invites.title")}
       />
+
+      {waitingStudents.length ? (
+        <div className="cl-card cl-invite-banner">
+          <div className="min-w-0">
+            <b>{tf("invites.list.waitingTitle", { count: waitingStudents.length })}</b>
+            <p>{t("invites.list.waitingHelp")}</p>
+          </div>
+          <Link className="cl-btn-soft min-h-11" href="#bulk-generate" prefetch={false}>
+            {t("invites.actions.bulkGenerateShort")}
+          </Link>
+        </div>
+      ) : null}
 
       <CollapsibleFormSection
         description={t("invites.single.description")}
@@ -239,176 +259,92 @@ export default async function InviteCodesPage({
         />
       </CollapsibleFormSection>
 
-      <FilterPanel
-        action="/invite-codes"
-        clearHref="/invite-codes"
-        clearLabel={t("filters.clear")}
-        resultCountLabel={tf("filters.showingResults", {
-          count: filteredInviteCodes.length,
-        })}
-        submitLabel={t("filters.filter")}
-      >
-        <SelectFilter
-          defaultValue={selectedStatus}
-          label={t("filters.status")}
-          name="status"
-          options={[
-            { label: t("filters.all"), value: "" },
-            { label: t("status.active"), value: "active" },
-            { label: t("status.redeemed"), value: "redeemed" },
-            { label: t("status.revoked"), value: "revoked" },
-            { label: t("filters.expired"), value: "expired" },
-          ]}
-        />
-      </FilterPanel>
+      <nav aria-label={t("filters.status")} className="cl-filters">
+        {([
+          ["", t("filters.all")],
+          ["active", t("status.active")],
+          ["redeemed", t("status.redeemed")],
+          ["revoked", t("status.revoked")],
+          ["expired", t("filters.expired")],
+        ] as const).map(([value, label]) => (
+          <Link
+            aria-current={selectedStatus === value ? "page" : undefined}
+            className="cl-chip"
+            href={inviteCodesPageHref(1, value)}
+            key={value || "all"}
+            prefetch={false}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
 
-      <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">
-            {t("invites.history.title")}
-          </h2>
-          {invitesError ? (
-            <p className="mt-2 text-sm text-red-600">
-              {tf("invites.errors.codesLoadFailed", {
-                error: t("common.somethingWentWrong"),
-              })}
-            </p>
-          ) : null}
-        </div>
+      <div className="cl-split">
+      <div className="cl-main">
+
+      <section className="cl-sec">
+        <header>
+          <h2>{t("invites.history.title")}</h2>
+        </header>
+        {invitesError ? (
+          <p className="notice-box notice-warning">
+            {tf("invites.errors.codesLoadFailed", {
+              error: t("common.somethingWentWrong"),
+            })}
+          </p>
+        ) : null}
         {inviteHistory.length && filteredInviteCodes.length ? (
-          <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">
-                      {t("invites.table.student")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("invites.table.status")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("invites.table.created")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("invites.table.expires")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("invites.table.redeemed")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("invites.table.actions")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200">
-                  {filteredInviteCodes.map((invite) => (
-                    <tr key={invite.id}>
-                      <td className="px-4 py-3 font-medium text-zinc-950">
-                        {studentName(
-                          studentMap.get(invite.student_roster_id ?? ""),
-                          t,
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={inviteDisplayStatus(invite, now)}>
-                          {statusLabel(inviteDisplayStatus(invite, now), t)}
-                        </StatusBadge>
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(invite.created_at, locale)}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(invite.expires_at, locale)}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {invite.redeemed_at
-                          ? formatDate(invite.redeemed_at, locale)
-                          : "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <RevokeForm
-                          invite={invite}
-                          labels={{
-                            alreadyUsedOrInactive: t(
-                              "invites.actions.alreadyUsedOrInactive",
-                            ),
-                            cancel: t("common.cancel"),
-                            confirm: t("feedback.confirm"),
-                            confirmDescription: t("feedback.cannotBeUndone"),
-                            confirmRevoke: t("feedback.revokeInviteCode"),
-                            revoke: t("invites.actions.revoke"),
-                            revoking: t("invites.actions.revoking"),
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="divide-y divide-zinc-200 md:hidden">
-              {filteredInviteCodes.map((invite) => (
-                <article className="p-4" key={invite.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-medium text-zinc-950">
-                        {studentName(
-                          studentMap.get(invite.student_roster_id ?? ""),
-                          t,
-                        )}
-                      </h3>
-                      <p className="mt-1 text-sm text-zinc-600">
-                        {t("invites.table.created")}{" "}
-                        {formatDate(invite.created_at, locale)}
-                      </p>
-                    </div>
-                    <StatusBadge status={inviteDisplayStatus(invite, now)}>
-                      {statusLabel(inviteDisplayStatus(invite, now), t)}
-                    </StatusBadge>
-                  </div>
-                  <DetailsDisclosure label={t("common.viewDetails")}>
-                    <dl className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("invites.table.expires")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          {formatDate(invite.expires_at, locale)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("invites.table.redeemed")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          {invite.redeemed_at
-                            ? formatDate(invite.redeemed_at, locale)
-                            : "-"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </DetailsDisclosure>
-                  <div className="mt-4">
-                    <RevokeForm
-                      invite={invite}
-                      labels={{
-                        alreadyUsedOrInactive: t(
-                          "invites.actions.alreadyUsedOrInactive",
-                        ),
-                        cancel: t("common.cancel"),
-                        confirm: t("feedback.confirm"),
-                        confirmDescription: t("feedback.cannotBeUndone"),
-                        confirmRevoke: t("feedback.revokeInviteCode"),
-                        revoke: t("invites.actions.revoke"),
-                        revoking: t("invites.actions.revoking"),
-                      }}
-                    />
-                  </div>
-                </article>
-              ))}
-            </div>
-          </>
+          <div className="cl-card cl-rows">
+            {filteredInviteCodes.map((invite) => {
+              const student = studentMap.get(invite.student_roster_id ?? "");
+              const name = studentName(student, t);
+              const status = inviteDisplayStatus(invite, now);
+
+              return (
+                <div className="cl-row" key={invite.id}>
+                  <span aria-hidden="true" className="cl-av">
+                    {student ? (student.first_name[0] ?? "") + (student.last_name[0] ?? "") : "?"}
+                  </span>
+                  <span className="cl-grow">
+                    <span className="cl-row-title">{name}</span>
+                    <span className="cl-row-sub">
+                      {[student?.grade_level ? `${t("students.table.grade")} ${student.grade_level}` : null, student?.homeroom]
+                        .filter(Boolean)
+                        .join(" · ") || "-"}
+                    </span>
+                  </span>
+                  <span className="cl-row-cols flex-col items-end gap-0 text-right">
+                    <span>
+                      {invite.redeemed_at
+                        ? tf("invites.list.redeemedOn", { date: formatDate(invite.redeemed_at, locale) })
+                        : tf("invites.list.expiresOn", { date: formatDate(invite.expires_at, locale) })}
+                    </span>
+                    <span className="text-[12px]">
+                      {tf("invites.list.createdOn", { date: formatDate(invite.created_at, locale) })}
+                    </span>
+                  </span>
+                  <span
+                    className="cl-tag"
+                    data-tone={status === "active" ? "blue" : status === "redeemed" ? "ok" : status === "revoked" ? "warn" : undefined}
+                  >
+                    {statusLabel(status, t)}
+                  </span>
+                  <RevokeForm
+                    invite={invite}
+                    labels={{
+                      alreadyUsedOrInactive: "",
+                      cancel: t("common.cancel"),
+                      confirm: t("feedback.confirm"),
+                      confirmDescription: t("feedback.cannotBeUndone"),
+                      confirmRevoke: t("feedback.revokeInviteCode"),
+                      revoke: t("invites.actions.revoke"),
+                      revoking: t("invites.actions.revoking"),
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         ) : inviteHistory.length && selectedStatus ? (
           <div className="p-4">
             <NoResultsState
@@ -451,6 +387,48 @@ export default async function InviteCodesPage({
           />
         ) : null}
       </section>
+      </div>
+
+      <aside className="cl-side">
+        <Widget title={t("invites.list.progress")}>
+          <div className="flex items-center gap-4">
+            <span
+              aria-hidden="true"
+              className="cl-ring"
+              style={{
+                background: `conic-gradient(var(--cl-green) ${joinedPercent * 3.6}deg, var(--card-soft) 0)`,
+              }}
+            >
+              <b>{joinedPercent}%</b>
+            </span>
+            <p className="text-[13.5px] text-[var(--muted)]">
+              {tf("invites.list.progressText", { joined: joinedCount, total: activeRoster.length })}
+            </p>
+          </div>
+        </Widget>
+        <Widget
+          link={{ href: "/students", label: t("nav.students") }}
+          title={t("students.list.notJoinedYet")}
+        >
+          {waitingStudents.length ? (
+            waitingStudents.slice(0, 5).map((student) => (
+              <div key={student.id}>
+                <b className="block text-sm">
+                  {student.first_name} {student.last_name}
+                </b>
+                <span className="text-[13px] text-[var(--muted)]">
+                  {[student.grade_level ? `${t("students.table.grade")} ${student.grade_level}` : null, student.homeroom]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-[var(--muted)]">{t("students.list.everyoneJoined")}</p>
+          )}
+        </Widget>
+      </aside>
+      </div>
     </div>
   );
 }

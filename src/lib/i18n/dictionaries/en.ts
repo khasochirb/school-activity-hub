@@ -968,6 +968,17 @@ export const en = {
     whoCanJoin: "Who can join",
   },
   invites: {
+    list: {
+      createdOn: "Created {date}",
+      expiresOn: "Expires {date}",
+      generate: "Generate codes",
+      progress: "Sign-up progress",
+      progressText: "{joined} of {total} active students have joined the app with their code.",
+      redeemedOn: "Redeemed {date}",
+      subtitle: "{joined} of {total} students joined · {waiting} still waiting",
+      waitingHelp: "Each code works once and links one student to their roster record.",
+      waitingTitle: "{count} students are still waiting to join",
+    },
     actions: {
       alreadyUsedOrInactive: "Already used or inactive",
       bulkGenerateShort: "Bulk generate",
@@ -1078,6 +1089,22 @@ export const en = {
     teacher: "Teacher",
   },
   students: {
+    list: {
+      add: "Add students",
+      byGrade: "By grade",
+      clubs: "clubs",
+      events: "events",
+      eventsEach: "events each",
+      everyoneJoined: "Everyone on the roster has joined.",
+      inAClub: "in a club",
+      inviteCode: "Invite code",
+      joinedApp: "Joined app",
+      notJoined: "Not joined yet",
+      notJoinedYet: "Haven't joined yet",
+      participation: "Participation",
+      searchPlaceholder: "Name, class or number",
+      subtitle: "{count} active on the roster",
+    },
     actions: {
       add: "Add student",
       alreadyInactive: "Already inactive",
@@ -1640,6 +1667,9 @@ export const en = {
     title: "Events",
   },
   approvals: {
+    list: {
+      subtitle: "{count} waiting for you",
+    },
     actions: {
       approve: "Approve event",
       approving: "Approving...",
@@ -1954,6 +1984,12 @@ export const en = {
     title: "Reports",
   },
   announcements: {
+    page: {
+      comingUp: "Coming up",
+      glance: "At a glance",
+      latest: "Latest notice",
+      subtitle: "School notices · {count} active",
+    },
     actions: {
       archive: "Archive notice",
       archiving: "Archiving...",

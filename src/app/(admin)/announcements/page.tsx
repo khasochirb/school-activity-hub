@@ -6,7 +6,8 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
-import { formatDateTime } from "@/lib/i18n/date-format";
+import Link from "next/link";
+import { formatCalendarDateBadge, formatDate, formatTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import {
   getPageParam,
@@ -21,17 +22,12 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CollapsibleFormSection,
   EmptyState,
-  DetailsDisclosure,
-  FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
   PaginationControls,
-  PageHeader,
-  SearchField,
-  SelectFilter,
-  StatusBadge,
 } from "../_components/page-ui";
 import { archiveAnnouncement } from "./actions";
+import { PageHead, Widget } from "../_components/clean-ui";
 import { CreateAnnouncementForm } from "./create-announcement-form";
 
 type Profile = {
@@ -128,19 +124,25 @@ export default async function AnnouncementsPage({
       matchesSearch(searchQuery, [announcement.title]),
   );
   const hasFilters = Boolean(searchQuery || (isStaff && selectedStatus));
+  const [counts, upcoming] = await Promise.all([
+    getAnnouncementCounts(supabase, profile.school_id),
+    getUpcomingEvents(supabase, profile.school_id),
+  ]);
+  const featured =
+    !hasFilters && page === 1 ? filteredAnnouncements.find((item) => item.status === "active") ?? null : null;
+  const rows = filteredAnnouncements.filter((item) => item.id !== featured?.id);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
+    <div className="cl-page">
+      <PageHead
+        action={
           isStaff ? (
             <FormSectionToggleButton targetId="create-announcement">
-              {t("announcements.actions.create")}
+              + {t("announcements.actions.create")}
             </FormSectionToggleButton>
           ) : undefined
         }
-        description={t("announcements.description")}
-        eyebrow={t("announcements.eyebrow")}
+        subtitle={tf("announcements.page.subtitle", { count: counts.active })}
         title={t("announcements.title")}
       />
 
@@ -166,91 +168,106 @@ export default async function AnnouncementsPage({
         </CollapsibleFormSection>
       ) : null}
 
-      <FilterPanel
-        action="/announcements"
-        clearHref="/announcements"
-        clearLabel={t("filters.clear")}
-        resultCountLabel={tf("filters.showingResults", {
-          count: filteredAnnouncements.length,
-        })}
-        submitLabel={t("filters.filter")}
-      >
-        <SearchField
-          defaultValue={searchQuery}
-          label={t("filters.search")}
-          placeholder={t("filters.searchAnnouncements")}
-        />
-        {isStaff ? (
-          <SelectFilter
-            defaultValue={selectedStatus}
-            label={t("filters.status")}
-            name="status"
-            options={[
-              { label: t("filters.all"), value: "" },
-              { label: t("status.active"), value: "active" },
-              { label: t("status.archived"), value: "archived" },
-            ]}
-          />
-        ) : null}
-      </FilterPanel>
+      <div className="cl-filters">
+        {isStaff
+          ? ([
+              ["active", `${t("status.active")} · ${counts.active}`],
+              ["archived", `${t("status.archived")} · ${counts.archived}`],
+              ["", t("filters.all")],
+            ] as const).map(([value, label]) => (
+              <Link
+                aria-current={selectedStatus === value ? "page" : undefined}
+                className="cl-chip"
+                href={announcementsPageHref(1, searchQuery, value)}
+                key={value || "all"}
+                prefetch={false}
+              >
+                {label}
+              </Link>
+            ))
+          : null}
+        <form action="/announcements" className="cl-search" role="search">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <span className="sr-only">{t("filters.search")}</span>
+          <input defaultValue={searchQuery} name="q" placeholder={t("filters.searchAnnouncements")} type="search" />
+          {isStaff && selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+        </form>
+      </div>
 
-      <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">
+      <div className="cl-split">
+      <div className="cl-main">
+      {featured ? (
+        <article className="cl-card cl-featured">
+          <small>
+            {t("announcements.page.latest")} · {formatDate(featured.created_at, locale)}
+          </small>
+          <h2>{featured.title}</h2>
+          <p>{featured.body}</p>
+        </article>
+      ) : null}
+
+      <section className="cl-sec">
+        <header>
+          <h2>
             {isStaff
               ? t("announcements.list.staffTitle")
               : t("announcements.list.studentTitle")}
           </h2>
-          {error ? (
-            <p className="mt-2 text-sm text-red-600">
-              {tf("announcements.errors.loadFailed", {
-                error: t("common.somethingWentWrong"),
-              })}
-            </p>
-          ) : null}
-        </div>
+        </header>
+        {error ? (
+          <p className="notice-box notice-warning">
+            {tf("announcements.errors.loadFailed", {
+              error: t("common.somethingWentWrong"),
+            })}
+          </p>
+        ) : null}
         {announcementList.length && filteredAnnouncements.length ? (
-          <div className="grid gap-3 p-3">
-            {filteredAnnouncements.map((announcement) => (
-              <article
-                className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-                key={announcement.id}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-zinc-950">
-                      {announcement.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-zinc-600">
-                      {formatDateTime(announcement.created_at, locale)}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={announcement.status}>
-                      {statusLabel(announcement.status, t)}
-                    </StatusBadge>
-                    {isStaff ? (
-                      <ArchiveForm
-                        announcement={announcement}
-                        labels={{
-                          archive: t("announcements.actions.archive"),
-                          archiving: t("announcements.actions.archiving"),
-                          cancel: t("common.cancel"),
-                          confirm: t("feedback.confirm"),
-                          confirmDescription: t("feedback.cannotBeUndone"),
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                </div>
-                <DetailsDisclosure label={t("common.viewDetails")}>
-                  <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
-                    {announcement.body}
-                  </p>
-                </DetailsDisclosure>
-              </article>
-            ))}
+          rows.length ? (
+          <div className="cl-card cl-rows">
+            {rows.map((announcement) => {
+              const tile = formatCalendarDateBadge(announcement.created_at, locale);
+
+              return (
+                <article className="cl-row items-start" key={announcement.id}>
+                  <span aria-hidden="true" className="cl-dtile">
+                    <span>{tile.month}</span>
+                    <b>{Number(tile.day)}</b>
+                  </span>
+                  <span className="cl-grow">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="cl-row-title">{announcement.title}</span>
+                      <span className="cl-tag" data-tone={announcement.status === "active" ? "ok" : undefined}>
+                        {statusLabel(announcement.status, t)}
+                      </span>
+                    </span>
+                    <details className="cl-more">
+                      <summary>
+                        <span className="cl-row-sub line-clamp-2">{announcement.body}</span>
+                        <span className="cl-more-link">{t("common.viewDetails")}</span>
+                      </summary>
+                      <p className="mt-1 whitespace-pre-line text-sm leading-6">{announcement.body}</p>
+                    </details>
+                  </span>
+                  {isStaff ? (
+                    <ArchiveForm
+                      announcement={announcement}
+                      labels={{
+                        archive: t("announcements.actions.archive"),
+                        archiving: t("announcements.actions.archiving"),
+                        cancel: t("common.cancel"),
+                        confirm: t("feedback.confirm"),
+                        confirmDescription: t("feedback.cannotBeUndone"),
+                      }}
+                    />
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
+          ) : null
         ) : announcementList.length && hasFilters ? (
           <div className="p-4">
             <NoResultsState
@@ -298,8 +315,94 @@ export default async function AnnouncementsPage({
           />
         ) : null}
       </section>
+      </div>
+
+      <aside className="cl-side">
+        <Widget title={t("announcements.page.glance")}>
+          <p className="cl-statline">
+            <span>
+              <b>{counts.active}</b>
+              {t("status.active")}
+            </span>
+            <span>
+              <b>{counts.archived}</b>
+              {t("status.archived")}
+            </span>
+          </p>
+        </Widget>
+        <Widget
+          link={{ href: "/events", label: t("dashboard.home.allEvents") }}
+          title={t("announcements.page.comingUp")}
+        >
+          {upcoming.length ? (
+            upcoming.map((event) => {
+              const tile = formatCalendarDateBadge(event.starts_at, locale);
+
+              return (
+                <Link
+                  className="flex items-center gap-3 rounded-lg py-1 hover:bg-[var(--cl-hover)]"
+                  href={`/events/${event.id}`}
+                  key={event.id}
+                  prefetch={false}
+                >
+                  <span className="w-10 flex-none text-center">
+                    <span className="block text-[11px] font-semibold uppercase text-[var(--muted)]">
+                      {tile.month}
+                    </span>
+                    <b className="block text-base leading-tight">{Number(tile.day)}</b>
+                  </span>
+                  <span className="cl-grow">
+                    <span className="cl-row-title text-sm">{event.title}</span>
+                    <span className="cl-row-sub text-[13px]">
+                      {formatTime(event.starts_at, locale)}
+                      {event.location ? ` · ${event.location}` : ""}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })
+          ) : (
+            <p className="text-sm text-[var(--muted)]">{t("dashboard.upcoming.emptyTitle")}</p>
+          )}
+        </Widget>
+      </aside>
+      </div>
     </div>
   );
+}
+
+async function getAnnouncementCounts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const [active, archived] = await Promise.all(
+    ["active", "archived"].map((status) =>
+      supabase
+        .from("announcements")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("status", status),
+    ),
+  );
+
+  return { active: active.count ?? 0, archived: archived.count ?? 0 };
+}
+
+async function getUpcomingEvents(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const { data } = await supabase
+    .from("events")
+    .select("id, title, starts_at, location")
+    .eq("school_id", schoolId)
+    .eq("status", "approved")
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(3)
+    .returns<Array<{ id: string; location: string | null; starts_at: string; title: string }>>();
+
+  return data ?? [];
 }
 
 function ArchiveForm({

@@ -996,6 +996,9 @@ export const mn = {
     title: "Үйл ажиллагаа",
   },
   approvals: {
+    list: {
+      subtitle: "{count} таныг хүлээж байна",
+    },
     actions: {
       approve: "Үйл ажиллагааг зөвшөөрөх",
       approving: "Зөвшөөрч байна...",
@@ -1311,6 +1314,12 @@ export const mn = {
     title: "Тайлангууд",
   },
   announcements: {
+    page: {
+      comingUp: "Удахгүй",
+      glance: "Товчоор",
+      latest: "Сүүлийн мэдэгдэл",
+      subtitle: "Сургуулийн мэдэгдэл · {count} идэвхтэй",
+    },
     actions: {
       archive: "Мэдэгдэл архивлах",
       archiving: "Архивлаж байна...",
@@ -2001,6 +2010,17 @@ export const mn = {
     whoCanJoin: "Хэн элсэх боломжтой",
   },
   invites: {
+    list: {
+      createdOn: "Үүсгэсэн {date}",
+      expiresOn: "Дуусах {date}",
+      generate: "Код үүсгэх",
+      progress: "Бүртгэлийн явц",
+      progressText: "{total} идэвхтэй сурагчаас {joined} нь кодоороо нэгдсэн.",
+      redeemedOn: "Ашигласан {date}",
+      subtitle: "{total} сурагчаас {joined} нэгдсэн · {waiting} хүлээгдэж байна",
+      waitingHelp: "Код бүр нэг удаа ажиллаж, нэг сурагчийг бүртгэлтэй нь холбоно.",
+      waitingTitle: "{count} сурагч нэгдэхийг хүлээж байна",
+    },
     actions: {
       alreadyUsedOrInactive: "Аль хэдийн ашиглагдсан эсвэл идэвхгүй",
       bulkGenerateShort: "Олон код үүсгэх",
@@ -2111,6 +2131,22 @@ export const mn = {
     teacher: "Багш",
   },
   students: {
+    list: {
+      add: "Сурагч нэмэх",
+      byGrade: "Ангиар",
+      clubs: "клуб",
+      events: "үйл ажиллагаа",
+      eventsEach: "нэг сурагчид ногдох үйл ажиллагаа",
+      everyoneJoined: "Жагсаалтын бүх сурагч нэгдсэн.",
+      inAClub: "клубт",
+      inviteCode: "Урилгын код",
+      joinedApp: "Нэгдсэн",
+      notJoined: "Нэгдээгүй",
+      notJoinedYet: "Хараахан нэгдээгүй",
+      participation: "Оролцоо",
+      searchPlaceholder: "Нэр, анги эсвэл дугаар",
+      subtitle: "Жагсаалтад {count} идэвхтэй сурагч",
+    },
     actions: {
       add: "Сурагч нэмэх",
       alreadyInactive: "Аль хэдийн идэвхгүй",
