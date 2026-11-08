@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { redirect } from "next/navigation";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
@@ -528,6 +529,13 @@ function StudentDashboard({
         </section>
       ) : null}
 
+      <StudentNextEventCard
+        analytics={analytics}
+        events={quickViewEvents}
+        locale={locale}
+        t={t}
+      />
+
       {quickViewEvents.length ? (
         <StudentUpcomingEvents
           description={t("dashboard.upcoming.description")}
@@ -553,6 +561,92 @@ function StudentDashboard({
       />
     </DashboardShell>
   );
+}
+
+// The student's next registered activity, first thing on the home screen. From
+// an hour before it starts until it ends, the button is the check-in itself.
+function StudentNextEventCard({
+  analytics,
+  events,
+  locale,
+  t,
+}: {
+  analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
+  events: ReturnType<typeof buildStudentQuickViewEvents>;
+  locale: Locale;
+  t: (key: string) => string;
+}) {
+  const next = events.find((event) => event.registrationStatus === "registered");
+  const raw = next
+    ? analytics.upcomingEvents.find((event) => event.id === next.id)
+    : undefined;
+
+  if (!next || !raw) {
+    return null;
+  }
+
+  const now = analytics.loadedAt;
+  const startsAt = new Date(raw.starts_at).getTime();
+  const endsAt = new Date(raw.ends_at).getTime();
+  const checkInOpen = now >= startsAt - 60 * 60 * 1000 && now <= endsAt;
+
+  return (
+    <section className="next-event-card" aria-labelledby="next-event-title">
+      {next.posterUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img alt="" className="next-event-poster" loading="lazy" src={next.posterUrl} />
+      ) : (
+        <span
+          aria-hidden="true"
+          className="next-event-date"
+          data-category-tone={getActivityCategoryTone(next.categoryValue)}
+        >
+          <span className="next-event-date-month">{next.tileMonth}</span>
+          <span className="next-event-date-day">{next.tileDay}</span>
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="next-event-eyebrow">
+          {t("events.registration.youAreRegistered")}
+          {startsAt > now ? <> · {relativeTimeLabel(startsAt - now, locale)}</> : null}
+        </p>
+        <h2 className="next-event-title" id="next-event-title">
+          {next.title}
+        </h2>
+        <p className="next-event-meta">
+          {next.dateTimeLabel}
+          {next.location ? <> · {next.location}</> : null}
+        </p>
+      </div>
+      <Link
+        className={[
+          "btn min-h-11 w-full px-4 sm:w-auto",
+          checkInOpen ? "btn-primary" : "btn-secondary",
+        ].join(" ")}
+        href={checkInOpen ? `/check-in/${next.id}` : `/events/${next.id}`}
+        prefetch={false}
+      >
+        {checkInOpen ? t("checkIn.actions.checkIn") : t("common.viewDetails")}
+      </Link>
+    </section>
+  );
+}
+
+function relativeTimeLabel(milliseconds: number, locale: Locale) {
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const minutes = Math.round(milliseconds / 60000);
+
+  if (minutes < 90) {
+    return format.format(Math.max(minutes, 1), "minute");
+  }
+
+  const hours = Math.round(minutes / 60);
+
+  if (hours < 36) {
+    return format.format(hours, "hour");
+  }
+
+  return format.format(Math.round(hours / 24), "day");
 }
 
 type StudentClubsForYou = {
@@ -1579,6 +1673,7 @@ async function getStudentAnalytics(
     return {
       activitySummary,
       currentStudent,
+      loadedAt: nowDate.getTime(),
       ...eventContext,
       joinedClubs: 0,
       recentParticipation: 0,
@@ -1607,6 +1702,7 @@ async function getStudentAnalytics(
   return {
     activitySummary,
     currentStudent,
+    loadedAt: nowDate.getTime(),
     ...eventContext,
     joinedClubs,
     recentParticipation,
