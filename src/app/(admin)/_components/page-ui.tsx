@@ -17,29 +17,26 @@ type BadgeVariant =
 export function PageHeader({
   actions,
   description,
-  eyebrow,
   title,
 }: {
   actions?: React.ReactNode;
   description?: string;
+  /** Kept for callers; the Clean design shows no label above the title. */
   eyebrow?: string;
   title: string;
 }) {
   return (
-    <section className="page-header">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          {eyebrow ? <p className="page-eyebrow">{eyebrow}</p> : null}
-          <h1 className="page-title">{title}</h1>
-          {description ? <p className="page-description">{description}</p> : null}
-        </div>
-        {actions ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-            {actions}
-          </div>
-        ) : null}
+    <div className="cl-head">
+      <div className="min-w-0">
+        <h1>{title}</h1>
+        {description ? <p>{description}</p> : null}
       </div>
-    </section>
+      {actions ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          {actions}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -197,7 +194,7 @@ export function FilterPanel({
   submitLabel: string;
 }) {
   return (
-    <section className="compact-filter-card section-card section-card-padded">
+    <section className="compact-filter-card cl-filterpanel">
       <form
         action={action}
         className="compact-filter-grid"

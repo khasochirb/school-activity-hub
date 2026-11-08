@@ -5485,3 +5485,24 @@ html[data-theme="dark"] .cl-featured small {
 .cl-approval .btn {
   width: auto;
 }
+
+/* Older pages inside the Clean frame: same rhythm as the rebuilt ones */
+.app-surface .page-stack {
+  gap: 24px;
+}
+.cl-filterpanel {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.cl-filterpanel .compact-filter-grid label > span,
+.cl-filterpanel .compact-filter-grid label {
+  color: var(--muted);
+}
+.cl-filterpanel input,
+.cl-filterpanel select {
+  border-color: var(--cl-line) !important;
+  border-radius: 12px !important;
+  background: var(--card);
+}

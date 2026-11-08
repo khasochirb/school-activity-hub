@@ -13,16 +13,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   CollapsibleFormSection,
-  EmptyState,
-  DetailsDisclosure,
-  FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
-  PageHeader,
-  SearchField,
-  SelectFilter,
 } from "../_components/page-ui";
 import { updateTeacherStatus } from "./actions";
+import Link from "next/link";
+import { PageHead, Widget } from "../_components/clean-ui";
 import { CreateTeacherForm } from "./create-teacher-form";
 
 type AdminProfile = {
@@ -112,22 +108,35 @@ export default async function StaffPage({
   });
   const hasFilters = Boolean(searchQuery || selectedRole || selectedStatus);
 
+  const teachers = staffList.filter((staff) => staff.role === "teacher");
+  const admins = staffList.filter((staff) => staff.role === "school_admin");
+  const activeCount = staffList.filter((staff) => staff.status === "active").length;
+  const chip = (overrides: { role?: string; status?: string }) => {
+    const query = new URLSearchParams();
+    const role = overrides.role ?? selectedRole;
+    const status = overrides.status ?? selectedStatus;
+    if (searchQuery) query.set("q", searchQuery);
+    if (role) query.set("role", role);
+    if (status) query.set("status", status);
+    const search = query.toString();
+    return search ? `/staff?${search}` : "/staff";
+  };
+
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
+    <div className="cl-page">
+      <PageHead
+        action={
           <FormSectionToggleButton targetId="create-teacher">
-            {t("staff.actions.createTeacher")}
+            + {t("staff.actions.createTeacher")}
           </FormSectionToggleButton>
         }
-        description={t("staff.description")}
+        subtitle={tf("staff.list.subtitle", {
+          admins: admins.length,
+          school: school?.name ?? "",
+          teachers: teachers.filter((staff) => staff.status === "active").length,
+        })}
         title={t("staff.title")}
       />
-      {school?.name ? (
-        <section className="notice-box">
-          <p className="text-sm font-medium">{school.name}</p>
-        </section>
-      ) : null}
 
       <CollapsibleFormSection
         description={t("staff.create.description")}
@@ -147,195 +156,166 @@ export default async function StaffPage({
         />
       </CollapsibleFormSection>
 
-      <FilterPanel
-        action="/staff"
-        clearHref="/staff"
-        clearLabel={t("filters.clear")}
-        resultCountLabel={tf("filters.showingResults", {
-          count: filteredStaff.length,
-        })}
-        submitLabel={t("filters.filter")}
-      >
-        <SearchField
-          defaultValue={searchQuery}
-          label={t("filters.search")}
-          placeholder={t("filters.searchStaff")}
-        />
-        <SelectFilter
-          defaultValue={selectedRole}
-          label={t("filters.role")}
-          name="role"
-          options={[
-            { label: t("filters.all"), value: "" },
-            { label: t("roles.schoolAdmin"), value: "school_admin" },
-            { label: t("roles.teacher"), value: "teacher" },
-          ]}
-        />
-        <SelectFilter
-          defaultValue={selectedStatus}
-          label={t("filters.status")}
-          name="status"
-          options={[
-            { label: t("filters.all"), value: "" },
-            { label: t("filters.active"), value: "active" },
-            { label: t("filters.inactive"), value: "inactive" },
-          ]}
-        />
-      </FilterPanel>
+      <div className="cl-filters">
+        {([
+          ["", t("staff.list.everyone")],
+          ["teacher", t("staff.list.teachers")],
+          ["school_admin", t("staff.list.admins")],
+        ] as const).map(([value, label]) => (
+          <Link
+            aria-current={selectedRole === value ? "page" : undefined}
+            className="cl-chip"
+            href={chip({ role: value })}
+            key={value || "everyone"}
+            prefetch={false}
+          >
+            {label}
+          </Link>
+        ))}
+        <span aria-hidden="true" className="cl-filters-divider" />
+        {([
+          ["active", t("filters.active")],
+          ["inactive", t("filters.inactive")],
+          ["", t("staff.list.anyStatus")],
+        ] as const).map(([value, label]) => (
+          <Link
+            aria-current={selectedStatus === value ? "page" : undefined}
+            className="cl-chip"
+            href={chip({ status: value })}
+            key={value || "any"}
+            prefetch={false}
+          >
+            {label}
+          </Link>
+        ))}
+        <form action="/staff" className="cl-search" role="search">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <span className="sr-only">{t("filters.search")}</span>
+          <input defaultValue={searchQuery} name="q" placeholder={t("filters.searchStaff")} type="search" />
+          {selectedRole ? <input name="role" type="hidden" value={selectedRole} /> : null}
+          {selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+        </form>
+      </div>
 
-      <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">{t("staff.profiles.title")}</h2>
+      <div className="cl-split">
+        <section className="cl-sec">
+          <header>
+            <h2>{t("staff.profiles.title")}</h2>
+            <span className="text-sm text-[var(--muted)]">
+              {filteredStaff.length} / {staffList.length}
+            </span>
+          </header>
           {staffError ? (
-            <p className="mt-2 text-sm text-red-600">
+            <p className="notice-box notice-warning">
               {tf("staff.errors.loadFailed", {
                 error: t("common.somethingWentWrong"),
               })}
             </p>
           ) : null}
-        </div>
-        {staffList.length && filteredStaff.length ? (
-          <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">
-                      {t("staff.table.fullName")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("staff.table.email")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("staff.table.role")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("staff.table.status")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("staff.table.created")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("staff.table.actions")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200">
-                  {filteredStaff.map((staff) => (
-                    <tr key={staff.id}>
-                      <td className="px-4 py-3 font-medium text-zinc-950">
-                        {staff.full_name}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {emailByProfileId.get(staff.id) ?? "-"}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {roleLabel(staff.role, t)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          label={statusLabel(staff.status, t)}
-                          status={staff.status}
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(staff.created_at, locale)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <TeacherStatusForm
-                          currentAdminId={profile.id}
-                          labels={{
-                            cancel: t("common.cancel"),
-                            confirm: t("feedback.confirm"),
-                            confirmDeactivate: t("feedback.deactivateStaff"),
-                            confirmDescription: t("feedback.cannotBeUndone"),
-                            confirmReactivate: t("feedback.reactivateStaff"),
-                            deactivate: t("staff.actions.deactivateTeacher"),
-                            protectedAccount: t("staff.actions.protectedAccount"),
-                            reactivate: t("staff.actions.reactivateTeacher"),
-                            saving: t("common.saving"),
-                          }}
-                          staff={staff}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="divide-y divide-zinc-200 md:hidden">
+          {staffList.length && filteredStaff.length ? (
+            <div className="cl-card cl-rows">
               {filteredStaff.map((staff) => (
-                <article className="p-4" key={staff.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-medium text-zinc-950">
-                        {staff.full_name}
-                      </h3>
-                      <p className="mt-1 break-all text-sm text-zinc-600">
-                        {emailByProfileId.get(staff.id) ??
-                          t("staff.fallback.emailUnavailable")}
-                      </p>
-                    </div>
-                    <StatusBadge
-                      label={statusLabel(staff.status, t)}
-                      status={staff.status}
-                    />
-                  </div>
-                  <DetailsDisclosure label={t("common.viewDetails")}>
-                    <dl className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <dt className="text-zinc-500">{t("staff.table.role")}</dt>
-                        <dd className="text-zinc-800">{roleLabel(staff.role, t)}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("staff.table.created")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          {formatDate(staff.created_at, locale)}
-                        </dd>
-                      </div>
-                    </dl>
-                  </DetailsDisclosure>
-                  <div className="mt-4">
-                    <TeacherStatusForm
-                      currentAdminId={profile.id}
-                      labels={{
-                        cancel: t("common.cancel"),
-                        confirm: t("feedback.confirm"),
-                        confirmDeactivate: t("feedback.deactivateStaff"),
-                        confirmDescription: t("feedback.cannotBeUndone"),
-                        confirmReactivate: t("feedback.reactivateStaff"),
-                        deactivate: t("staff.actions.deactivateTeacher"),
-                        protectedAccount: t("staff.actions.protectedAccount"),
-                        reactivate: t("staff.actions.reactivateTeacher"),
-                        saving: t("common.saving"),
-                      }}
-                      staff={staff}
-                    />
-                  </div>
-                </article>
+                <div className="cl-row" key={staff.id}>
+                  <span aria-hidden="true" className="cl-av">
+                    {staff.full_name
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((word) => word[0])
+                      .join("")
+                      .toUpperCase()}
+                  </span>
+                  <span className="cl-grow">
+                    <span className="cl-row-title">
+                      {staff.full_name}
+                      {staff.id === profile.id ? ` (${t("staff.list.you")})` : ""}
+                    </span>
+                    <span className="cl-row-sub break-all">
+                      {emailByProfileId.get(staff.id) ?? t("staff.fallback.emailUnavailable")}
+                    </span>
+                  </span>
+                  <span className="cl-row-cols">
+                    <span>{tf("staff.list.added", { date: formatDate(staff.created_at, locale) })}</span>
+                  </span>
+                  <span className="cl-tag" data-tone={staff.role === "school_admin" ? "blue" : undefined}>
+                    {roleLabel(staff.role, t)}
+                  </span>
+                  <span className="cl-tag" data-tone={staff.status === "active" ? "ok" : "warn"}>
+                    {statusLabel(staff.status, t)}
+                  </span>
+                  <TeacherStatusForm
+                            currentAdminId={profile.id}
+                            labels={{
+                              cancel: t("common.cancel"),
+                              confirm: t("feedback.confirm"),
+                              confirmDeactivate: t("feedback.deactivateStaff"),
+                              confirmDescription: t("feedback.cannotBeUndone"),
+                              confirmReactivate: t("feedback.reactivateStaff"),
+                              deactivate: t("staff.actions.deactivateTeacher"),
+                              protectedAccount: t("staff.actions.protectedAccount"),
+                              reactivate: t("staff.actions.reactivateTeacher"),
+                              saving: t("common.saving"),
+                            }}
+                            staff={staff}
+                          />
+                </div>
               ))}
             </div>
-          </>
-        ) : staffList.length && hasFilters ? (
-          <div className="p-4">
+          ) : staffList.length && hasFilters ? (
             <NoResultsState
               clearHref="/staff"
               clearLabel={t("filters.clear")}
               description={t("filters.noResultsDescription")}
               title={t("filters.noResults")}
             />
-          </div>
-        ) : (
-          <div className="p-4">
-            <EmptyState
-              description={t("staff.empty.description")}
-              title={t("staff.empty.title")}
-            />
-          </div>
-        )}
-      </section>
+          ) : (
+            <p className="cl-card cl-empty">{t("staff.empty.title")}</p>
+          )}
+          <p className="text-[13px] text-[var(--muted)]">{t("staff.list.protectedNote")}</p>
+        </section>
+
+        <aside className="cl-side">
+          <Widget title={t("staff.list.yourTeam")}>
+            <p className="cl-statline">
+              <span>
+                <b>{activeCount}</b>
+                {t("filters.active")}
+              </span>
+              <span>
+                <b>{staffList.length - activeCount}</b>
+                {t("filters.inactive")}
+              </span>
+            </p>
+            {([
+              [t("staff.list.teachers"), teachers.length, "var(--primary)"],
+              [t("staff.list.admins"), admins.length, "var(--cl-sun)"],
+              [t("filters.inactive"), staffList.length - activeCount, "var(--cl-faint)"],
+            ] as const).map(([label, count, color]) => (
+              <div className="cl-goal" key={label}>
+                <div>
+                  <span>{label}</span>
+                  <b>{count}</b>
+                </div>
+                <div className="cl-bar" style={{ "--c": color } as React.CSSProperties}>
+                  <i style={{ width: `${staffList.length ? (count / staffList.length) * 100 : 0}%` }} />
+                </div>
+              </div>
+            ))}
+          </Widget>
+          <Widget title={t("staff.list.recentlyAdded")}>
+            {staffList.slice(0, 3).map((staff) => (
+              <div key={staff.id}>
+                <b className="block text-sm">{staff.full_name}</b>
+                <span className="text-[13px] text-[var(--muted)]">
+                  {roleLabel(staff.role, t)} · {formatDate(staff.created_at, locale)}
+                </span>
+              </div>
+            ))}
+          </Widget>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -397,19 +377,6 @@ function TeacherStatusForm({
         {nextStatus === "inactive" ? labels.deactivate : labels.reactivate}
       </ConfirmSubmitButton>
     </form>
-  );
-}
-
-function StatusBadge({ label, status }: { label: string; status: string }) {
-  const color =
-    status === "active"
-      ? "bg-emerald-50 text-emerald-700"
-      : "bg-zinc-100 text-zinc-700";
-
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>
-      {label}
-    </span>
   );
 }
 

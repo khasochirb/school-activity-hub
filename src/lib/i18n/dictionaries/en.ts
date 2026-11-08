@@ -2076,6 +2076,18 @@ export const en = {
     title: "Profile",
   },
   staff: {
+    list: {
+      added: "Added {date}",
+      admins: "School admins",
+      anyStatus: "Any status",
+      everyone: "Everyone",
+      protectedNote: "Your own account and other school admins can't be deactivated here. The platform team manages school admins.",
+      recentlyAdded: "Recently added",
+      subtitle: "{school} · {teachers} active teachers · {admins} school admins",
+      teachers: "Teachers",
+      you: "you",
+      yourTeam: "Your team",
+    },
     actions: {
       createTeacher: "Create teacher",
       creating: "Creating...",

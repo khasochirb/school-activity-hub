@@ -1406,6 +1406,18 @@ export const mn = {
     title: "Хувийн мэдээлэл",
   },
   staff: {
+    list: {
+      added: "Нэмсэн {date}",
+      admins: "Сургуулийн админ",
+      anyStatus: "Бүх төлөв",
+      everyone: "Бүгд",
+      protectedNote: "Өөрийн болон бусад сургуулийн админы бүртгэлийг энд идэвхгүй болгох боломжгүй. Сургуулийн админыг платформын баг удирдана.",
+      recentlyAdded: "Саяхан нэмэгдсэн",
+      subtitle: "{school} · {teachers} идэвхтэй багш · {admins} сургуулийн админ",
+      teachers: "Багш нар",
+      you: "та",
+      yourTeam: "Таны баг",
+    },
     actions: {
       createTeacher: "Багш үүсгэх",
       creating: "Үүсгэж байна...",
