@@ -211,6 +211,17 @@ export default async function ClubsPage({
       memberCountByClub.set(row.club_id, (memberCountByClub.get(row.club_id) ?? 0) + 1);
     }
   }
+  // Classmates from the student's own class, first name and initial only.
+  // Empty until the database function exists, so the page works before the migration.
+  const classmatesByClub = new Map<string, string[]>();
+  if (isStudent && currentStudent && clubIds.length) {
+    const { data: classmateRows } = await timeServer("clubs.query.classmates", () =>
+      supabase.rpc("get_club_classmates", { target_club_ids: clubIds }),
+    );
+    for (const row of (classmateRows ?? []) as Array<{ club_id: string; display_name: string }>) {
+      classmatesByClub.set(row.club_id, [...(classmatesByClub.get(row.club_id) ?? []), row.display_name]);
+    }
+  }
   const hasActiveFilters = Boolean(searchQuery || selectedCategory || page > 1);
   const [studentInterests, schoolClubsResult] = isStudent
     ? await Promise.all([
@@ -459,6 +470,13 @@ export default async function ClubsPage({
                         category={club.category}
                         label={club.category ? categoryLabel(club.category, t) : null}
                       />
+                      {isStudent && classmatesByClub.get(club.id)?.length ? (
+                        <p className="mt-1 text-sm font-semibold text-[var(--primary-strong)]">
+                          {tf("clubs.classmates.fromYourClass", {
+                            names: classmatesLine(classmatesByClub.get(club.id) ?? []),
+                          })}
+                        </p>
+                      ) : null}
                     </div>
                     {isStaff && club.status !== "active" ? (
                       <span className="cl-tag" data-tone="warn">
@@ -618,6 +636,12 @@ export default async function ClubsPage({
       </section>
     </div>
   );
+}
+
+function classmatesLine(names: string[]) {
+  const shown = names.slice(0, 3).join(", ");
+
+  return names.length > 3 ? `${shown} +${names.length - 3}` : shown;
 }
 
 function ClubTile({ category, name }: { category: string | null; name: string }) {

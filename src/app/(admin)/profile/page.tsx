@@ -11,6 +11,8 @@ import {
   type StudentProfileData,
 } from "@/lib/students/student-profile-data";
 import { createClient } from "@/lib/supabase/server";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { setShowNameToClassmates } from "./actions";
 import { ProfileForm } from "./profile-form";
 import { PageHead, Section, Widget } from "../_components/clean-ui";
 import { StudentProfile, StudentProfileHero } from "./student-profile";
@@ -34,6 +36,7 @@ type StudentRoster = {
   preferred_name: string | null;
   grade_level: string | null;
   homeroom: string | null;
+  show_name_to_classmates?: boolean | null;
   student_number: string | null;
   status: string;
 };
@@ -74,7 +77,7 @@ export default async function ProfilePage() {
       const { data: rosterData } = await supabase
         .from("student_rosters")
         .select(
-          "id, first_name, last_name, preferred_name, grade_level, homeroom, student_number, status",
+          "id, first_name, last_name, preferred_name, grade_level, homeroom, student_number, status, show_name_to_classmates",
         )
         .eq("school_id", profile.school_id)
         .eq("profile_id", profile.id)
@@ -142,6 +145,29 @@ export default async function ProfilePage() {
               <p className="text-[13.5px] text-[var(--muted)]">
                 {t("dashboard.portfolioPrompt.description")}
               </p>
+            </Widget>
+          ) : null}
+
+          {studentRoster?.status === "active" ? (
+            <Widget title={t("profile.classmates.title")}>
+              <form action={setShowNameToClassmates} className="flex flex-col gap-3">
+                <label className="flex items-start gap-3 text-[13.5px] text-[var(--muted)]">
+                  <input
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--primary)]"
+                    defaultChecked={studentRoster.show_name_to_classmates !== false}
+                    name="show_name"
+                    type="checkbox"
+                  />
+                  <span>{t("profile.classmates.description")}</span>
+                </label>
+                <PendingSubmitButton
+                  className="btn btn-secondary min-h-10 w-full px-4"
+                  pendingLabel={t("common.saving")}
+                  toastMessage={t("common.saving")}
+                >
+                  {t("common.save")}
+                </PendingSubmitButton>
+              </form>
             </Widget>
           ) : null}
 

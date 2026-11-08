@@ -246,6 +246,9 @@ export const mn = {
       open: "Клубыг нээх",
       subtitle: "{count} клуб · шинэ хүмүүстэй танилцаж, шинэ зүйл туршаарай",
     },
+    classmates: {
+      fromYourClass: "Ангийн гишүүд: {names}",
+    },
     actions: {
       archive: "Клуб архивлах",
       archiving: "Архивлаж байна...",
@@ -1396,6 +1399,10 @@ export const mn = {
     title: "Зарлал",
   },
   profile: {
+    classmates: {
+      description: "Элссэн клубт ангийнханд таны нэр, овгийн эхний үсэг харагдах эсэх",
+      title: "Клубийн жагсаалтад нэрээ ангийнхандаа харуулах",
+    },
     accountDetails: "Бүртгэлийн мэдээлэл",
     actions: {
       save: "Хувийн мэдээлэл хадгалах",
