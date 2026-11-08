@@ -19,13 +19,17 @@ import {
 import { MobileMenuDrawer } from "./mobile-menu-drawer";
 import { RouteContentTransition } from "./route-content-transition";
 import { StudentTabBar } from "./student-tab-bar";
+import { QuickFind } from "./quick-find";
+import { TopBarClock } from "./top-bar-clock";
 import { TopTabs, type TopTab } from "./top-tabs";
 
 type Role = "school_admin" | "teacher" | "student";
 
 type Profile = {
+  fullName?: string | null;
   role: Role;
   schoolName: string | null;
+  timeZone?: string | null;
 } | null;
 
 type RoleAwareNavItem = {
@@ -283,6 +287,28 @@ export async function AppShell({
               subtitle={t("app.subtitle")}
             />
             <TopTabs label={t("nav.tabs.label")} tabs={topTabs} />
+            <div className="topbar-right">
+              <TopBarClock locale={locale} timeZone={profile?.timeZone ?? null} />
+              <QuickFind
+                closeLabel={t("common.close")}
+                label={t("nav.search.label")}
+                placeholder={
+                  profile && profile.role !== "student"
+                    ? t("nav.search.placeholderStaff")
+                    : t("nav.search.placeholder")
+                }
+                targets={[
+                  ...(profile
+                    ? [
+                        { href: "/events", label: t("nav.search.inEvents") },
+                        { href: "/clubs", label: t("nav.search.inClubs") },
+                      ]
+                    : []),
+                  ...(profile && profile.role !== "student"
+                    ? [{ href: "/students", label: t("nav.search.inStudents") }]
+                    : []),
+                ]}
+              />
             <MobileMenuDrawer
               closeLabel={t("common.close")}
               header={
@@ -293,6 +319,11 @@ export async function AppShell({
                 />
               }
               menuLabel={t("nav.more")}
+              trigger={
+                <span aria-hidden="true">
+                  {initialsOf(profile?.fullName ?? email ?? "")}
+                </span>
+              }
             >
               <div className="flex min-h-full min-w-0 max-w-full flex-col">
                 <MobileAppNav
@@ -318,6 +349,7 @@ export async function AppShell({
                 </div>
               </div>
             </MobileMenuDrawer>
+            </div>
           </div>
         </header>
 
@@ -624,4 +656,12 @@ function getTopTabs(
     { href: "/students", icon: "students", label: t("nav.tabs.students") },
     { href: "/approvals", icon: "approvals", label: t("nav.tabs.approvals") },
   ];
+}
+
+function initialsOf(value: string) {
+  const words = value.replace(/@.*/, "").trim().split(/[\s._-]+/).filter(Boolean);
+
+  if (!words.length) return "?";
+
+  return (words.length > 1 ? words[0][0] + words[1][0] : words[0].slice(0, 2)).toUpperCase();
 }

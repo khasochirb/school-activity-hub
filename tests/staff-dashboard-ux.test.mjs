@@ -18,23 +18,26 @@ function functionBody(source, name) {
   return source.slice(start, ends.length ? Math.min(...ends) : undefined);
 }
 
-test("the staff dashboard leads with the numbers, then to-dos beside quick actions", () => {
+test("the staff dashboard leads with the numbers, then to-dos", () => {
   const dashboard = read("src/app/(admin)/dashboard/page.tsx");
   const staff = functionBody(dashboard, "StaffDashboard");
 
   assert.doesNotMatch(staff, /WelcomeOverview/);
   assert.doesNotMatch(dashboard, /function WelcomeOverview/);
   assert.ok(staff.indexOf("dashboard.stats.activeClubs") < staff.indexOf("<NeedsAttention"));
-  assert.ok(staff.indexOf("<NeedsAttention") < staff.indexOf("<QuickActions"));
-  assert.ok(staff.indexOf("<QuickActions") < staff.indexOf("<NextSteps"));
+  assert.ok(staff.indexOf("<NeedsAttention") < staff.indexOf("<NextSteps"));
+  // Quick actions live in the header's "+ New" menu (Clean redesign).
+  assert.match(staff, /<DashboardHeaderActions/);
 });
 
 test("each action appears once: the header keeps only the primary action", () => {
   const dashboard = read("src/app/(admin)/dashboard/page.tsx");
   const header = functionBody(dashboard, "DashboardHeaderActions");
 
-  assert.equal((header.match(/<HeaderActionLink/g) ?? []).length, 1);
+  assert.equal((header.match(/btn-primary/g) ?? []).length, 1);
+  assert.match(header, /<ActionMenu/);
   assert.match(header, /dashboard\.quickActions\.createEvent\.label/);
+  assert.doesNotMatch(functionBody(dashboard, "StaffDashboard"), /<QuickActions/);
 });
 
 test("needs-attention items are list rows with their count", () => {

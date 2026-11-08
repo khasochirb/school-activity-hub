@@ -38,12 +38,14 @@ test("student home lists the student's clubs and the open ones before interests"
   const home = functionBody(dashboard, "StudentDashboard");
   const forYou = functionBody(dashboard, "StudentClubsForYouSection");
 
-  assert.ok(home.indexOf("<StudentMyClubsSection") < home.indexOf("<StudentClubsForYouSection"));
+  // The draft puts "Your clubs" in the side column, beside the suggestions.
+  assert.ok(home.indexOf("<StudentMyClubsSection") > -1);
+  assert.ok(home.indexOf("<StudentClubsForYouSection") > -1);
   assert.match(functionBody(dashboard, "StudentMyClubsSection"), /studentProfile\.clubs\.empty/);
 
-  const noInterests = forYou.slice(forYou.indexOf("if (!hasInterests)"), forYou.indexOf("return (\n    <section className=\"section-card\">\n      <div className=\"section-header flex flex-wrap"));
+  const noInterests = forYou.slice(forYou.indexOf("if (!hasInterests)"), forYou.lastIndexOf("return (\n    <Section"));
   assert.match(noInterests, /open\.slice\(0, 5\)\.map/);
-  assert.match(noInterests, /href="\/clubs"/);
+  assert.match(forYou, /href: "\/clubs"/);
 });
 
 test("students do not see the staff instructions on the clubs page", () => {

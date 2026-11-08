@@ -9,8 +9,9 @@ import { AppShell } from "./_components/app-shell";
 
 type AppShellProfile = {
   role: "school_admin" | "student" | "teacher";
+  full_name: string | null;
   school_id: string;
-  schools: { name: string } | null;
+  schools: { name: string; timezone: string | null } | null;
 };
 
 export default async function AdminLayout({
@@ -35,7 +36,7 @@ export default async function AdminLayout({
     timeServer("admin-layout.profile", () =>
       supabase
         .from("profiles")
-        .select("role, school_id, schools(name)")
+        .select("role, school_id, full_name, schools(name, timezone)")
         .eq("id", user.id)
         .maybeSingle<AppShellProfile>(),
     ),
@@ -56,7 +57,12 @@ export default async function AdminLayout({
       isSafeguardingStaff={safeguardingAccess.isDesignated}
       profile={
         profile
-          ? { role: profile.role, schoolName: profile.schools?.name ?? null }
+          ? {
+              fullName: profile.full_name,
+              role: profile.role,
+              schoolName: profile.schools?.name ?? null,
+              timeZone: profile.schools?.timezone ?? null,
+            }
           : null
       }
     >

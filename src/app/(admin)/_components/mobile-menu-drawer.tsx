@@ -26,11 +26,14 @@ export function MobileMenuDrawer({
   closeLabel,
   header,
   menuLabel,
+  trigger,
 }: {
   children: ReactNode;
   closeLabel: string;
   header: ReactNode;
   menuLabel: string;
+  /** Replaces the default "≡ More" button content, e.g. an avatar. */
+  trigger?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -228,7 +231,7 @@ export function MobileMenuDrawer({
         aria-controls={panelId}
         aria-expanded={open}
         aria-label={menuLabel}
-        className="btn btn-secondary min-h-11 gap-2 px-3"
+        className={trigger ? "topbar-me" : "btn btn-secondary min-h-11 gap-2 px-3"}
         onClick={() => {
           restoreScrollRef.current = true;
           setClosing(false);
@@ -237,14 +240,18 @@ export function MobileMenuDrawer({
         ref={triggerRef}
         type="button"
       >
-        <span aria-hidden="true" className="grid w-4 gap-1">
-          <span className="h-0.5 rounded-full bg-current" />
-          <span className="h-0.5 rounded-full bg-current" />
-          <span className="h-0.5 rounded-full bg-current" />
-        </span>
-        <span className="hidden text-sm font-bold min-[360px]:inline">
-          {menuLabel}
-        </span>
+        {trigger ?? (
+          <>
+            <span aria-hidden="true" className="grid w-4 gap-1">
+              <span className="h-0.5 rounded-full bg-current" />
+              <span className="h-0.5 rounded-full bg-current" />
+              <span className="h-0.5 rounded-full bg-current" />
+            </span>
+            <span className="hidden text-sm font-bold min-[360px]:inline">
+              {menuLabel}
+            </span>
+          </>
+        )}
       </button>
       {drawer}
     </div>
