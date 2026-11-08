@@ -241,6 +241,9 @@ export const en = {
       open: "Open club",
       subtitle: "{count} clubs · meet new people, try something new",
     },
+    classmates: {
+      fromYourClass: "From your class: {names}",
+    },
     actions: {
       archive: "Archive club",
       archiving: "Archiving...",
@@ -2069,6 +2072,10 @@ export const en = {
     title: "Announcements",
   },
   profile: {
+    classmates: {
+      description: "Classmates see your first name and the first letter of your family name on the clubs you have joined",
+      title: "Show my name to classmates in clubs",
+    },
     accountDetails: "Account details",
     actions: {
       save: "Save profile",
