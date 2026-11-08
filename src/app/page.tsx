@@ -1,13 +1,13 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import { HomepageActivityFlow } from "@/components/homepage-activity-flow";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentTheme } from "@/lib/get-theme";
-import { formatLongDate } from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { CategoryLabel, Cover } from "./(admin)/_components/clean-ui";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -19,7 +19,6 @@ export default async function HomePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const today = formatLongDate(new Date(), locale, "Asia/Ulaanbaatar");
 
   const features = [
     {
@@ -94,24 +93,24 @@ export default async function HomePage() {
     },
   ];
 
+  const featureIcons = ["key", "calendar", "check", "qr", "chart"] as const;
+  const featureColors = ["#2340d9", "#f2643f", "#12804a", "#6b4fd6", "#b25e00"];
+  const audienceColors = ["#2340d9", "#12804a", "#f2643f"];
+  const audienceLists = [
+    [t("landing.clean.admins1"), t("landing.clean.admins2"), t("landing.clean.admins3")],
+    [t("landing.clean.teachers1"), t("landing.clean.teachers2"), t("landing.clean.teachers3")],
+    [t("landing.clean.students1"), t("landing.clean.students2"), t("landing.clean.students3")],
+  ];
+
   return (
-    <main className="landing min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className="landing-dateline">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <span>{today}</span>
-          <span className="hidden sm:inline">{t("app.subtitle")}</span>
-          <span>№ 01</span>
-        </div>
-      </div>
-      <header className="landing-header sticky top-0 z-30">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <Link className="flex shrink-0 items-center gap-3" href="/">
-            <BrandMark />
-            <span className="whitespace-nowrap font-display text-[0.95rem] font-semibold">
-              {t("app.name")}
-            </span>
+    <main className="cl-land min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <header className="cl-land-top">
+        <div className="cl-land-wrap flex items-center gap-3">
+          <Link className="flex shrink-0 items-center gap-2.5 font-bold" href="/">
+            <BrandMark className="h-8 w-8" />
+            <span className="hidden whitespace-nowrap min-[420px]:inline">{t("app.name")}</span>
           </Link>
-          <nav className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
+          <nav className="ml-auto flex items-center gap-2">
             <LanguageSwitcher
               className="w-auto"
               currentLocale={locale}
@@ -121,7 +120,9 @@ export default async function HomePage() {
                 mn: t("language.mn"),
               }}
             />
+            <span className="hidden sm:block">
             <ThemeToggle
+              compact
               currentTheme={theme}
               label={t("theme.label")}
               labels={{
@@ -132,185 +133,227 @@ export default async function HomePage() {
               showLabel={false}
               switchLabel={t("theme.switch")}
             />
-            {user ? (
-              <Link className="btn btn-primary" href="/dashboard">
-                {t("landing.goToDashboard")}
-              </Link>
-            ) : (
-              <Link className="btn btn-secondary" href="/login">
-                {t("landing.signIn")}
-              </Link>
-            )}
+            </span>
+            <Link className="cl-btn-soft" href={user ? "/dashboard" : "/login"}>
+              {user ? t("landing.goToDashboard") : t("landing.signIn")}
+            </Link>
           </nav>
         </div>
       </header>
 
-      <section className="landing-hero mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:px-8 lg:pb-24">
-        <div className="min-w-0">
-          <p className="page-eyebrow">{t("landing.platformEyebrow")}</p>
-          <h1 className="landing-headline mt-5 font-display">
-            {t("landing.headline")}
-          </h1>
-          <p className="landing-intro mt-6 max-w-xl text-lg leading-8 text-[var(--muted)]">
-            {t("landing.intro")}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            {user ? (
-              <Link className="btn btn-primary btn-lg" href="/dashboard">
-                {t("landing.goToDashboard")}
-                <Arrow />
-              </Link>
-            ) : (
-              <>
-                <Link className="btn btn-primary btn-lg" href="/join">
-                  {t("landing.studentJoinWithInvite")}
+      <div className="cl-land-wrap flex flex-col gap-16 pb-16 sm:gap-20">
+        <section className="cl-land-hero">
+          <div className="min-w-0">
+            <span className="cl-land-eyebrow">{t("landing.platformEyebrow")}</span>
+            <h1>{t("landing.headline")}</h1>
+            <p className="cl-land-lead">{t("landing.intro")}</p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {user ? (
+                <Link className="btn btn-primary btn-lg" href="/dashboard">
+                  {t("landing.goToDashboard")}
                   <Arrow />
                 </Link>
-                <Link className="btn btn-secondary btn-lg" href="/login">
-                  {t("landing.staffSignIn")}
-                </Link>
-              </>
-            )}
-          </div>
-          {!user ? (
-            <p className="mt-4 text-sm text-[var(--muted)]">
-              {t("landing.studentInviteHelper")}
-            </p>
-          ) : null}
-        </div>
-
-        <PosterWall
-          labels={{
-            approved: t("landing.activityRowClubs"),
-            arts: t("categories.arts"),
-            attendance: t("landing.activityRowAttendance"),
-            checkIn: t("landing.checkIn"),
-            events: t("landing.events"),
-            inviteRow: t("landing.activityRowInvites"),
-            invites: t("landing.activityLabelInvites"),
-            qrReady: t("landing.qrReady"),
-            sports: t("categories.sports"),
-            verified: t("landing.verifiedStudentsOnly"),
-          }}
-        />
-      </section>
-
-      <HomepageActivityFlow
-        items={activityFlowItems}
-        labels={{
-          description: t("landing.activityStream.description"),
-          eyebrow: t("landing.activityStream.eyebrow"),
-          pause: t("landing.activityStream.pause"),
-          resume: t("landing.activityStream.resume"),
-          title: t("landing.activityStream.title"),
-        }}
-      />
-
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
-        <SectionIntro
-          description={t("landing.intro")}
-          eyebrow={t("landing.whatThisAppDoes")}
-          number="01"
-          title={t("landing.clubsAndEvents")}
-        />
-        <ol className="landing-features mt-10 grid gap-3 md:grid-cols-6">
-          {features.map((feature, index) => (
-            <li className="landing-feature" key={feature.title}>
-              <span className="landing-feature-number font-display">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 className="mt-8 text-lg font-bold leading-snug">
-                {feature.title}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                {feature.body}
+              ) : (
+                <>
+                  <Link className="btn btn-primary btn-lg gap-2" href="/join">
+                    <LandingIcon name="key" />
+                    {t("landing.studentJoinWithInvite")}
+                  </Link>
+                  <Link className="cl-btn-soft min-h-12 px-5 text-[15px]" href="/login">
+                    {t("landing.staffSignIn")}
+                  </Link>
+                </>
+              )}
+            </div>
+            {!user ? (
+              <p className="mt-4 flex items-center gap-2 text-sm text-[var(--muted)]">
+                <LandingIcon name="key" />
+                {t("landing.studentInviteHelper")}
               </p>
-            </li>
-          ))}
-        </ol>
-      </section>
+            ) : null}
+          </div>
 
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
-        <SectionIntro
-          description={t("landing.audienceDescription")}
-          eyebrow={t("landing.audienceEyebrow")}
-          number="02"
-          title={t("landing.whoIsThisFor")}
-        />
-        <div className="mt-10 grid gap-3 md:grid-cols-3">
-          {audiences.map((audience) => (
-            <article
-              className="landing-audience"
-              data-tone={audience.tone}
-              key={audience.title}
-            >
-              <span className="landing-audience-icon">
-                <AudienceIcon icon={audience.icon} />
-              </span>
-              <h3 className="mt-16 font-display text-2xl font-semibold">
-                {audience.title}
-              </h3>
-              <p className="mt-3 text-sm leading-6 opacity-80">{audience.body}</p>
-            </article>
-          ))}
+          <div aria-hidden="true" className="cl-land-stack">
+            <span className="cl-land-ping">
+              <span className="cl-av">QR</span>
+              {t("landing.checkIn")} · {t("landing.qrReady")}
+              <i />
+            </span>
+            <div className="cl-card cl-land-card cl-land-s1">
+              <Cover category="Academic" imageUrl={null} initials="" />
+              <div className="p-3.5">
+                <CategoryLabel category="Academic" label={t("landing.activityStream.workshops")} />
+                <b className="mt-1.5 block">{t("landing.clubsAndEvents")}</b>
+                <span className="text-[13px] text-[var(--muted)]">{t("landing.activityRowClubs")}</span>
+              </div>
+            </div>
+            <div className="cl-card cl-land-card cl-land-s2">
+              <Cover category="Sports" imageUrl={null} initials="" />
+              <div className="p-3.5">
+                <CategoryLabel category="Sports" label={t("categories.sports")} />
+                <b className="mt-1.5 block">{t("landing.events")}</b>
+                <span className="text-[13px] text-[var(--muted)]">{t("landing.activityRowAttendance")}</span>
+              </div>
+            </div>
+            <div className="cl-card cl-land-s3">
+              <div className="mb-2">
+                <b className="block">{t("landing.schoolPilotSnapshot")}</b>
+                <span className="text-[13px] text-[var(--muted)]">{t("landing.activityWeekOverview")}</span>
+              </div>
+              {(
+                [
+                  ["calendar", "#2340d9", t("landing.activityLabelClubs"), t("landing.activityRowClubs")],
+                  ["qr", "#12804a", t("landing.activityLabelAttendance"), t("landing.activityRowAttendance")],
+                  ["key", "#f2643f", t("landing.activityLabelInvites"), t("landing.activityRowInvites")],
+                ] as const
+              ).map(([icon, color, label, value]) => (
+                <div className="cl-land-snap" key={label}>
+                  <span className="cl-land-tile" style={{ "--c": color } as CSSProperties}>
+                    <LandingIcon name={icon} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <small>{label}</small>
+                    <b>{value}</b>
+                  </span>
+                  <span className="text-[var(--cl-green)]">
+                    <Check />
+                  </span>
+                </div>
+              ))}
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="cl-tag" data-tone="ok">{t("landing.qrReady")}</span>
+                <span className="cl-tag" data-tone="blue">{t("landing.verifiedStudentsOnly")}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="cl-card cl-land-stream">
+          <HomepageActivityFlow
+            items={activityFlowItems}
+            labels={{
+              description: t("landing.activityStream.description"),
+              eyebrow: t("landing.activityStream.eyebrow"),
+              pause: t("landing.activityStream.pause"),
+              resume: t("landing.activityStream.resume"),
+              title: t("landing.activityStream.title"),
+            }}
+          />
         </div>
-      </section>
 
-      <section className="border-y border-[var(--border)] bg-[var(--card)]">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
+        <section aria-labelledby="land-what" className="flex flex-col gap-7">
+          <SectionIntro
+            description={t("landing.clean.whatBody")}
+            eyebrow={t("landing.verifiedAccess")}
+            id="land-what"
+            title={t("landing.whatThisAppDoes")}
+          />
+          <div className="cl-land-feat">
+            {features.map((feature, index) => (
+              <div className="cl-card" key={feature.title}>
+                <span className="cl-land-tile" style={{ "--c": featureColors[index] } as CSSProperties}>
+                  <LandingIcon name={featureIcons[index]} />
+                </span>
+                <h3>{feature.title}</h3>
+                <p>{feature.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="land-who" className="flex flex-col gap-7">
+          <SectionIntro
+            description={t("landing.audienceDescription")}
+            eyebrow={t("landing.audienceEyebrow")}
+            id="land-who"
+            title={t("landing.whoIsThisFor")}
+          />
+          <div className="cl-land-who">
+            {audiences.map((audience, index) => (
+              <article
+                className="cl-card"
+                key={audience.title}
+                style={{ "--c": audienceColors[index] } as CSSProperties}
+              >
+                <div className="cl-land-band">
+                  <span className="cl-land-avatar">
+                    <AudienceIcon icon={audience.icon} />
+                  </span>
+                </div>
+                <div className="p-5 pt-8">
+                  <h3>{audience.title}</h3>
+                  <p>{audience.body}</p>
+                  <ul>
+                    {audienceLists[index].map((item) => (
+                      <li key={item}>
+                        <Check />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="land-pilot" className="flex flex-col gap-7">
           <SectionIntro
             description={t("landing.workflowDescription")}
             eyebrow={t("landing.pilotWorkflow")}
-            number="03"
+            id="land-pilot"
             title={t("landing.workflowTitle")}
           />
-          <ol className="landing-steps mt-12 grid gap-8 md:grid-cols-5 md:gap-4">
+          <ol className="cl-land-steps">
             {workflowSteps.map((step, index) => (
-              <li className="landing-step" key={step}>
-                <span className="landing-step-dot font-display">{index + 1}</span>
-                <p className="mt-4 text-base font-bold leading-snug">{step}</p>
+              <li className="cl-card" key={step}>
+                <span className="cl-land-n">{index + 1}</span>
+                <b>{step}</b>
+                <p>{t(`landing.clean.step${index + 1}`)}</p>
               </li>
             ))}
           </ol>
-        </div>
-      </section>
+        </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="landing-trust grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
+        <section aria-labelledby="land-trust" className="cl-card cl-land-trust">
           <div>
-            <p className="page-eyebrow">
-              <span className="landing-section-number">04</span>
-              {t("landing.trustEyebrow")}
-            </p>
-            <h2 className="mt-4 font-display text-3xl font-semibold leading-tight sm:text-4xl">
-              {t("landing.privateByDesign")}
-            </h2>
-            <p className="mt-4 max-w-md leading-7 opacity-75">
-              {t("landing.privateByDesignBody")}
-            </p>
+            <span className="cl-land-eyebrow">{t("landing.trustEyebrow")}</span>
+            <h2 id="land-trust">{t("landing.privateByDesign")}</h2>
+            <p>{t("landing.privateByDesignBody")}</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link className="cl-btn-soft" href="/join">
+                {t("landing.joinWithInviteCode")}
+              </Link>
+              <Link className="cl-btn-soft" href="/privacy">
+                {t("landing.clean.privacyLink")}
+              </Link>
+            </div>
           </div>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul>
             {trustItems.map((item) => (
-              <li className="landing-trust-item" key={item}>
-                <Check />
-                <span>{item}</span>
+              <li key={item}>
+                <span className="text-[var(--cl-green)]">
+                  <Check />
+                </span>
+                {item}
               </li>
             ))}
           </ul>
-        </div>
-      </section>
+        </section>
 
-      <footer className="border-t border-[var(--border)]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <BrandMark className="h-8 w-8" />
-            <span className="font-display font-semibold text-[var(--foreground)]">
-              {t("app.name")}
-            </span>
-          </div>
-          <p>{t("app.subtitle")}</p>
-        </div>
-      </footer>
+        <footer className="cl-land-foot">
+          <span className="flex flex-wrap items-center gap-2.5">
+            <BrandMark className="h-7 w-7" />
+            <b>{t("app.name")}</b>
+            <span className="text-[var(--muted)]">{t("landing.platformEyebrow")}</span>
+          </span>
+          <nav className="flex flex-wrap gap-4">
+            <Link href="/privacy">{t("landing.clean.privacyLink")}</Link>
+            <Link href="/login">{t("landing.signIn")}</Link>
+            <Link href="/join">{t("landing.joinWithInviteCode")}</Link>
+          </nav>
+        </footer>
+      </div>
     </main>
   );
 }
@@ -318,113 +361,59 @@ export default async function HomePage() {
 function SectionIntro({
   description,
   eyebrow,
-  number,
+  id,
   title,
 }: {
   description: string;
   eyebrow: string;
-  number: string;
+  id: string;
   title: string;
 }) {
   return (
-    <div className="landing-section-intro grid gap-4 md:grid-cols-2 md:items-end">
-      <div>
-        <p className="page-eyebrow">
-          <span className="landing-section-number">{number}</span>
-          {eyebrow}
-        </p>
-        <h2 className="mt-4 font-display text-3xl font-semibold leading-tight sm:text-4xl">
-          {title}
-        </h2>
-      </div>
-      <p className="max-w-md leading-7 text-[var(--muted)] md:justify-self-end">
-        {description}
-      </p>
+    <div className="cl-land-sh">
+      <span className="cl-land-eyebrow">{eyebrow}</span>
+      <h2 id={id}>{title}</h2>
+      <p>{description}</p>
     </div>
   );
 }
 
-type PosterLabels = {
-  approved: string;
-  arts: string;
-  attendance: string;
-  checkIn: string;
-  events: string;
-  inviteRow: string;
-  invites: string;
-  qrReady: string;
-  sports: string;
-  verified: string;
-};
+type LandingIconName = "calendar" | "chart" | "check" | "key" | "qr";
 
-// A decorative collage of the things the app manages: an approved event
-// poster, a QR check-in pass and a one-time invite code.
-function PosterWall({ labels }: { labels: PosterLabels }) {
-  return (
-    <div aria-hidden="true" className="poster-wall">
-      <div className="poster poster-event">
-        <span className="poster-chip">{labels.events}</span>
-        <p className="mt-auto font-display text-4xl font-semibold leading-none sm:text-5xl">
-          {labels.sports}
-        </p>
-        <p className="mt-3 flex items-center gap-2 text-sm font-semibold">
-          <Check />
-          {labels.approved}
-        </p>
-      </div>
-
-      <div className="poster poster-pass">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-sm font-bold">{labels.checkIn}</span>
-          <span className="poster-chip poster-chip-ink">{labels.qrReady}</span>
-        </div>
-        <QrGlyph />
-        <p className="text-xs font-semibold opacity-75">{labels.attendance}</p>
-      </div>
-
-      <div className="poster poster-invite">
-        <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-          {labels.invites}
-        </span>
-        <p className="poster-code mt-3 font-display font-semibold">K7Q2·9XMD</p>
-        <p className="mt-2 text-xs text-[var(--muted)]">{labels.inviteRow}</p>
-        <span className="poster-chip poster-chip-success mt-4">{labels.verified}</span>
-      </div>
-
-      <div className="poster poster-sticker font-display">{labels.arts}</div>
-    </div>
-  );
-}
-
-function QrGlyph() {
-  // A fixed 7x7 pattern that reads as a QR code at a glance.
-  const pattern = [
-    "1110111",
-    "1010101",
-    "1110011",
-    "0001100",
-    "1101011",
-    "1010110",
-    "1110101",
-  ];
+function LandingIcon({ name }: { name: LandingIconName }) {
+  const paths: Record<LandingIconName, ReactNode> = {
+    calendar: (
+      <>
+        <rect height="15.5" rx="3" width="17" x="3.5" y="5" />
+        <path d="M3.5 10h17M8 3v4M16 3v4" />
+      </>
+    ),
+    chart: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+    check: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M8 12.5l3 3 5-6" />
+      </>
+    ),
+    key: (
+      <>
+        <circle cx="8" cy="15" r="4" />
+        <path d="M11 12l9-9M17 6l3 3M15 8l2 2" />
+      </>
+    ),
+    qr: (
+      <>
+        <rect height="6" rx="1" width="6" x="3" y="3" />
+        <rect height="6" rx="1" width="6" x="15" y="3" />
+        <rect height="6" rx="1" width="6" x="3" y="15" />
+        <path d="M15 15h2v2h-2zM19 19h2v2h-2zM15 19h2M19 15v2" />
+      </>
+    ),
+  };
 
   return (
-    <svg className="my-4 h-24 w-24" viewBox="0 0 7 7">
-      {pattern.flatMap((row, y) =>
-        row.split("").map((cell, x) =>
-          cell === "1" ? (
-            <rect
-              fill="currentColor"
-              height="0.86"
-              key={`${x}-${y}`}
-              rx="0.18"
-              width="0.86"
-              x={x + 0.07}
-              y={y + 0.07}
-            />
-          ) : null,
-        ),
-      )}
+    <svg aria-hidden="true" className="h-[18px] w-[18px] flex-none" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 24 24">
+      {paths[name]}
     </svg>
   );
 }
