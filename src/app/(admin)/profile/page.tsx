@@ -11,12 +11,9 @@ import {
   type StudentProfileData,
 } from "@/lib/students/student-profile-data";
 import { createClient } from "@/lib/supabase/server";
-import {
-  DetailsDisclosure,
-  PageHeader,
-} from "../_components/page-ui";
 import { ProfileForm } from "./profile-form";
-import { StudentProfile } from "./student-profile";
+import { PageHead, Section, Widget } from "../_components/clean-ui";
+import { StudentProfile, StudentProfileHero } from "./student-profile";
 
 type Profile = {
   id: string;
@@ -97,117 +94,129 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        description={t("profile.description")}
-        title={t("profile.title")}
-      />
-
+    <div className="cl-page">
       {profile && studentData ? (
-        <StudentProfile
+        <StudentProfileHero
           data={studentData}
           displayName={studentDisplayName(studentRoster, profile.full_name)}
-          gradeLine={studentGradeLine(studentRoster, t)}
-          locale={locale}
+          gradeLine={[studentGradeLine(studentRoster, t), school?.name].filter(Boolean).join(" · ") || null}
           t={t}
-          tf={tf}
         />
-      ) : null}
-
-      <section className="section-card section-card-padded">
-        <h2 className="section-title">{t("profile.accountDetails")}</h2>
-        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-          <DetailItem
-            label={t("profile.fields.email")}
-            value={user.email ?? t("profile.fallback.notAvailable")}
-          />
-          <DetailItem
-            label={t("profile.fields.fullName")}
-            value={profile?.full_name ?? t("profile.fallback.noProfileFound")}
-          />
-        </dl>
-        <DetailsDisclosure label={t("common.viewDetails")}>
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <DetailItem
-              label={t("profile.fields.role")}
-              value={profile ? roleLabel(profile.role, t) : "-"}
-            />
-            <DetailItem
-              label={t("profile.fields.school")}
-              value={school?.name ?? "-"}
-            />
-            <DetailItem
-              label={t("profile.fields.status")}
-              value={profile ? statusLabel(profile.status, t) : "-"}
-            />
-          </dl>
-        </DetailsDisclosure>
-      </section>
-
-      {profile ? (
-        <section className="section-card section-card-padded">
-          <h2 className="section-title">{t("profile.settings.title")}</h2>
-          <p className="section-description">{t("profile.settings.description")}</p>
-          <div className="mt-3">
-            <ProfileForm
-              fullName={profile.full_name}
-              labels={{
-                fullName: t("profile.fields.fullName"),
-                save: t("profile.actions.save"),
-                saving: t("common.saving"),
-              }}
-            />
-          </div>
-        </section>
       ) : (
-        <section className="section-card section-card-padded">
-          <h2 className="section-title">{t("profile.settings.title")}</h2>
-          <p className="section-description">{t("profile.settings.noProfileRow")}</p>
-        </section>
+        <PageHead subtitle={t("profile.description")} title={t("profile.title")} />
       )}
 
-      {profile?.role === "student" ? (
-        <section className="section-card section-card-padded">
-          <h2 className="section-title">{t("profile.roster.title")}</h2>
-          {studentRoster ? (
-            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-              <DetailItem
-                label={t("profile.roster.name")}
-                value={studentRosterName(studentRoster)}
-              />
-              <DetailItem
-                label={t("profile.roster.grade")}
-                value={studentRoster.grade_level ?? "-"}
-              />
-              <DetailItem
-                label={t("profile.roster.classGroup")}
-                value={studentRoster.homeroom ?? "-"}
-              />
-              <DetailItem
-                label={t("profile.roster.studentNumber")}
-                value={studentRoster.student_number ?? "-"}
-              />
-              <DetailItem
-                label={t("profile.roster.status")}
-                value={statusLabel(studentRoster.status, t)}
-              />
-            </dl>
+      <div className="cl-split">
+        <div className="cl-main">
+          {profile && studentData ? (
+            <StudentProfile data={studentData} locale={locale} t={t} tf={tf} />
           ) : (
-            <p className="mt-2 text-sm text-zinc-600">
-              {t("profile.roster.notFound")}
-            </p>
+            <Section title={t("profile.settings.title")}>
+              <div className="cl-card cl-panel">
+                {profile ? (
+                  <>
+                    <p className="text-sm text-[var(--muted)]">{t("profile.settings.description")}</p>
+                    <ProfileForm
+                      fullName={profile.full_name}
+                      labels={{
+                        fullName: t("profile.fields.fullName"),
+                        save: t("profile.actions.save"),
+                        saving: t("common.saving"),
+                      }}
+                    />
+                  </>
+                ) : (
+                  <p className="text-sm text-[var(--muted)]">{t("profile.settings.noProfileRow")}</p>
+                )}
+              </div>
+            </Section>
           )}
-        </section>
-      ) : null}
-    </div>
-  );
-}
+        </div>
 
-function DetailItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="detail-card">
-      <dt className="detail-label">{label}</dt>
-      <dd className="detail-value">{value}</dd>
+        <aside className="cl-side">
+          {profile?.role === "student" ? (
+            <Widget
+              link={{ href: "/portfolio", label: t("dashboard.portfolioPrompt.action") }}
+              title={t("dashboard.portfolioPrompt.title")}
+            >
+              <p className="text-[13.5px] text-[var(--muted)]">
+                {t("dashboard.portfolioPrompt.description")}
+              </p>
+            </Widget>
+          ) : null}
+
+          <Widget title={t("profile.accountDetails")}>
+            <dl className="cl-kv">
+              <div>
+                <dt>{t("profile.fields.email")}</dt>
+                <dd className="break-all">{user.email ?? t("profile.fallback.notAvailable")}</dd>
+              </div>
+              <div>
+                <dt>{t("profile.fields.fullName")}</dt>
+                <dd>{profile?.full_name ?? t("profile.fallback.noProfileFound")}</dd>
+              </div>
+              <div>
+                <dt>{t("profile.fields.role")}</dt>
+                <dd>{profile ? roleLabel(profile.role, t) : "-"}</dd>
+              </div>
+              <div>
+                <dt>{t("profile.fields.school")}</dt>
+                <dd>{school?.name ?? "-"}</dd>
+              </div>
+              <div>
+                <dt>{t("profile.fields.status")}</dt>
+                <dd>{profile ? statusLabel(profile.status, t) : "-"}</dd>
+              </div>
+            </dl>
+            {profile && studentData ? (
+              <details className="cl-decline">
+                <summary className="cl-widget-link">{t("profile.settings.title")}</summary>
+                <div className="mt-3">
+                  <ProfileForm
+                    fullName={profile.full_name}
+                    labels={{
+                      fullName: t("profile.fields.fullName"),
+                      save: t("profile.actions.save"),
+                      saving: t("common.saving"),
+                    }}
+                  />
+                </div>
+              </details>
+            ) : null}
+          </Widget>
+
+          {profile?.role === "student" ? (
+            <Widget title={t("profile.roster.title")}>
+              {studentRoster ? (
+                <dl className="cl-kv">
+                  <div>
+                    <dt>{t("profile.roster.name")}</dt>
+                    <dd>{studentRosterName(studentRoster)}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("profile.roster.grade")}</dt>
+                    <dd>{studentRoster.grade_level ?? "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("profile.roster.classGroup")}</dt>
+                    <dd>{studentRoster.homeroom ?? "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("profile.roster.studentNumber")}</dt>
+                    <dd>{studentRoster.student_number ?? "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("profile.roster.status")}</dt>
+                    <dd>{statusLabel(studentRoster.status, t)}</dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="text-sm text-[var(--muted)]">{t("profile.roster.notFound")}</p>
+              )}
+            </Widget>
+          ) : null}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -451,6 +451,19 @@ export const en = {
     title: "Clubs",
   },
   clubRequests: {
+    page: {
+      allCategories: "All categories",
+      allStatuses: "All statuses",
+      howItWorks: "How it works",
+      step1Text: "Name it and say why it should exist.",
+      step1Title: "Suggest a club",
+      step2Text: "Other students press Support. 10 supporters gets staff attention.",
+      step2Title: "Collect support",
+      step3Text: "Staff check there's an adult, a room and a time.",
+      step3Title: "Staff decide",
+      step4Text: "Approved ideas get a club page you can join.",
+      step4Title: "It becomes a club",
+    },
     actions: {
       approve: "Approve and create club",
       approving: "Approving...",
@@ -2647,6 +2660,15 @@ export const en = {
     },
   },
   safety: {
+    next: {
+      step1Text: "Only the safety team can open it.",
+      step1Title: "You report",
+      step2Text: "Usually within one school day.",
+      step2Title: "A responder reviews it",
+      step3Text: "In person if you asked to be contacted.",
+      step3Title: "They follow up",
+      title: "What happens next",
+    },
     actions: {
       back: "Back to safety and support",
     },

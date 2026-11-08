@@ -7,7 +7,7 @@ import {
   initialsForName,
 } from "@/lib/students/student-journey";
 import type { StudentProfileData } from "@/lib/students/student-profile-data";
-import { CategoryBadge } from "../_components/page-ui";
+import { CategoryLabel, ClubAvatar, Section } from "../_components/clean-ui";
 
 type Translate = (key: string) => string;
 type TranslateFormat = (
@@ -15,209 +15,186 @@ type TranslateFormat = (
   values: Record<string, string | number>,
 ) => string;
 
-export function StudentProfile({
+export function StudentProfileHero({
   data,
   displayName,
   gradeLine,
-  locale,
   t,
-  tf,
 }: {
   data: StudentProfileData;
   displayName: string;
   gradeLine: string | null;
-  locale: Locale;
   t: Translate;
-  tf: TranslateFormat;
 }) {
-  const milestones = buildStudentMilestones(data.counts);
-
   return (
-    <>
-      <section className="section-card section-card-padded">
-        <div className="flex items-center gap-4">
-          <span
-            aria-hidden="true"
-            className="flex size-16 shrink-0 items-center justify-center rounded-full bg-[var(--primary-soft)] text-xl font-bold text-[var(--primary-strong)]"
-          >
-            {initialsForName(displayName)}
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-xl font-semibold break-words text-zinc-950">
-              {displayName}
-            </h2>
-            {gradeLine ? (
-              <p className="mt-1 text-sm text-zinc-600">{gradeLine}</p>
-            ) : null}
-          </div>
+    <section className="cl-pfhero">
+      <div aria-hidden="true" className="cl-pfbanner" />
+      <div className="cl-pfhead">
+        <span aria-hidden="true" className="cl-pfav">
+          {initialsForName(displayName)}
+        </span>
+        <div className="min-w-0 pt-8">
+          <h1>{displayName}</h1>
+          {gradeLine ? <p>{gradeLine}</p> : null}
         </div>
-      </section>
-
-      <section className="section-card section-card-padded">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="section-title">{t("studentProfile.interests.title")}</h2>
+      </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
+          {t("studentProfile.interests.title")}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {data.interests.map((interest) => (
+            <CategoryLabel category={interest} key={interest} label={categoryLabel(interest, t)} />
+          ))}
+          {!data.interests.length ? (
+            <span className="text-sm text-[var(--muted)]">{t("studentProfile.interests.empty")}</span>
+          ) : null}
           {data.interestsAvailable ? (
-            <Link
-              className="btn btn-secondary min-h-10 px-3 text-sm"
-              href="/profile/interests"
-              prefetch={false}
-            >
+            <Link className="cl-widget-link ml-1" href="/profile/interests" prefetch={false}>
               {data.interests.length
                 ? t("studentProfile.interests.edit")
                 : t("studentProfile.interests.pick")}
             </Link>
           ) : null}
         </div>
-        {data.interests.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {data.interests.map((interest) => (
-              <CategoryBadge category={interest} key={interest}>
-                {categoryLabel(interest, t)}
-              </CategoryBadge>
+        <p className="text-[13px] text-[var(--muted)]">{t("studentProfile.privacyNote")}</p>
+      </div>
+    </section>
+  );
+}
+
+export function StudentProfile({
+  data,
+  locale,
+  t,
+  tf,
+}: {
+  data: StudentProfileData;
+  locale: Locale;
+  t: Translate;
+  tf: TranslateFormat;
+}) {
+  const milestones = buildStudentMilestones(data.counts);
+  const done = milestones.filter((milestone) => milestone.achieved).length;
+
+  return (
+    <>
+      <Section title={t("studentProfile.journey.title")}>
+        <p className="-mt-1 text-[13.5px] text-[var(--muted)]">
+          {t("studentProfile.journey.description")}
+        </p>
+        <dl className="cl-stats">
+          <JourneyCount label={t("studentProfile.journey.clubsJoined")} value={data.counts.clubsJoined} />
+          <JourneyCount label={t("studentProfile.journey.sessionsAttended")} value={data.counts.sessionsAttended} />
+          <JourneyCount label={t("studentProfile.journey.categoriesTried")} value={data.counts.categoriesTried} />
+          <JourneyCount label={t("studentProfile.journey.ideasProposed")} value={data.counts.ideasProposed} />
+        </dl>
+      </Section>
+
+      <section className="cl-sec">
+        <header>
+          <h2>{t("studentProfile.milestones.title")}</h2>
+          <span className="text-sm text-[var(--muted)]">
+            {done} / {milestones.length}
+          </span>
+        </header>
+        <ul className="cl-goals">
+          {milestones.map((milestone) => {
+            const percent = Math.round((milestone.progress / milestone.target) * 100);
+
+            return (
+              <li className="cl-card" key={milestone.key}>
+                <span className="min-w-0">
+                  <b className="flex flex-wrap items-center gap-2 text-sm">
+                    {t(`studentProfile.milestones.${milestone.key}.title`)}
+                    {milestone.achieved ? (
+                      <span className="cl-tag" data-tone="ok">
+                        {t("studentProfile.milestones.done")}
+                      </span>
+                    ) : null}
+                  </b>
+                  <span className="mt-0.5 block text-[13px] text-[var(--muted)]">
+                    {t(`studentProfile.milestones.${milestone.key}.hint`)}
+                  </span>
+                </span>
+                <span
+                  aria-label={tf("studentProfile.milestones.progress", {
+                    progress: milestone.progress,
+                    target: milestone.target,
+                  })}
+                  className="cl-ring cl-ring-sm"
+                  role="img"
+                  style={{
+                    background: `conic-gradient(${milestone.achieved ? "var(--cl-green)" : "var(--cl-sun)"} ${percent * 3.6}deg, var(--card-soft) 0)`,
+                  }}
+                >
+                  <b>
+                    {milestone.progress}/{milestone.target}
+                  </b>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <Section
+        link={{ href: "/clubs", label: t("dashboard.home.allClubs") }}
+        title={t("studentProfile.clubs.title")}
+      >
+        {data.clubs.length ? (
+          <div className="cl-card cl-rows">
+            {data.clubs.map((club) => (
+              <Link className="cl-row" href={`/clubs/${club.id}`} key={club.id} prefetch={false}>
+                <ClubAvatar category={club.category} name={club.name} />
+                <span className="cl-grow cl-row-title">{club.name}</span>
+                <CategoryLabel
+                  category={club.category}
+                  label={club.category ? categoryLabel(club.category, t) : null}
+                />
+              </Link>
             ))}
           </div>
         ) : (
-          <p className="mt-2 text-sm text-zinc-600">
-            {t("studentProfile.interests.empty")}
-          </p>
+          <div className="cl-card cl-row">
+            <span className="cl-grow text-sm text-[var(--muted)]">{t("studentProfile.clubs.empty")}</span>
+            <Link className="cl-btn-soft" href="/clubs" prefetch={false}>
+              {t("studentProfile.clubs.find")}
+            </Link>
+          </div>
         )}
-        <p className="mt-3 text-sm text-zinc-600">{t("studentProfile.privacyNote")}</p>
-      </section>
+      </Section>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="section-card section-card-padded">
-          <h2 className="section-title">{t("studentProfile.clubs.title")}</h2>
-          {data.clubs.length ? (
-            <ul className="mt-3 flex flex-col gap-2">
-              {data.clubs.map((club) => (
-                <li key={club.id}>
-                  <Link
-                    className="interactive-card flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 hover:border-[var(--primary-border)]"
-                    href={`/clubs/${club.id}`}
-                    prefetch={false}
-                  >
-                    <span className="min-w-0 font-medium break-words text-zinc-900">
-                      {club.name}
-                    </span>
-                    {club.category ? (
-                      <CategoryBadge category={club.category}>
-                        {categoryLabel(club.category, t)}
-                      </CategoryBadge>
-                    ) : null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="mt-2 flex flex-col items-start gap-3">
-              <p className="text-sm text-zinc-600">{t("studentProfile.clubs.empty")}</p>
-              <Link className="btn btn-soft min-h-10 px-4 text-sm" href="/clubs" prefetch={false}>
-                {t("studentProfile.clubs.find")}
+      <Section title={t("studentProfile.upcoming.title")}>
+        {data.upcoming.length ? (
+          <div className="cl-card cl-rows">
+            {data.upcoming.map((event) => (
+              <Link className="cl-row" href={`/events/${event.id}`} key={event.id} prefetch={false}>
+                <span className="cl-grow">
+                  <span className="cl-row-title">{event.title}</span>
+                  <span className="cl-row-sub">
+                    {formatDateTime(event.starts_at, locale)}
+                    {event.location ? ` · ${event.location}` : ""}
+                  </span>
+                </span>
               </Link>
-            </div>
-          )}
-        </section>
-
-        <section className="section-card section-card-padded">
-          <h2 className="section-title">{t("studentProfile.upcoming.title")}</h2>
-          {data.upcoming.length ? (
-            <ul className="mt-3 flex flex-col gap-2">
-              {data.upcoming.map((event) => (
-                <li key={event.id}>
-                  <Link
-                    className="interactive-card flex flex-col gap-1 rounded-md border border-slate-200 bg-white p-3 hover:border-[var(--primary-border)]"
-                    href={`/events/${event.id}`}
-                    prefetch={false}
-                  >
-                    <span className="font-medium break-words text-zinc-900">{event.title}</span>
-                    <span className="text-sm text-zinc-600">
-                      {formatDateTime(event.starts_at, locale)}
-                      {event.location ? ` · ${event.location}` : ""}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2 text-sm text-zinc-600">{t("studentProfile.upcoming.empty")}</p>
-          )}
-        </section>
-      </div>
-
-      <section className="section-card section-card-padded">
-        <h2 className="section-title">{t("studentProfile.journey.title")}</h2>
-        <p className="section-description">{t("studentProfile.journey.description")}</p>
-        <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <JourneyCount
-            label={t("studentProfile.journey.clubsJoined")}
-            value={data.counts.clubsJoined}
-          />
-          <JourneyCount
-            label={t("studentProfile.journey.sessionsAttended")}
-            value={data.counts.sessionsAttended}
-          />
-          <JourneyCount
-            label={t("studentProfile.journey.categoriesTried")}
-            value={data.counts.categoriesTried}
-          />
-          <JourneyCount
-            label={t("studentProfile.journey.ideasProposed")}
-            value={data.counts.ideasProposed}
-          />
-        </dl>
-        <h3 className="mt-5 text-sm font-semibold text-zinc-950">
-          {t("studentProfile.milestones.title")}
-        </h3>
-        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-          {milestones.map((milestone) => (
-            <li
-              className={
-                milestone.achieved
-                  ? "rounded-md border border-[var(--primary-border)] bg-[var(--primary-soft)] p-3"
-                  : "rounded-md border border-slate-200 bg-white p-3"
-              }
-              key={milestone.key}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-medium text-zinc-900">
-                  {t(`studentProfile.milestones.${milestone.key}.title`)}
-                </span>
-                <span className="font-mono text-sm tabular-nums text-zinc-700">
-                  {milestone.achieved
-                    ? t("studentProfile.milestones.done")
-                    : tf("studentProfile.milestones.progress", {
-                        progress: milestone.progress,
-                        target: milestone.target,
-                      })}
-                </span>
-              </div>
-              {!milestone.achieved ? (
-                <p className="mt-1 text-sm text-zinc-600">
-                  {t(`studentProfile.milestones.${milestone.key}.hint`)}
-                </p>
-              ) : null}
-              <div
-                aria-hidden="true"
-                className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-200"
-              >
-                <div
-                  className="h-full rounded-full bg-[var(--primary)]"
-                  style={{ width: `${(milestone.progress / milestone.target) * 100}%` }}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+            ))}
+          </div>
+        ) : (
+          <p className="cl-card cl-empty">{t("studentProfile.upcoming.empty")}</p>
+        )}
+      </Section>
     </>
   );
 }
 
 function JourneyCount({ label, value }: { label: string; value: number }) {
   return (
-    <div className="detail-card">
-      <dt className="detail-label">{label}</dt>
-      <dd className="detail-value font-mono text-2xl tabular-nums">{value}</dd>
+    <div className="cl-card cl-stat">
+      <dt className="cl-muted">{label}</dt>
+      <dd>
+        <b>{value}</b>
+      </dd>
     </div>
   );
 }

@@ -5506,3 +5506,190 @@ html[data-theme="dark"] .cl-featured small {
   border-radius: 12px !important;
   background: var(--card);
 }
+
+/* Club ideas */
+.cl-idea {
+  display: grid;
+  gap: 4px 20px;
+  padding: 18px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) {
+  .cl-idea {
+    grid-template-columns: minmax(0, 1fr) 12rem;
+  }
+  .cl-idea > :not(.cl-idea-side) {
+    grid-column: 1;
+  }
+  .cl-idea-side {
+    grid-column: 2;
+    grid-row: 1 / span 8;
+  }
+}
+.cl-support {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--card-soft);
+}
+.cl-support b {
+  font-size: 24px;
+  color: var(--foreground);
+}
+.cl-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  counter-reset: step;
+  font-size: 13.5px;
+}
+.cl-steps li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-left: 34px;
+  counter-increment: step;
+}
+.cl-steps li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+  content: counter(step);
+}
+.cl-steps span {
+  color: var(--muted);
+}
+
+/* Student profile */
+.cl-pfhero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cl-pfbanner {
+  height: 120px;
+  border-radius: 20px;
+  background: linear-gradient(120deg, #ffe7a6 0%, #ffd2c2 50%, #c9d1ff 100%);
+}
+html.dark .cl-pfbanner,
+html[data-theme="dark"] .cl-pfbanner {
+  background: linear-gradient(120deg, #3a3016, #3d221a 50%, #222a4d);
+}
+.cl-pfhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: -56px;
+  padding-left: 16px;
+}
+.cl-pfhead h1 {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.cl-pfhead p {
+  font-size: 14px;
+  color: var(--muted);
+}
+.cl-pfav {
+  display: grid;
+  width: 84px;
+  height: 84px;
+  flex: none;
+  place-items: center;
+  border: 4px solid var(--background);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--cl-sun), var(--cl-coral));
+  color: #1b1a17;
+  font-size: 26px;
+  font-weight: 800;
+}
+.cl-goals {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+.cl-goals > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.cl-ring-sm {
+  width: 52px;
+  height: 52px;
+}
+.cl-ring-sm::before {
+  inset: 6px;
+}
+.cl-ring-sm b {
+  font-size: 12px;
+}
+
+/* Safety and support */
+.cl-safehero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--card) 40%, var(--primary-soft));
+}
+.cl-safehero h1 {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.cl-safehero p {
+  max-width: 40rem;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.cl-safeicon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex: none;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: var(--cl-shadow-lift);
+}
+.cl-safeicon svg {
+  width: 28px;
+  height: 28px;
+}
+.cl-safenotice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border: 1px solid rgb(251 191 36 / 0.6);
+  border-radius: 16px;
+  background: #fffbeb;
+  font-size: 13.5px;
+  color: #78350f;
+}
+html.dark .cl-safenotice,
+html[data-theme="dark"] .cl-safenotice {
+  background: rgb(69 26 3 / 0.3);
+  color: #fef3c7;
+}
