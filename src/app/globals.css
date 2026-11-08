@@ -6212,3 +6212,60 @@ html[data-theme="dark"] .cl-land::before {
   background: var(--category-bg);
   color: var(--category-text);
 }
+
+/* ---------- Sidebar: short main list, "More" group, collapsible rail ---------- */
+
+.app-surface aside .nav-link {
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.app-surface aside .nav-icon {
+  opacity: 0.85;
+}
+
+.nav-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A closed <details> hides its content; the open group must lay out normally. */
+.nav-more[open]::details-content {
+  block-size: auto;
+  content-visibility: visible;
+}
+
+@media (min-width: 1024px) {
+  .app-surface aside,
+  .app-surface .app-content {
+    transition:
+      width var(--motion-normal, 180ms) ease,
+      padding-left var(--motion-normal, 180ms) ease;
+  }
+
+  .app-surface[data-sidebar="collapsed"] > aside {
+    width: 4.75rem;
+  }
+
+  .app-surface[data-sidebar="collapsed"] > .app-content {
+    padding-left: 4.75rem;
+  }
+
+  /* The rail shows the logo, the toggle and the main icons only. */
+  .app-surface[data-sidebar="collapsed"] aside .brand-text,
+  .app-surface[data-sidebar="collapsed"] aside .nav-label,
+  .app-surface[data-sidebar="collapsed"] aside .nav-more,
+  .app-surface[data-sidebar="collapsed"] aside .sidebar-account {
+    display: none;
+  }
+
+  .app-surface[data-sidebar="collapsed"] aside .sidebar-head {
+    flex-direction: column;
+    align-items: center;
+    padding-inline: 0.5rem;
+  }
+
+  .app-surface[data-sidebar="collapsed"] aside .nav-link {
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
