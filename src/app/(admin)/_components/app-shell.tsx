@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { BrandGlyph } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -19,6 +20,8 @@ import {
 } from "./mobile-app-nav";
 import { MobileMenuDrawer } from "./mobile-menu-drawer";
 import { RouteContentTransition } from "./route-content-transition";
+import { SIDEBAR_COOKIE } from "@/lib/ui/sidebar-cookie";
+import { SidebarToggle } from "./sidebar-toggle";
 import { StudentTabBar } from "./student-tab-bar";
 
 type Role = "school_admin" | "teacher" | "student";
@@ -34,9 +37,13 @@ type RoleAwareNavItem = {
   labelKey: string;
   match?: MobileNavMatch;
   platformAdminOnly?: boolean;
+  // Shown in the short main list for these roles; everything else sits under More.
+  primaryFor?: Role[];
   roles?: Role[];
   safeguardingOnly?: boolean;
 };
+
+const ALL_ROLES: Role[] = ["school_admin", "teacher", "student"];
 
 const staffAttendanceHref =
   "/events?view=list&scope=school&status=approved&focus=attendance";
@@ -72,13 +79,19 @@ const navSections: Array<{
   {
     labelKey: "nav.main",
     items: [
-      { href: "/dashboard", labelKey: "nav.dashboard" },
-      { href: "/events", labelKey: "nav.events" },
-      { href: "/clubs", labelKey: "nav.clubs" },
-      { href: "/portfolio", labelKey: "nav.portfolio", roles: ["student"] },
+      { href: "/dashboard", labelKey: "nav.dashboard", primaryFor: ALL_ROLES },
+      { href: "/events", labelKey: "nav.events", primaryFor: ALL_ROLES },
+      { href: "/clubs", labelKey: "nav.clubs", primaryFor: ALL_ROLES },
+      {
+        href: "/portfolio",
+        labelKey: "nav.portfolio",
+        primaryFor: ["student"],
+        roles: ["student"],
+      },
       {
         href: "/club-requests",
         labelKey: "nav.clubIdeas",
+        primaryFor: ["student"],
         roles: ["student"],
       },
       {
@@ -101,6 +114,7 @@ const navSections: Array<{
       {
         href: "/students",
         labelKey: "nav.students",
+        primaryFor: ["school_admin", "teacher"],
         roles: ["school_admin", "teacher"],
       },
       { href: "/staff", labelKey: "nav.staff", roles: ["school_admin"] },
@@ -117,11 +131,13 @@ const navSections: Array<{
       {
         href: "/approvals",
         labelKey: "nav.approvals",
+        primaryFor: ["school_admin", "teacher"],
         roles: ["school_admin", "teacher"],
       },
       {
         href: "/reports",
         labelKey: "nav.reports",
+        primaryFor: ["school_admin", "teacher"],
         roles: ["school_admin", "teacher"],
       },
       {
@@ -392,6 +408,26 @@ export async function AppShell({
         })),
     }))
     .filter((section) => section.items.length) satisfies NavSection[];
+  const isPrimary = (href: string) =>
+    navSections.some((section) =>
+      section.items.some(
+        (item) =>
+          item.href === href &&
+          Boolean(profile && item.primaryFor?.includes(profile.role)) &&
+          (!item.roles || Boolean(profile && item.roles.includes(profile.role))),
+      ),
+    );
+  const primaryNavItems = visibleNavSections.flatMap((section) =>
+    section.items.filter((item) => isPrimary(item.href)),
+  );
+  const moreNavSections = visibleNavSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !isPrimary(item.href)),
+    }))
+    .filter((section) => section.items.length);
+  const sidebarCollapsed =
+    (await cookies()).get(SIDEBAR_COOKIE)?.value === "collapsed";
   const mobileNavigation = getMobileNavigation(
     profile,
     isPlatformAdmin,
@@ -410,17 +446,31 @@ export async function AppShell({
   };
 
   return (
-    <div className="app-surface min-h-screen lg:flex">
+    <div
+      className="app-surface min-h-screen lg:flex"
+      data-sidebar={sidebarCollapsed ? "collapsed" : "expanded"}
+    >
       <aside className="hidden w-[17.5rem] min-w-0 shrink-0 overflow-hidden border-r border-slate-200/80 bg-white/95 shadow-sm lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
-        <div className="min-w-0 border-b border-slate-200 px-4 py-4">
-          <Brand
-            dashboardLabel={t("nav.dashboard")}
-            name={t("app.name")}
-            subtitle={t("app.subtitle")}
+        <div className="sidebar-head flex min-w-0 items-start gap-2 border-b border-slate-200 px-4 py-4">
+          <div className="min-w-0 flex-1">
+            <Brand
+              dashboardLabel={t("nav.dashboard")}
+              name={t("app.name")}
+              subtitle={t("app.subtitle")}
+            />
+          </div>
+          <SidebarToggle
+            initiallyCollapsed={sidebarCollapsed}
+            label={t("nav.menu")}
           />
         </div>
         <div className="min-w-0 min-h-0 flex-1 overflow-y-auto px-3 py-4">
-          <AppNav sections={visibleNavSections} />
+          <AppNav
+            ariaLabel={t("nav.menu")}
+            moreLabel={t("nav.more")}
+            moreSections={moreNavSections}
+            primaryItems={primaryNavItems}
+          />
         </div>
         <AccountPanel
           email={email}
@@ -437,7 +487,7 @@ export async function AppShell({
         />
       </aside>
 
-      <div className="min-w-0 flex-1 lg:pl-[17.5rem]">
+      <div className="app-content min-w-0 flex-1 lg:pl-[17.5rem]">
         <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <Brand
@@ -535,7 +585,7 @@ function Brand({
       >
         <BrandGlyph />
       </Link>
-      <div className="min-w-0 max-w-full">
+      <div className="brand-text min-w-0 max-w-full">
         <Link
           className={
             compact
@@ -587,7 +637,7 @@ function AccountPanel({
   themeLabels: Record<ThemePreference, string>;
 }) {
   return (
-    <div className="min-w-0 max-w-full space-y-2 overflow-hidden border-t border-slate-200 bg-slate-50/70 px-4 py-3">
+    <div className="sidebar-account min-w-0 max-w-full space-y-2 overflow-hidden border-t border-slate-200 bg-slate-50/70 px-4 py-3">
       <div className="pill-controls grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2">
         <LanguageSwitcher
           compact
