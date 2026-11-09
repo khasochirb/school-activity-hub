@@ -21,12 +21,17 @@ export function formatShortDate(value: DateInput, locale: Locale) {
   return formatDate(value, locale);
 }
 
-export function formatDateTime(value: DateInput, locale: Locale) {
+export function formatDateTime(
+  value: DateInput,
+  locale: Locale,
+  timeZone?: string,
+) {
   return formatWithLocale(value, locale, {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
     month: "short",
+    timeZone,
     year: "numeric",
   });
 }
