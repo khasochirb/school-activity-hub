@@ -453,7 +453,7 @@ export default async function ClubsPage({
                     </span>
                   </Link>
                   <div className="cl-club-body">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-col items-start gap-1.5">
                       <h3 className="cl-club-title">
                         <Link
                           aria-label={tf("clubs.profile.actions.viewNamedClub", {
