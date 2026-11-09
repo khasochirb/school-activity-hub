@@ -6305,3 +6305,129 @@ html[data-theme="dark"] .cl-land::before {
 .cl-chip-scroll > .cl-filters-divider {
   flex-shrink: 0;
 }
+
+/* ---------- Menu drawer: Pulse's quiet sidebar ----------
+   30px-scale rows (40px on touch), muted icons, a soft fill and a 3px accent bar
+   for the current page, sentence-case group labels, one account row at the foot. */
+.drawer-row {
+  position: relative;
+  display: flex;
+  min-height: 2.5rem;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 450;
+  text-decoration: none;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.drawer-row:hover {
+  background: color-mix(in oklab, var(--card-soft) 70%, transparent);
+  color: var(--foreground);
+}
+
+.drawer-row[aria-current="page"] {
+  background: var(--card-soft);
+  color: var(--foreground);
+  font-weight: 550;
+}
+
+.drawer-row .drawer-icon {
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.drawer-row[aria-current="page"] .drawer-icon {
+  color: var(--foreground);
+  opacity: 1;
+}
+
+.drawer-indicator {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: -4px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary);
+}
+
+.drawer-group {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.drawer-group:hover {
+  color: var(--foreground);
+}
+
+.drawer-account > summary::-webkit-details-marker {
+  display: none;
+}
+
+.drawer-account-row {
+  display: flex;
+  cursor: pointer;
+  list-style: none;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.drawer-account-row:hover,
+.drawer-account[open] > .drawer-account-row {
+  background: var(--card-soft);
+}
+
+.drawer-avatar {
+  display: grid;
+  height: 30px;
+  width: 30px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.drawer-account-menu {
+  display: grid;
+  gap: 1px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 5px;
+  background: var(--card);
+}
+
+.drawer-account[open]::details-content {
+  block-size: auto;
+  content-visibility: visible;
+}
+
+.drawer-menu-line {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+.drawer-menu-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 10px;
+}
+
+.drawer-menu-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}

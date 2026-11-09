@@ -457,43 +457,50 @@ function MobileAccount({
   themeLabel: string;
   themeLabels: Record<ThemePreference, string>;
 }) {
+  // One account row, as in Pulse: it opens a small menu with the profile,
+  // language, theme and sign-out, instead of four stacked panels.
+  const initials = (email ?? "?").slice(0, 2).toUpperCase();
+
   return (
-    <div className="min-w-0 max-w-full space-y-3 overflow-hidden">
-      <Link
-        className="btn btn-secondary min-h-11 w-full justify-start"
-        href="/profile"
-        prefetch={false}
-      >
-        {profileLabel}
-        <PendingLinkIndicator />
-      </Link>
-      <div className="pill-controls grid min-w-0 max-w-full gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
-        <LanguageSwitcher
-          currentLocale={locale}
-          label={languageLabel}
-          labels={languageLabels}
-        />
-        <ThemeToggle
-          currentTheme={theme}
-          label={themeLabel}
-          labels={themeLabels}
-          switchLabel={switchThemeLabel}
-        />
+    <details className="drawer-account group min-w-0 max-w-full">
+      <summary className="drawer-account-row">
+        <span aria-hidden="true" className="drawer-avatar">{initials}</span>
+        <span className="grid min-w-0 flex-1 leading-tight">
+          <span className="truncate text-sm font-medium text-[var(--foreground)]">{roleLabel}</span>
+          <span className="truncate text-xs text-[var(--muted)]">{email}</span>
+        </span>
+        <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--muted)] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+          <path d="m6 15 6-6 6 6" />
+        </svg>
+      </summary>
+      <div className="drawer-account-menu">
+        <Link className="drawer-row" href="/profile" prefetch={false}>
+          <span className="min-w-0 flex-1 truncate">{profileLabel}</span>
+          <PendingLinkIndicator />
+        </Link>
+        <div className="drawer-menu-line" />
+        <div className="pill-controls grid gap-px">
+        <div className="drawer-menu-setting">
+          <span className="drawer-menu-label">{languageLabel}</span>
+          <LanguageSwitcher compact currentLocale={locale} label={languageLabel} labels={languageLabels} />
+        </div>
+        <div className="drawer-menu-setting">
+          <span className="drawer-menu-label">{themeLabel}</span>
+          <ThemeToggle compact currentTheme={theme} label={themeLabel} labels={themeLabels} showLabel={false} switchLabel={switchThemeLabel} />
+        </div>
+        </div>
+        <div className="drawer-menu-line" />
+        <form action={logout}>
+          <PendingSubmitButton
+            className="drawer-row w-full text-left"
+            pendingLabel={logoutPendingLabel}
+            toastMessage={logoutPendingLabel}
+          >
+            {logoutLabel}
+          </PendingSubmitButton>
+        </form>
       </div>
-      <div className="min-w-0 rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
-        <p className="break-all">{email}</p>
-        <p className="mt-1 break-words font-semibold leading-snug text-slate-900">{roleLabel}</p>
-      </div>
-      <form action={logout}>
-        <PendingSubmitButton
-          className="btn btn-secondary w-full"
-          pendingLabel={logoutPendingLabel}
-          toastMessage={logoutPendingLabel}
-        >
-          {logoutLabel}
-        </PendingSubmitButton>
-      </form>
-    </div>
+    </details>
   );
 }
 

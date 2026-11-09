@@ -651,7 +651,7 @@ function StudentDashboard({
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
 }) {
-  const events = buildStudentQuickViewEvents(analytics, profile, locale, t, baseUrl);
+  const events = buildStudentQuickViewEvents(analytics, profile, locale, t, baseUrl, identity.timeZone);
   const startsById = new Map(
     analytics.upcomingEvents.map((event) => [event.id, event.starts_at]),
   );
@@ -2467,6 +2467,7 @@ function buildStudentQuickViewEvents(
   locale: Locale,
   t: (key: string) => string,
   baseUrl: string,
+  timeZone?: string,
 ): StudentUpcomingEvent[] {
   const clubNameById = new Map(
     analytics.upcomingEventClubs.map((club) => [club.id, club.name]),
@@ -2507,7 +2508,7 @@ function buildStudentQuickViewEvents(
       ? responsibleStaffById.get(event.responsible_staff_id)
       : null;
 
-    const tile = formatCalendarDateBadge(event.starts_at, locale);
+    const tile = formatCalendarDateBadge(event.starts_at, locale, timeZone);
 
     return {
       posterUrl: event.poster_path
@@ -2540,9 +2541,10 @@ function buildStudentQuickViewEvents(
       ),
       costNotes: event.cost_notes,
       costType: event.cost_type,
-      dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
+      dateTimeLabel: `${formatDateTime(event.starts_at, locale, timeZone)} - ${formatTime(
         event.ends_at,
         locale,
+        timeZone,
       )}`,
       description: event.description,
       eligibilityLabel:

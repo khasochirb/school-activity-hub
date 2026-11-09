@@ -205,7 +205,7 @@ export function MobileMenuDrawer({
                 <div className="min-w-0 flex-1">{header}</div>
                 <button
                   aria-label={closeLabel}
-                  className="btn btn-secondary flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 text-xl leading-none"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xl leading-none text-[var(--muted)] transition hover:bg-[var(--card-soft)] hover:text-[var(--foreground)]"
                   onClick={() => closeDrawer()}
                   ref={closeButtonRef}
                   type="button"
