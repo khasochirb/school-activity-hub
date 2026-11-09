@@ -19,7 +19,8 @@ declare
   club_count int;
   first_names text[] := array['Болд', 'Сараа', 'Тэмүүлэн', 'Анужин', 'Билгүүн', 'Номин', 'Хулан', 'Мөнх-Эрдэнэ', 'Энхжин', 'Тэнгис', 'Марал', 'Ганбат'];
   last_names text[] := array['Батболд', 'Дорж', 'Ганзориг', 'Пүрэв', 'Цэрэн', 'Бат-Очир', 'Энхбаяр', 'Сүхбаатар', 'Отгон', 'Нямдорж', 'Галсан', 'Мөнхбат'];
-  homerooms text[] := array['8Б', '8Б', '8Б', '9А', '9А', '9А', '8Б', '10В', '10В', '9А', '8Б', '10В'];
+  -- The live demo school's classes; the demo student account is in 11Б.
+  homerooms text[] := array['11Б', '11Б', '11Б', '10А', '10А', '10А', '11Б', '9А', '9А', '10А', '11Б', '9А'];
   event_titles text[] := array['Шатрын аварга шалгаруулах тэмцээн', 'Сагсан бөмбөгийн нээлттэй бэлтгэл', 'Робот бүтээх өдөрлөг', 'Морин хуурын тоглолт', 'Мэтгэлцээний сургалт', 'Урлагийн үзэсгэлэн', 'Байгаль хамгаалах өдөрлөг', 'Шинэ гишүүдийн уулзалт'];
   event_categories text[] := array['Academic', 'Sports', 'Academic', 'Arts', 'Academic', 'Arts', 'Culture', 'Culture'];
   event_places text[] := array['Номын сан', 'Спорт заал', 'Технологийн танхим', 'Хурлын танхим', '204 тоот', 'Үүдний танхим', 'Сургуулийн талбай', '101 тоот'];
@@ -51,7 +52,7 @@ begin
   where c.school_id = demo_school and c.status = 'active';
   club_count := coalesce(array_length(club_ids, 1), 0);
 
-  -- 12 demo students in three classes.
+  -- 12 demo students in three classes (11Б, 10А, 9А).
   for i in 1..12 loop
     insert into public.student_rosters (id, school_id, student_number, first_name, last_name, grade_level, homeroom, status, created_by_profile_id)
     values (
@@ -68,9 +69,9 @@ begin
       insert into public.club_memberships (id, school_id, club_id, student_roster_id, role, status, created_by_profile_id)
       values
         (md5('sah-demo-member-' || i || '-a')::uuid, demo_school, club_ids[1 + (i % club_count)], roster_id,
-         case when i <= club_count then 'leader' else 'member' end, 'active', demo_admin),
+         (case when i <= club_count then 'leader' else 'member' end)::public.club_member_role, 'active', demo_admin),
         (md5('sah-demo-member-' || i || '-b')::uuid, demo_school, club_ids[1 + ((i + 2) % club_count)], roster_id,
-         'member', 'active', demo_admin)
+         'member'::public.club_member_role, 'active', demo_admin)
       on conflict do nothing;
     end loop;
   end if;
@@ -87,7 +88,7 @@ begin
       event_titles[i], event_titles[i] || '. Бүх сурагч оролцох боломжтой.',
       event_categories[i], event_places[i], starts, starts + interval '2 hours',
       case when i % 3 = 0 then 20 else null end,
-      case when day_offsets[i] < 0 then 'completed' else 'approved' end,
+      (case when day_offsets[i] < 0 then 'completed' else 'approved' end)::public.event_status,
       demo_admin, demo_admin, 'free'
     )
     on conflict do nothing;
