@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parent approval · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script src="parent-data.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Parent approval
+// One activity that needs a parent's OK: what it is, who is responsible, then yes or no with an optional note.
+const D = window.ParentDraft;
+let choice = null, sent = false;
+function render() {
+  const a = D.ASKS.find((x) => x.id === location.hash.slice(1)) || D.ASKS[0];
+  const kid = D.kid(a.kid), ans = D.answerOf(a.id);
+  const facts = [["When", `${S.dayLong(a.start)}, ${S.time(a.start)}–${S.time(a.end)}`], ["Where", a.location], ["Cost", a.cost], ["Getting there", a.transport], ["Responsible adult", a.adult], ["Risk", a.risk]];
+  const decided = ans && !sent ? ans : null;
+  C.shell("parent", `
+    <a href="parent.html" style="font-size:14px;font-weight:600;color:var(--muted);text-decoration:none">← Back</a>
+    <section class="evhero" style="--t:${C.catColor(a.category)}">
+      <div class="evcover">${S.art(a.art)}</div>
+      <div class="evinfo">${C.cat(a.category)}<h1>${esc(a.title)}</h1>
+        <p>${esc(a.club)} · for <b>${esc(kid.full)}</b>, ${esc(kid.grade)}</p>
+        ${ans ? `<span class="tag ${ans.value === "yes" ? "ok" : "warn"}">${ans.value === "yes" ? "You said yes" : "You said no"} on ${esc(ans.on)}</span>` : `<span class="tag warn">Please answer by ${S.dayLong(a.answerBy)}</span>`}
+      </div>
+    </section>
+    <div class="facts">${facts.map(([k, v]) => `<div class="card"><span class="muted">${k}</span><b>${esc(v)}</b></div>`).join("")}</div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:22px;min-width:0">
+        <section class="sec"><header><h2>Why we're asking</h2></header><p style="font-size:15.5px;line-height:1.65">${esc(a.note)}</p></section>
+        <section class="sec"><header><h2>What to bring</h2></header><p style="font-size:15.5px;line-height:1.65">${esc(a.bring)}</p></section>
+      </div>
+      <aside class="side">
+        <div class="card panel" id="answer">
+          ${sent ? `<p class="big">Thank you, your answer is sent.</p><p class="muted" style="font-size:14px">${esc(a.adult.split(" (")[0])} will see it on the attendance list. You can change it until the activity starts.</p><a class="btn btn-primary" href="parent.html">Back to home</a>`
+          : decided ? `<p class="big">${decided.value === "yes" ? `You allowed ${esc(kid.name)} to take part.` : `You said ${esc(kid.name)} can't take part.`}</p>${decided.note ? `<p class="muted" style="font-size:14px">Your note: “${esc(decided.note)}”</p>` : ""}<button class="btn btn-soft" data-change>Change my answer</button>`
+          : `<p class="big">Can ${esc(kid.name)} take part?</p>
+            <div class="pa-choice">${[["yes", "Yes, I allow it"], ["no", "No"]].map(([v, l]) => `<button type="button" class="pa-opt" data-choice="${v}" aria-pressed="${choice === v}">${l}</button>`).join("")}</div>
+            <label class="field"><span>Note for the teacher <span class="muted">(optional)</span></span><textarea class="textarea" id="note" rows="3" placeholder="For example: she has asthma and carries an inhaler."></textarea></label>
+            <label class="pa-check"><input type="checkbox" id="confirm"> I'm ${esc(kid.name)}'s parent or guardian.</label>
+            <button class="btn btn-primary" data-send ${choice ? "" : "disabled"}>Send answer</button>
+            <p class="muted" style="font-size:12.5px">The school sees your name, your answer and your note. Nothing else.</p>`}
+        </div>
+      </aside>
+    </div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-choice]"); if (c) { choice = c.dataset.choice; render(); }
+  if (e.target.closest("[data-change]")) { const a = D.ASKS.find((x) => x.id === location.hash.slice(1)) || D.ASKS[0]; D.setAnswer(a.id, null); choice = null; render(); }
+  if (e.target.closest("[data-send]")) {
+    if (!document.getElementById("confirm").checked) { S.toast("Please tick the box to confirm you're the parent or guardian."); return; }
+    const a = D.ASKS.find((x) => x.id === location.hash.slice(1)) || D.ASKS[0];
+    D.setAnswer(a.id, { value: choice, note: document.getElementById("note").value.trim(), on: S.dayShort(new Date().toISOString()) });
+    sent = true; render();
+  }
+});
+window.addEventListener("hashchange", () => { choice = null; sent = false; render(); });
+if (C.role() !== "parent") { S.setRole("parent"); }
+render();
+
+})();
+</script>
+</body>
+</html>

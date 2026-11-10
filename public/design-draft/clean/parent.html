@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parent home · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script src="parent-data.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Parent home
+// Parent portal: a short page. Only activities that need a parent's OK ask for anything; the rest is read-only.
+const D = window.ParentDraft, P = window.Portfolio;
+function render() {
+  const kid = D.kid(D.kidId());
+  const asks = D.ASKS.filter((a) => a.kid === kid.id);
+  const waiting = asks.filter((a) => !D.answerOf(a.id));
+  const answered = asks.filter((a) => D.answerOf(a.id));
+  const allWaiting = D.ASKS.filter((a) => !D.answerOf(a.id));
+  const upcoming = S.EVENTS.filter((e) => !e.past && ["going", "registered"].includes(S.statusOf(e))).slice(0, 4);
+  const shared = kid.id === "nomin" ? P.state.entries.filter((e) => !e.draft && e.visibility !== "me").slice(0, 3) : [];
+  const row = (a, primary) => {
+    const ans = D.answerOf(a.id);
+    return `<div class="row" style="align-items:center">
+      <span class="pa-sq">${S.art(a.art)}</span>
+      <span class="grow"><span class="t" style="display:block">${esc(a.title)}</span>
+        <span class="s">${S.dayLong(a.start)} · ${S.time(a.start)} · ${esc(a.location)}</span>
+        ${ans ? `<span class="tag ${ans.value === "yes" ? "ok" : "warn"}" style="margin-top:6px">${ans.value === "yes" ? "You said yes" : "You said no"}</span>` : `<span class="s" style="display:block;color:var(--amber);font-weight:600">Please answer by ${S.dayShort(a.answerBy)}</span>`}</span>
+      <a class="btn ${primary ? "btn-primary" : "btn-soft"} btn-sm" href="parent-approve.html#${a.id}">${ans ? "View" : "Review"}</a></div>`;
+  };
+  C.shell("parent", `
+    <div class="head"><div><h1>${C.greeting()}, Saruul</h1>
+      <p>${allWaiting.length ? `${allWaiting.length} ${allWaiting.length === 1 ? "activity needs" : "activities need"} your OK` : "Nothing needs you right now"} · Khangai High School</p></div></div>
+    <div class="filters" role="group" aria-label="Your children">${D.KIDS.map((k) => {
+      const n = D.ASKS.filter((a) => a.kid === k.id && !D.answerOf(a.id)).length;
+      return `<button class="chip pa-kid" data-kid="${k.id}" aria-pressed="${k.id === kid.id}"><span class="av" style="width:22px;height:22px;font-size:10px;background:${k.color};color:#1b1a17">${k.initials}</span>${esc(k.name)}${n ? `<span class="pa-count">${n}</span>` : ""}</button>`;
+    }).join("")}</div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
+        <section class="sec"><header><h2>Needs your OK</h2></header>
+          ${waiting.length ? `<div class="card rows">${waiting.map((a, i) => row(a, i === 0)).join("")}</div>` : `<div class="card empty">Nothing waiting for ${esc(kid.name)}. We'll email you when an activity needs your OK.</div>`}
+        </section>
+        <section class="sec"><header><h2>Coming up for ${esc(kid.name)}</h2></header>
+          ${kid.id === "nomin" && upcoming.length ? `<div class="card rows">${upcoming.map((e) => `<div class="row"><span class="date"><span>${S.mon(e.start)}</span><b>${S.dom(e.start)}</b></span><span class="grow"><span class="t" style="display:block">${esc(e.title)}</span><span class="s">${S.weekday(e.start)} · ${S.time(e.start)} · ${esc(e.location)}</span></span>${C.cat(e.category)}</div>`).join("")}</div>
+            <p class="muted" style="font-size:13px">Activities ${esc(kid.name)} signed up for. Most don't need anything from you.</p>` : `<div class="card empty">${esc(kid.name)} hasn't signed up for anything coming up.</div>`}
+        </section>
+        <section class="sec"><header><h2>From ${esc(kid.name)}'s portfolio</h2>${shared.length ? '<a href="parent-portfolio.html">See all</a>' : ""}</header>
+          ${shared.length ? `<div class="pfgrid">${shared.map((e) => `<a class="pf" href="parent-portfolio.html#${e.id}" style="text-decoration:none"><span class="pfc" data-k="${e.kind}">${e.photos?.length ? P.media(e.photos[0], e.title) : `<q>${esc(P.bodyText(e).slice(0, 140))}</q>`}</span><span class="t">${esc(e.title)}</span><span class="s">${P.fmtDate(e.date)}</span></a>`).join("")}</div>` : `<div class="card empty">${esc(kid.name)} hasn't shared anything yet.</div>`}
+        </section>
+        ${answered.length || D.HISTORY.some((h) => h.kid === kid.id) ? `<section class="sec"><header><h2>Your past answers</h2></header><div class="card rows">
+          ${answered.map((a) => row(a, false)).join("")}
+          ${D.HISTORY.filter((h) => h.kid === kid.id).map((h) => `<div class="row"><span class="grow"><span class="t" style="display:block">${esc(h.title)}</span><span class="s">Answered ${S.dayShort(h.when)}</span></span><span class="tag ok">You said yes</span></div>`).join("")}
+        </div></section>` : ""}
+      </div>
+      <aside class="side">
+        <div class="card widget"><h3>How this works</h3>
+          <ol class="pa-steps">
+            <li><b>The school marks an activity</b><span>Only trips, late finishes, sports with risk or anything that costs money.</span></li>
+            <li><b>You get an email</b><span>With a link straight to the activity.</span></li>
+            <li><b>You answer yes or no</b><span>You can add a note for the teacher.</span></li>
+            <li><b>The teacher sees it at the door</b><span>No paper forms.</span></li>
+          </ol></div>
+        <div class="card widget"><h3>Email me when</h3>
+          <label class="pa-check"><input type="checkbox" checked> An activity needs my OK</label>
+          <label class="pa-check"><input type="checkbox"> A reminder 2 days before the answer date</label>
+          <label class="pa-check"><input type="checkbox"> The school posts an announcement</label>
+        </div>
+        <div class="card widget"><h3>Questions?</h3><p class="muted" style="font-size:13.5px">Contact ${esc(kid.name)}'s class teacher or the school office. This portal is only for answering activity requests and seeing what ${esc(kid.name)} shares.</p></div>
+      </aside>
+    </div>`);
+  S.startClock();
+}
+document.addEventListener("click", (e) => { const k = e.target.closest("[data-kid]"); if (k) { D.setKid(k.dataset.kid); render(); } });
+if (C.role() !== "parent") { S.setRole("parent"); }
+render();
+
+})();
+</script>
+</body>
+</html>

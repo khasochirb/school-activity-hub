@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Child's portfolio · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script src="parent-data.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Child's portfolio
+// Read-only. Parents see only what the child already shares with teachers or the school. No comments, no likes.
+const D = window.ParentDraft, P = window.Portfolio;
+let kind = "all";
+function render() {
+  const kid = D.kid(D.kidId());
+  const all = kid.id === "nomin" ? P.state.entries.filter((e) => !e.draft && e.visibility !== "me") : [];
+  const list = all.filter((e) => kind === "all" || e.kind === kind);
+  C.shell("parent-portfolio", `
+    <div class="head"><div style="display:flex;gap:16px;align-items:center"><span class="pfav" style="background:${kid.color}">${kid.initials}</span><div><h1>${esc(kid.name)}'s portfolio</h1><p>${esc(kid.grade)} · Khangai High School</p></div></div></div>
+    <div class="card pa-note">${C.ICON.check}<span>You see what ${esc(kid.name)} shares with her teachers or the school. Anything she keeps private stays private, and she can see that her family can view these.</span></div>
+    <div class="filters">${D.KIDS.map((k) => `<button class="chip" data-kid="${k.id}" aria-pressed="${k.id === kid.id}">${esc(k.name)}</button>`).join("")}<span style="width:1px;height:22px;background:var(--line-strong)"></span>${[["all", "All"], ["photos", "Photos"], ["project", "Projects"], ["achievement", "Achievements"], ["reflection", "Reflections"]].map(([k, l]) => `<button class="chip" data-kind="${k}" aria-pressed="${kind === k}">${l}</button>`).join("")}</div>
+    ${list.length ? `<div class="pfgrid">${list.map((e) => `<button class="pf" data-open="${e.id}"><span class="pfc" data-k="${e.kind}">${e.photos?.length ? P.media(e.photos[0], e.title) : `<q>${esc(P.bodyText(e).slice(0, 160))}</q>`}</span><span class="t">${esc(e.title)}</span><span class="s">${P.fmtDate(e.date)}${e.club ? ` · ${esc(e.club)}` : ""}</span></button>`).join("")}</div>`
+      : `<div class="card empty">${esc(kid.name)} hasn't shared anything yet.</div>`}`);
+  S.startClock();
+  const open = location.hash.slice(1); if (open && list.some((e) => e.id === open)) openEntry(open);
+}
+function openEntry(id) {
+  const e = P.state.entries.find((x) => x.id === id); if (!e) return;
+  S.sheet(`<div class="sheet-head"><div><b>${esc(e.title)}</b><p class="muted" style="font-size:13px">${P.fmtDate(e.date)}${e.club ? ` · ${esc(e.club)}` : ""}</p></div><button class="close" data-close aria-label="Close">×</button></div>
+    <div class="sheet-body">${e.photos?.length ? `<div class="photos">${e.photos.map((p) => `<span>${P.media(p, e.title)}</span>`).join("")}</div>` : ""}<p style="white-space:pre-line;line-height:1.65">${esc(P.bodyText(e))}</p></div>`);
+}
+document.addEventListener("click", (e) => {
+  const k = e.target.closest("[data-kind]"); if (k) { kind = k.dataset.kind; render(); }
+  const c = e.target.closest("[data-kid]"); if (c) { D.setKid(c.dataset.kid); render(); }
+  const o = e.target.closest("[data-open]"); if (o) openEntry(o.dataset.open);
+});
+if (C.role() !== "parent") { S.setRole("parent"); }
+P.init(render);
+
+})();
+</script>
+</body>
+</html>

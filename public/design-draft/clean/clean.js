@@ -20,12 +20,16 @@
   };
   const role = () => S.role();
   const staff = () => ["teacher", "admin"].includes(role());
-  const NAV = () => role() === "platform"
+  const NAV = () => role() === "parent"
+    ? [["parent", "Home", "parent.html", "home"], ["parent-portfolio", "Portfolio", "parent-portfolio.html", "portfolio"]]
+    : role() === "platform"
     ? [["platform", "Platform", "platform.html", "home"], ["schools", "Schools", "platform.html#schools", "clubs"], ["connections", "Connections", "platform.html#connections", "events"], ["audit", "Audit log", "platform.html#audit", "inbox"]]
     : staff()
     ? [["home", "Home", "dashboard.html", "home"], ["events", "Events", "events.html", "events"], ["students", "Students", "students.html", "students"], ["approvals", "Approvals", "approvals.html", "inbox"]]
     : [["home", "Home", "dashboard.html", "home"], ["events", "Events", "events.html", "events"], ["clubs", "Clubs", "clubs.html", "clubs"], ["portfolio", "Portfolio", "portfolio.html", "portfolio"]];
-  const MORE = () => role() === "platform"
+  const MORE = () => role() === "parent"
+    ? [["Announcements", "announcements.html"], ["Privacy", "privacy.html"]]
+    : role() === "platform"
     ? [["Event approvals", "approvals.html"], ["Activity reports", "reports.html"], ["Privacy", "privacy.html"]]
     : staff()
     ? [["Clubs", "clubs.html"], ["Club requests", "ideas.html"], ["Invite codes", "invites.html"], ["Attendance", "attendance.html"], ["Activity reports", "reports.html"], ["Announcements", "announcements.html"], ["School news", "news.html"], ["Safety and support", "safety.html"], ...(role() === "admin" ? [["Staff accounts", "staff.html"], ["School settings", "settings.html"], ["School network", "connections.html"]] : []), ["Profile", "profile.html"], ["Privacy", "privacy.html"]]
@@ -41,7 +45,7 @@
     document.documentElement.style.removeProperty("--tint");
     document.getElementById("app").innerHTML = `
       <header class="top"><div class="wrap">
-        <a class="brand" href="${role() === "platform" ? "platform.html" : "dashboard.html"}"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5" fill="#ffc23d"/><path d="M2.5 20.5c2.6-4.2 5.9-6.3 9.5-6.3s6.9 2.1 9.5 6.3" stroke="#fff" stroke-linecap="round" stroke-width="3"/></svg></i>Activity Hub</a>
+        <a class="brand" href="${role() === "platform" ? "platform.html" : role() === "parent" ? "parent.html" : "dashboard.html"}"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5" fill="#ffc23d"/><path d="M2.5 20.5c2.6-4.2 5.9-6.3 9.5-6.3s6.9 2.1 9.5 6.3" stroke="#fff" stroke-linecap="round" stroke-width="3"/></svg></i>Activity Hub</a>
         <nav class="tabs" aria-label="Main">${nav.map(([k, l, h, i]) => `<a href="${h}" ${k === active ? 'aria-current="page"' : ""}>${ICON[i]}${l}</a>`).join("")}</nav>
         <div class="right">
           <span class="clock" id="clock"></span>
@@ -65,7 +69,7 @@
     if (e.key === "Escape") document.querySelectorAll(".menu[data-open]").forEach((m) => m.removeAttribute("data-open"));
     if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); openFind(); }
   });
-  document.addEventListener("change", (e) => { if (e.target.matches("[data-role]")) { S.setRole(e.target.value); location.href = e.target.value === "platform" ? "platform.html" : "dashboard.html"; } });
+  document.addEventListener("change", (e) => { if (e.target.matches("[data-role]")) { S.setRole(e.target.value); location.href = e.target.value === "platform" ? "platform.html" : e.target.value === "parent" ? "parent.html" : "dashboard.html"; } });
 
   // One search box for the whole site instead of a filter panel on every page
   function openFind() {

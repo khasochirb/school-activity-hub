@@ -83,7 +83,7 @@
   store.rsvp = store.rsvp || {};
   store.joined = store.joined || { robotics: true, debate: true, volunteers: true };
   // ?as=teacher in a link from the overview switches the draft's role.
-  try { const as = new URLSearchParams(location.search).get("as"); if (["student", "teacher", "admin", "platform"].includes(as)) { store.role = as; localStorage.setItem(KEY, JSON.stringify(store)); } } catch (e) {}
+  try { const as = new URLSearchParams(location.search).get("as"); if (["student", "parent", "teacher", "admin", "platform"].includes(as)) { store.role = as; localStorage.setItem(KEY, JSON.stringify(store)); } } catch (e) {}
 
   const statusOf = (ev) => (ev.id in store.rsvp ? store.rsvp[ev.id] : ev.status);
   const setStatus = (ev, s) => { store.rsvp[ev.id] = s; persist(); };
@@ -240,11 +240,12 @@
   const qr = (seed, size = 21) => { let x = 0; for (const ch of seed) x = (x * 33 + ch.charCodeAt(0)) >>> 0; const n = size, cells = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) { const fz = (r < 7 && c < 7) || (r < 7 && c > n - 8) || (r > n - 8 && c < 7); let on; if (fz) { const rr = r > 7 ? r - (n - 7) : r, cc = c > 7 ? c - (n - 7) : c; const a = Math.max(Math.abs(rr - 3), Math.abs(cc - 3)); on = a !== 2 && a <= 3; } else { x = (x * 1103515245 + 12345) >>> 0; on = (x >>> 16) % 2 === 0; } if (on) cells.push(`<rect x="${c}" y="${r}" width="1" height="1"/>`); } return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" fill="#131517" role="img" aria-label="QR code">${cells.join("")}</svg>`; };
 
   /* ---------- Roles and navigation (mirrors the real app's nav per role) ---------- */
-  const ROLES = { student: "Student", teacher: "Teacher", admin: "School admin", platform: "Platform admin" };
+  const ROLES = { student: "Student", parent: "Parent", teacher: "Teacher", admin: "School admin", platform: "Platform admin" };
   const ME = {
     student: { name: "Nomin-Erdene Ulziibat", short: "Nomin-Erdene U.", initials: "NU", sub: "Grade 11B", email: "nomin.u@khangai.edu.mn" },
     teacher: { name: "Bat-Erdene Ganbold", short: "Bat-Erdene G.", initials: "BG", sub: "Teacher · Robotics advisor", email: "baterdene.g@khangai.edu.mn" },
     admin: { name: "Oyunchimeg Dorj", short: "Oyunchimeg D.", initials: "OD", sub: "School admin", email: "oyunchimeg.d@khangai.edu.mn" },
+    parent: { name: "Saruul Ulziibat", short: "Saruul U.", initials: "SU", sub: "Parent of Nomin-Erdene", email: "saruul.u@gmail.com" },
     platform: { name: "Platform team", short: "Platform team", initials: "PT", sub: "Platform admin", email: "platform@activityhub.mn" },
   };
   const role = () => (ROLES[store.role] ? store.role : "student");

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parent sign-up · Clean draft</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../common.css">
+<link rel="stylesheet" href="clean.css">
+<link rel="stylesheet" href="extra-a.css">
+<link rel="stylesheet" href="extra-b.css">
+<link rel="stylesheet" href="extra-c.css">
+<style></style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../app.js"></script>
+<script src="../luma/site.js"></script>
+<script src="clean.js"></script>
+<script src="parent-data.js"></script>
+<script>
+(function () {
+const S = window.Site, C = window.Clean, { esc } = S;
+// TITLE: Parent sign-up
+// Public page. A parent joins with the family code the school gives them; it links them to their child.
+let step = 1;
+function render() {
+  const inner = step === 1 ? `
+    <div><p class="ga-eyebrow">For parents</p><h1>Join as a parent</h1><p class="d">Your school gives each family a code on paper or by email. It links you to your child, so you can answer activity requests and see what they share.</p></div>
+    <form class="ga-form" data-next>
+      <label class="field"><span>Family code</span><input class="input" id="code" placeholder="FAM-XXXX-XX" value="FAM-7KQ2-NU" autocomplete="off"></label>
+      <label class="field"><span>Your name</span><input class="input" placeholder="Full name" value="Saruul Ulziibat"></label>
+      <label class="field"><span>Email</span><input class="input" type="email" placeholder="you@example.com" value="saruul.u@gmail.com"></label>
+      <label class="field"><span>You are their</span><select class="input"><option>Mother</option><option>Father</option><option>Guardian</option></select></label>
+      <button class="btn btn-primary" type="submit">Continue</button>
+      <p class="muted" style="font-size:13px">No code? Ask your child's class teacher. One code works for one family; a second parent can join with the same code.</p>
+    </form>`
+  : `
+    <div><p class="ga-eyebrow">For parents</p><h1>Is this your child?</h1><p class="d">Check before you finish. If it's wrong, ask the school for a new code.</p></div>
+    <form class="ga-form" data-done>
+      <div class="card" style="padding:14px;display:flex;gap:12px;align-items:center"><span class="pfav" style="width:48px;height:48px;font-size:16px">NU</span><span><b>Nomin-Erdene Ulziibat</b><span class="muted" style="display:block;font-size:13.5px">Grade 11B · Khangai High School</span></span></div>
+      <p class="muted" style="font-size:13.5px">We'll email a sign-in link to saruul.u@gmail.com. There's no password to remember.</p>
+      <button class="btn btn-primary" type="submit">Yes, link me to Nomin-Erdene</button>
+      <button class="btn" type="button" data-back>Back</button>
+    </form>`;
+  document.getElementById("app").innerHTML = C.authShell(inner) + `<div class="draftnote"><span>Clean draft</span><a href="index.html">All screens</a></div>`;
+}
+document.addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (e.target.matches("[data-next]")) { step = 2; render(); }
+  if (e.target.matches("[data-done]")) { S.setRole("parent"); location.href = "parent.html"; }
+});
+document.addEventListener("click", (e) => { if (e.target.closest("[data-back]")) { step = 1; render(); } });
+render();
+
+})();
+</script>
+</body>
+</html>
