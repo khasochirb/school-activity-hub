@@ -4,6 +4,10 @@ type DateInput = Date | number | string;
 
 const fallbackIntlLocale = "en-CA";
 
+// Kept equal to DEFAULT_EVENT_TIME_ZONE in lib/events/event-calendar-range.ts (a test
+// checks it). Declared here so this file has no imports and node can load it in tests.
+const DEFAULT_TIME_ZONE = "Asia/Ulaanbaatar";
+
 const intlLocaleByAppLocale: Record<Locale, string> = {
   en: "en-CA",
   mn: "mn-MN",
@@ -87,7 +91,7 @@ export function formatDayKey(value: DateInput, timeZone?: string) {
   return new Intl.DateTimeFormat("en-CA", {
     day: "2-digit",
     month: "2-digit",
-    timeZone,
+    timeZone: timeZone ?? DEFAULT_TIME_ZONE,
     year: "numeric",
   }).format(new Date(value));
 }
@@ -178,14 +182,17 @@ export function formatSchedulePreview(
   )}\u2013${timeFormatter.format(endDate)}`;
 }
 
+// Without a zone, Intl uses the runtime's: UTC on the server, so a 16:00 event in
+// Ulaanbaatar printed as 8:00. Calls that pass a school's zone still win.
 function formatWithLocale(
   value: DateInput,
   locale: Locale,
   options: Intl.DateTimeFormatOptions,
 ) {
-  return new Intl.DateTimeFormat(resolveIntlLocale(locale), options).format(
-    new Date(value),
-  );
+  return new Intl.DateTimeFormat(resolveIntlLocale(locale), {
+    ...options,
+    timeZone: options.timeZone ?? DEFAULT_TIME_ZONE,
+  }).format(new Date(value));
 }
 
 function resolveIntlLocale(locale: Locale) {

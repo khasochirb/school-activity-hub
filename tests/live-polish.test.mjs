@@ -27,3 +27,8 @@ test("date tiles fit the Mongolian month and club card actions stay on one line"
   assert.match(polish, /\.cl-dtile span \{[^}]*white-space: nowrap;/);
   assert.match(polish, /\.cl-club-foot \.cl-tag,\s*\.cl-club-foot \.btn \{\s*white-space: nowrap;/);
 });
+
+test("top bar tabs leave room for the full app name", () => {
+  const css = read("src/app/globals.css");
+  assert.match(css.slice(css.lastIndexOf(".top-tab {")), /padding-inline: 10px;/);
+});
