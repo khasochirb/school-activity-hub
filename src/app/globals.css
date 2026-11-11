@@ -1342,6 +1342,11 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   border: 2px solid currentColor;
   border-inline-end-color: transparent;
   border-radius: 999px;
+}
+
+/* Spin only while the link is loading. The spinner sits inside every link, and
+   spinning while invisible made the browser redraw every frame. */
+.pending-link-indicator[data-pending="true"] .pending-link-spinner {
   animation: pending-link-spin calc(var(--motion-large) * 4) linear infinite;
 }
 
@@ -3548,7 +3553,8 @@ html[data-theme="dark"] {
   background:
     radial-gradient(closest-side at 30% 50%, color-mix(in srgb, var(--clean-glow-a) 55%, transparent), transparent),
     radial-gradient(closest-side at 75% 40%, color-mix(in srgb, var(--clean-glow-b) 50%, transparent), transparent);
-  filter: blur(30px);
+  /* No blur filter: the gradients already fade out, and blurring a full-screen
+     fixed layer was repainted under the top bar on every scroll. */
   opacity: 0.8;
 }
 
@@ -3564,8 +3570,8 @@ html[data-theme="dark"] {
   top: 0;
   z-index: 30;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--background) 78%, transparent);
-  backdrop-filter: blur(14px);
+  /* Nearly opaque instead of a live blur of the page behind the bar. */
+  background: color-mix(in srgb, var(--background) 94%, transparent);
 }
 
 .app-topbar-inner {

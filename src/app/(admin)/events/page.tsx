@@ -425,14 +425,6 @@ export default async function EventsPage({
         .filter((clubId): clubId is string => Boolean(clubId)),
     ),
   );
-  const linkedClubs = linkedClubIds.length
-    ? await getClubsById(
-        admin,
-        isPlatformAdmin ? null : profile.school_id,
-        linkedClubIds,
-      )
-    : [];
-  const clubNameById = new Map(linkedClubs.map((club) => [club.id, club.name]));
   const ownerSchoolIds = Array.from(
     new Set(
       events
@@ -440,17 +432,19 @@ export default async function EventsPage({
         .filter((schoolId) => isPlatformAdmin || schoolId !== profile.school_id),
     ),
   );
-  const ownerSchools = ownerSchoolIds.length
-    ? await getSchoolsById(admin, ownerSchoolIds)
-    : [];
+  // One round trip for club names and school names (the user's own school
+  // included, for the page subtitle) instead of three in a row.
+  const [linkedClubs, ownerSchools] = await Promise.all([
+    linkedClubIds.length
+      ? getClubsById(admin, isPlatformAdmin ? null : profile.school_id, linkedClubIds)
+      : Promise.resolve([]),
+    getSchoolsById(admin, Array.from(new Set([...ownerSchoolIds, profile.school_id]))),
+  ]);
+  const clubNameById = new Map(linkedClubs.map((club) => [club.id, club.name]));
   const schoolNameById = new Map(
     ownerSchools.map((school) => [school.id, school.name]),
   );
-  // The page subtitle names the user's own school, which the list above leaves out.
-  const ownSchoolName =
-    schoolNameById.get(profile.school_id) ??
-    (await getSchoolsById(admin, [profile.school_id]))[0]?.name ??
-    "";
+  const ownSchoolName = schoolNameById.get(profile.school_id) ?? "";
   const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
   const responsibleStaffById = new Map(
     responsibleStaffProfiles.map((staff) => [staff.id, staff]),

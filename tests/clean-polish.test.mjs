@@ -25,7 +25,9 @@ test("the clock is 24-hour with no English city name", () => {
 
 test("the events subtitle names the user's own school", () => {
   const events = read("src/app/(admin)/events/page.tsx");
-  assert.match(events, /getSchoolsById\(admin, \[profile\.school_id\]\)/);
+  // Loaded in the same query as the other school names, not in a query of its own.
+  assert.match(events, /getSchoolsById\(admin, Array\.from\(new Set\(\[\.\.\.ownerSchoolIds, profile\.school_id\]\)\)\)/);
+  assert.match(events, /const ownSchoolName = schoolNameById\.get\(profile\.school_id\) \?\? "";/);
   assert.match(events, /school: ownSchoolName,/);
 });
 
