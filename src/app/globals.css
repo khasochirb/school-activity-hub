@@ -6465,3 +6465,15 @@ html[data-theme="dark"] .cl-land::before {
 .top-tab {
   padding-inline: 10px;
 }
+
+/* A clicked filter chip looks selected at once, while its page loads. */
+.chip-pending {
+  display: none;
+}
+
+.cl-chip:has(.chip-pending[data-pending="true"]) {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-contrast, #fff);
+  opacity: 0.85;
+}

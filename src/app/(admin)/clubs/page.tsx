@@ -34,6 +34,7 @@ import {
 import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { ChipPending } from "../_components/chip-pending";
 import {
   assignClubLeader,
   joinClub,
@@ -892,7 +893,7 @@ function CategoryChips({
             data-c={link.category ? "" : undefined}
             href={link.href}
             key={link.href}
-            prefetch={false}
+            prefetch
             style={
               link.category
                 ? ({ "--c": categoryColor(link.category) } as React.CSSProperties)
@@ -900,6 +901,7 @@ function CategoryChips({
             }
           >
             {link.label}
+            <ChipPending />
           </Link>
         ))}
       </nav>

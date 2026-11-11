@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { categoryColor } from "@/lib/ui/category-colors";
 import { ActionMenu, type ActionMenuItem } from "../_components/action-menu";
+import { ChipPending } from "../_components/chip-pending";
 
 export type EventsChipLink = {
   active: boolean;
@@ -65,8 +66,10 @@ function Chip({ link }: { link: EventsChipLink }) {
       aria-current={link.active ? "page" : undefined}
       className="cl-chip"
       data-c={link.category ? "" : undefined}
+      // Full prefetch: the filtered list is loaded while the chip is on screen and
+      // kept for five minutes, so a click shows it without waiting for the server.
       href={link.href}
-      prefetch={false}
+      prefetch
       style={
         link.category
           ? ({ "--c": categoryColor(link.category) } as CSSProperties)
@@ -74,6 +77,7 @@ function Chip({ link }: { link: EventsChipLink }) {
       }
     >
       {link.label}
+      <ChipPending />
     </Link>
   );
 }
