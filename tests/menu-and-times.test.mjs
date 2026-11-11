@@ -38,3 +38,10 @@ test("the drawer foot is one account row that opens a menu", () => {
   assert.match(account, /<ThemeToggle compact/);
   assert.match(account, /action=\{logout\}/);
 });
+
+test("a date formatted without a zone uses the school default, not the server's UTC", () => {
+  process.env.TZ = "UTC";
+  assert.match(formatDateTime("2026-11-10T08:00:00Z", "en"), /4:00/);
+  const zone = /DEFAULT_EVENT_TIME_ZONE = "([^"]+)"/.exec(read("src/lib/events/event-calendar-range.ts"))[1];
+  assert.match(read("src/lib/i18n/date-format.ts"), new RegExp(`const DEFAULT_TIME_ZONE = "${zone}";`));
+});

@@ -6453,3 +6453,9 @@ html[data-theme="dark"] .cl-land::before {
 .cl-club-foot .btn {
   white-space: nowrap;
 }
+
+/* Staff have five tabs: at 12px side padding the app name came up 9px short and
+   was cut with an ellipsis. 10px frees 20px across the bar. */
+.top-tab {
+  padding-inline: 10px;
+}
