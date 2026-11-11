@@ -562,8 +562,8 @@ export const mn = {
       myEvents: "Миний үйл ажиллагаа",
       nothingYet: "Одоогоор алга. Нэгдээрэй!",
       searchPlaceholder: "Үйл ажиллагаа эсвэл клуб хайх",
-      subtitle: "{school}-д удахгүй {count} · таны жагсаалтад {mine}",
-      subtitleStaff: "{school}-д удахгүй {count}",
+      subtitle: "{school} · удахгүй {count} · таны жагсаалтад {mine}",
+      subtitleStaff: "{school} · удахгүй {count}",
       yourEvents: "Таны үйл ажиллагаа",
     },
     actions: {
@@ -1423,7 +1423,7 @@ export const mn = {
       status: "Төлөв",
     },
     roster: {
-      classGroup: "Ангийн бүлэг / homeroom",
+      classGroup: "Ангийн бүлэг",
       grade: "Анги",
       name: "Жагсаалтын нэр",
       notFound: "Энэ сурагчийн бүртгэлд холбогдсон жагсаалтын бичлэг олдсонгүй.",
@@ -2261,7 +2261,7 @@ export const mn = {
     eyebrow: "Сурагчдын жагсаалт",
     form: {
       adding: "Нэмж байна...",
-      classGroup: "Ангийн бүлэг / homeroom",
+      classGroup: "Ангийн бүлэг",
       fullName: "Бүтэн нэр",
       grade: "Анги",
       studentNumber: "Сурагчийн дугаар",
