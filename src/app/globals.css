@@ -6431,3 +6431,25 @@ html[data-theme="dark"] .cl-land::before {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+/* Live polish, 11-Nov: found on production.
+   The month on a date tile ("11-Р САР") was wider than the tile and got cut. */
+.cl-dtile {
+  width: 62px;
+}
+
+.cl-dtile span {
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Club card foot: the member tag and the leave button broke onto two lines. */
+.cl-club-foot {
+  flex-wrap: wrap;
+}
+
+.cl-club-foot .cl-tag,
+.cl-club-foot .btn {
+  white-space: nowrap;
+}

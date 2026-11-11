@@ -27,6 +27,7 @@ type Profile = {
 
 type School = {
   name: string;
+  timezone: string | null;
 };
 
 type StudentRoster = {
@@ -67,7 +68,7 @@ export default async function ProfilePage() {
   if (profile) {
     const { data: schoolData } = await supabase
       .from("schools")
-      .select("name")
+      .select("name, timezone")
       .eq("id", profile.school_id)
       .maybeSingle<School>();
 
@@ -112,7 +113,13 @@ export default async function ProfilePage() {
       <div className="cl-split">
         <div className="cl-main">
           {profile && studentData ? (
-            <StudentProfile data={studentData} locale={locale} t={t} tf={tf} />
+            <StudentProfile
+              data={studentData}
+              locale={locale}
+              t={t}
+              tf={tf}
+              timeZone={school?.timezone ?? undefined}
+            />
           ) : (
             <Section title={t("profile.settings.title")}>
               <div className="cl-card cl-panel">

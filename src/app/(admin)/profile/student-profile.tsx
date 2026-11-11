@@ -66,11 +66,13 @@ export function StudentProfileHero({
 export function StudentProfile({
   data,
   locale,
+  timeZone,
   t,
   tf,
 }: {
   data: StudentProfileData;
   locale: Locale;
+  timeZone?: string;
   t: Translate;
   tf: TranslateFormat;
 }) {
@@ -173,7 +175,7 @@ export function StudentProfile({
                 <span className="cl-grow">
                   <span className="cl-row-title">{event.title}</span>
                   <span className="cl-row-sub">
-                    {formatDateTime(event.starts_at, locale)}
+                    {formatDateTime(event.starts_at, locale, timeZone)}
                     {event.location ? ` · ${event.location}` : ""}
                   </span>
                 </span>
