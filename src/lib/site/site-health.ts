@@ -47,6 +47,20 @@ export function dailySeries(rows: ViewRow[], days: number, today: string) {
   });
 }
 
+export const AVERAGE_WINDOW_DAYS = 7;
+
+// The trailing 7-day average for each day of the series, so a quiet weekend
+// does not read as a collapse. Days before the first counted day count as 0.
+export function trailingAverage(rows: ViewRow[], days: number, today: string) {
+  const wide = dailySeries(rows, days + AVERAGE_WINDOW_DAYS - 1, today);
+
+  return wide.slice(AVERAGE_WINDOW_DAYS - 1).map((point, index) => {
+    const window = wide.slice(index, index + AVERAGE_WINDOW_DAYS);
+    const total = window.reduce((sum, day) => sum + day.views, 0);
+    return { day: point.day, views: Math.round((total / AVERAGE_WINDOW_DAYS) * 10) / 10 };
+  });
+}
+
 // Views from `from` to `to`, both days included.
 export function sumViews(rows: ViewRow[], from: string, to: string) {
   return rows.reduce((total, row) => (row.day >= from && row.day <= to ? total + row.views : total), 0);

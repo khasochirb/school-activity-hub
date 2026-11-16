@@ -2420,6 +2420,17 @@ export const mn = {
   },
   superAdmin: {
     sites: {
+      console: {
+        backToApp: "Үндсэн сайт руу буцах",
+        brandSub: "Админ консол",
+        sectionManage: "Удирдлага",
+        sectionSystem: "Систем",
+        seriesAverage: "7 хоногийн дундаж",
+        seriesViews: "Өдрийн үзэлт",
+        sourceActivities: "Удахгүй болох үйл ажиллагаа",
+        sourceCounter: "Сүүлийн үзэлт",
+        sourcePages: "Сүүлд өөрчилсөн",
+      },
       banner: {
         allClear: "Бүх шалгалт хэвийн байна.",
         asOf: "Шинэчилсэн: {time}",

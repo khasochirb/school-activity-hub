@@ -53,5 +53,5 @@ export async function loadSitesConsole() {
   const counterReachable = !viewsResult.error;
   const checks = evaluateSiteChecks({ counterReachable, pages, schools, today, upcomingBySchool, views });
 
-  return { checks, counterReachable, now, pages, schools, today, views };
+  return { checks, counterReachable, now, pages, schools, today, upcomingBySchool, views };
 }

@@ -2410,6 +2410,17 @@ export const en = {
   },
   superAdmin: {
     sites: {
+      console: {
+        backToApp: "Back to the app",
+        brandSub: "Admin console",
+        sectionManage: "Manage",
+        sectionSystem: "System",
+        seriesAverage: "7-day average",
+        seriesViews: "Visits per day",
+        sourceActivities: "Upcoming activities",
+        sourceCounter: "Last visit",
+        sourcePages: "Last change",
+      },
       banner: {
         allClear: "Every check passes.",
         asOf: "Updated {time}",

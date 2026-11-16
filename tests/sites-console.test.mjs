@@ -132,6 +132,24 @@ test("the visit route counts only active schools' published pages and the consol
   assert.match(route, /getPublicSite\(school\)/);
   assert.match(route, /if \(pageSlug && !page\) return done;/);
   assert.doesNotMatch(route, /x-forwarded-for|cookies\(/i);
-  assert.match(read("src/app/(admin)/super-admin/sites/page.tsx"), /await requirePlatformAdmin\(\);/);
+  assert.match(read("src/app/(console)/super-admin/sites/page.tsx"), /await requirePlatformAdmin\(\);/);
   assert.match(read("src/app/(admin)/site/actions.ts"), /"visit"\]\);/);
+});
+
+test("the 7-day average trails each day and counts days before the data as 0", async () => {
+  const { AVERAGE_WINDOW_DAYS, trailingAverage } = await import("../src/lib/site/site-health.ts");
+  assert.equal(AVERAGE_WINDOW_DAYS, 7);
+  const rows = [{ day: "2026-11-16", page_key: "", school_id: "s1", views: 14 }];
+  assert.deepEqual(trailingAverage(rows, 2, "2026-11-16"), [
+    { day: "2026-11-15", views: 0 },
+    { day: "2026-11-16", views: 2 },
+  ]);
+  const week = Array.from({ length: 7 }, (_, i) => ({ day: `2026-11-${10 + i}`, page_key: "", school_id: "s1", views: 7 }));
+  assert.equal(trailingAverage(week, 1, "2026-11-16")[0].views, 7);
+});
+
+test("the console has its own shell that admits platform admins only", () => {
+  const layout = read("src/app/(console)/layout.tsx");
+  assert.match(layout, /await requirePlatformAdmin\(\)/);
+  assert.match(read("src/app/(console)/console-shell.tsx"), /href: "\/super-admin\/sites"/);
 });
