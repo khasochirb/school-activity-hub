@@ -237,6 +237,13 @@ export const en = {
   },
   site: {
     addPage: "Add a page",
+    cover: {
+      description: "Shown on the section card on the home page and behind the page title.",
+      removed: "Page photo removed.",
+      requirements: "JPEG, PNG or WebP. Up to 5 MB, at least 1000 x 560 pixels. A landscape 16:9 photo fits best.",
+      title: "Page photo",
+      uploaded: "Page photo saved.",
+    },
     description: "Public pages anyone can read without signing in",
     empty: "No pages yet",
     errors: {

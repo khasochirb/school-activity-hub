@@ -22,7 +22,6 @@ export async function getSiteLabels(): Promise<{ labels: SiteLabels; locale: Awa
       noPages: t("site.public.noPages"),
       signIn: t("auth.login.signIn"),
       upcoming: t("site.public.upcoming"),
-      upcomingEmpty: t("dashboard.upcoming.emptyTitle"),
     },
     locale,
   };

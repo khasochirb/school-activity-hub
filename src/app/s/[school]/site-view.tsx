@@ -4,6 +4,7 @@ import { BrandGlyph } from "@/components/brand-mark";
 import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { bodyParagraphs, type SitePage, type SitePageNode } from "@/lib/site/page-tree";
 import type { PublicActivity, PublicClub } from "@/lib/site/school-site";
+import { siteCoverUrl } from "@/lib/site/site-cover";
 
 export type SiteLabels = {
   appName: string;
@@ -12,7 +13,6 @@ export type SiteLabels = {
   noPages: string;
   signIn: string;
   upcoming: string;
-  upcomingEmpty: string;
 };
 
 export type ActivityWhen = { day: string; month: string; time: string };
@@ -162,79 +162,77 @@ export function SiteHome({
       </section>
 
       {tree.length ? (
-        <section className="site-tiles">
-          {tree.map((page, index) => (
-            <Link className="site-tile" href={`${base}/${page.slug}`} key={page.id} prefetch={false}>
-              <span aria-hidden="true" className="site-tile-icon" data-n={index % 5}>
-                <SectionIcon index={index} />
-              </span>
-              <span className="site-tile-title">{page.title}</span>
-              {page.children.length ? (
-                <span className="site-tile-sub">
-                  {page.children.map((child) => child.title).join(" · ")}
+        <section className="site-cards">
+          {tree.map((page, index) => {
+            const cover = siteCoverUrl(schoolSlug, page.slug, page.cover_path);
+
+            return (
+              <Link className="site-card" href={`${base}/${page.slug}`} key={page.id} prefetch={false}>
+                <span className="site-card-media" data-n={index % 5}>
+                  {cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- served by our own cover route
+                    <img alt="" loading={index < 3 ? "eager" : "lazy"} src={cover} />
+                  ) : (
+                    <span aria-hidden="true" className="site-card-glyph">
+                      <SectionIcon index={index} />
+                    </span>
+                  )}
                 </span>
-              ) : null}
-              <span aria-hidden="true" className="site-tile-arrow">
-                →
-              </span>
-            </Link>
-          ))}
+                <span className="site-card-body">
+                  <span className="site-tile-title">{page.title}</span>
+                  {page.children.length ? (
+                    <span className="site-tile-sub line-clamp-2">
+                      {page.children.map((child) => child.title).join(" · ")}
+                    </span>
+                  ) : null}
+                </span>
+              </Link>
+            );
+          })}
         </section>
       ) : (
         <p className="site-empty">{labels.noPages}</p>
       )}
 
-      <div className="site-columns">
-        <section>
-          <h2 className="site-h2">{labels.upcoming}</h2>
+      {activities.length || clubs.length ? (
+        <div className="site-columns">
           {activities.length ? (
-            <ul className="site-list">
-              {activities.map((activity) => {
-                const activityWhen = when(activity);
+            <section>
+              <h2 className="site-h2">{labels.upcoming}</h2>
+              <ul className="site-list">
+                {activities.map((activity) => {
+                  const activityWhen = when(activity);
 
-                return (
-                  <li className="site-event" key={activity.id}>
-                    <DateTile when={activityWhen} />
-                    <div className="min-w-0">
-                      <p className="site-list-title">{activity.title}</p>
-                      <p className="site-list-meta">
-                        {activityWhen.time}
-                        {activity.location ? ` · ${activity.location}` : ""}
-                      </p>
-                    </div>
+                  return (
+                    <li className="site-event" key={activity.id}>
+                      <DateTile when={activityWhen} />
+                      <div className="min-w-0">
+                        <p className="site-list-title">{activity.title}</p>
+                        <p className="site-list-meta">
+                          {activityWhen.time}
+                          {activity.location ? ` · ${activity.location}` : ""}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
+          {clubs.length ? (
+            <section>
+              <h2 className="site-h2">{labels.clubs}</h2>
+              <ul className="site-chips">
+                {clubs.map((club) => (
+                  <li className="site-chip" data-category-tone={getActivityCategoryTone(club.category)} key={club.id}>
+                    {club.name}
                   </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="site-empty">{labels.upcomingEmpty}</p>
-          )}
-        </section>
-        {clubs.length ? (
-          <section>
-            <h2 className="site-h2">{labels.clubs}</h2>
-            <ul className="site-list">
-              {clubs.map((club) => (
-                <li className="site-event" key={club.id}>
-                  <span
-                    aria-hidden="true"
-                    className="club-tile grid h-12 w-12 shrink-0 place-items-center rounded-xl border text-lg font-bold"
-                    data-category-tone={getActivityCategoryTone(club.category)}
-                  >
-                    {Array.from(club.name.trim())[0]?.toUpperCase() ?? "?"}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="site-list-title">{club.name}</p>
-                    {club.description ? (
-                      <p className="site-list-meta line-clamp-2">{club.description}</p>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-      </div>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -256,10 +254,15 @@ export function SitePageView({
   const paragraphs = bodyParagraphs(page.body);
   const sectionRoot = parent ?? page;
   const sectionPages = parent ? siblings : childPages;
+  const cover = siteCoverUrl(schoolSlug, page.slug, page.cover_path);
 
   return (
     <>
-      <section className="site-pagehead">
+      <section
+        className="site-pagehead"
+        data-cover={cover ? "true" : undefined}
+        style={cover ? { backgroundImage: `linear-gradient(135deg, rgba(15, 26, 77, 0.88), rgba(23, 44, 158, 0.55)), url("${cover}")` } : undefined}
+      >
         {parent ? (
           <Link className="site-crumb" href={`${base}/${parent.slug}`} prefetch={false}>
             ← {parent.title}

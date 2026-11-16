@@ -5,6 +5,8 @@ import { PageHead } from "../../_components/clean-ui";
 import { deleteSitePage, updateSitePage } from "../actions";
 import { loadSiteEditor } from "../site-editor-data";
 import { SitePageForm } from "../site-page-form";
+import { siteCoverUrl } from "@/lib/site/site-cover";
+import { SiteCoverUploader, type SiteCoverLabels } from "./site-cover-uploader";
 
 // Staff editor for one page of the school's public site.
 export default async function EditSitePage({
@@ -22,6 +24,34 @@ export default async function EditSitePage({
   if (!page) {
     notFound();
   }
+
+  const media = (key: string) => t(`clubs.profile.media.${key}`);
+  const coverLabels: SiteCoverLabels = {
+    description: t("site.cover.description"),
+    errors: {
+      animated: media("errors.animated"),
+      dimensions: media("errors.dimensions"),
+      editDenied: t("common.somethingWentWrong"),
+      invalidImage: media("errors.invalidImage"),
+      invalidType: media("errors.invalidType"),
+      mimeMismatch: media("errors.mimeMismatch"),
+      removeFailed: media("errors.removeFailed"),
+      saveFailed: media("errors.saveFailed"),
+      tooLarge: media("errors.tooLarge"),
+      uploadFailed: media("errors.uploadFailed"),
+    },
+    guidance: t("events.poster.guidance"),
+    noPhoto: t("events.poster.noPoster"),
+    remove: media("actions.remove"),
+    removed: t("site.cover.removed"),
+    removing: media("actions.removing"),
+    replace: media("actions.replace"),
+    requirements: t("site.cover.requirements"),
+    title: t("site.cover.title"),
+    upload: media("actions.upload"),
+    uploaded: t("site.cover.uploaded"),
+    uploading: media("actions.uploading"),
+  };
 
   return (
     <div className="cl-page">
@@ -49,6 +79,12 @@ export default async function EditSitePage({
           parents={pages.filter((candidate) => !candidate.parent_id)}
         />
       </div>
+
+      <SiteCoverUploader
+        coverUrl={school ? siteCoverUrl(school.slug, page.slug, page.cover_path) : null}
+        labels={coverLabels}
+        pageId={page.id}
+      />
 
       <form action={deleteSitePage} className="max-w-3xl">
         <input name="page_id" type="hidden" value={page.id} />

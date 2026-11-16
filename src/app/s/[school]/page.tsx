@@ -25,7 +25,7 @@ export default async function SchoolSiteHome({ params }: Params) {
 
   const [{ labels, locale }, activities, clubs] = await Promise.all([
     getSiteLabels(),
-    getPublicActivities(site.school.id),
+    getPublicActivities(site.school.id, 3),
     getPublicClubs(site.school.id),
   ]);
 

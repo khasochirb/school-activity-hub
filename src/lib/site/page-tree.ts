@@ -1,5 +1,6 @@
 export type SitePage = {
   body: string;
+  cover_path: string | null;
   id: string;
   parent_id: string | null;
   position: number;

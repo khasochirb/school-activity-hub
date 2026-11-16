@@ -33,7 +33,7 @@ export async function loadSiteEditor() {
 
   const { data: pages } = await supabase
     .from("school_pages")
-    .select("id, parent_id, slug, title, body, position, status")
+    .select("id, parent_id, slug, title, body, position, status, cover_path")
     .eq("school_id", profile.school_id)
     .order("position", { ascending: true })
     .returns<SitePage[]>();

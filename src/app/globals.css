@@ -3978,7 +3978,7 @@ html[data-theme="dark"] {
   display: grid;
   gap: 0.9rem;
   padding: 0.9rem;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
 }
 .club-card {
   display: flex;
@@ -5627,7 +5627,7 @@ html[data-theme="dark"] .cl-pfbanner {
 .cl-goals {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
 }
 .cl-goals > li {
   display: flex;
@@ -6735,21 +6735,6 @@ html[data-theme="dark"] .cl-land::before {
   transform: translateY(-2px);
 }
 
-.site-tile-icon {
-  display: grid;
-  height: 44px;
-  width: 44px;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-}
-
-.site-tile-icon[data-n="1"] { background: #fff3d1; color: #8a5a00; }
-.site-tile-icon[data-n="2"] { background: #e3f4ec; color: #17633f; }
-.site-tile-icon[data-n="3"] { background: #fde7ea; color: #a3243b; }
-.site-tile-icon[data-n="4"] { background: #ece8fb; color: #4b2fa8; }
-
 .site-tile-title {
   font-size: 1.04rem;
   font-weight: 720;
@@ -6768,6 +6753,108 @@ html[data-theme="dark"] .cl-land::before {
   bottom: 14px;
   color: var(--primary-strong);
   font-weight: 700;
+}
+
+/* Section cards: a photo (or a coloured panel with the section's icon), the
+   section, its sub-pages. Photos lead the home page; activities come after. */
+.site-cards {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+}
+
+.site-card {
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.site-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 12px 30px rgba(35, 64, 217, 0.14);
+  transform: translateY(-2px);
+}
+
+.site-card-media {
+  position: relative;
+  display: grid;
+  aspect-ratio: 16 / 9;
+  place-items: center;
+  background: linear-gradient(135deg, #dfe5ff, #b9c6ff);
+  color: #172c9e;
+}
+
+.site-card-media[data-n="1"] { background: linear-gradient(135deg, #fff1c9, #ffd67a); color: #8a5a00; }
+.site-card-media[data-n="2"] { background: linear-gradient(135deg, #dcf3e7, #a9dfc3); color: #17633f; }
+.site-card-media[data-n="3"] { background: linear-gradient(135deg, #fde3e7, #f7b3bf); color: #a3243b; }
+.site-card-media[data-n="4"] { background: linear-gradient(135deg, #ebe6fb, #c9bcf3); color: #4b2fa8; }
+
+.site-card-media img {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.site-card-glyph svg {
+  height: 52px;
+  width: 52px;
+  opacity: 0.85;
+}
+
+.site-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 18px;
+}
+
+.site-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.site-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: var(--card);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.site-pagehead[data-cover="true"] {
+  min-height: 15rem;
+  align-content: end;
+  background-position: center;
+  background-size: cover;
+}
+
+.site-cover-preview {
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  max-width: 28rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-soft);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.site-cover-preview img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
 }
 
 .site-columns {

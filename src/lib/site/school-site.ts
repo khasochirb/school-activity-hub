@@ -16,7 +16,7 @@ export type PublicActivity = {
 
 export type PublicClub = { category: string | null; description: string | null; id: string; name: string };
 
-const PAGE_COLUMNS = "id, parent_id, slug, title, body, position, status";
+const PAGE_COLUMNS = "id, parent_id, slug, title, body, position, status, cover_path";
 
 // Everything the public school site may show. Nothing here is behind a login,
 // so each query is limited by hand: an ACTIVE school, PUBLISHED pages, APPROVED
