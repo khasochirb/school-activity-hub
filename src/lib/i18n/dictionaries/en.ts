@@ -963,6 +963,7 @@ export const en = {
     partnerSchools: "Partner Schools",
     portfolio: "Portfolio",
     platform: "Platform",
+    schoolSites: "School sites",
     platformDashboard: "Platform Dashboard",
     platformConnections: "Platform Connections",
     platformAdmins: "Platform Admins",
@@ -2408,6 +2409,95 @@ export const en = {
     },
   },
   superAdmin: {
+    sites: {
+      banner: {
+        allClear: "Every check passes.",
+        asOf: "Updated {time}",
+        counts: "{fail} problem · {warn} need attention · {ok} fine",
+        next: "Next step",
+      },
+      chart: {
+        days: "{count} days",
+        description: "Page opens on the public sites, by Ulaanbaatar day. Nothing about visitors is stored.",
+        empty: "No visits counted yet.",
+        title: "Visits per day",
+      },
+      checks: {
+        counter: {
+          action: "Run migration 202611170002 in the Supabase SQL editor.",
+          summary: "Problems: {count}",
+          title: "Visit counter",
+        },
+        description: "One rule per row, with the next step",
+        drafts: {
+          summary: "{count} pages are still drafts",
+          title: "Drafts",
+        },
+        emptyPages: {
+          action: "Ask the school to write the text, or unpublish the page.",
+          summary: "{count} published pages have no text",
+          title: "Pages with no text",
+        },
+        liveSites: {
+          action: "Help a school publish its first pages in /site.",
+          summary: "{count} schools have published pages",
+          title: "Live sites",
+        },
+        missingPhotos: {
+          action: "Ask the school for a landscape photo of each section.",
+          summary: "{count} home page sections have no photo",
+          title: "Sections without a photo",
+        },
+        noUpcoming: {
+          action: "Remind the school to add and approve this month's activities.",
+          summary: "{count} live sites have nothing approved for the next 30 days",
+          title: "No upcoming activities",
+        },
+        quietSites: {
+          action: "Share the site link with the school's parents and students.",
+          summary: "{count} live sites had no visits in 7 days",
+          title: "Sites nobody opened",
+        },
+        stalePages: {
+          action: "Ask the school to check them and update or unpublish.",
+          summary: "{count} pages not updated in 90 days",
+          title: "Out-of-date pages",
+        },
+        title: "Checks",
+      },
+      description: "Every school's public site: health, visits and what to fix first",
+      kpi: {
+        drafts: "{count} drafts",
+        liveSites: "Live sites",
+        noComparison: "Nothing to compare with yet",
+        ofSchools: "of {count} active schools",
+        pages: "Published pages",
+        today: "Visits today",
+        vsLastWeek: "{change} vs the 7 days before",
+        vsYesterday: "{count} yesterday",
+        week: "Visits, 7 days",
+      },
+      state: {
+        fail: "Problem",
+        ok: "Fine",
+        warn: "Needs attention",
+      },
+      table: {
+        drafts: "Drafts",
+        photos: "Section photos",
+        published: "Published",
+        school: "School",
+        title: "Sites by school",
+        updated: "Last change",
+        views: "Visits, 7 days",
+      },
+      title: "School sites",
+      topPages: {
+        empty: "No visits counted yet.",
+        home: "Home page",
+        title: "Most opened pages, 7 days",
+      },
+    },
     page: {
       allClear: "Nothing is waiting right now.",
       byProvince: "Schools by province",

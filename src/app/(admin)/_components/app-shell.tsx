@@ -226,6 +226,11 @@ const mobileNavGroups: Array<{
         platformAdminOnly: true,
       },
       {
+        href: "/super-admin/sites",
+        labelKey: "nav.schoolSites",
+        platformAdminOnly: true,
+      },
+      {
         href: "/super-admin/connections",
         labelKey: "nav.platformConnections",
         platformAdminOnly: true,

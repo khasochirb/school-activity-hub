@@ -4,6 +4,7 @@ import { formatCalendarDateBadge, formatTime } from "@/lib/i18n/date-format";
 import { getPublicActivities, getPublicClubs } from "@/lib/site/school-site";
 import { getSiteLabels, loadPublicSite } from "./site-data";
 import { SiteFrame, SiteHome } from "./site-view";
+import { VisitBeacon } from "./visit-beacon";
 
 type Params = { params: Promise<{ school: string }> };
 
@@ -31,6 +32,7 @@ export default async function SchoolSiteHome({ params }: Params) {
 
   return (
     <SiteFrame labels={labels} schoolName={site.school.name} schoolSlug={site.school.slug} tree={site.tree}>
+      <VisitBeacon school={site.school.slug} />
       <SiteHome
         activities={activities}
         clubs={clubs}

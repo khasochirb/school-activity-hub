@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSiteLabels, loadPublicSite } from "../site-data";
 import { SiteFrame, SitePageView } from "../site-view";
+import { VisitBeacon } from "../visit-beacon";
 
 type Params = { params: Promise<{ page: string; school: string }> };
 
@@ -27,6 +28,7 @@ export default async function SchoolSitePage({ params }: Params) {
 
   return (
     <SiteFrame labels={labels} schoolName={site.school.name} schoolSlug={site.school.slug} tree={site.tree}>
+      <VisitBeacon page={page.slug} school={site.school.slug} />
       <SitePageView
         childPages={site.pages
           .filter((candidate) => candidate.parent_id === page.id)

@@ -60,7 +60,8 @@ export async function createSitePage(formData: FormData) {
     .select("slug, position")
     .eq("school_id", profile.school_id)
     .returns<Array<{ position: number; slug: string }>>();
-  const taken = new Set((existing ?? []).map((page) => page.slug));
+  // "visit" is the site's own visit-counter route, so no page may take it.
+  const taken = new Set([...(existing ?? []).map((page) => page.slug), "visit"]);
   const base = toSlug(values.title).slice(0, 56).replace(/-+$/g, "") || "page";
   let slug = base.length >= 2 ? base : `${base}-page`;
 

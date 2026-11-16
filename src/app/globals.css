@@ -7054,3 +7054,201 @@ html[data-theme="dark"] .cl-land::before {
     left: 16px;
   }
 }
+
+/* ---------- School sites console (/super-admin/sites) ----------
+   A status banner, four figures, readers per day, the per-school table and
+   the checks. State is never colour alone: every chip carries its word. */
+.cl-tag[data-tone="danger"] {
+  background: color-mix(in srgb, var(--cl-coral) 16%, transparent);
+  color: var(--cl-coral);
+}
+
+.sites-banner {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--cl-line);
+  border-left: 4px solid var(--cl-green);
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: var(--card);
+}
+
+.sites-banner[data-state="warn"] { border-left-color: var(--cl-sun); }
+.sites-banner[data-state="fail"] { border-left-color: var(--cl-coral); }
+
+.sites-banner-state {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--cl-green);
+}
+
+.sites-banner[data-state="warn"] .sites-banner-state { color: var(--cl-amber); }
+.sites-banner[data-state="fail"] .sites-banner-state { color: var(--cl-coral); }
+
+.sites-banner-line {
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.sites-banner-meta,
+.sites-stat-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.sites-stat-note[data-tone="up"] { color: var(--cl-green); }
+.sites-stat-note[data-tone="up"]::before { content: "▲ "; }
+.sites-stat-note[data-tone="down"] { color: var(--cl-coral); }
+.sites-stat-note[data-tone="down"]::before { content: "▼ "; }
+
+.sites-chart-card {
+  padding: 18px 20px;
+}
+
+.sites-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sites-chart-head h2 {
+  font-size: 1.05rem;
+  font-weight: 750;
+}
+
+.sites-range {
+  display: flex;
+  gap: 6px;
+}
+
+.sites-range a {
+  border: 1px solid var(--cl-line-strong);
+  border-radius: 999px;
+  padding: 5px 12px;
+  color: var(--foreground);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.sites-range a[aria-current="true"] {
+  border-color: var(--cl-sun);
+  background: var(--cl-sun);
+  color: #16140f;
+}
+
+.sites-chart {
+  display: flex;
+  height: 180px;
+  align-items: stretch;
+  gap: 4px;
+  border-bottom: 1px solid var(--cl-line-strong);
+  padding-bottom: 20px;
+}
+
+.sites-bar {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+}
+
+.sites-bar span {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--primary);
+}
+
+.sites-bar small {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  color: var(--muted);
+  font-size: 0.68rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.sites-table-wrap {
+  overflow-x: auto;
+}
+
+.sites-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.sites-table th,
+.sites-table td {
+  border-bottom: 1px solid var(--cl-line);
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sites-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.sites-table a,
+.sites-top a {
+  color: var(--primary-strong);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.sites-top {
+  display: grid;
+  padding: 6px 0;
+}
+
+.sites-top li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+}
+
+.sites-checks {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.sites-check {
+  border-top: 1px solid var(--cl-line);
+  padding: 10px 0;
+}
+
+.sites-check summary {
+  display: flex;
+  cursor: pointer;
+  list-style: none;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.sites-check summary::-webkit-details-marker {
+  display: none;
+}
+
+.sites-check summary .cl-tag {
+  flex-shrink: 0;
+}
+
+.sites-check p {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
