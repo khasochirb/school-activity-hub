@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { formatDateTime, formatTime } from "@/lib/i18n/date-format";
+import { formatCalendarDateBadge, formatTime } from "@/lib/i18n/date-format";
 import { getPublicActivities, getPublicClubs } from "@/lib/site/school-site";
 import { getSiteLabels, loadPublicSite } from "./site-data";
 import { SiteFrame, SiteHome } from "./site-view";
@@ -34,13 +34,20 @@ export default async function SchoolSiteHome({ params }: Params) {
       <SiteHome
         activities={activities}
         clubs={clubs}
-        dateLabel={(activity) =>
-          `${formatDateTime(activity.starts_at, locale, site.school.timezone)} – ${formatTime(activity.ends_at, locale, site.school.timezone)}`
-        }
         labels={labels}
         schoolName={site.school.name}
         schoolSlug={site.school.slug}
         tree={site.tree}
+        when={(activity) => {
+          const zone = site.school.timezone;
+          const tile = formatCalendarDateBadge(activity.starts_at, locale, zone);
+
+          return {
+            day: String(Number(tile.day)),
+            month: tile.month,
+            time: `${formatTime(activity.starts_at, locale, zone)} – ${formatTime(activity.ends_at, locale, zone)}`,
+          };
+        }}
       />
     </SiteFrame>
   );

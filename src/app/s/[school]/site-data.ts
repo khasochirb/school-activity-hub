@@ -16,6 +16,7 @@ export async function getSiteLabels(): Promise<{ labels: SiteLabels; locale: Awa
 
   return {
     labels: {
+      appName: t("app.name"),
       clubs: t("nav.clubs"),
       home: t("nav.tabs.home"),
       noPages: t("site.public.noPages"),

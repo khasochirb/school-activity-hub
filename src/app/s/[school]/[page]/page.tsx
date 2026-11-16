@@ -34,6 +34,9 @@ export default async function SchoolSitePage({ params }: Params) {
         page={page}
         parent={site.pages.find((candidate) => candidate.id === page.parent_id) ?? null}
         schoolSlug={site.school.slug}
+        siblings={site.pages
+          .filter((candidate) => page.parent_id !== null && candidate.parent_id === page.parent_id)
+          .sort((a, b) => a.position - b.position)}
       />
     </SiteFrame>
   );

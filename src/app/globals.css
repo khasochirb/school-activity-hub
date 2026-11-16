@@ -6478,11 +6478,48 @@ html[data-theme="dark"] .cl-land::before {
   opacity: 0.85;
 }
 
-/* ---------- Public school site (/s/<school>) ---------- */
+/* ---------- Public school site (/s/<school>) ----------
+   Shaped like a school or university site: a utility bar, a main menu, a
+   banner that features the next activity, section tiles, activities with date
+   tiles beside the clubs, and a footer that lists every section. The banner
+   and footer use fixed navy and blue so they read the same in both themes. */
 .site-shell {
+  display: flex;
   min-height: 100vh;
+  flex-direction: column;
   background: var(--background);
   color: var(--foreground);
+}
+
+.site-utility {
+  background: #0f1a4d;
+  color: #c9d2ff;
+  font-size: 0.8rem;
+}
+
+.site-utility-inner,
+.site-header-inner,
+.site-main,
+.site-footer-inner {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+
+.site-utility-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 7px;
+}
+
+.site-utility a {
+  flex-shrink: 0;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .site-header {
@@ -6495,32 +6532,39 @@ html[data-theme="dark"] .cl-land::before {
 
 .site-header-inner {
   display: flex;
-  max-width: 68rem;
   align-items: center;
-  gap: 14px;
-  margin-inline: auto;
-  padding: 10px 16px;
+  gap: 20px;
+  padding-block: 12px;
 }
 
 .site-brand {
   display: flex;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 0 1 17rem;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--foreground);
-  font-weight: 700;
   text-decoration: none;
+}
+
+.site-brand-name {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.98rem;
+  font-weight: 750;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .site-nav {
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .site-nav-link {
@@ -6528,10 +6572,11 @@ html[data-theme="dark"] .cl-land::before {
   cursor: pointer;
   list-style: none;
   align-items: center;
+  gap: 3px;
   border-radius: 8px;
-  padding: 8px 10px;
-  color: var(--muted);
-  font-size: 0.92rem;
+  padding: 8px 7px;
+  color: var(--foreground);
+  font-size: 0.86rem;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -6540,11 +6585,15 @@ html[data-theme="dark"] .cl-land::before {
 .site-nav-link:hover,
 .site-nav-group[open] > .site-nav-link {
   background: var(--card-soft);
-  color: var(--foreground);
+  color: var(--primary-strong);
 }
 
 .site-nav-link::-webkit-details-marker {
   display: none;
+}
+
+.site-nav-group {
+  position: relative;
 }
 
 .site-nav-group[open]::details-content {
@@ -6554,20 +6603,21 @@ html[data-theme="dark"] .cl-land::before {
 
 .site-nav-menu {
   position: absolute;
+  right: 0;
   z-index: 30;
   display: grid;
-  min-width: 14rem;
-  margin-top: 4px;
+  min-width: 15rem;
+  margin-top: 6px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 5px;
+  padding: 6px;
   background: var(--card);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
 }
 
 .site-nav-menu a {
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   color: var(--foreground);
   font-size: 0.92rem;
   text-decoration: none;
@@ -6579,90 +6629,176 @@ html[data-theme="dark"] .cl-land::before {
 
 .site-main {
   display: flex;
-  max-width: 68rem;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: 28px;
-  margin-inline: auto;
-  padding: 24px 16px 64px;
+  gap: 32px;
+  padding-block: 24px 64px;
 }
 
+/* Banner: the school's name, and the next activity with its date and place. */
 .site-hero {
-  border-radius: 20px;
-  padding: clamp(2rem, 6vw, 4rem) clamp(1.25rem, 4vw, 3rem);
-  /* Fixed colours: --primary-strong turns pale in the dark theme, and the title is white. */
-  background: linear-gradient(135deg, #172c9e, #2340d9);
+  display: grid;
+  gap: 24px;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: clamp(1.75rem, 5vw, 3.5rem);
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 194, 61, 0.28), transparent 42%),
+    linear-gradient(135deg, #0f1a4d 0%, #172c9e 55%, #2340d9 100%);
   color: #fff;
 }
 
-.site-hero h1 {
-  max-width: 22ch;
-  font-size: clamp(1.8rem, 4.5vw, 3rem);
-  font-weight: 750;
-  line-height: 1.15;
+@media (min-width: 860px) {
+  .site-hero {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: end;
+  }
 }
 
+.site-hero h1 {
+  max-width: 20ch;
+  font-size: clamp(1.9rem, 4.6vw, 3.2rem);
+  font-weight: 780;
+  line-height: 1.12;
+}
+
+.site-hero-next {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.site-hero-next-label {
+  color: #ffc23d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.site-hero-next-row,
+.site-event {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.site-hero-next-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.site-hero-next-meta {
+  margin-top: 2px;
+  color: #d5dbf5;
+  font-size: 0.9rem;
+}
+
+.site-hero-next .cl-dtile b {
+  color: #16140f;
+}
+
+.site-hero-next .cl-dtile {
+  border-color: transparent;
+  background: #fff;
+}
+
+/* Section tiles: an icon, the section, its sub-pages. */
 .site-tiles {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
 }
 
 .site-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 18px 18px 40px;
   background: var(--card);
   color: var(--foreground);
   text-decoration: none;
+  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
 }
 
 .site-tile:hover {
-  border-color: var(--primary-border);
+  border-color: var(--primary);
+  box-shadow: 0 10px 26px rgba(35, 64, 217, 0.12);
+  transform: translateY(-2px);
 }
 
+.site-tile-icon {
+  display: grid;
+  height: 44px;
+  width: 44px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.site-tile-icon[data-n="1"] { background: #fff3d1; color: #8a5a00; }
+.site-tile-icon[data-n="2"] { background: #e3f4ec; color: #17633f; }
+.site-tile-icon[data-n="3"] { background: #fde7ea; color: #a3243b; }
+.site-tile-icon[data-n="4"] { background: #ece8fb; color: #4b2fa8; }
+
 .site-tile-title {
-  font-size: 1.02rem;
-  font-weight: 700;
+  font-size: 1.04rem;
+  font-weight: 720;
+  line-height: 1.3;
 }
 
 .site-tile-sub {
   color: var(--muted);
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.site-tile-arrow {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  color: var(--primary-strong);
+  font-weight: 700;
 }
 
 .site-columns {
   display: grid;
-  gap: 28px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
 }
 
 .site-h2 {
-  margin-bottom: 10px;
-  font-size: 1.15rem;
-  font-weight: 700;
+  margin-bottom: 14px;
+  border-left: 4px solid #ffc23d;
+  padding-left: 10px;
+  font-size: 1.2rem;
+  font-weight: 750;
 }
 
 .site-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
-.site-list-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.site-event {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 14px;
   background: var(--card);
 }
 
 .site-list-title {
-  font-weight: 650;
+  font-weight: 680;
+  line-height: 1.35;
 }
 
 .site-list-meta,
@@ -6671,24 +6807,163 @@ html[data-theme="dark"] .cl-land::before {
   font-size: 0.9rem;
 }
 
-.site-article {
-  display: flex;
-  max-width: 46rem;
-  flex-direction: column;
-  gap: 16px;
-  font-size: 1.02rem;
-  line-height: 1.75;
+/* A page: a title band, the text, and the section's pages beside it. */
+.site-pagehead {
+  display: grid;
+  gap: 8px;
+  border-radius: 18px;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: linear-gradient(135deg, #0f1a4d, #172c9e);
+  color: #fff;
 }
 
-.site-article h1 {
-  font-size: clamp(1.6rem, 3.5vw, 2.3rem);
-  font-weight: 750;
-  line-height: 1.2;
+.site-pagehead h1 {
+  font-size: clamp(1.6rem, 3.6vw, 2.4rem);
+  font-weight: 760;
+  line-height: 1.18;
 }
 
 .site-crumb {
-  color: var(--primary-strong);
+  color: #ffc23d;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 650;
   text-decoration: none;
+}
+
+.site-page-grid {
+  display: grid;
+  gap: 28px;
+}
+
+@media (min-width: 860px) {
+  .site-page-grid {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    align-items: start;
+  }
+}
+
+.site-article {
+  display: flex;
+  min-width: 0;
+  max-width: 46rem;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 1.03rem;
+  line-height: 1.8;
+}
+
+.site-sidenav {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px;
+  background: var(--card);
+}
+
+.site-sidenav a {
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-decoration: none;
+}
+
+.site-sidenav a:hover {
+  background: var(--card-soft);
+  color: var(--foreground);
+}
+
+.site-sidenav a[aria-current="page"] {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-weight: 650;
+}
+
+.site-sidenav .site-sidenav-head {
+  color: var(--foreground);
+  font-weight: 720;
+}
+
+/* Footer: every section and its pages. */
+.site-footer {
+  background: #0f1a4d;
+  color: #c9d2ff;
+}
+
+.site-footer-inner {
+  display: grid;
+  gap: 28px;
+  padding-block: 36px 28px;
+}
+
+.site-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 750;
+}
+
+.site-footer-cols {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+}
+
+.site-footer-cols > div {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.site-footer-cols a {
+  color: #c9d2ff;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.site-footer-cols a:hover {
+  color: #fff;
+}
+
+.site-footer-cols .site-footer-head {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.site-footer-base {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 14px 20px;
+  color: #8f9be0;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* Phones: the menu scrolls sideways on one line under the school name. */
+@media (max-width: 859px) {
+  .site-header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .site-brand {
+    flex: 0 0 auto;
+  }
+
+  .site-nav {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .site-nav-menu {
+    position: fixed;
+    right: 16px;
+    left: 16px;
+  }
 }
