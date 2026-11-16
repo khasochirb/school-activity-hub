@@ -1,0 +1,47 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { formatDateTime, formatTime } from "@/lib/i18n/date-format";
+import { getPublicActivities, getPublicClubs } from "@/lib/site/school-site";
+import { getSiteLabels, loadPublicSite } from "./site-data";
+import { SiteFrame, SiteHome } from "./site-view";
+
+type Params = { params: Promise<{ school: string }> };
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const site = await loadPublicSite((await params).school);
+
+  return site ? { title: site.school.name } : {};
+}
+
+// Public: no sign-in. Shows only published pages, approved upcoming activities
+// and club names of an active school.
+export default async function SchoolSiteHome({ params }: Params) {
+  const { school: slug } = await params;
+  const site = await loadPublicSite(slug);
+
+  if (!site) {
+    notFound();
+  }
+
+  const [{ labels, locale }, activities, clubs] = await Promise.all([
+    getSiteLabels(),
+    getPublicActivities(site.school.id),
+    getPublicClubs(site.school.id),
+  ]);
+
+  return (
+    <SiteFrame labels={labels} schoolName={site.school.name} schoolSlug={site.school.slug} tree={site.tree}>
+      <SiteHome
+        activities={activities}
+        clubs={clubs}
+        dateLabel={(activity) =>
+          `${formatDateTime(activity.starts_at, locale, site.school.timezone)} – ${formatTime(activity.ends_at, locale, site.school.timezone)}`
+        }
+        labels={labels}
+        schoolName={site.school.name}
+        schoolSlug={site.school.slug}
+        tree={site.tree}
+      />
+    </SiteFrame>
+  );
+}

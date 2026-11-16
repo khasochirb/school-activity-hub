@@ -25,6 +25,12 @@ begin
   delete from public.announcements
   where id in (select md5('sah-demo-announcement-' || i)::uuid from generate_series(1, 3) as i);
 
+  -- Demo site pages (only if the school_pages table exists).
+  if to_regclass('public.school_pages') is not null then
+    delete from public.school_pages
+    where id in (select md5('sah-demo-page-' || i)::uuid from generate_series(1, 24) as i);
+  end if;
+
   raise notice 'Demo data removed.';
 end;
 $$;

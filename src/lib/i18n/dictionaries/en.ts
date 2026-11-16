@@ -235,6 +235,27 @@ export const en = {
     sports: "Sports",
     volunteering: "Volunteering",
   },
+  site: {
+    addPage: "Add a page",
+    description: "Public pages anyone can read without signing in",
+    empty: "No pages yet",
+    errors: {
+      titleRequired: "Enter a title.",
+    },
+    form: {
+      bodyHint: "Plain text. Leave an empty line between paragraphs. Do not write students' personal details here",
+      parent: "Parent page",
+      publish: "Show on the public site",
+      topLevel: "None (top level)",
+    },
+    pages: "Pages",
+    public: {
+      noPages: "This school has not published any pages yet",
+      upcoming: "Upcoming activities",
+    },
+    title: "School site",
+    viewSite: "View the public site",
+  },
   clubs: {
     list: {
       next: "Next",

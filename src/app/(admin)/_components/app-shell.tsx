@@ -139,6 +139,11 @@ const mobileNavGroups: Array<{
         labelKey: "nav.announcements",
         roles: ["school_admin", "teacher"],
       },
+      {
+        href: "/site",
+        labelKey: "site.title",
+        roles: ["school_admin", "teacher"],
+      },
     ],
   },
   {

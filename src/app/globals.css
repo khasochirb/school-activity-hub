@@ -6477,3 +6477,218 @@ html[data-theme="dark"] .cl-land::before {
   color: var(--primary-contrast, #fff);
   opacity: 0.85;
 }
+
+/* ---------- Public school site (/s/<school>) ---------- */
+.site-shell {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.site-header-inner {
+  display: flex;
+  max-width: 68rem;
+  align-items: center;
+  gap: 14px;
+  margin-inline: auto;
+  padding: 10px 16px;
+}
+
+.site-brand {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--foreground);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.site-nav-link {
+  display: inline-flex;
+  cursor: pointer;
+  list-style: none;
+  align-items: center;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-nav-link:hover,
+.site-nav-group[open] > .site-nav-link {
+  background: var(--card-soft);
+  color: var(--foreground);
+}
+
+.site-nav-link::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav-group[open]::details-content {
+  block-size: auto;
+  content-visibility: visible;
+}
+
+.site-nav-menu {
+  position: absolute;
+  z-index: 30;
+  display: grid;
+  min-width: 14rem;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 5px;
+  background: var(--card);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+}
+
+.site-nav-menu a {
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--foreground);
+  font-size: 0.92rem;
+  text-decoration: none;
+}
+
+.site-nav-menu a:hover {
+  background: var(--card-soft);
+}
+
+.site-main {
+  display: flex;
+  max-width: 68rem;
+  flex-direction: column;
+  gap: 28px;
+  margin-inline: auto;
+  padding: 24px 16px 64px;
+}
+
+.site-hero {
+  border-radius: 20px;
+  padding: clamp(2rem, 6vw, 4rem) clamp(1.25rem, 4vw, 3rem);
+  /* Fixed colours: --primary-strong turns pale in the dark theme, and the title is white. */
+  background: linear-gradient(135deg, #172c9e, #2340d9);
+  color: #fff;
+}
+
+.site-hero h1 {
+  max-width: 22ch;
+  font-size: clamp(1.8rem, 4.5vw, 3rem);
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.site-tiles {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+}
+
+.site-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.site-tile:hover {
+  border-color: var(--primary-border);
+}
+
+.site-tile-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.site-tile-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.site-columns {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+}
+
+.site-h2 {
+  margin-bottom: 10px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.site-list {
+  display: grid;
+  gap: 8px;
+}
+
+.site-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--card);
+}
+
+.site-list-title {
+  font-weight: 650;
+}
+
+.site-list-meta,
+.site-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.site-article {
+  display: flex;
+  max-width: 46rem;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+
+.site-article h1 {
+  font-size: clamp(1.6rem, 3.5vw, 2.3rem);
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.site-crumb {
+  color: var(--primary-strong);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
