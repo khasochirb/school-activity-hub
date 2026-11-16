@@ -6515,11 +6515,20 @@ html[data-theme="dark"] .cl-land::before {
   padding-block: 7px;
 }
 
+/* Sign-in is the one action in the utility bar, so it is a button, not a link. */
 .site-utility a {
   flex-shrink: 0;
-  color: #fff;
-  font-weight: 600;
+  border-radius: 999px;
+  padding: 7px 16px;
+  background: #ffc23d;
+  color: #16140f;
+  font-size: 0.9rem;
+  font-weight: 750;
   text-decoration: none;
+}
+
+.site-utility a:hover {
+  background: #ffd36e;
 }
 
 .site-header {
