@@ -8,6 +8,7 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { checkInTiming, CHECK_IN_OPENS_BEFORE_MINUTES } from "@/lib/events/check-in-window";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -24,8 +25,10 @@ type StudentRoster = {
 };
 
 type EventRecord = {
+  ends_at: string | null;
   id: string;
   school_id: string;
+  starts_at: string;
   status: string;
 };
 
@@ -194,7 +197,7 @@ async function getCheckInContext(
 
   const { data: event } = await admin
     .from("events")
-    .select("id, school_id, status")
+    .select("id, school_id, status, starts_at, ends_at")
     .eq("id", eventId)
     .eq("status", "approved")
     .maybeSingle<EventRecord>();
@@ -243,6 +246,21 @@ async function getCheckInContext(
   if (attendee.status !== "registered") {
     return {
       message: i18n.t("checkIn.errors.invalidRegistrationStatus"),
+      ok: false,
+      success: false,
+    };
+  }
+
+  // The QR link never changes, so it is the clock that keeps check-in honest:
+  // only from 30 minutes before the start to 30 minutes after the end.
+  const timing = checkInTiming(new Date(), event.starts_at, event.ends_at);
+
+  if (timing !== "open") {
+    return {
+      message:
+        timing === "early"
+          ? i18n.tf("checkIn.errors.notOpenYet", { minutes: CHECK_IN_OPENS_BEFORE_MINUTES })
+          : i18n.t("checkIn.errors.closed"),
       ok: false,
       success: false,
     };

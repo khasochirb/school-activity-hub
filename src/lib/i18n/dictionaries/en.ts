@@ -1868,6 +1868,8 @@ export const en = {
       time: "Time",
     },
     errors: {
+      closed: "Check-in for this activity has closed. Ask the teacher to mark your attendance.",
+      notOpenYet: "Check-in opens {minutes} minutes before the activity starts.",
       activeStudentsOnly:
         "Only active student accounts can use this check-in link.",
       eventUnavailable: "This event is not available for check-in.",
