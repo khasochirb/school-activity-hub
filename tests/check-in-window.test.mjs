@@ -32,11 +32,27 @@ test("a broken date never opens check-in", () => {
 
 test("the QR check-in action checks the window before recording attendance", () => {
   const source = readFileSync(join(process.cwd(), "src/app/check-in/[eventId]/actions.ts"), "utf8");
-  assert.match(source, /\.select\("id, school_id, status, starts_at, ends_at"\)/);
+  assert.match(source, /"id, school_id, status, starts_at, ends_at, capacity, permission_required, allow_connected_school_registration"/);
   const guard = source.indexOf("checkInTiming(new Date(), event.starts_at, event.ends_at)");
   assert.ok(guard > 0, "the action computes the timing");
   // The guard sits in getCheckInContext, before the insert in checkInToEvent uses the context.
   assert.ok(source.indexOf('if (timing !== "open")') > guard);
   assert.match(source, /checkIn\.errors\.notOpenYet/);
   assert.match(source, /checkIn\.errors\.closed/);
+});
+
+test("walk-in: scanning without registering joins and checks in only when nothing else is needed", () => {
+  const source = readFileSync(join(process.cwd(), "src/app/check-in/[eventId]/actions.ts"), "utf8");
+  const walkIn = source.slice(source.indexOf("async function canWalkIn("));
+  // No permission slip, the visiting school allowed, room left.
+  assert.match(walkIn, /if \(event\.permission_required\) return false;/);
+  assert.match(walkIn, /event\.school_id !== profile\.school_id && !event\.allow_connected_school_registration\) return false;/);
+  assert.match(walkIn, /return \(count \?\? 0\) < event\.capacity;/);
+  // Walk-in is only offered inside the check-in window.
+  const guard = source.indexOf('if (!attendee || attendee.status === "canceled") {');
+  assert.ok(source.indexOf('if (timing !== "open") {', guard) < source.indexOf("registerWalkIn(admin", guard));
+  // Recorded as a walk-in, so attendance figures can show the method mix.
+  assert.match(source, /walk_in: walkIn,/);
+  // The only server action in the file is the check-in itself.
+  assert.deepEqual(source.match(/^export async function \w+/gm), ["export async function checkInToEvent"]);
 });

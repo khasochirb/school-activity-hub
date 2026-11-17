@@ -25,8 +25,11 @@ type StudentRoster = {
 };
 
 type EventRecord = {
+  allow_connected_school_registration: boolean;
+  capacity: number | null;
   ends_at: string | null;
   id: string;
+  permission_required: boolean;
   school_id: string;
   starts_at: string;
   status: string;
@@ -44,6 +47,7 @@ type CheckInContext = {
   event: EventRecord;
   profile: Profile;
   student: StudentRoster;
+  walkIn: boolean;
 };
 
 type CheckInContextResult =
@@ -83,7 +87,7 @@ export async function checkInToEvent(
     };
   }
 
-  const { admin, attendee, event, profile, student } = contextResult.context;
+  const { admin, attendee, event, profile, student, walkIn } = contextResult.context;
   const { data: existingCheckin } = await admin
     .from("attendance_checkins")
     .select("id")
@@ -115,6 +119,8 @@ export async function checkInToEvent(
     checked_in_at: checkedInAt,
     metadata: {
       source: "check_in_link",
+      // Joined at the door by scanning the QR, not registered beforehand.
+      walk_in: walkIn,
     },
   });
 
@@ -197,7 +203,9 @@ async function getCheckInContext(
 
   const { data: event } = await admin
     .from("events")
-    .select("id, school_id, status, starts_at, ends_at")
+    .select(
+      "id, school_id, status, starts_at, ends_at, capacity, permission_required, allow_connected_school_registration",
+    )
     .eq("id", eventId)
     .eq("status", "approved")
     .maybeSingle<EventRecord>();
@@ -220,19 +228,47 @@ async function getCheckInContext(
     };
   }
 
-  const { data: attendee } = await admin
+  const { data: foundAttendee } = await admin
     .from("event_attendees")
     .select("id, status, checked_in_at")
     .eq("event_id", event.id)
     .or(`attendee_profile_id.eq.${profile.id},student_roster_id.eq.${student.id}`)
     .maybeSingle<EventAttendee>();
 
+  // The QR link never changes, so it is the clock that keeps check-in honest:
+  // only from 30 minutes before the start to 30 minutes after the end.
+  const timing = checkInTiming(new Date(), event.starts_at, event.ends_at);
+  const timingRefusal = () => ({
+    message:
+      timing === "early"
+        ? i18n.tf("checkIn.errors.notOpenYet", { minutes: CHECK_IN_OPENS_BEFORE_MINUTES })
+        : i18n.t("checkIn.errors.closed"),
+    ok: false as const,
+    success: false,
+  });
+  let attendee = foundAttendee;
+  let walkIn = false;
+
   if (!attendee || attendee.status === "canceled") {
-    return {
-      message: i18n.t("checkIn.errors.mustJoinFirst"),
-      ok: false,
-      success: false,
-    };
+    if (timing !== "open") {
+      return timingRefusal();
+    }
+
+    // Walk-in: a student who turned up without registering joins at the door,
+    // but only where joining needs nothing else: no permission slip, room left,
+    // and for a visiting school, an activity open to connected schools.
+    const walkedIn = await registerWalkIn(admin, event, profile, student, attendee);
+
+    if (!walkedIn) {
+      return {
+        message: i18n.t("checkIn.errors.mustJoinFirst"),
+        ok: false,
+        success: false,
+      };
+    }
+
+    attendee = walkedIn;
+    walkIn = true;
   }
 
   if (attendee.status === "attended" || attendee.checked_in_at) {
@@ -251,19 +287,8 @@ async function getCheckInContext(
     };
   }
 
-  // The QR link never changes, so it is the clock that keeps check-in honest:
-  // only from 30 minutes before the start to 30 minutes after the end.
-  const timing = checkInTiming(new Date(), event.starts_at, event.ends_at);
-
   if (timing !== "open") {
-    return {
-      message:
-        timing === "early"
-          ? i18n.tf("checkIn.errors.notOpenYet", { minutes: CHECK_IN_OPENS_BEFORE_MINUTES })
-          : i18n.t("checkIn.errors.closed"),
-      ok: false,
-      success: false,
-    };
+    return timingRefusal();
   }
 
   return {
@@ -273,9 +298,59 @@ async function getCheckInContext(
       event,
       profile,
       student,
+      walkIn,
     },
     ok: true,
   };
+}
+
+async function canWalkIn(
+  admin: ReturnType<typeof createAdminClient>,
+  event: EventRecord,
+  profile: Profile,
+) {
+  if (event.permission_required) return false;
+  if (event.school_id !== profile.school_id && !event.allow_connected_school_registration) return false;
+  if (!event.capacity) return true;
+
+  const { count } = await admin
+    .from("event_attendees")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", event.id)
+    .eq("school_id", event.school_id)
+    .in("status", ["registered", "attended"]);
+
+  return (count ?? 0) < event.capacity;
+}
+
+async function registerWalkIn(
+  admin: ReturnType<typeof createAdminClient>,
+  event: EventRecord,
+  profile: Profile,
+  student: StudentRoster,
+  existing: EventAttendee | null,
+): Promise<EventAttendee | null> {
+  if (!(await canWalkIn(admin, event, profile))) return null;
+
+  const registeredAt = new Date().toISOString();
+  const query = existing
+    ? admin
+        .from("event_attendees")
+        .update({ permission_status: "not_required", registered_at: registeredAt, status: "registered" })
+        .eq("id", existing.id)
+        .eq("school_id", event.school_id)
+    : admin.from("event_attendees").insert({
+        attendee_profile_id: profile.id,
+        attendee_school_id: profile.school_id,
+        event_id: event.id,
+        permission_status: "not_required",
+        school_id: event.school_id,
+        status: "registered",
+        student_roster_id: event.school_id === profile.school_id ? student.id : null,
+      });
+  const { data, error } = await query.select("id, status, checked_in_at").maybeSingle<EventAttendee>();
+
+  return error ? null : data;
 }
 
 async function schoolsHaveApprovedConnection(
