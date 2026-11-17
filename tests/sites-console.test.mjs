@@ -153,3 +153,16 @@ test("the console has its own shell that admits platform admins only", () => {
   assert.match(layout, /await requirePlatformAdmin\(\)/);
   assert.match(read("src/app/(console)/console-shell.tsx"), /href: "\/super-admin\/sites"/);
 });
+
+test("demo schools never count: console and platform totals filter them out", () => {
+  const data = read("src/app/(console)/super-admin/sites/sites-console-data.ts");
+  assert.match(data, /\.eq\("is_demo", false\)/);
+  assert.match(data, /const pages = \(pagesResult\.data \?\? \[\]\)\.filter\(\(page\) => counted\.has\(page\.school_id\)\);/);
+  assert.match(data, /const views = \(viewsResult\.data \?\? \[\]\)\.filter\(\(row\) => counted\.has\(row\.school_id\)\);/);
+  assert.match(data, /\(eventsResult\.data \?\? \[\]\)\.filter\(\(row\) => counted\.has\(row\.school_id\)\)/);
+  const platform = read("src/app/(admin)/super-admin/page.tsx");
+  assert.equal(platform.match(/\.eq\("is_demo", false\)/g)?.length, 2);
+  assert.match(read("supabase/schema.sql"), /add column if not exists is_demo boolean not null default false/);
+  // The demo cleanup must never delete the real school's pages after the split.
+  assert.match(read("supabase/demo/demo-school-cleanup.sql"), /and school_id in \(select id from public\.schools where is_demo\)/);
+});

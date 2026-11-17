@@ -68,11 +68,13 @@ export default async function SuperAdminPage() {
     schoolConnectionsResult,
     auditLogResult,
   ] = await Promise.all([
-    admin.from("schools").select("id", { count: "exact", head: true }),
+    // Demo schools hold made-up data, so platform totals leave them out.
+    admin.from("schools").select("id", { count: "exact", head: true }).eq("is_demo", false),
     admin
       .from("schools")
       .select("id", { count: "exact", head: true })
-      .eq("status", "active"),
+      .eq("status", "active")
+      .eq("is_demo", false),
     admin
       .from("platform_admins")
       .select("profile_id", { count: "exact", head: true })
