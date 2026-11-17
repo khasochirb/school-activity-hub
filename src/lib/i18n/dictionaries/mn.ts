@@ -2174,6 +2174,8 @@ export const mn = {
       noEligibleStudents:
         "Бөөн урилгын кодод тохирох холбоогүй идэвхтэй сурагч алга.",
       scope: "Үүсгэх хүрээ",
+      selectAll: "Бүгдийг сонгох",
+      selectedCount: "{count} / {total} сонгосон",
       selectStudents: "Сурагчид сонгох",
       selectStudentsDescription:
         "Зөвхөн холбогдсон профайлгүй идэвхтэй сурагчдыг жагсаасан.",

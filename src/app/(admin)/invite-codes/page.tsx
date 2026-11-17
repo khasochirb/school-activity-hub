@@ -188,34 +188,6 @@ export default async function InviteCodesPage({
       ) : null}
 
       <CollapsibleFormSection
-        description={t("invites.single.description")}
-        hideLabel={t("common.hideForm")}
-        id="generate-invite"
-        showLabel={t("common.showForm")}
-        title={t("invites.single.title")}
-      >
-        {studentsError ? (
-          <p className="mt-2 text-sm text-red-600">
-            {tf("invites.errors.studentsLoadFailed", {
-              error: t("common.somethingWentWrong"),
-            })}
-          </p>
-        ) : null}
-        <GenerateInviteForm
-          labels={{
-            chooseStudent: t("invites.single.chooseStudent"),
-            generate: t("invites.actions.generate"),
-            generating: t("invites.actions.generating"),
-            gradeOption: t("invites.single.gradeOption"),
-            noStudents: t("invites.single.noStudents"),
-            plainCodeLabel: t("invites.single.plainCodeLabel"),
-            studentLabel: t("invites.single.studentLabel"),
-          }}
-          students={(activeStudents ?? []).filter((student) => !student.profile_id)}
-        />
-      </CollapsibleFormSection>
-
-      <CollapsibleFormSection
         description={t("invites.bulk.description")}
         hideLabel={t("common.hideForm")}
         id="bulk-generate"
@@ -254,8 +226,38 @@ export default async function InviteCodesPage({
             selectStudentsDescription: t(
               "invites.bulk.selectStudentsDescription",
             ),
+            selectAll: t("invites.bulk.selectAll"),
+            selectedCount: t("invites.bulk.selectedCount"),
           }}
           students={activeStudents ?? []}
+        />
+      </CollapsibleFormSection>
+
+      <CollapsibleFormSection
+        description={t("invites.single.description")}
+        hideLabel={t("common.hideForm")}
+        id="generate-invite"
+        showLabel={t("common.showForm")}
+        title={t("invites.single.title")}
+      >
+        {studentsError ? (
+          <p className="mt-2 text-sm text-red-600">
+            {tf("invites.errors.studentsLoadFailed", {
+              error: t("common.somethingWentWrong"),
+            })}
+          </p>
+        ) : null}
+        <GenerateInviteForm
+          labels={{
+            chooseStudent: t("invites.single.chooseStudent"),
+            generate: t("invites.actions.generate"),
+            generating: t("invites.actions.generating"),
+            gradeOption: t("invites.single.gradeOption"),
+            noStudents: t("invites.single.noStudents"),
+            plainCodeLabel: t("invites.single.plainCodeLabel"),
+            studentLabel: t("invites.single.studentLabel"),
+          }}
+          students={(activeStudents ?? []).filter((student) => !student.profile_id)}
         />
       </CollapsibleFormSection>
 

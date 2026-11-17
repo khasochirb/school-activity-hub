@@ -116,3 +116,19 @@ test("Mongolian common keys reuse the shipped feedback wording", () => {
   assert.match(common, /somethingWentWrong: "Алдаа гарлаа",/);
   assert.doesNotMatch(read("src/app/(admin)/dashboard/dashboard-charts.tsx"), /common\.category/);
 });
+
+test("bulk invite codes: select all picks every eligible student, and ticking one switches to picked mode", async () => {
+  const { selectedCountLabel, toggleAll, toggleOne } = await import("../src/app/(admin)/invite-codes/selection.ts");
+  assert.deepEqual([...toggleAll(["a", "b", "c"], true)], ["a", "b", "c"]);
+  assert.equal(toggleAll(["a", "b"], false).size, 0);
+  const one = toggleOne(new Set(["a"]), "b", true);
+  assert.deepEqual([...one].sort(), ["a", "b"]);
+  assert.deepEqual([...toggleOne(one, "a", false)], ["b"]);
+  assert.equal(selectedCountLabel("{count} / {total} сонгосон", 3, 23), "3 / 23 сонгосон");
+  const form = readFileSync(join(process.cwd(), "src/app/(admin)/invite-codes/bulk-generate-invite-form.tsx"), "utf8");
+  // Only the picked mode submits the ticked students; the other modes ignore them.
+  assert.match(form, /name=\{mode === "selected" \? "student_roster_ids" : undefined\}/);
+  assert.match(form, /if \(checked\) setMode\("selected"\);/);
+  const page = readFileSync(join(process.cwd(), "src/app/(admin)/invite-codes/page.tsx"), "utf8");
+  assert.ok(page.indexOf('id="bulk-generate"') < page.indexOf('id="generate-invite"'), "bulk form comes first");
+});

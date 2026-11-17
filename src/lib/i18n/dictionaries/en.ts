@@ -1082,6 +1082,8 @@ export const en = {
       noEligibleStudents:
         "No active unlinked students are available for bulk invite codes.",
       scope: "Generation scope",
+      selectAll: "Select all",
+      selectedCount: "{count} of {total} selected",
       selectStudents: "Select students",
       selectStudentsDescription:
         "Only active students without linked profiles are listed.",
