@@ -18,11 +18,11 @@ function loadCompletenessHelper() {
       target: ts.ScriptTarget.ES2022,
     },
   }).outputText;
-  const module = { exports: {} };
+  const commonJsModule = { exports: {} };
   const evaluate = new Function("exports", "module", output);
 
-  evaluate(module.exports, module);
-  return module.exports;
+  evaluate(commonJsModule.exports, commonJsModule);
+  return commonJsModule.exports;
 }
 
 const { getEventListingCompleteness } = loadCompletenessHelper();
