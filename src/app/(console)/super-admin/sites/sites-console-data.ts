@@ -22,7 +22,14 @@ export async function loadSitesConsole() {
   const windowEnd = new Date(now.getTime() + UPCOMING_WINDOW_DAYS * 86_400_000).toISOString();
 
   const [schoolsResult, pagesResult, eventsResult, viewsResult] = await Promise.all([
-    admin.from("schools").select("id, name, slug").eq("status", "active").order("name").returns<ConsoleSchool[]>(),
+    // Demo schools hold made-up data: none of their pages, activities or visits count here.
+    admin
+      .from("schools")
+      .select("id, name, slug")
+      .eq("status", "active")
+      .eq("is_demo", false)
+      .order("name")
+      .returns<ConsoleSchool[]>(),
     admin
       .from("school_pages")
       .select("id, school_id, parent_id, slug, title, status, body, cover_path, updated_at")
@@ -42,11 +49,12 @@ export async function loadSitesConsole() {
   ]);
 
   const schools = schoolsResult.data ?? [];
-  const pages = pagesResult.data ?? [];
-  const views = viewsResult.data ?? [];
+  const counted = new Set(schools.map((school) => school.id));
+  const pages = (pagesResult.data ?? []).filter((page) => counted.has(page.school_id));
+  const views = (viewsResult.data ?? []).filter((row) => counted.has(row.school_id));
   const upcomingBySchool = new Map<string, number>();
 
-  for (const event of eventsResult.data ?? []) {
+  for (const event of (eventsResult.data ?? []).filter((row) => counted.has(row.school_id))) {
     upcomingBySchool.set(event.school_id, (upcomingBySchool.get(event.school_id) ?? 0) + 1);
   }
 

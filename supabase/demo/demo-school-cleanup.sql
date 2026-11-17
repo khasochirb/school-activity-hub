@@ -27,8 +27,11 @@ begin
 
   -- Demo site pages (only if the school_pages table exists).
   if to_regclass('public.school_pages') is not null then
+    -- These pages now belong to the real School 2 (moved 17-Nov-2026), so only
+    -- delete them while they still sit in a school flagged as demo.
     delete from public.school_pages
-    where id in (select md5('sah-demo-page-' || i)::uuid from generate_series(1, 24) as i);
+    where id in (select md5('sah-demo-page-' || i)::uuid from generate_series(1, 24) as i)
+      and school_id in (select id from public.schools where is_demo);
   end if;
 
   raise notice 'Demo data removed.';
