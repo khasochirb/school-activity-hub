@@ -132,3 +132,12 @@ test("bulk invite codes: select all picks every eligible student, and ticking on
   const page = readFileSync(join(process.cwd(), "src/app/(admin)/invite-codes/page.tsx"), "utf8");
   assert.ok(page.indexOf('id="bulk-generate"') < page.indexOf('id="generate-invite"'), "bulk form comes first");
 });
+
+test("the bulk invite form starts open, but stays hidden for someone who hid it", () => {
+  const page = readFileSync(join(process.cwd(), "src/app/(admin)/invite-codes/page.tsx"), "utf8");
+  assert.match(page, /<CollapsibleFormSection\s+defaultOpen\s+description=\{t\("invites\.bulk\.description"\)\}/);
+  assert.doesNotMatch(page, /defaultOpen\s+description=\{t\("invites\.single\.description"\)\}/);
+  const section = readFileSync(join(process.cwd(), "src/app/(admin)/_components/collapsible-form-section.tsx"), "utf8");
+  assert.match(section, /useState\(defaultOpen\)/);
+  assert.match(section, /else if \(defaultOpen && readStoredClosedState\(id\)\)/);
+});

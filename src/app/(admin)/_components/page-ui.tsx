@@ -124,6 +124,7 @@ export function HeaderActionLink({
 export function CollapsibleFormSection({
   children,
   collapsedSummary = false,
+  defaultOpen = false,
   description,
   hideLabel,
   id,
@@ -132,6 +133,7 @@ export function CollapsibleFormSection({
 }: {
   children: React.ReactNode;
   collapsedSummary?: boolean;
+  defaultOpen?: boolean;
   description: string;
   hideLabel: string;
   id: string;
@@ -141,6 +143,7 @@ export function CollapsibleFormSection({
   return (
     <ClientCollapsibleFormSection
       collapsedSummary={collapsedSummary}
+      defaultOpen={defaultOpen}
       description={description}
       hideLabel={hideLabel}
       id={id}
