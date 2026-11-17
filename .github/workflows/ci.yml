@@ -1,0 +1,29 @@
+# Runs on every pull request into the production branch and on every push to
+# it. Vercel deploys whatever lands on that branch, so this is the check that
+# stands between a merge and real students.
+name: CI
+
+on:
+  pull_request:
+    branches: [claude/epic-hawking-pz2fpw]
+  push:
+    branches: [claude/epic-hawking-pz2fpw]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        # next-env.d.ts and route types are generated, not committed.
+        run: npx next typegen && npx tsc --noEmit -p .
+      - name: Tests
+        run: npm test
