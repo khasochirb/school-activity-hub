@@ -188,6 +188,7 @@ export default async function InviteCodesPage({
       ) : null}
 
       <CollapsibleFormSection
+        defaultOpen
         description={t("invites.bulk.description")}
         hideLabel={t("common.hideForm")}
         id="bulk-generate"
