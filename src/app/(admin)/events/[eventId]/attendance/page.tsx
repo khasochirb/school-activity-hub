@@ -21,7 +21,7 @@ import {
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { updateAttendeePermissionStatus } from "./actions";
+import { markAttendeePresent, updateAttendeePermissionStatus } from "./actions";
 import { CopyCheckInLinkButton } from "./copy-check-in-link-button";
 
 type EventRecord = {
@@ -471,7 +471,9 @@ export default async function EventAttendancePage({
                               />
                             </td>
                             <td className="px-4 py-3">
-                              <CheckInBadge
+                              <CheckInCell
+                                attendee={row.attendee}
+                                event={event}
                                 isCheckedIn={row.isCheckedIn}
                                 t={t}
                               />
@@ -532,7 +534,9 @@ export default async function EventAttendancePage({
                               {t("attendance.table.checkInStatus")}
                             </dt>
                             <dd className="text-zinc-800">
-                              <CheckInBadge
+                              <CheckInCell
+                                attendee={row.attendee}
+                                event={event}
                                 isCheckedIn={row.isCheckedIn}
                                 t={t}
                               />
@@ -601,6 +605,37 @@ function AttendanceSummaryCard({
     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
       <p className="text-xs font-medium text-zinc-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-zinc-950">{value}</p>
+    </div>
+  );
+}
+
+function CheckInCell({
+  attendee,
+  event,
+  isCheckedIn,
+  t,
+}: {
+  attendee: EventAttendee;
+  event: EventRecord;
+  isCheckedIn: boolean;
+  t: Translate;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <CheckInBadge isCheckedIn={isCheckedIn} t={t} />
+      {!isCheckedIn && attendee.status === "registered" ? (
+        <form action={markAttendeePresent}>
+          <input name="attendee_id" type="hidden" value={attendee.id} />
+          <input name="event_id" type="hidden" value={event.id} />
+          <PendingSubmitButton
+            className="h-8 cursor-pointer rounded-md border border-zinc-300 bg-white px-2.5 text-xs font-semibold text-zinc-800 transition hover:bg-zinc-100"
+            pendingLabel={t("common.saving")}
+            toastMessage={t("common.saving")}
+          >
+            {t("attendance.actions.markPresent")}
+          </PendingSubmitButton>
+        </form>
+      ) : null}
     </div>
   );
 }
