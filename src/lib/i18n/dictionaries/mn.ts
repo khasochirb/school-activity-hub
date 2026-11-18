@@ -1098,6 +1098,7 @@ export const mn = {
   attendance: {
     actions: {
       markPresent: "Ирснээр бүртгэх",
+      undoMarkPresent: "Буцаах",
       copied: "Хуулагдсан",
       copyLink: "Ирцийн холбоос хуулах",
       openLink: "Ирцийн холбоос нээх",
