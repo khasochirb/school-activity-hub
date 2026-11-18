@@ -21,7 +21,7 @@ import {
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { markAttendeePresent, updateAttendeePermissionStatus } from "./actions";
+import { markAttendeePresent, undoMarkAttendeePresent, updateAttendeePermissionStatus } from "./actions";
 import { CopyCheckInLinkButton } from "./copy-check-in-link-button";
 
 type EventRecord = {
@@ -473,6 +473,7 @@ export default async function EventAttendancePage({
                             <td className="px-4 py-3">
                               <CheckInCell
                                 attendee={row.attendee}
+                                checkinMethod={row.checkin?.method}
                                 event={event}
                                 isCheckedIn={row.isCheckedIn}
                                 t={t}
@@ -536,6 +537,7 @@ export default async function EventAttendancePage({
                             <dd className="text-zinc-800">
                               <CheckInCell
                                 attendee={row.attendee}
+                                checkinMethod={row.checkin?.method}
                                 event={event}
                                 isCheckedIn={row.isCheckedIn}
                                 t={t}
@@ -611,11 +613,13 @@ function AttendanceSummaryCard({
 
 function CheckInCell({
   attendee,
+  checkinMethod,
   event,
   isCheckedIn,
   t,
 }: {
   attendee: EventAttendee;
+  checkinMethod: string | undefined;
   event: EventRecord;
   isCheckedIn: boolean;
   t: Translate;
@@ -633,6 +637,19 @@ function CheckInCell({
             toastMessage={t("common.saving")}
           >
             {t("attendance.actions.markPresent")}
+          </PendingSubmitButton>
+        </form>
+      ) : null}
+      {isCheckedIn && checkinMethod === "manual" ? (
+        <form action={undoMarkAttendeePresent}>
+          <input name="attendee_id" type="hidden" value={attendee.id} />
+          <input name="event_id" type="hidden" value={event.id} />
+          <PendingSubmitButton
+            className="h-8 cursor-pointer rounded-md px-2 text-xs font-semibold text-zinc-600 underline-offset-2 transition hover:text-zinc-900 hover:underline"
+            pendingLabel={t("common.saving")}
+            toastMessage={t("common.saving")}
+          >
+            {t("attendance.actions.undoMarkPresent")}
           </PendingSubmitButton>
         </form>
       ) : null}

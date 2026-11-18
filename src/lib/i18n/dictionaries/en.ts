@@ -1774,6 +1774,7 @@ export const en = {
   attendance: {
     actions: {
       markPresent: "Mark present",
+      undoMarkPresent: "Undo",
       copied: "Copied",
       copyLink: "Copy check-in link",
       openLink: "Open check-in link",
