@@ -1117,6 +1117,7 @@ export const en = {
     approvals: "Approvals",
     attendance: "Attendance",
     auditLog: "Platform Audit Log",
+    schedule: "My schedule",
     calendar: "Calendar",
     clubIdeas: "Club Ideas",
     clubRequests: "Club Requests",
@@ -3251,6 +3252,12 @@ export const en = {
       title: "Operational use and research are separate",
     },
     title: "Privacy",
+  },
+  schedule: {
+    title: "My schedule",
+    subtitle: "Events you registered for and events your clubs hold, one week at a time.",
+    clubTimes: "Club meeting times",
+    noMeetingTime: "Meeting time not added yet",
   },
   portfolio: {
     myClubs: {
