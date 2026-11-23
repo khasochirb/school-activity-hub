@@ -37,13 +37,16 @@ export const en = {
     errors: {
       invalidEmail: "Enter a valid email address.",
       passwordMinLength: "Password must be at least 8 characters.",
+      passwordMismatch: "The two passwords don't match.",
     },
     join: {
+      confirmPassword: "Confirm password",
       createAccount: "Create student account",
       creatingAccount: "Creating account...",
       description:
         "Enter the one-time invite code from your school to activate your student account.",
       email: "Email",
+      emailHint: "If you forget your password, the reset link goes to this address. Use an email you check.",
       errors: {
         accountCreateFailed:
           "Account could not be created. Try a different email address.",

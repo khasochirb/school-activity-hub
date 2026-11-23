@@ -11,11 +11,12 @@ const initialState: JoinState = {
 };
 
 export type JoinFormLabels = {
+  confirmPassword: string;
   createAccount: string;
   creatingAccount: string;
   email: string;
+  emailHint: string;
   inviteCode: string;
-  inviteCodeHelper: string;
   inviteCodePlaceholder: string;
   password: string;
 };
@@ -37,9 +38,6 @@ export function JoinForm({ labels }: { labels: JoinFormLabels }) {
           required
           spellCheck={false}
         />
-        <span className="text-sm font-normal leading-6 text-slate-600">
-          {labels.inviteCodeHelper}
-        </span>
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.email}
@@ -48,14 +46,29 @@ export function JoinForm({ labels }: { labels: JoinFormLabels }) {
           name="email"
           type="email"
           autoComplete="email"
+          aria-describedby="join-email-hint"
           required
         />
+        <span className="text-sm font-normal leading-6 text-slate-600" id="join-email-hint">
+          {labels.emailHint}
+        </span>
       </label>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.password}
         <input
           className="h-12 rounded-md border px-3 text-base outline-none transition"
           name="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+        />
+      </label>
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
+        {labels.confirmPassword}
+        <input
+          className="h-12 rounded-md border px-3 text-base outline-none transition"
+          name="confirm_password"
           type="password"
           autoComplete="new-password"
           minLength={8}

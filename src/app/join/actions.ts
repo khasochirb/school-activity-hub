@@ -43,6 +43,7 @@ export async function redeemInviteCode(
   const rawCode = String(formData.get("invite_code") ?? "");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
   const normalizedCode = normalizeInviteCode(rawCode);
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
@@ -63,6 +64,12 @@ export async function redeemInviteCode(
       message: t("auth.errors.passwordMinLength"),
       success: false,
     };
+  }
+
+  // Checked here as well as in the browser: a typo in a new password locks the
+  // student out on day one.
+  if (password !== confirmPassword) {
+    return { message: t("auth.errors.passwordMismatch"), success: false };
   }
 
   const admin = createAdminClient();

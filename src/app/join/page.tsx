@@ -16,11 +16,12 @@ export default async function JoinPage() {
     >
       <JoinForm
         labels={{
+          confirmPassword: t("auth.join.confirmPassword"),
           createAccount: t("auth.join.createAccount"),
           creatingAccount: t("auth.join.creatingAccount"),
           email: t("auth.join.email"),
+          emailHint: t("auth.join.emailHint"),
           inviteCode: t("auth.join.inviteCode"),
-          inviteCodeHelper: t("auth.join.description"),
           inviteCodePlaceholder: t("auth.join.inviteCodePlaceholder"),
           password: t("auth.join.password"),
         }}
