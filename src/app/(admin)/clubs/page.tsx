@@ -63,6 +63,7 @@ type Club = {
   name: string;
   description: string | null;
   category: string | null;
+  join_mode?: string;
   status: string;
 };
 
@@ -178,7 +179,7 @@ export default async function ClubsPage({
 
   let clubsQuery = supabase
     .from("clubs")
-    .select("id, name, description, category, status")
+    .select("id, name, description, category, status, join_mode")
     .eq("school_id", profile.school_id);
 
   if (selectedStatus !== "all") {
@@ -264,7 +265,7 @@ export default async function ClubsPage({
           : timeServer("clubs.query.clubs-for-you", () =>
               supabase
                 .from("clubs")
-                .select("id, name, description, category, status")
+                .select("id, name, description, category, status, join_mode")
                 .eq("school_id", profile.school_id)
                 .eq("status", "active")
                 .returns<Club[]>(),
@@ -579,6 +580,7 @@ export default async function ClubsPage({
                           confirm: t("feedback.confirm"),
                           confirmArchive: t("feedback.archiveClub"),
                           confirmDescription: t("feedback.cannotBeUndone"),
+                          apply: t("clubs.join.apply.button"),
                           join: t("clubs.actions.join"),
                           joining: t("clubs.actions.joining"),
                           leave: t("clubs.actions.leave"),
@@ -732,6 +734,7 @@ function ClubActions({
     confirm: string;
     confirmArchive: string;
     confirmDescription: string;
+    apply: string;
     join: string;
     joining: string;
     leave: string;
@@ -754,6 +757,19 @@ function ClubActions({
 
   if (role !== "student" || !currentStudent) {
     return null;
+  }
+
+  // Clubs that take applications: open the application form instead.
+  if (!isJoined && club.join_mode === "apply") {
+    return (
+      <Link
+        className="btn btn-soft min-h-11 w-full px-4 sm:min-h-10 sm:w-auto"
+        href={`/clubs/${club.id}/apply`}
+        prefetch={false}
+      >
+        {labels.apply}
+      </Link>
+    );
   }
 
   return (
@@ -864,6 +880,14 @@ function ClubsForYouSection({
                     <StatusBadge variant="success">
                       {t("clubs.memberRoles.member")}
                     </StatusBadge>
+                  ) : currentStudent && membershipKnown && club.join_mode === "apply" ? (
+                    <Link
+                      className="btn btn-primary min-h-12 w-full px-4 text-base sm:min-h-10 sm:w-auto sm:text-sm"
+                      href={`/clubs/${club.id}/apply`}
+                      prefetch={false}
+                    >
+                      {t("clubs.join.apply.button")}
+                    </Link>
                   ) : currentStudent && membershipKnown ? (
                     <form action={joinClub} className="w-full sm:w-auto">
                       <input name="club_id" type="hidden" value={club.id} />

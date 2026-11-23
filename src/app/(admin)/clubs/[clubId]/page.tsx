@@ -17,6 +17,8 @@ import {
 } from "@/lib/i18n/dictionary";
 import { formatCalendarDateBadge, formatTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { countPendingJoinRequests } from "@/lib/clubs/club-access";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   StatusBadge,
@@ -31,6 +33,8 @@ type Club = {
   description: string | null;
   id: string;
   name: string;
+  advisor_profile_id: string | null;
+  join_mode: "apply" | "open";
   school_id: string;
   status: "active" | "archived";
 };
@@ -72,6 +76,7 @@ type Registration = {
 };
 
 type ClubProfileSearchParams = {
+  applied?: string | string[];
   updated?: string | string[];
 };
 
@@ -106,7 +111,7 @@ export default async function ClubProfilePage({
   const supabase = await createClient();
   const { data: club } = await supabase
     .from("clubs")
-    .select("id, school_id, name, description, category, status")
+    .select("id, school_id, name, description, category, status, advisor_profile_id, join_mode")
     .eq("id", clubId)
     .maybeSingle<Club>();
 
@@ -197,7 +202,36 @@ export default async function ClubProfilePage({
   );
   const details = getProfileDetails(club, profile);
   const showIncompleteNotice = details.completedCount < 3;
-  const profileUpdated = getFirst((await searchParams).updated) === "1";
+  const query = await searchParams;
+  const profileUpdated = getFirst(query.updated) === "1";
+  const justApplied = getFirst(query.applied) === "1";
+  // Join requests: reviewers (leader, supervising teacher, school admin) get
+  // a link to them; a student applying to an "apply" club sees their request.
+  const canReviewJoins = Boolean(
+    actor.profile &&
+      actor.profile.school_id === club.school_id &&
+      (isLeader ||
+        club.advisor_profile_id === actor.profile.id ||
+        actor.profile.role === "school_admin"),
+  );
+  const isApplyStudent =
+    actor.profile?.role === "student" && club.join_mode === "apply" && !activeMembership;
+  const [pendingJoinCount, { data: myJoinRequest }] = await Promise.all([
+    canReviewJoins ? countPendingJoinRequests(createAdminClient(), club.id) : Promise.resolve(0),
+    isApplyStudent
+      ? supabase
+          .from("club_join_requests")
+          .select("id")
+          .eq("club_id", club.id)
+          .eq("profile_id", actor.profile!.id)
+          .eq("status", "pending")
+          .maybeSingle<{ id: string }>()
+      : Promise.resolve({ data: null }),
+  ]);
+  const applyLabels = {
+    apply: myJoinRequest ? t("clubs.join.apply.pendingButton") : t("clubs.join.apply.button"),
+    href: `/clubs/${club.id}/apply`,
+  };
   const canManageProfile = canEdit === true || isLeader || isOwnSchoolStaff;
   const bannerUrl = getMediaUrl(club.id, "banner", profile);
   const logoUrl = getMediaUrl(club.id, "logo", profile);
@@ -314,6 +348,7 @@ export default async function ClubProfilePage({
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap lg:pt-3 lg:justify-end">
             {actor.profile?.role === "student" && club.status === "active" ? (
               <MembershipAction
+                apply={isApplyStudent ? applyLabels : null}
                 clubId={club.id}
                 isJoined={Boolean(activeMembership)}
                 labels={{
@@ -323,6 +358,16 @@ export default async function ClubProfilePage({
                   leaving: t("clubs.actions.leaving"),
                 }}
               />
+            ) : null}
+            {canReviewJoins ? (
+              <Link
+                className="cl-btn-soft min-h-11"
+                href={`/clubs/${club.id}/applications`}
+                prefetch={false}
+              >
+                {t("clubs.join.review.link")}
+                {pendingJoinCount ? <span className="cl-chip-count">{pendingJoinCount}</span> : null}
+              </Link>
             ) : null}
             {club.status === "active" ? (
               <ShareClubButton
@@ -392,6 +437,7 @@ export default async function ClubProfilePage({
             </p>
             <div className="shrink-0">
               <MembershipAction
+                apply={isApplyStudent ? applyLabels : null}
                 clubId={club.id}
                 isJoined={false}
                 labels={{
@@ -409,6 +455,12 @@ export default async function ClubProfilePage({
       {profileUpdated ? (
         <p className="notice-box notice-success" role="status">
           {t("clubs.profile.success.saved")}
+        </p>
+      ) : null}
+
+      {justApplied && myJoinRequest ? (
+        <p className="notice-box notice-success" role="status">
+          {t("clubs.join.apply.sentNotice")}
         </p>
       ) : null}
 
@@ -568,14 +620,25 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 }
 
 function MembershipAction({
+  apply,
   clubId,
   isJoined,
   labels,
 }: {
+  apply: { apply: string; href: string } | null;
   clubId: string;
   isJoined: boolean;
   labels: { join: string; joining: string; leave: string; leaving: string };
 }) {
+  // Clubs that take applications: the button opens the application form.
+  if (apply && !isJoined) {
+    return (
+      <Link className="btn btn-primary min-h-11 w-full sm:w-auto" href={apply.href} prefetch={false}>
+        {apply.apply}
+      </Link>
+    );
+  }
+
   return (
     <form action={isJoined ? leaveClub : joinClub} className="w-full sm:w-auto">
       <input name="club_id" type="hidden" value={clubId} />
