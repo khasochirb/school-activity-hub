@@ -8301,3 +8301,15 @@ html[data-theme="dark"] .cl-land::before {
 .family-add input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--card); color: var(--foreground); font-size: 16px; }
 .family-add button { justify-self: start; }
 .family-foot { text-align: center; }
+.family-child-head .family-portfolio-link { margin-left: auto; flex: none; }
+.family-list li { flex-wrap: wrap; }
+.family-list li[data-needs-answer] { border-color: var(--warning, #d97706); background: color-mix(in srgb, var(--warning, #d97706) 7%, transparent); }
+.family-event-text { display: grid; flex: 1 1 12rem; min-width: 0; }
+.family-permission { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.family-permission-actions { display: inline-flex; gap: 6px; }
+.family-entry { display: grid; gap: 6px; padding: 16px; }
+.family-entry small { color: var(--muted); font-size: 12.5px; }
+.family-entry h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.family-entry p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.family-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin-top: 4px; }
+.family-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-control); }

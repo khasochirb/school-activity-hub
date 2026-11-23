@@ -21,6 +21,7 @@ export type FamilyChild = {
   upcoming: Array<{
     id: string;
     location: string | null;
+    permissionRequired: boolean;
     permissionStatus: string;
     startsAt: string;
     title: string;
@@ -94,12 +95,19 @@ export async function getFamilyChildren(parent: ParentViewer): Promise<FamilyChi
       >(),
     admin
       .from("event_attendees")
-      .select("student_roster_id, status, permission_status, events(id, title, starts_at, location, status)")
+      .select("student_roster_id, status, permission_status, events(id, title, starts_at, location, status, permission_required)")
       .in("student_roster_id", rosterIds)
       .in("status", ["registered", "attended"])
       .returns<
         Array<{
-          events: { id: string; location: string | null; starts_at: string; status: string; title: string } | null;
+          events: {
+            id: string;
+            location: string | null;
+            permission_required: boolean;
+            starts_at: string;
+            status: string;
+            title: string;
+          } | null;
           permission_status: string;
           status: "attended" | "registered";
           student_roster_id: string;
@@ -116,6 +124,7 @@ export async function getFamilyChildren(parent: ParentViewer): Promise<FamilyChi
       .map((row) => ({
         id: row.events!.id,
         location: row.events!.location,
+        permissionRequired: row.events!.permission_required,
         permissionStatus: row.permission_status,
         startsAt: row.events!.starts_at,
         title: row.events!.title,
@@ -141,4 +150,44 @@ export async function getFamilyChildren(parent: ParentViewer): Promise<FamilyChi
       upcoming,
     };
   });
+}
+
+// True when this parent account is linked to this student.
+export async function isParentOf(parentProfileId: string, rosterId: string) {
+  const { data } = await createAdminClient()
+    .from("parent_links")
+    .select("id")
+    .eq("parent_profile_id", parentProfileId)
+    .eq("student_roster_id", rosterId)
+    .maybeSingle<{ id: string }>();
+
+  return Boolean(data);
+}
+
+export type FamilyPortfolioEntry = {
+  body: string | null;
+  entry_date: string;
+  id: string;
+  kind: string;
+  media_paths: string[];
+  title: string;
+};
+
+// What a parent sees of their child's portfolio: the same as a teacher, i.e.
+// entries the student shared with staff or the school. Private entries and
+// drafts stay with the student.
+export const PARENT_VISIBLE_PORTFOLIO = ["staff", "school"] as const;
+
+export async function getChildPortfolio(rosterId: string) {
+  const { data } = await createAdminClient()
+    .from("portfolio_entries")
+    .select("id, kind, title, body, entry_date, media_paths")
+    .eq("student_roster_id", rosterId)
+    .eq("is_draft", false)
+    .in("visibility", [...PARENT_VISIBLE_PORTFOLIO])
+    .order("entry_date", { ascending: false })
+    .limit(60)
+    .returns<FamilyPortfolioEntry[]>();
+
+  return data ?? [];
 }

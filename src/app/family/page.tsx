@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
-import { BrandMark } from "@/components/brand-mark";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getFamilyChildren, getParentViewer } from "@/lib/family/family-data";
 import { formatDate, formatTime } from "@/lib/i18n/date-format";
 import { formatTranslation, getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
-import { logout } from "../(admin)/actions";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
+import Link from "next/link";
+import { answerPermission } from "./actions";
 import { AddChildForm } from "./add-child-form";
+import { FamilyHeader } from "./family-header";
 
 // The parent's home: each linked child's clubs, upcoming activities (with
 // whether a permission slip is needed) and recent attendance. Nothing about
@@ -29,29 +30,7 @@ export default async function FamilyPage() {
 
   return (
     <div className="family-page">
-      <header className="family-top">
-        <span className="family-brand">
-          <BrandMark className="h-9 w-9" />
-          <span>
-            <b>{t("family.title")}</b>
-            <small>{parent.fullName}</small>
-          </span>
-        </span>
-        <span className="family-top-actions">
-          <LanguageSwitcher
-            className="w-auto"
-            compact
-            currentLocale={locale}
-            label={t("language.label")}
-            labels={{ en: t("language.en"), mn: t("language.mn") }}
-          />
-          <form action={logout}>
-            <button className="btn btn-quiet min-h-10" type="submit">
-              {t("family.signOut")}
-            </button>
-          </form>
-        </span>
-      </header>
+      <FamilyHeader name={parent.fullName} />
 
       <main className="family-main">
         {children.length ? null : (
@@ -73,6 +52,9 @@ export default async function FamilyPage() {
                   {[child.schoolName, child.homeroom ?? child.gradeLevel].filter(Boolean).join(" · ")}
                 </small>
               </span>
+              <Link className="btn btn-secondary min-h-10 family-portfolio-link" href={`/family/child/${child.rosterId}`}>
+                {t("family.portfolio.open")}
+              </Link>
             </header>
 
             <div className="family-block">
@@ -96,20 +78,50 @@ export default async function FamilyPage() {
               {child.upcoming.length ? (
                 <ul className="family-list">
                   {child.upcoming.map((event) => (
-                    <li key={event.id}>
-                      <span className="min-w-0">
+                    <li data-needs-answer={event.permissionRequired && event.permissionStatus === "pending" ? "" : undefined} key={event.id}>
+                      <span className="family-event-text">
                         <b>{event.title}</b>
                         <small>
                           {formatDate(event.startsAt, locale)} · {formatTime(event.startsAt, locale)}
                           {event.location ? ` · ${event.location}` : ""}
                         </small>
                       </span>
-                      {event.permissionStatus !== "not_required" ? (
-                        <span
-                          className="cl-tag"
-                          data-tone={event.permissionStatus === "received" ? "ok" : "warn"}
-                        >
-                          {t(`family.permission.${event.permissionStatus}`)}
+                      {event.permissionRequired ? (
+                        <span className="family-permission">
+                          <span
+                            className="cl-tag"
+                            data-tone={
+                              event.permissionStatus === "received"
+                                ? "ok"
+                                : event.permissionStatus === "declined"
+                                  ? undefined
+                                  : "warn"
+                            }
+                          >
+                            {t(`family.permission.${event.permissionStatus === "not_required" ? "pending" : event.permissionStatus}`)}
+                          </span>
+                          <span className="family-permission-actions">
+                            {event.permissionStatus !== "received" ? (
+                              <form action={answerPermission}>
+                                <input name="roster_id" type="hidden" value={child.rosterId} />
+                                <input name="event_id" type="hidden" value={event.id} />
+                                <input name="answer" type="hidden" value="received" />
+                                <PendingSubmitButton className="btn btn-primary min-h-10" pendingLabel={t("family.permission.saving")}>
+                                  {t("family.permission.approve")}
+                                </PendingSubmitButton>
+                              </form>
+                            ) : null}
+                            {event.permissionStatus !== "declined" ? (
+                              <form action={answerPermission}>
+                                <input name="roster_id" type="hidden" value={child.rosterId} />
+                                <input name="event_id" type="hidden" value={event.id} />
+                                <input name="answer" type="hidden" value="declined" />
+                                <PendingSubmitButton className="btn btn-quiet min-h-10" pendingLabel={t("family.permission.saving")}>
+                                  {t("family.permission.decline")}
+                                </PendingSubmitButton>
+                              </form>
+                            ) : null}
+                          </span>
                         </span>
                       ) : null}
                     </li>

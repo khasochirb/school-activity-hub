@@ -53,3 +53,25 @@ test("codes are kept apart: parent codes never make students and vice versa", ()
   assert.match(actions, /\.eq\("audience", "student"\)/);
   assert.match(actions, /\.eq\("audience", audience\)/);
 });
+
+test("a parent answers permission only for their own child's upcoming activities", () => {
+  const actions = read("src/app/family/actions.ts");
+  const answer = actions.slice(actions.indexOf("export async function answerPermission"));
+  assert.match(answer, /if \(!\(await isParentOf\(parent\.id, rosterId\)\)\) return;/);
+  assert.match(answer, /if \(!event\?\.permission_required/);
+  assert.match(answer, /new Date\(event\.starts_at\)\.getTime\(\) <= Date\.now\(\)\) return;/);
+  assert.match(answer, /\.eq\("student_roster_id", rosterId\)/);
+  assert.match(answer, /answer !== "received" && answer !== "declined"/);
+});
+
+test("a parent sees only what their child shared with teachers, photos included", () => {
+  const data = read("src/lib/family/family-data.ts");
+  assert.match(data, /PARENT_VISIBLE_PORTFOLIO = \["staff", "school"\]/);
+  assert.match(data, /\.eq\("is_draft", false\)/);
+  const page = read("src/app/family/child/[rosterId]/page.tsx");
+  assert.match(page, /!\(await isParentOf\(parent\.id, rosterId\)\)\) notFound\(\);/);
+  const media = read("src/app/family/media/[entryId]/[index]/route.ts");
+  assert.match(media, /entry\.is_draft/);
+  assert.match(media, /isParentOf\(parent\.id, entry\.student_roster_id\)/);
+  assert.match(media, /PARENT_VISIBLE_PORTFOLIO/);
+});

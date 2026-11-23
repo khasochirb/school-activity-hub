@@ -1191,9 +1191,19 @@ export const en = {
       title: "Join as a parent",
     },
     permission: {
+        approve: "Approve",
+        decline: "Decline",
+        saving: "Saving…",
       declined: "Permission declined",
       pending: "Permission needed",
       received: "Permission received",
+    },
+    portfolio: {
+      emptyText: "Entries your child shares with teachers will appear here.",
+      emptyTitle: "Nothing shared yet",
+      note: "What your child has shared with teachers. Private entries and drafts stay with them.",
+      open: "Portfolio",
+      title: "Portfolio",
     },
     recent: {
       attended: "Attended",
