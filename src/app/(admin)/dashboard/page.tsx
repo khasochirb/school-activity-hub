@@ -1000,7 +1000,7 @@ function buildWeekDays(
     return {
       colors: onDay.map((event) => categoryColor(event.category)),
       day: Number(key.slice(8, 10)),
-      href: onDay[0] ? `/events/${onDay[0].id}` : "/events",
+      href: `/events?day=${key}`,
       isToday: index === 0,
       label: index === 0 ? todayLabel : formatInZone(date.toISOString(), timeZone, locale, { weekday: "short" }),
     };

@@ -4810,6 +4810,51 @@ a.cl-row:hover,
   font-weight: 700;
   color: var(--primary-contrast, #fff);
 }
+.cl-cal a {
+  position: relative;
+  padding: 6px 0;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.cl-cal a:hover {
+  background: var(--cl-hover);
+}
+.cl-cal a.cl-td:hover {
+  background: var(--primary);
+}
+.cl-cal a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.cl-cal .cl-sel {
+  box-shadow: inset 0 0 0 2px var(--primary);
+  font-weight: 700;
+}
+
+/* The events list narrowed to one day */
+.cl-dayfilter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--cl-line);
+  border-radius: 12px;
+  background: var(--cl-hover);
+  font-size: 14px;
+}
+.cl-dayfilter a {
+  font-weight: 600;
+  color: var(--primary-strong, var(--primary));
+}
+.cl-dayempty {
+  padding: 24px 4px;
+  color: var(--cl-faint);
+  font-size: 14.5px;
+}
 
 /* Small date tile */
 .cl-dtile {

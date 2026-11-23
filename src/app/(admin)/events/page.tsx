@@ -33,9 +33,12 @@ import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import {
   currentCalendarMonth,
   DEFAULT_EVENT_TIME_ZONE,
+  eventCalendarDayKey,
+  getDayQueryRange,
   getMonthCalendarQueryRange,
   isEventTimeFilterActive,
   offsetCalendarMonth,
+  parseCalendarDay,
   parseCalendarMonth,
   resolveEventTimeZone,
   shouldApplyEventTimeFilter,
@@ -197,6 +200,7 @@ type EventStatusFilter =
 
 type EventsSearchParams = {
   category?: string | string[];
+  day?: string | string[];
   filter?: string | string[];
   month?: string | string[];
   page?: string | string[];
@@ -289,12 +293,18 @@ export default async function EventsPage({
     new Date(),
     calendarTimeZone,
   );
+  // A day picked from the mini calendar or the home week strip: the list shows
+  // just that day, past or upcoming.
+  const selectedDay =
+    selectedView === "list" ? parseCalendarDay(getSearchParam(params.day)) : null;
   const calendarRange =
     selectedView === "month"
       ? getMonthCalendarQueryRange(selectedMonth, calendarTimeZone)
       : selectedView === "week"
         ? getWeekQueryRange(selectedWeek)
-        : null;
+        : selectedDay
+          ? getDayQueryRange(selectedDay, calendarTimeZone)
+          : null;
   const selectedAudience = isPlatformAdmin
     ? "all"
     : parseEventAudience(
@@ -366,7 +376,7 @@ export default async function EventsPage({
     selectedCategory,
     selectedStatus,
     selectedTime,
-    applyTimeFilter: shouldApplyEventTimeFilter(selectedView),
+    applyTimeFilter: shouldApplyEventTimeFilter(selectedView) && !selectedDay,
     sharedEventIds,
     isStaff,
     now,
@@ -389,6 +399,10 @@ export default async function EventsPage({
     });
   }
 
+  const miniCalendarDays =
+    selectedView === "list" && profile.school_id
+      ? await getMiniCalendarDays(supabase, profile.school_id, calendarTimeZone, isStaff)
+      : [];
   const eventIds = events.map((event) => event.id);
   const [
     attendeeRows,
@@ -995,6 +1009,14 @@ export default async function EventsPage({
             </p>
           ) : null}
           <div className="min-w-0">
+          {selectedDay ? (
+            <div className="cl-dayfilter" role="status">
+              <b>{tf("events.list.dayHeading", { date: dayTitle(selectedDay, calendarTimeZone, locale) })}</b>
+              <Link href={eventsDayHref(null, params)} prefetch={false}>
+                {t("events.list.showAllDays")}
+              </Link>
+            </div>
+          ) : null}
           {eventsError ? (
             <div className="p-4">
               <div className="error-box" role="alert">
@@ -1050,6 +1072,8 @@ export default async function EventsPage({
               }}
               weekStart={selectedWeek}
             />
+          ) : selectedDay && !events.length ? (
+            <p className="cl-dayempty">{t("events.list.dayEmpty")}</p>
           ) : events.length ? (
             <EventBrowser
               items={eventBrowserItems}
@@ -1103,11 +1127,10 @@ export default async function EventsPage({
         <aside className="cl-side">
           <Widget title={monthTitle(calendarTimeZone, locale)}>
             <MiniCalendar
-              eventDays={eventBrowserItems.map((item) => ({
-                category: item.categoryValue,
-                dayKey: item.dayKey,
-              }))}
+              dayHref={(dayKey) => eventsDayHref(dayKey === selectedDay ? null : dayKey, params)}
+              eventDays={miniCalendarDays}
               locale={locale}
+              selectedDay={selectedDay}
               timeZone={calendarTimeZone}
             />
           </Widget>
@@ -2159,6 +2182,78 @@ function buildEventsMenu(
   return items;
 }
 
+// The list filtered to one day, keeping the other filters; null clears the day.
+function eventsDayHref(dayKey: string | null, params: EventsSearchParams) {
+  const nextParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (["day", "page", "view", "month", "week"].includes(key)) {
+      return;
+    }
+
+    const paramValue = Array.isArray(value) ? value[0] : value;
+
+    if (paramValue) {
+      nextParams.set(key, paramValue);
+    }
+  });
+
+  if (dayKey) {
+    nextParams.set("day", dayKey);
+  }
+
+  const query = nextParams.toString();
+
+  return query ? `/events?${query}` : "/events";
+}
+
+function dayTitle(dayKey: string, timeZone: string, locale: string) {
+  try {
+    return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
+      day: "numeric",
+      month: "long",
+      timeZone: "UTC",
+      weekday: "long",
+    }).format(new Date(`${dayKey}T12:00:00Z`));
+  } catch {
+    return dayKey;
+  }
+}
+
+// Dots on the mini calendar: every day this month with an activity, whatever
+// the list below is filtered to. Read through the signed-in client, so row
+// security decides what each person may see.
+async function getMiniCalendarDays(
+  supabase: SupabaseClient,
+  schoolId: string,
+  timeZone: string,
+  isStaff: boolean,
+) {
+  const month = currentCalendarMonth(new Date(), timeZone);
+  const range = getMonthCalendarQueryRange(month, timeZone);
+  let query = supabase
+    .from("events")
+    .select("starts_at, category")
+    .eq("school_id", schoolId)
+    .gte("starts_at", range.from)
+    .lt("starts_at", range.to)
+    .limit(500);
+
+  // Students see approved activities only, as in the list; staff also see what waits for approval.
+  query = isStaff
+    ? query.in("status", ["approved", "pending_approval", "completed"])
+    : query.eq("status", "approved");
+
+  const { data } = await timeServer("events.query.mini-calendar-days", () =>
+    query.returns<Array<{ category: string | null; starts_at: string }>>(),
+  );
+
+  return (data ?? []).map((event) => ({
+    category: event.category,
+    dayKey: eventCalendarDayKey(event.starts_at, timeZone),
+  }));
+}
+
 function monthTitle(timeZone: string, locale: string) {
   try {
     return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
@@ -2173,12 +2268,16 @@ function monthTitle(timeZone: string, locale: string) {
 
 // The draft's month card: today highlighted, a dot under days with events.
 function MiniCalendar({
+  dayHref,
   eventDays,
   locale,
+  selectedDay,
   timeZone,
 }: {
+  dayHref: (dayKey: string) => string;
   eventDays: Array<{ category: string | null; dayKey: string }>;
   locale: string;
+  selectedDay: string | null;
   timeZone: string;
 }) {
   let todayKey: string;
@@ -2216,13 +2315,17 @@ function MiniCalendar({
         const has = byDay.has(key);
 
         return (
-          <span
-            className={[key === todayKey ? "cl-td" : "", has ? "cl-e" : ""].join(" ")}
+          <Link
+            aria-current={key === selectedDay ? "date" : undefined}
+            className={[key === todayKey ? "cl-td" : "", has ? "cl-e" : "", key === selectedDay ? "cl-sel" : ""].join(" ")}
+            href={dayHref(key)}
             key={key}
+            prefetch={false}
+            scroll={false}
             style={has ? ({ "--c": categoryColor(byDay.get(key) ?? null) } as CSSProperties) : undefined}
           >
             {index + 1}
-          </span>
+          </Link>
         );
       })}
     </div>

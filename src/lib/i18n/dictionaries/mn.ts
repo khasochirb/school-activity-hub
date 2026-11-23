@@ -595,6 +595,9 @@ export const mn = {
       searchPlaceholder: "Үйл ажиллагаа эсвэл клуб хайх",
       subtitle: "{school} · удахгүй {count} · таны жагсаалтад {mine}",
       subtitleStaff: "{school} · удахгүй {count}",
+      dayEmpty: "Энэ өдөр үйл ажиллагаа алга.",
+      dayHeading: "Сонгосон өдөр: {date}",
+      showAllDays: "Бүх үйл ажиллагааг харах",
       yourEvents: "Таны үйл ажиллагаа",
     },
     actions: {

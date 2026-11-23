@@ -83,6 +83,28 @@ export function getMonthCalendarQueryRange(month: string, timeZone: string) {
   };
 }
 
+// A single day picked from a calendar (?day=YYYY-MM-DD). Anything else is ignored.
+export function parseCalendarDay(value: string | null | undefined) {
+  const match = dayKeyPattern.exec(value ?? "");
+
+  if (!match) {
+    return null;
+  }
+
+  return calendarDateKey(calendarDateFromDayKey(value as string)) === value ? value : null;
+}
+
+// The day from midnight to midnight in the school's own time zone.
+export function getDayQueryRange(dayKey: string, timeZone: string) {
+  const resolvedTimeZone = resolveEventTimeZone(timeZone);
+  const nextDay = calendarDateKey(addUtcDays(calendarDateFromDayKey(dayKey), 1));
+
+  return {
+    from: zonedStartOfDayToUtc(dayKey, resolvedTimeZone).toISOString(),
+    to: zonedStartOfDayToUtc(nextDay, resolvedTimeZone).toISOString(),
+  };
+}
+
 export function eventCalendarDayKey(
   value: Date | number | string,
   timeZone: string,

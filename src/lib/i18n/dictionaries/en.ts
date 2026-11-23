@@ -1282,6 +1282,9 @@ export const en = {
       searchPlaceholder: "Search events or clubs",
       subtitle: "{count} upcoming at {school} · {mine} on your list",
       subtitleStaff: "{count} upcoming at {school}",
+      dayEmpty: "Nothing on this day.",
+      dayHeading: "Activities on {date}",
+      showAllDays: "Show all activities",
       yourEvents: "Your events",
     },
     actions: {
