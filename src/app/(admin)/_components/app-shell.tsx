@@ -54,6 +54,7 @@ const primaryIntentHrefs: Record<Role, ReadonlySet<string>> = {
 const platformPrimaryIntentHrefs = new Set(["/super-admin/schools"]);
 
 const platformEventMobilePrimaryNav: RoleAwareNavItem[] = [
+  { href: "/approvals", labelKey: "nav.approvals" },
   { href: "/events", labelKey: "nav.activities", match: "events" },
   {
     href: "/events?view=month",
@@ -61,7 +62,6 @@ const platformEventMobilePrimaryNav: RoleAwareNavItem[] = [
     match: "calendar",
     intentPrefetch: false,
   },
-  { href: "/approvals", labelKey: "nav.approvals" },
   {
     href: staffAttendanceHref,
     labelKey: "nav.attendance",
@@ -87,6 +87,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
   ],
   teacher: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
+    { href: "/approvals", labelKey: "nav.approvals" },
     { href: "/events", labelKey: "nav.activities", match: "events" },
     {
       href: "/events?view=month",
@@ -95,7 +96,6 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
       intentPrefetch: false,
     },
     { href: "/clubs", labelKey: "nav.clubs" },
-    { href: "/approvals", labelKey: "nav.approvals" },
     {
       href: staffAttendanceHref,
       labelKey: "nav.attendance",
@@ -105,6 +105,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
   ],
   school_admin: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
+    { href: "/approvals", labelKey: "nav.approvals" },
     { href: "/events", labelKey: "nav.activities", match: "events" },
     {
       href: "/events?view=month",
@@ -114,7 +115,6 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
     },
     { href: "/students", labelKey: "nav.students" },
     { href: "/staff", labelKey: "nav.staff" },
-    { href: "/approvals", labelKey: "nav.approvals" },
     { href: "/reports", labelKey: "nav.reports" },
   ],
 };
@@ -255,12 +255,14 @@ export async function AppShell({
   isPlatformAdmin,
   isSafeguardingStaff,
   profile,
+  unreadNotifications = 0,
 }: {
   children: React.ReactNode;
   email: string | null;
   isPlatformAdmin: boolean;
   isSafeguardingStaff: boolean;
   profile: Profile;
+  unreadNotifications?: number;
 }) {
   const locale = await getCurrentLocale();
   const theme = await getCurrentTheme();
@@ -319,6 +321,28 @@ export async function AppShell({
                     : []),
                 ]}
               />
+              {profile ? (
+                <Link
+                  aria-label={
+                    unreadNotifications
+                      ? `${t("notifications.title")} (${unreadNotifications})`
+                      : t("notifications.title")
+                  }
+                  className="topbar-bell"
+                  href="/notifications"
+                  prefetch={false}
+                >
+                  <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 24 24">
+                    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" />
+                    <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+                  </svg>
+                  {unreadNotifications ? (
+                    <span aria-hidden="true" className="topbar-bell-count">
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </span>
+                  ) : null}
+                </Link>
+              ) : null}
             <MobileMenuDrawer
               closeLabel={t("common.close")}
               header={
@@ -671,10 +695,10 @@ function getTopTabs(
 
   return [
     { exact: true, href: "/dashboard", icon: "home", label: t("nav.tabs.home") },
+    { href: "/approvals", icon: "approvals", label: t("nav.tabs.approvals") },
     { href: "/events", icon: "events", label: t("nav.tabs.activities") },
     { href: "/clubs", icon: "clubs", label: t("nav.tabs.clubs") },
     { href: "/students", icon: "students", label: t("nav.tabs.students") },
-    { href: "/approvals", icon: "approvals", label: t("nav.tabs.approvals") },
   ];
 }
 

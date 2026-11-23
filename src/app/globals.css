@@ -4158,6 +4158,79 @@ html[data-theme="dark"] {
     display: none;
   }
 }
+.topbar-bell {
+  position: relative;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--cl-line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--cl-faint);
+}
+.topbar-bell:hover {
+  color: var(--foreground);
+}
+.topbar-bell svg {
+  width: 17px;
+  height: 17px;
+}
+.topbar-bell-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--cl-coral, #e5484d);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.cl-notes {
+  display: flex;
+  flex-direction: column;
+}
+.cl-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--cl-line);
+  color: inherit;
+  text-decoration: none;
+}
+.cl-note:last-child {
+  border-bottom: 0;
+}
+.cl-note:hover {
+  background: var(--cl-hover);
+}
+.cl-note-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  flex: none;
+  border-radius: 9px;
+  background: transparent;
+}
+.cl-note[data-unread] .cl-note-dot {
+  background: var(--primary);
+}
+.cl-note[data-unread] .cl-note-text {
+  font-weight: 600;
+}
+.cl-note-time {
+  display: block;
+  margin-top: 2px;
+  color: var(--cl-faint);
+  font-size: 12.5px;
+}
 .topbar-me {
   display: grid;
   width: 34px;
@@ -4344,6 +4417,21 @@ html[data-theme="dark"] {
 }
 .cl-chip:hover {
   color: var(--foreground);
+}
+.cl-chip-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cl-line-strong);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.cl-chip[aria-current="page"] .cl-chip-count {
+  background: rgb(255 255 255 / 0.25);
+  color: inherit;
 }
 .cl-chip[aria-current="page"] {
   border-color: var(--primary);
@@ -7766,4 +7854,300 @@ html[data-theme="dark"] .cl-land::before {
   .console-kpi:nth-child(2) {
     border-right: 0;
   }
+}
+
+/* Club proposals: tagging founders */
+.founder-picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.founder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.founder-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: var(--cl-hover);
+  font-size: 14px;
+  font-weight: 600;
+}
+.founder-chip small {
+  font-weight: 400;
+  color: var(--cl-faint);
+}
+.founder-chip button {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cl-faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.founder-chip button:hover {
+  background: var(--cl-line);
+  color: var(--foreground);
+}
+.founder-results {
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--cl-line);
+  border-radius: 12px;
+  background: var(--card);
+  list-style: none;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.08);
+}
+.founder-results button {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.founder-results button:hover,
+.founder-results button:focus-visible {
+  background: var(--cl-hover);
+}
+.founder-results span {
+  color: var(--cl-faint);
+  font-size: 13px;
+}
+.founder-hint {
+  margin: 0;
+  color: var(--cl-faint);
+  font-size: 13px;
+}
+.founder-hint[data-ok] {
+  color: var(--cl-green);
+  font-weight: 600;
+}
+.proposals {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.proposals-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.proposals-head h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+.proposals-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--cl-coral);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.proposal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+.proposal-card[data-needs-answer] {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--cl-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.proposal-invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: -20px -20px 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cl-line);
+  border-radius: inherit;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.proposal-invite b {
+  display: block;
+  font-size: 15.5px;
+}
+.proposal-invite span {
+  display: block;
+  margin-top: 2px;
+  color: var(--cl-faint);
+  font-size: 13.5px;
+}
+.proposal-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.proposal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.proposal-head h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.proposal-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.proposal-why {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 10px 10px 0;
+  background: var(--cl-hover);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.proposal-why span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--cl-faint);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.proposal-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--cl-faint);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.proposal-bar {
+  position: relative;
+  height: 8px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--cl-line);
+}
+.proposal-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--cl-green);
+  transition: width 0.3s ease;
+}
+.proposal-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--cl-line);
+}
+.proposal-add p {
+  margin: 0;
+  color: var(--cl-faint);
+  font-size: 13.5px;
+}
+.proposal-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+.founder-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--cl-line);
+  border-radius: 14px;
+  list-style: none;
+}
+.founder-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--cl-line);
+}
+.founder-list li:last-child {
+  border-bottom: 0;
+}
+.founder-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--cl-sun), var(--cl-coral));
+  color: #1b1a17;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.founder-name {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.founder-name b {
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.founder-name small {
+  color: var(--cl-faint);
+  font-size: 12.5px;
+}
+.founder-pill {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--cl-hover);
+  color: var(--cl-faint);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.founder-list li[data-status="confirmed"] .founder-pill {
+  background: color-mix(in srgb, var(--cl-green) 16%, transparent);
+  color: var(--cl-green);
+}
+.founder-list li[data-status="declined"] {
+  opacity: 0.55;
+}
+.founder-list li[data-status="declined"] .founder-pill {
+  background: color-mix(in srgb, var(--cl-coral) 16%, transparent);
+  color: var(--cl-coral);
 }

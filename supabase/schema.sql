@@ -507,14 +507,16 @@ create table if not exists public.club_requests (
   title text not null,
   description text,
   category text,
+  reason text,
   status text not null default 'pending',
   rejection_reason text,
   reviewed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint club_requests_title_not_blank check (length(btrim(title)) > 0),
+  constraint club_requests_reason_length check (reason is null or length(reason) <= 2000),
   constraint club_requests_status_check check (
-    status in ('pending', 'approved', 'rejected', 'archived')
+    status in ('gathering', 'pending', 'approved', 'rejected', 'archived')
   )
 );
 
@@ -4959,3 +4961,144 @@ grant execute on function public.record_school_site_view(uuid, text, date)
 
 alter table public.schools
   add column if not exists is_demo boolean not null default false;
+
+-- Club proposal founders and in-app notifications (202611230001).
+
+-- 2. Founders of a proposal.
+create table if not exists public.club_request_founders (
+  id uuid primary key default gen_random_uuid(),
+  club_request_id uuid not null references public.club_requests(id) on delete cascade,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  is_proposer boolean not null default false,
+  status text not null default 'invited',
+  responded_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint club_request_founders_unique unique (club_request_id, profile_id),
+  constraint club_request_founders_status_check check (status in ('invited', 'confirmed', 'declined'))
+);
+
+create index if not exists club_request_founders_profile_idx
+  on public.club_request_founders (profile_id, status);
+
+alter table public.club_request_founders enable row level security;
+revoke all on public.club_request_founders from anon, authenticated;
+grant select on public.club_request_founders to authenticated;
+
+drop policy if exists "Founders read their own rows; staff read their school" on public.club_request_founders;
+create policy "Founders read their own rows; staff read their school"
+  on public.club_request_founders
+  for select
+  to authenticated
+  using (profile_id = auth.uid() or public.current_user_can_manage_school(school_id));
+
+-- 3. In-app notifications.
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schools(id) on delete cascade,
+  recipient_profile_id uuid not null references public.profiles(id) on delete cascade,
+  kind text not null,
+  data jsonb not null default '{}'::jsonb,
+  link text,
+  read_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint notifications_kind_format check (kind ~ '^[a-z][a-z_]{2,40}$'),
+  constraint notifications_link_internal check (link is null or (link ~ '^/[A-Za-z0-9/_?=&#.-]*$' and length(link) <= 300))
+);
+
+create index if not exists notifications_recipient_idx
+  on public.notifications (recipient_profile_id, created_at desc);
+
+alter table public.notifications enable row level security;
+revoke all on public.notifications from anon, authenticated;
+grant select on public.notifications to authenticated;
+-- RLS gates rows, not columns: only read_at may be changed by its owner.
+grant update (read_at) on public.notifications to authenticated;
+
+drop policy if exists "Users read their own notifications" on public.notifications;
+create policy "Users read their own notifications"
+  on public.notifications
+  for select
+  to authenticated
+  using (recipient_profile_id = auth.uid());
+
+drop policy if exists "Users mark their own notifications read" on public.notifications;
+create policy "Users mark their own notifications read"
+  on public.notifications
+  for update
+  to authenticated
+  using (recipient_profile_id = auth.uid())
+  with check (recipient_profile_id = auth.uid());
+
+-- 4. Finding classmates to tag as founders (flexible search, 202611230002).
+create or replace function public.mn_search_fold(value text)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = pg_catalog
+as $$
+  select replace(replace(replace(replace(replace(replace(
+    translate(
+      replace(replace(replace(replace(replace(replace(replace(replace(replace(
+        lower(coalesce(value, '')),
+        'ё', 'yo'), 'ж', 'j'), 'ц', 'ts'), 'ч', 'ch'), 'ш', 'sh'), 'щ', 'sh'), 'ю', 'yu'), 'я', 'ya'), 'х', 'h'),
+      'абвгдезийклмноөпрстуүфыэьъ',
+      'abvgdeziiklmnooprstuufyei'
+    ),
+    'kh', 'h'), 'zh', 'j'), 'ö', 'o'), 'ü', 'u'), '%', ''), '_', '')
+$$;
+
+create or replace function public.search_school_students(search text)
+returns table (profile_id uuid, display_name text, homeroom text)
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  with me as (
+    select p.id, p.school_id
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.status = 'active'
+      and p.role = 'student'
+  ), q as (
+    select array_remove(regexp_split_to_array(public.mn_search_fold(btrim(coalesce(search, ''))), '\s+'), '') as words,
+           length(btrim(coalesce(search, ''))) as total
+  )
+  select
+    sr.profile_id,
+    btrim(coalesce(nullif(btrim(sr.preferred_name), ''), sr.first_name))
+      || ' ' || btrim(sr.last_name) as display_name,
+    nullif(btrim(sr.homeroom), '') as homeroom
+  from me
+  cross join q
+  join public.student_rosters sr
+    on sr.school_id = me.school_id
+   and sr.status = 'active'
+   and sr.profile_id is not null
+   and sr.profile_id <> me.id
+   and sr.show_name_to_classmates
+  join public.profiles student
+    on student.id = sr.profile_id
+   and student.status = 'active'
+   and student.role = 'student'
+  where q.total >= 2
+    and cardinality(q.words) between 1 and 4
+    and not exists (
+      select 1
+      from unnest(q.words) as word
+      where not (
+        public.mn_search_fold(sr.first_name) like '%' || word || '%'
+        or public.mn_search_fold(sr.last_name) like '%' || word || '%'
+        or public.mn_search_fold(coalesce(sr.preferred_name, '')) like '%' || word || '%'
+        or public.mn_search_fold(coalesce(sr.homeroom, '')) like word || '%'
+      )
+    )
+  order by sr.homeroom, sr.first_name, sr.last_name
+  limit 10
+$$;
+
+alter function public.search_school_students(text) owner to postgres;
+revoke all on function public.search_school_students(text) from public, anon;
+grant execute on function public.search_school_students(text) to authenticated;
