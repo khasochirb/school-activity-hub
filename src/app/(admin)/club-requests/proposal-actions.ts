@@ -354,18 +354,36 @@ async function getFounders(admin: Admin, requestId: string) {
 // may be TAGGED also needs `visible` (their name is not hidden); the proposer
 // and someone answering their own invitation are looked up without it.
 async function getStudentRosters(admin: Admin, schoolId: string, profileIds: string[]) {
-  const { data } = await admin
-    .from("student_rosters")
-    .select("profile_id, first_name, last_name, preferred_name, homeroom, show_name_to_classmates, profiles!inner(role, status)")
-    .eq("school_id", schoolId)
-    .eq("status", "active")
-    .in("profile_id", profileIds)
-    .eq("profiles.role", "student")
-    .eq("profiles.status", "active")
-    .returns<Array<RosterRow & { show_name_to_classmates: boolean }>>();
+  // Two plain reads: student_rosters links to profiles twice (the student and
+  // the staff member who added them), so an embedded join is ambiguous.
+  const [{ data: rosters, error: rosterError }, { data: students, error: studentError }] = await Promise.all([
+    admin
+      .from("student_rosters")
+      .select("profile_id, first_name, last_name, preferred_name, homeroom, show_name_to_classmates")
+      .eq("school_id", schoolId)
+      .eq("status", "active")
+      .in("profile_id", profileIds)
+      .returns<Array<RosterRow & { show_name_to_classmates: boolean }>>(),
+    admin
+      .from("profiles")
+      .select("id")
+      .eq("school_id", schoolId)
+      .eq("role", "student")
+      .eq("status", "active")
+      .in("id", profileIds)
+      .returns<Array<{ id: string }>>(),
+  ]);
+
+  if (rosterError || studentError) {
+    logServerError("Founder roster lookup failed", rosterError ?? studentError);
+  }
+
+  const activeStudents = new Set((students ?? []).map((student) => student.id));
 
   return new Map(
-    (data ?? []).map((row) => [row.profile_id, { ...row, visible: row.show_name_to_classmates }]),
+    (rosters ?? [])
+      .filter((row) => activeStudents.has(row.profile_id))
+      .map((row) => [row.profile_id, { ...row, visible: row.show_name_to_classmates }]),
   );
 }
 

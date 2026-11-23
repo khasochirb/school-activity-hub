@@ -80,3 +80,9 @@ test("notification links stay on the site", async () => {
 
   assert.match(notify, /\^\\\/\(\?!\\\/\)/);
 });
+
+test("founder lookups avoid the ambiguous rosters-to-profiles join", () => {
+  // student_rosters references profiles twice, so an embedded join fails and
+  // every proposer looked "not on the school list".
+  assert.doesNotMatch(read("src/app/(admin)/club-requests/proposal-actions.ts"), /profiles!/);
+});
