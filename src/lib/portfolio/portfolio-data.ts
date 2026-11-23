@@ -160,11 +160,11 @@ export async function getStudentLinks(schoolId: string, rosterId: string) {
   const [{ data: memberships }, { data: attended }] = await Promise.all([
     supabase
       .from("club_memberships")
-      .select("club_id")
+      .select("club_id, role")
       .eq("school_id", schoolId)
       .eq("student_roster_id", rosterId)
       .eq("status", "active")
-      .returns<{ club_id: string }[]>(),
+      .returns<{ club_id: string; role: "leader" | "member" }[]>(),
     supabase
       .from("event_attendees")
       .select("event_id")
@@ -198,7 +198,11 @@ export async function getStudentLinks(schoolId: string, rosterId: string) {
 
   return {
     attendedCount: eventIds.length,
-    clubs: (clubs ?? []).map((club) => ({ id: club.id, label: club.name })),
+    clubs: (clubs ?? []).map((club) => ({
+      id: club.id,
+      label: club.name,
+      role: (memberships ?? []).find((row) => row.club_id === club.id)?.role ?? "member",
+    })),
     events: (events ?? []).map((event) => ({
       id: event.id,
       label: event.title,

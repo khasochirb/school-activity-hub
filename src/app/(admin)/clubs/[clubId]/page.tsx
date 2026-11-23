@@ -24,6 +24,7 @@ import {
 import { DetailTabs } from "../../_components/detail-tabs";
 import { CategoryLabel, Cover } from "../../_components/clean-ui";
 import { joinClub, leaveClub } from "../actions";
+import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 
 type Club = {
   category: string | null;
@@ -147,7 +148,7 @@ export default async function ClubProfilePage({
     notFound();
   }
 
-  const [{ data: profile }, { data: memberCount }, { data: upcomingEvents }] =
+  const [{ data: profile }, { data: memberCount }, { data: upcomingEvents }, { data: classmateRows }] =
     await Promise.all([
       supabase
         .from("club_profiles")
@@ -167,8 +168,15 @@ export default async function ClubProfilePage({
         .order("starts_at", { ascending: true })
         .limit(3)
         .returns<UpcomingEvent[]>(),
+      // Classmates from the student's own class who are members.
+      actor.profile?.role === "student"
+        ? supabase.rpc("get_club_classmates", { target_club_ids: [club.id] })
+        : Promise.resolve({ data: [] }),
     ]);
   const eventRows = upcomingEvents ?? [];
+  const classmateNames = ((classmateRows ?? []) as Array<{ display_name: string }>).map(
+    (row) => row.display_name,
+  );
   const { data: registrations } =
     actor.profile?.role === "student" && eventRows.length
       ? await supabase
@@ -367,6 +375,12 @@ export default async function ClubProfilePage({
           {t("clubs.profile.statline.upcoming")}
         </span>
       </p>
+      {actor.profile?.role === "student" ? (
+        <ClassmatesFromClass
+          label={tf("clubs.classmates.count", { count: classmateNames.length })}
+          names={classmateNames}
+        />
+      ) : null}
 
       {actor.profile?.role === "student" &&
       club.status === "active" &&

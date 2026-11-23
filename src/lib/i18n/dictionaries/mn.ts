@@ -278,7 +278,14 @@ export const mn = {
       subtitle: "{count} клуб · шинэ хүмүүстэй танилцаж, шинэ зүйл туршаарай",
     },
     classmates: {
+      count: "Танай ангийн {count} сурагч",
       fromYourClass: "Ангийн гишүүд: {names}",
+    },
+    show: {
+      all: "Бүх клуб",
+      label: "Харуулах",
+      mine: "Миний клубууд",
+      other: "Бусад клуб",
     },
     actions: {
       archive: "Клуб архивлах",
@@ -635,6 +642,9 @@ export const mn = {
     },
   },
   events: {
+    classmates: {
+      going: "Танай ангийн {count} сурагч явна",
+    },
     list: {
       byCategory: "Ангиллаар",
       goingCount: "{count} очно",
@@ -3156,6 +3166,11 @@ export const mn = {
     title: "Нууцлал",
   },
   portfolio: {
+    myClubs: {
+      browse: "Клуб хайх",
+      empty: "Та одоогоор клубт элсээгүй байна.",
+      title: "Миний клубууд",
+    },
     title: "Портфолио",
     eyebrow: "Миний ажил",
     description: "Сургуулийн үйл ажиллагаанаас авсан зураг, төсөл, амжилт, эргэцүүллээ нэг дор хадгална.",
