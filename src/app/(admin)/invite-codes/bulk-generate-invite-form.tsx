@@ -52,9 +52,12 @@ type BulkGenerateInviteFormLabels = {
 };
 
 export function BulkGenerateInviteForm({
+  audience = "student",
   labels,
   students,
 }: {
+  /** Parent codes can be made for every student, signed up or not. */
+  audience?: "parent" | "student";
   labels: BulkGenerateInviteFormLabels;
   students: ActiveStudent[];
 }) {
@@ -64,7 +67,8 @@ export function BulkGenerateInviteForm({
   );
   const [mode, setMode] = useState("all_unlinked");
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const eligibleStudents = students.filter((student) => !student.profile_id);
+  const eligibleStudents =
+    audience === "parent" ? students : students.filter((student) => !student.profile_id);
   const gradeOptions = useMemo(
     () => uniqueOptions(eligibleStudents.map((student) => student.grade_level)),
     [eligibleStudents],
@@ -92,6 +96,7 @@ export function BulkGenerateInviteForm({
     <div className="compact-form-xl flex flex-col gap-3">
       <form action={formAction} className="flex flex-col gap-3">
         <ActionToast message={state.message} success={state.success} />
+        <input name="audience" type="hidden" value={audience} />
         <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-semibold text-slate-800">
             {labels.scope}

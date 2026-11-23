@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
@@ -26,6 +27,12 @@ export default async function JoinPage() {
           password: t("auth.join.password"),
         }}
       />
+      <p className="mt-4 text-sm text-slate-600">
+        {t("family.join.parentInstead")}{" "}
+        <Link className="font-semibold underline" href="/join/parent">
+          {t("family.join.parentLink")}
+        </Link>
+      </p>
     </AuthShell>
   );
 }

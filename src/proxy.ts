@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { PARENT_ACCOUNT_TYPE, isParentAllowedPath } from "@/lib/family/parent-paths";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -38,7 +39,22 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Parent accounts see only their family pages, never the school's.
+  if (
+    user?.app_metadata?.account_type === PARENT_ACCOUNT_TYPE &&
+    !isParentAllowedPath(request.nextUrl.pathname)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/family";
+    url.search = "";
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  }
 
   return response;
 }

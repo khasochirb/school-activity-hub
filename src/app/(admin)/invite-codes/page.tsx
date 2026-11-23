@@ -46,6 +46,7 @@ type ActiveStudent = {
 };
 
 type InviteCode = {
+  audience: string;
   id: string;
   student_roster_id: string | null;
   status: string;
@@ -101,7 +102,7 @@ export default async function InviteCodesPage({
   let inviteHistoryQuery = supabase
     .from("invite_codes")
     .select(
-      "id, student_roster_id, status, use_count, created_at, expires_at, redeemed_at",
+      "id, student_roster_id, status, use_count, created_at, expires_at, redeemed_at, audience",
     )
     .eq("school_id", profile.school_id);
 
@@ -153,6 +154,41 @@ export default async function InviteCodesPage({
     ? Math.round((joinedCount / activeRoster.length) * 100)
     : 0;
 
+  const bulkLabels = {
+    allUnlinkedDescription: t(
+      "invites.bulk.allUnlinked.description",
+    ),
+    allUnlinkedLabel: t("invites.bulk.allUnlinked.label"),
+    anyClassGroup: t("invites.bulk.filters.anyClassGroup"),
+    anyGrade: t("invites.bulk.filters.anyGrade"),
+    bulkSubmit: t("invites.bulk.submit"),
+    classGroup: t("invites.bulk.filters.classGroup"),
+    copyTextList: t("invites.bulk.copyTextList"),
+    downloadCsv: t("invites.bulk.downloadCsv"),
+    filteredDescription: t("invites.bulk.filtered.description"),
+    filteredLabel: t("invites.bulk.filtered.label"),
+    generatedTitle: t("invites.bulk.generatedTitle"),
+    generating: t("invites.actions.generating"),
+    grade: t("invites.bulk.filters.grade"),
+    noEligibleStudents: t("invites.bulk.noEligibleStudents"),
+    scope: t("invites.bulk.scope"),
+    selectedDescription: t("invites.bulk.selected.description"),
+    selectedLabel: t("invites.bulk.selected.label"),
+    selectStudents: t("invites.bulk.selectStudents"),
+    selectStudentsDescription: t(
+      "invites.bulk.selectStudentsDescription",
+    ),
+    selectAll: t("invites.bulk.selectAll"),
+    selectedCount: t("invites.bulk.selectedCount"),
+  };
+  const parentBulkLabels = {
+    ...bulkLabels,
+    allUnlinkedDescription: t("invites.parents.allDescription"),
+    allUnlinkedLabel: t("invites.parents.allLabel"),
+    bulkSubmit: t("invites.parents.submit"),
+    noEligibleStudents: t("invites.single.noStudents"),
+  };
+
   return (
     <div className="cl-page">
       <PageHead
@@ -203,33 +239,21 @@ export default async function InviteCodesPage({
           </p>
         ) : null}
         <BulkGenerateInviteForm
-          labels={{
-            allUnlinkedDescription: t(
-              "invites.bulk.allUnlinked.description",
-            ),
-            allUnlinkedLabel: t("invites.bulk.allUnlinked.label"),
-            anyClassGroup: t("invites.bulk.filters.anyClassGroup"),
-            anyGrade: t("invites.bulk.filters.anyGrade"),
-            bulkSubmit: t("invites.bulk.submit"),
-            classGroup: t("invites.bulk.filters.classGroup"),
-            copyTextList: t("invites.bulk.copyTextList"),
-            downloadCsv: t("invites.bulk.downloadCsv"),
-            filteredDescription: t("invites.bulk.filtered.description"),
-            filteredLabel: t("invites.bulk.filtered.label"),
-            generatedTitle: t("invites.bulk.generatedTitle"),
-            generating: t("invites.actions.generating"),
-            grade: t("invites.bulk.filters.grade"),
-            noEligibleStudents: t("invites.bulk.noEligibleStudents"),
-            scope: t("invites.bulk.scope"),
-            selectedDescription: t("invites.bulk.selected.description"),
-            selectedLabel: t("invites.bulk.selected.label"),
-            selectStudents: t("invites.bulk.selectStudents"),
-            selectStudentsDescription: t(
-              "invites.bulk.selectStudentsDescription",
-            ),
-            selectAll: t("invites.bulk.selectAll"),
-            selectedCount: t("invites.bulk.selectedCount"),
-          }}
+          labels={bulkLabels}
+          students={activeStudents ?? []}
+        />
+      </CollapsibleFormSection>
+
+      <CollapsibleFormSection
+        description={t("invites.parents.description")}
+        hideLabel={t("common.hideForm")}
+        id="parent-codes"
+        showLabel={t("common.showForm")}
+        title={t("invites.parents.title")}
+      >
+        <BulkGenerateInviteForm
+          audience="parent"
+          labels={parentBulkLabels}
           students={activeStudents ?? []}
         />
       </CollapsibleFormSection>
@@ -309,7 +333,14 @@ export default async function InviteCodesPage({
                     {student ? (student.first_name[0] ?? "") + (student.last_name[0] ?? "") : "?"}
                   </span>
                   <span className="cl-grow">
-                    <span className="cl-row-title">{name}</span>
+                    <span className="cl-row-title">
+                      {name}
+                      {invite.audience === "parent" ? (
+                        <span className="cl-tag ml-2" data-tone="blue">
+                          {t("invites.parents.tag")}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="cl-row-sub">
                       {[student?.grade_level ? `${t("students.table.grade")} ${student.grade_level}` : null, student?.homeroom]
                         .filter(Boolean)
