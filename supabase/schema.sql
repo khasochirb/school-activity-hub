@@ -5342,3 +5342,5 @@ as $$
   limit 1
 $$;
 
+-- Mirrors supabase/migrations/202611230006_allow_event_poster_path_check.sql
+grant execute on function public.event_poster_path_is_valid(text, uuid, uuid) to authenticated;
