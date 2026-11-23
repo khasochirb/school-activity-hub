@@ -34,10 +34,11 @@ test("only a first name and family initial leave the database, and students can 
   assert.match(read("supabase/schema.sql"), /show_name_to_classmates boolean not null default true/);
 });
 
-test("club rows show up to three classmates and the profile has the opt-out switch", () => {
+test("club rows show how many classmates are members and the profile has the opt-out switch", () => {
   const clubs = read("src/app/(admin)/clubs/page.tsx");
   assert.match(clubs, /rpc\("get_club_classmates", \{ target_club_ids: clubIds \}\)/);
-  assert.match(clubs, /names\.slice\(0, 3\)/);
+  assert.match(clubs, /<ClassmatesFromClass/);
+  assert.match(clubs, /clubs\.classmates\.count/);
   const profile = read("src/app/(admin)/profile/page.tsx");
   assert.match(profile, /action=\{setShowNameToClassmates\}/);
   assert.match(profile, /defaultChecked=\{studentRoster\.show_name_to_classmates !== false\}/);

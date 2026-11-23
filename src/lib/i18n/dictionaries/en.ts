@@ -273,7 +273,14 @@ export const en = {
       subtitle: "{count} clubs · meet new people, try something new",
     },
     classmates: {
+      count: "{count} from your class",
       fromYourClass: "From your class: {names}",
+    },
+    show: {
+      all: "All clubs",
+      label: "Show",
+      mine: "My clubs",
+      other: "Other clubs",
     },
     actions: {
       archive: "Archive club",
@@ -1339,6 +1346,9 @@ export const en = {
     title: "Students",
   },
   events: {
+    classmates: {
+      going: "{count} from your class going",
+    },
     list: {
       byCategory: "By category",
       goingCount: "{count} going",
@@ -3145,6 +3155,11 @@ export const en = {
     title: "Privacy",
   },
   portfolio: {
+    myClubs: {
+      browse: "Find a club",
+      empty: "You haven't joined a club yet.",
+      title: "My clubs",
+    },
     title: "Portfolio",
     eyebrow: "My work",
     description: "Photos, projects, achievements and reflections from your school activities.",

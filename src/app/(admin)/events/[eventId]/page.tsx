@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getClassmatesAmong } from "@/lib/classmates/classmates";
+import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
@@ -239,6 +241,17 @@ export default async function EventDetailPage({
   ]);
   const canEditPoster = canEditPosterResult.data === true;
   const registeredCount = attendees.length;
+  // Classmates from the student's own class who are going.
+  const classmatesGoing =
+    currentStudent && profile.school_id
+      ? await getClassmatesAmong(
+          admin,
+          { profileId: profile.id, schoolId: profile.school_id },
+          attendees
+            .filter((attendee) => attendee.event_id === event.id && attendee.student_roster_id)
+            .map((attendee) => attendee.student_roster_id as string),
+        )
+      : [];
   const isFull =
     event.capacity !== null && registeredCount >= event.capacity;
   const currentRegistration = getCurrentRegistration(
@@ -341,6 +354,12 @@ export default async function EventDetailPage({
                 })}`
               : ""}
           </p>
+          {currentStudent ? (
+            <ClassmatesFromClass
+              label={tf("events.classmates.going", { count: classmatesGoing.length })}
+              names={classmatesGoing}
+            />
+          ) : null}
           <EventBadges
             clubName={club?.name ?? null}
             event={event}
