@@ -14,6 +14,9 @@ export const NOTIFICATION_KINDS = [
   "proposal_submitted",
   "proposal_approved",
   "proposal_rejected",
+  "join_requested",
+  "join_approved",
+  "join_rejected",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

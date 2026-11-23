@@ -161,6 +161,9 @@ export async function approveClubRequest(formData: FormData) {
           category: request.category,
           status: "active",
           advisor_profile_id: advisor?.id ?? null,
+          // A student-started club has a leader and a supervisor to review
+          // requests, so it takes applications from the start.
+          join_mode: "apply",
         })
         .select("id")
         .single<{ id: string }>(),
