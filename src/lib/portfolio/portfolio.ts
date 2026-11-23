@@ -16,7 +16,6 @@ export const PORTFOLIO_VISIBILITIES = ["private", "staff", "school"] as const;
 
 export type PortfolioKind = (typeof PORTFOLIO_KINDS)[number];
 export type PortfolioVisibility = (typeof PORTFOLIO_VISIBILITIES)[number];
-export type PortfolioViewAs = "me" | "teacher" | "classmate";
 
 export type PortfolioEntry = {
   body: string | null;
@@ -112,12 +111,4 @@ export function portfolioPhotoContentType(path: string) {
   if (path.endsWith(".jpg")) return "image/jpeg";
   if (path.endsWith(".png")) return "image/png";
   return "image/webp";
-}
-
-/** Which entries a viewer would see; used for the "View as" preview. */
-export function entryVisibleAs(entry: PortfolioEntry, viewAs: PortfolioViewAs) {
-  if (viewAs === "me") return true;
-  if (entry.is_draft) return false;
-  if (viewAs === "teacher") return entry.visibility !== "private";
-  return entry.visibility === "school";
 }

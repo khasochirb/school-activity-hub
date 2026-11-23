@@ -16,33 +16,38 @@ export type EventsActiveFilter = {
   label: string;
 };
 
-// The draft's only filter UI: one row of chips, a menu for the rarer
-// filters, and one search box.
+// One row of chips for time and category, a second for the filters that can be
+// combined, a menu for the rarer filters, and one search box.
 export function EventsChipBar({
   categoryLinks,
+  extraLabel,
+  extraLinks,
   label,
   menuItems,
   menuLabel,
   timeLinks,
 }: {
   categoryLinks: EventsChipLink[];
+  extraLabel: string;
+  extraLinks: EventsChipLink[];
   label: string;
   menuItems: ActionMenuItem[];
   menuLabel: string;
   timeLinks: EventsChipLink[];
 }) {
   return (
-    <nav aria-label={label} className="cl-filters">
-      <div className="cl-chip-scroll">
-        {timeLinks.map((link) => (
-          <Chip key={link.href} link={link} />
-        ))}
-        {categoryLinks.length > 1 ? (
-          <>
-            <span aria-hidden="true" className="cl-filters-divider" />
-            {categoryLinks.map((link) => (
-              <Chip key={link.href} link={link} />
-            ))}
+    <>
+      <nav aria-label={label} className="cl-filters">
+        <div className="cl-chip-scroll">
+          {timeLinks.map((link) => (
+            <Chip key={link.href} link={link} />
+          ))}
+          {categoryLinks.length > 1 ? (
+            <>
+              <span aria-hidden="true" className="cl-filters-divider" />
+              {categoryLinks.map((link) => (
+                <Chip key={link.href} link={link} />
+              ))}
           </>
         ) : null}
       </div>
@@ -57,6 +62,16 @@ export function EventsChipBar({
         </span>
       ) : null}
     </nav>
+    {extraLinks.length ? (
+      <nav aria-label={extraLabel} className="cl-filters">
+        <div className="cl-chip-scroll">
+          {extraLinks.map((link) => (
+            <Chip key={link.label} link={link} />
+          ))}
+        </div>
+      </nav>
+    ) : null}
+    </>
   );
 }
 

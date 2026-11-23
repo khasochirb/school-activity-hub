@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatDate } from "@/lib/i18n/date-format";
+import { recordsWithoutEntry } from "@/lib/portfolio/participation";
 import {
   getFeedbackCounts,
   getOwnRoster,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/portfolio/portfolio-data";
 import { EmptyState, HeaderActionLink } from "../_components/page-ui";
 import { PortfolioGrid, type PortfolioGridLabels } from "./portfolio-grid";
+import { PortfolioRecords } from "./portfolio-records";
 
 // The "teachers' view" and "classmates' view" previews were removed on
 // 23 Nov 2026 (meeting notes §5): the student sees their own portfolio only.
@@ -56,6 +58,7 @@ export default async function PortfolioPage() {
   const shared = entries.filter((entry) => !entry.is_draft);
   const feedbackCounts = await getFeedbackCounts(shared.map((entry) => entry.id));
   const notes = [...feedbackCounts.values()].reduce((sum, n) => sum + n, 0);
+  const records = recordsWithoutEntry(links.participation, entries);
   const labels: PortfolioGridLabels = {
     add: t("portfolio.add"),
     addDescription: t("portfolio.addDescription"),
@@ -149,6 +152,19 @@ export default async function PortfolioPage() {
           title={t("portfolio.empty.ownerTitle")}
         />
       ) : null}
+
+      <PortfolioRecords
+        formatDate={(value) => formatDate(value, locale)}
+        labels={{
+          addReflection: t("portfolio.records.addReflection"),
+          attended: t("portfolio.records.attended"),
+          club: t("portfolio.records.club"),
+          description: t("portfolio.records.description"),
+          title: t("portfolio.records.title"),
+        }}
+        ownSchoolId={viewer.schoolId}
+        records={records}
+      />
     </div>
   );
 }

@@ -1,14 +1,17 @@
 import { notFound, redirect } from "next/navigation";
 import { formatDate } from "@/lib/i18n/date-format";
+import { recordsWithoutEntry } from "@/lib/portfolio/participation";
 import { isUuidValue } from "@/lib/portfolio/portfolio";
 import {
   getPortfolioEntries,
   getPortfolioI18n,
   getPortfolioViewer,
   getRosterStudent,
+  getStudentLinks,
 } from "@/lib/portfolio/portfolio-data";
 import { EmptyState, HeaderActionLink, PageHeader } from "../../../_components/page-ui";
 import { PortfolioGrid } from "../../portfolio-grid";
+import { PortfolioRecords } from "../../portfolio-records";
 
 export default async function StudentPortfolioPage({
   params,
@@ -27,7 +30,12 @@ export default async function StudentPortfolioPage({
   if (!student) notFound();
 
   // Row-level security returns only entries this viewer may see.
-  const entries = await getPortfolioEntries(rosterId);
+  // Attendance and club records are for the student and their school's staff.
+  const [entries, links] = await Promise.all([
+    getPortfolioEntries(rosterId),
+    viewer.role === "student" ? null : getStudentLinks(viewer.schoolId, rosterId),
+  ]);
+  const records = links ? recordsWithoutEntry(links.participation, entries) : [];
 
   return (
     <div className="page-stack">
@@ -73,6 +81,16 @@ export default async function StudentPortfolioPage({
           title={t("portfolio.empty.viewerTitle")}
         />
       )}
+      <PortfolioRecords
+        formatDate={(value) => formatDate(value, locale)}
+        labels={{
+          attended: t("portfolio.records.attended"),
+          club: t("portfolio.records.club"),
+          description: t("portfolio.records.staffDescription"),
+          title: t("portfolio.records.title"),
+        }}
+        records={records}
+      />
     </div>
   );
 }

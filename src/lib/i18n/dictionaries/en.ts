@@ -1352,6 +1352,7 @@ export const en = {
     list: {
       byCategory: "By category",
       goingCount: "{count} going",
+      extraFilters: "More event filters",
       moreFilters: "Filters",
       myEvents: "My events",
       nothingYet: "Nothing yet. Join something!",
@@ -1360,6 +1361,7 @@ export const en = {
       subtitleStaff: "{count} upcoming at {school}",
       dayEmpty: "Nothing on this day.",
       dayHeading: "Activities on {date}",
+      thisWeek: "This week",
       showAllDays: "Show all activities",
       yourEvents: "Your events",
     },
@@ -3171,14 +3173,13 @@ export const en = {
       eventsAttended: "events attended",
       teacherNotes: "teacher notes",
     },
-    viewAs: {
-      label: "View as",
-      me: "Me",
-      teacher: "Teacher",
-      classmate: "Classmate",
-      bannerTeacher: "You're seeing your portfolio as a teacher would. Drafts and private entries are hidden.",
-      bannerClassmate: "You're seeing your portfolio as a classmate would. Only entries shared with your school show.",
-      back: "Back to editing",
+    records: {
+      title: "Activity record",
+      description: "Events you were checked in at and events your clubs held are added here automatically. You can add a reflection or photos to any of them.",
+      staffDescription: "Events this student was checked in at and events their clubs held.",
+      attended: "Attended",
+      club: "Club event",
+      addReflection: "Add a reflection or photos",
     },
     kinds: {
       reflection: "Reflection",
