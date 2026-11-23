@@ -73,12 +73,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
   student: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
     { href: "/events", labelKey: "nav.activities", match: "events" },
-    {
-      href: "/events?view=month",
-      labelKey: "nav.calendar",
-      match: "calendar",
-      intentPrefetch: false,
-    },
+    { href: "/schedule", labelKey: "nav.schedule" },
     { href: "/clubs", labelKey: "nav.clubs" },
     { href: "/portfolio", labelKey: "nav.portfolio" },
     { href: "/club-requests", labelKey: "nav.clubIdeas" },
