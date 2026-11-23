@@ -73,16 +73,27 @@ export function FounderList({ founders, t }: { founders: FounderSummary[]; t: Tr
     <ul className="founder-list">
       {founders.map((founder) => (
         <li data-status={founder.status} key={founder.profileId}>
-          <span>
-            {founder.name}
-            {founder.homeroom ? <small> · {founder.homeroom}</small> : null}
-            {founder.isProposer ? <small> · {t("clubRequests.proposal.proposer")}</small> : null}
+          <span aria-hidden="true" className="founder-avatar">
+            {initials(founder.name)}
           </span>
-          <span className="founder-status">{t(`clubRequests.proposal.founderStatus.${founder.status}`)}</span>
+          <span className="founder-name">
+            <b>{founder.name}</b>
+            <small>
+              {[founder.homeroom, founder.isProposer ? t("clubRequests.proposal.proposer") : null]
+                .filter(Boolean)
+                .join(" · ")}
+            </small>
+          </span>
+          <span className="founder-pill">{t(`clubRequests.proposal.founderStatus.${founder.status}`)}</span>
         </li>
       ))}
     </ul>
   );
+}
+
+function initials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? "?").slice(0, 2)).toUpperCase();
 }
 
 // "Your club proposals": every proposal the student founded or was tagged in
@@ -114,67 +125,111 @@ export async function MyProposals({
 
   const { data: requests } = await admin
     .from("club_requests")
-    .select("id, title, reason, status, created_by_profile_id")
+    .select("id, title, description, reason, status, created_by_profile_id")
     .in("id", requestIds)
     .eq("school_id", schoolId)
     .in("status", ["gathering", "pending"])
     .order("created_at", { ascending: false })
-    .returns<Array<{ created_by_profile_id: string; id: string; reason: string | null; status: "gathering" | "pending"; title: string }>>();
+    .returns<Array<{ created_by_profile_id: string; description: string | null; id: string; reason: string | null; status: "gathering" | "pending"; title: string }>>();
 
   if (!requests?.length) return null;
 
   const foundersByRequest = await getFoundersByRequest(admin, requests.map((request) => request.id));
+  const needsAnswer = (requestId: string, status: string) =>
+    status === "gathering" &&
+    foundersByRequest.get(requestId)?.find((founder) => founder.profileId === profileId)?.status === "invited";
+  // Invitations waiting for this student's answer come first.
+  const ordered = [...requests].sort(
+    (a, b) => Number(needsAnswer(b.id, b.status)) - Number(needsAnswer(a.id, a.status)),
+  );
+  const waiting = ordered.filter((request) => needsAnswer(request.id, request.status)).length;
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-bold">{t("clubRequests.proposal.mineTitle")}</h2>
-      {requests.map((request) => {
+    <section className="proposals" aria-labelledby="my-proposals-title">
+      <header className="proposals-head">
+        <h2 id="my-proposals-title">{t("clubRequests.proposal.mineTitle")}</h2>
+        {waiting ? (
+          <span className="proposals-badge">{tf("clubRequests.proposal.needsAnswer", { count: waiting })}</span>
+        ) : null}
+      </header>
+      {ordered.map((request) => {
         const founders = foundersByRequest.get(request.id) ?? [];
-        const me = founders.find((founder) => founder.profileId === profileId);
+        const proposer = founders.find((founder) => founder.isProposer);
         const isProposer = request.created_by_profile_id === profileId;
         const confirmed = founders.filter((f) => f.status === "confirmed").length;
         const active = founders.filter((f) => f.status !== "declined").length;
+        const invited = needsAnswer(request.id, request.status);
+        const percent = Math.min(100, Math.round((confirmed / FOUNDERS_REQUIRED) * 100));
 
         return (
-          <article className="cl-card proposal-card" id={`proposal-${request.id}`} key={request.id}>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="cl-tag" data-tone={request.status === "pending" ? "ok" : "warn"}>
-                {request.status === "pending"
-                  ? t("clubRequests.proposal.withAdmin")
-                  : tf("clubRequests.proposal.progress", { confirmed, required: FOUNDERS_REQUIRED })}
-              </span>
-            </div>
-            <h3 className="mt-2 text-lg font-bold leading-snug">{request.title}</h3>
-            {request.reason ? (
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                <b>{t("clubRequests.proposal.why")}</b> {request.reason}
-              </p>
-            ) : null}
-            <FounderList founders={founders} t={t} />
-
-            {me?.status === "invited" && request.status === "gathering" ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <form action={respondToFounderInvite}>
-                  <input name="club_request_id" type="hidden" value={request.id} />
-                  <input name="answer" type="hidden" value="confirm" />
-                  <PendingSubmitButton className="btn btn-primary" pendingLabel={t("clubRequests.proposal.confirming")}>
-                    {t("clubRequests.proposal.confirm")}
-                  </PendingSubmitButton>
-                </form>
-                <form action={respondToFounderInvite}>
-                  <input name="club_request_id" type="hidden" value={request.id} />
-                  <input name="answer" type="hidden" value="decline" />
-                  <PendingSubmitButton className="btn btn-secondary" pendingLabel={t("clubRequests.proposal.declining")}>
-                    {t("clubRequests.proposal.decline")}
-                  </PendingSubmitButton>
-                </form>
+          <article
+            className="cl-card proposal-card"
+            data-needs-answer={invited ? "" : undefined}
+            id={`proposal-${request.id}`}
+            key={request.id}
+          >
+            {invited ? (
+              <div className="proposal-invite">
+                <div className="min-w-0">
+                  <b>{tf("clubRequests.proposal.invitedBy", { proposer: proposer?.name ?? "" })}</b>
+                  <span>{t("clubRequests.proposal.inviteHint")}</span>
+                </div>
+                <div className="proposal-invite-actions">
+                  <form action={respondToFounderInvite}>
+                    <input name="club_request_id" type="hidden" value={request.id} />
+                    <input name="answer" type="hidden" value="confirm" />
+                    <PendingSubmitButton className="btn btn-primary" pendingLabel={t("clubRequests.proposal.confirming")}>
+                      {t("clubRequests.proposal.confirm")}
+                    </PendingSubmitButton>
+                  </form>
+                  <form action={respondToFounderInvite}>
+                    <input name="club_request_id" type="hidden" value={request.id} />
+                    <input name="answer" type="hidden" value="decline" />
+                    <PendingSubmitButton className="btn btn-secondary" pendingLabel={t("clubRequests.proposal.declining")}>
+                      {t("clubRequests.proposal.decline")}
+                    </PendingSubmitButton>
+                  </form>
+                </div>
               </div>
             ) : null}
 
+            <div className="proposal-head">
+              <h3>{request.title}</h3>
+              <span className="cl-tag" data-tone={request.status === "pending" ? "ok" : "warn"}>
+                {request.status === "pending"
+                  ? t("clubRequests.proposal.withAdmin")
+                  : t("clubRequests.proposal.gathering")}
+              </span>
+            </div>
+
+            {request.description ? <p className="proposal-desc">{request.description}</p> : null}
+            {request.reason ? (
+              <blockquote className="proposal-why">
+                <span>{t("clubRequests.proposal.why")}</span>
+                {request.reason}
+              </blockquote>
+            ) : null}
+
+            <div className="proposal-progress">
+              <div
+                aria-label={tf("clubRequests.proposal.progress", { confirmed, required: FOUNDERS_REQUIRED })}
+                aria-valuemax={FOUNDERS_REQUIRED}
+                aria-valuemin={0}
+                aria-valuenow={Math.min(confirmed, FOUNDERS_REQUIRED)}
+                className="proposal-bar"
+                role="progressbar"
+              >
+                <i style={{ width: `${percent}%` }} />
+              </div>
+              <span>{tf("clubRequests.proposal.progress", { confirmed, required: FOUNDERS_REQUIRED })}</span>
+            </div>
+
+            <FounderList founders={founders} t={t} />
+
             {isProposer && request.status === "gathering" && active < MAX_FOUNDERS ? (
-              <form action={addProposalFounders} className="mt-3 flex flex-col gap-2">
+              <form action={addProposalFounders} className="proposal-add">
                 <input name="club_request_id" type="hidden" value={request.id} />
-                <p className="text-sm text-slate-600">{t("clubRequests.proposal.addMoreHint")}</p>
+                <p>{t("clubRequests.proposal.addMoreHint")}</p>
                 <FounderPicker labels={pickerLabels} max={MAX_FOUNDERS - active} min={1} />
                 <PendingSubmitButton className="btn btn-secondary w-full sm:w-auto" pendingLabel={t("clubRequests.proposal.adding")}>
                   {t("clubRequests.proposal.addMore")}
@@ -183,7 +238,7 @@ export async function MyProposals({
             ) : null}
 
             {isProposer ? (
-              <form action={withdrawProposal} className="mt-3">
+              <form action={withdrawProposal} className="proposal-foot">
                 <input name="club_request_id" type="hidden" value={request.id} />
                 <PendingSubmitButton className="btn btn-quiet" pendingLabel={t("clubRequests.proposal.withdrawing")}>
                   {t("clubRequests.proposal.withdraw")}

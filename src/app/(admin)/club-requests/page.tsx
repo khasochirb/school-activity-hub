@@ -254,6 +254,16 @@ export default async function ClubRequestsPage({
       />
 
       {profile.role === "student" ? (
+        <MyProposals
+          pickerLabels={pickerLabels}
+          profileId={profile.id}
+          schoolId={profile.school_id}
+          t={t}
+          tf={tf}
+        />
+      ) : null}
+
+      {profile.role === "student" ? (
         <CollapsibleFormSection
           description={t("clubRequests.create.description")}
           hideLabel={t("common.hideForm")}
@@ -282,15 +292,6 @@ export default async function ClubRequestsPage({
         </CollapsibleFormSection>
       ) : null}
 
-      {profile.role === "student" ? (
-        <MyProposals
-          pickerLabels={pickerLabels}
-          profileId={profile.id}
-          schoolId={profile.school_id}
-          t={t}
-          tf={tf}
-        />
-      ) : null}
 
       <div className="flex flex-col gap-2.5">
         <nav aria-label={t("filters.status")} className="cl-filters">
