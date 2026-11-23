@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatDate } from "@/lib/i18n/date-format";
 import { recordsWithoutEntry } from "@/lib/portfolio/participation";
@@ -10,10 +11,11 @@ import {
   getStudentLinks,
 } from "@/lib/portfolio/portfolio-data";
 import { EmptyState, HeaderActionLink } from "../_components/page-ui";
-import { PortfolioClubs } from "./portfolio-clubs";
 import { PortfolioGrid, type PortfolioGridLabels } from "./portfolio-grid";
 import { PortfolioRecords } from "./portfolio-records";
 
+// The "teachers' view" and "classmates' view" previews were removed on
+// 23 Nov 2026 (meeting notes §5): the student sees their own portfolio only.
 export default async function PortfolioPage() {
   const { locale, t, tf } = await getPortfolioI18n();
   const viewer = await getPortfolioViewer();
@@ -109,12 +111,33 @@ export default async function PortfolioPage() {
         </div>
       </section>
 
-      <PortfolioClubs
-        clubs={links.clubs}
-        emptyLabel={t("studentProfile.clubs.empty")}
-        findLabel={t("studentProfile.clubs.find")}
-        title={t("studentProfile.clubs.title")}
-      />
+      <section aria-labelledby="portfolio-clubs-title" className="portfolio-clubs">
+        <h2 id="portfolio-clubs-title">{t("portfolio.myClubs.title")}</h2>
+        {links.clubs.length ? (
+          <ul>
+            {links.clubs.map((club) => (
+              <li key={club.id}>
+                <Link href={`/clubs/${club.id}`} prefetch={false}>
+                  <span aria-hidden="true" className="portfolio-club-mark">
+                    {Array.from(club.label.trim())[0]?.toUpperCase() ?? "?"}
+                  </span>
+                  <b>{club.label}</b>
+                  {club.role === "leader" ? (
+                    <span className="cl-tag" data-tone="ok">
+                      {t("clubs.memberRoles.leader")}
+                    </span>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            {t("portfolio.myClubs.empty")}{" "}
+            <Link href="/clubs">{t("portfolio.myClubs.browse")}</Link>
+          </p>
+        )}
+      </section>
 
       <PortfolioGrid
         addHref="/portfolio/new"

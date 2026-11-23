@@ -68,10 +68,9 @@ test("an entry about the event replaces its record", () => {
   assert.deepEqual(recordsWithoutEntry(records, [{ event_id: "a" }, { event_id: null }]).map((r) => r.eventId), ["b"]);
 });
 
-test("the portfolio shows clubs and records, and no longer previews as someone else", () => {
+test("the portfolio shows the automatic records and no longer previews as someone else", () => {
   const page = read("src/app/(admin)/portfolio/page.tsx");
 
-  assert.match(page, /<PortfolioClubs/);
   assert.match(page, /<PortfolioRecords/);
   assert.doesNotMatch(page, /viewAs|searchParams/);
   for (const lang of ["en", "mn"]) {
@@ -123,19 +122,4 @@ test("the filters reach the query and survive a search", () => {
   assert.match(page, /with: filterUrlState\.extra\.join\(","\)/);
   // Week boundaries follow the school's time zone.
   assert.match(page, /getDayQueryRange\(monday, timeZone\)\.from/);
-});
-
-const classmates = read("src/lib/events/event-classmates.ts");
-
-test("the classmate count keeps the club-classmates rules and returns only a number", () => {
-  assert.match(classmates, /\.eq\("school_id", schoolId\)/);
-  assert.match(classmates, /\.eq\("status", "active"\)/);
-  assert.match(classmates, /\.eq\("show_name_to_classmates", true\)/);
-  assert.match(classmates, /filter\(\(id\) => id !== studentId\)/);
-  assert.match(classmates, /if \(!myClass\) return 0;/);
-  assert.match(classmates, /others\.has\(row\.id\) && classKey\(row\.homeroom\) === myClass,\s+\)\.length;/);
-  assert.doesNotMatch(classmates, /first_name|last_name/);
-  const page = read("src/app/(admin)/events/[eventId]/page.tsx");
-  assert.match(page, /classmatesGoing = currentStudent\s+\? await countClassmatesGoing/);
-  assert.match(page, /\{classmatesGoing \? \(/);
 });

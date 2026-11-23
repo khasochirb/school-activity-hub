@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { parseActivityCategory } from "@/lib/activity-categories";
 import { logServerError } from "@/lib/errors/server-error";
-import { getDictionary, translate } from "@/lib/i18n/dictionary";
-import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { toSlug } from "@/lib/slug";
 import { timeServer } from "@/lib/server-timing";
+import { notify } from "@/lib/notifications/notify";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type Profile = {
@@ -24,104 +23,6 @@ type ClubRequest = {
   status: "pending" | "approved" | "rejected" | "archived";
   title: string;
 };
-
-export type CreateClubRequestState = {
-  message: string;
-  success: boolean;
-};
-
-type ServerI18n = {
-  t: (key: string) => string;
-};
-
-const MAX_PENDING_STUDENT_REQUESTS = 3;
-
-export async function createClubRequest(
-  _state: CreateClubRequestState,
-  formData: FormData,
-): Promise<CreateClubRequestState> {
-  const i18n = await getServerI18n();
-  const profile = await getCurrentProfile();
-
-  if (!profile || profile.role !== "student") {
-    return {
-      message: i18n.t("clubRequests.errors.studentsOnlyCreate"),
-      success: false,
-    };
-  }
-
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const categoryInput = String(formData.get("category") ?? "").trim();
-  const category = parseActivityCategory(categoryInput);
-
-  if (!title) {
-    return { message: i18n.t("clubRequests.errors.titleRequired"), success: false };
-  }
-
-  if (categoryInput && !category) {
-    return {
-      message: i18n.t("clubRequests.errors.invalidCategory"),
-      success: false,
-    };
-  }
-
-  const supabase = await createClient();
-  const { count } = await timeServer("club-requests.action.create.pending-count", () =>
-    supabase
-      .from("club_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("school_id", profile.school_id)
-      .eq("created_by_profile_id", profile.id)
-      .eq("status", "pending"),
-  );
-
-  if ((count ?? 0) >= MAX_PENDING_STUDENT_REQUESTS) {
-    return {
-      message: i18n.t("clubRequests.errors.tooManyPending"),
-      success: false,
-    };
-  }
-
-  const { data: request, error } = await timeServer(
-    "club-requests.action.create.insert",
-    () =>
-      supabase
-        .from("club_requests")
-        .insert({
-          school_id: profile.school_id,
-          created_by_profile_id: profile.id,
-          title,
-          description: description || null,
-          category: category || null,
-          status: "pending",
-        })
-        .select("id")
-        .single<{ id: string }>(),
-  );
-
-  if (error || !request) {
-    logServerError("Club request creation failed", error);
-    return {
-      message: i18n.t("clubRequests.errors.createFailed"),
-      success: false,
-    };
-  }
-
-  await timeServer("club-requests.action.create.auto-support", () =>
-    supabase.from("club_request_supports").insert({
-      club_request_id: request.id,
-      profile_id: profile.id,
-    }),
-  );
-
-  revalidateClubRequestPaths();
-
-  return {
-    message: i18n.t("clubRequests.success.created"),
-    success: true,
-  };
-}
 
 export async function supportClubRequest(formData: FormData) {
   const profile = await getCurrentProfile();
@@ -194,18 +95,34 @@ export async function removeClubRequestSupport(formData: FormData) {
   revalidateClubRequestPaths();
 }
 
+// School admins decide on club proposals and choose the supervising teacher.
 export async function approveClubRequest(formData: FormData) {
   const profile = await getCurrentProfile();
 
-  if (!profile || !isStaff(profile)) {
+  if (!profile || profile.role !== "school_admin") {
     redirect("/club-requests");
   }
 
   const requestId = String(formData.get("club_request_id") ?? "").trim();
+  const advisorId = String(formData.get("advisor_profile_id") ?? "").trim();
 
   if (!requestId) {
     return;
   }
+
+  const admin = createAdminClient();
+  const advisor = advisorId
+    ? (
+        await admin
+          .from("profiles")
+          .select("id")
+          .eq("id", advisorId)
+          .eq("school_id", profile.school_id)
+          .eq("status", "active")
+          .in("role", ["teacher", "school_admin"])
+          .maybeSingle<{ id: string }>()
+      ).data
+    : null;
 
   const supabase = await createClient();
   const { data: request } = await timeServer(
@@ -243,6 +160,7 @@ export async function approveClubRequest(formData: FormData) {
           description: request.description,
           category: request.category,
           status: "active",
+          advisor_profile_id: advisor?.id ?? null,
         })
         .select("id")
         .single<{ id: string }>(),
@@ -273,13 +191,81 @@ export async function approveClubRequest(formData: FormData) {
     logServerError("Club request approval update failed", updateError);
   }
 
+  await startClubWithFounders(admin, {
+    clubId: club.id,
+    approvedBy: profile.id,
+    requestId: request.id,
+    schoolId: profile.school_id,
+    title: request.title,
+  });
+
   revalidateClubRequestPaths();
+}
+
+// The founders who confirmed become the club's first members: the proposer as
+// leader, the others as members. Then every founder is told.
+async function startClubWithFounders(
+  admin: ReturnType<typeof createAdminClient>,
+  {
+    approvedBy,
+    clubId,
+    requestId,
+    schoolId,
+    title,
+  }: { approvedBy: string; clubId: string; requestId: string; schoolId: string; title: string },
+) {
+  const { data: founders } = await admin
+    .from("club_request_founders")
+    .select("profile_id, is_proposer")
+    .eq("club_request_id", requestId)
+    .eq("status", "confirmed")
+    .returns<Array<{ is_proposer: boolean; profile_id: string }>>();
+
+  if (!founders?.length) return;
+
+  const { data: rosters } = await admin
+    .from("student_rosters")
+    .select("id, profile_id")
+    .eq("school_id", schoolId)
+    .eq("status", "active")
+    .in("profile_id", founders.map((founder) => founder.profile_id))
+    .returns<Array<{ id: string; profile_id: string }>>();
+  const rosterByProfile = new Map((rosters ?? []).map((roster) => [roster.profile_id, roster.id]));
+  const memberships = founders
+    .filter((founder) => rosterByProfile.has(founder.profile_id))
+    .map((founder) => ({
+      club_id: clubId,
+      created_by_profile_id: approvedBy,
+      role: founder.is_proposer ? "leader" : "member",
+      school_id: schoolId,
+      status: "active",
+      student_roster_id: rosterByProfile.get(founder.profile_id),
+    }));
+
+  if (memberships.length) {
+    const { error } = await admin
+      .from("club_memberships")
+      .upsert(memberships, { onConflict: "club_id,student_roster_id" });
+
+    if (error) logServerError("Founding memberships insert failed", error, { clubId });
+  }
+
+  await notify(
+    admin,
+    founders.map((founder) => ({
+      data: { club: title },
+      kind: "proposal_approved" as const,
+      link: `/clubs/${clubId}`,
+      recipientProfileId: founder.profile_id,
+      schoolId,
+    })),
+  );
 }
 
 export async function rejectClubRequest(formData: FormData) {
   const profile = await getCurrentProfile();
 
-  if (!profile || !isStaff(profile)) {
+  if (!profile || profile.role !== "school_admin") {
     redirect("/club-requests");
   }
 
@@ -291,7 +277,7 @@ export async function rejectClubRequest(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await timeServer("club-requests.action.reject.update", () =>
+  const { data: rejected } = await timeServer("club-requests.action.reject.update", () =>
     supabase
       .from("club_requests")
       .update({
@@ -302,8 +288,31 @@ export async function rejectClubRequest(formData: FormData) {
       })
       .eq("id", requestId)
       .eq("school_id", profile.school_id)
-      .eq("status", "pending"),
+      .eq("status", "pending")
+      .select("id, title")
+      .maybeSingle<{ id: string; title: string }>(),
   );
+
+  if (rejected) {
+    const admin = createAdminClient();
+    const { data: founders } = await admin
+      .from("club_request_founders")
+      .select("profile_id")
+      .eq("club_request_id", rejected.id)
+      .eq("status", "confirmed")
+      .returns<Array<{ profile_id: string }>>();
+
+    await notify(
+      admin,
+      (founders ?? []).map((founder) => ({
+        data: { club: rejected.title, reason: rejectionReason || "—" },
+        kind: "proposal_rejected" as const,
+        link: "/club-requests",
+        recipientProfileId: founder.profile_id,
+        schoolId: profile.school_id,
+      })),
+    );
+  }
 
   revalidateClubRequestPaths();
 }
@@ -360,14 +369,6 @@ async function getCurrentProfile(): Promise<Profile | null> {
   return profile;
 }
 
-async function getServerI18n(): Promise<ServerI18n> {
-  const locale = await getCurrentLocale();
-  const dictionary = getDictionary(locale);
-  const t = (key: string) => translate(dictionary, key);
-
-  return { t };
-}
-
 async function createUniqueClubSlug(
   supabase: Awaited<ReturnType<typeof createClient>>,
   title: string,
@@ -413,5 +414,6 @@ function isStaff(profile: Profile) {
 function revalidateClubRequestPaths() {
   revalidatePath("/club-requests");
   revalidatePath("/clubs");
+  revalidatePath("/approvals");
 }
 

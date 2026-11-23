@@ -35,6 +35,7 @@ import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ChipPending } from "../_components/chip-pending";
+import { ClassmatesFromClass } from "../_components/classmates-from-class";
 import {
   assignClubLeader,
   joinClub,
@@ -96,10 +97,13 @@ type ClubsSearchParams = {
   category?: string | string[];
   page?: string | string[];
   q?: string | string[];
+  show?: string | string[];
   status?: string | string[];
 };
 
 const CLUBS_PAGE_SIZE = 40;
+const CLUB_SHOW_OPTIONS = ["all", "mine", "other"] as const;
+type ClubShow = (typeof CLUB_SHOW_OPTIONS)[number];
 
 export default async function ClubsPage({
   searchParams,
@@ -141,6 +145,37 @@ export default async function ClubsPage({
   const selectedStatus =
     isStaff ? parseClubStatus(getSearchParam(params.status)) || "active" : "active";
 
+  const { data: currentStudent } =
+    profile.role === "student"
+      ? await timeServer("clubs.query.current-student", () =>
+          supabase
+            .from("student_rosters")
+            .select("id")
+            .eq("school_id", profile.school_id)
+            .eq("profile_id", profile.id)
+            .eq("status", "active")
+            .maybeSingle<StudentRoster>(),
+        )
+      : { data: null };
+  // "My clubs / Other clubs" for students: the clubs they are an active member of.
+  const selectedShow: ClubShow =
+    profile.role === "student" && currentStudent
+      ? (CLUB_SHOW_OPTIONS.find((option) => option === getSearchParam(params.show)) ?? "all")
+      : "all";
+  const { data: myClubRows } =
+    selectedShow !== "all" && currentStudent
+      ? await timeServer("clubs.query.my-clubs", () =>
+          createAdminClient()
+            .from("club_memberships")
+            .select("club_id")
+            .eq("school_id", profile.school_id)
+            .eq("student_roster_id", currentStudent.id)
+            .eq("status", "active")
+            .returns<Array<{ club_id: string }>>(),
+        )
+      : { data: [] as Array<{ club_id: string }> };
+  const myClubIds = (myClubRows ?? []).map((row) => row.club_id);
+
   let clubsQuery = supabase
     .from("clubs")
     .select("id, name, description, category, status")
@@ -158,6 +193,13 @@ export default async function ClubsPage({
     clubsQuery = clubsQuery.ilike("name", `%${searchQuery}%`);
   }
 
+  if (selectedShow === "mine") {
+    // No memberships: match nothing rather than everything.
+    clubsQuery = clubsQuery.in("id", myClubIds.length ? myClubIds : ["00000000-0000-0000-0000-000000000000"]);
+  } else if (selectedShow === "other" && myClubIds.length) {
+    clubsQuery = clubsQuery.not("id", "in", `(${myClubIds.join(",")})`);
+  }
+
   const { data: clubs, error: clubsError } = await timeServer(
     "clubs.query.active-clubs",
     () =>
@@ -168,18 +210,6 @@ export default async function ClubsPage({
   );
   const { hasNextPage, rows: clubRows } = pageRows(clubs, CLUBS_PAGE_SIZE);
 
-  const { data: currentStudent } =
-    profile.role === "student"
-      ? await timeServer("clubs.query.current-student", () =>
-          supabase
-            .from("student_rosters")
-            .select("id")
-            .eq("school_id", profile.school_id)
-            .eq("profile_id", profile.id)
-            .eq("status", "active")
-            .maybeSingle<StudentRoster>(),
-        )
-      : { data: null };
 
   const clubIds = clubRows.map((club) => club.id);
   const { data: memberships } = clubIds.length
@@ -223,7 +253,7 @@ export default async function ClubsPage({
       classmatesByClub.set(row.club_id, [...(classmatesByClub.get(row.club_id) ?? []), row.display_name]);
     }
   }
-  const hasActiveFilters = Boolean(searchQuery || selectedCategory || page > 1);
+  const hasActiveFilters = Boolean(searchQuery || selectedCategory || page > 1 || selectedShow !== "all");
   const [studentInterests, schoolClubsResult] = isStudent
     ? await Promise.all([
         timeServer("clubs.query.student-interests", () =>
@@ -343,6 +373,28 @@ export default async function ClubsPage({
         />
       ) : null}
 
+      {isStudent && currentStudent ? (
+        <nav aria-label={t("clubs.show.label")} className="cl-filters">
+          {CLUB_SHOW_OPTIONS.map((option) => (
+            <Link
+              aria-current={selectedShow === option ? "page" : undefined}
+              className="cl-chip"
+              href={clubsPageHref(1, {
+                category: selectedCategory ?? "",
+                q: searchQuery,
+                show: option,
+                status: selectedStatus,
+              })}
+              key={option}
+              prefetch={false}
+              scroll={false}
+            >
+              {t(`clubs.show.${option}`)}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+
       <CategoryChips
         label={t("filters.category")}
         links={[
@@ -351,6 +403,7 @@ export default async function ClubsPage({
             href: clubsPageHref(1, {
               category: "",
               q: searchQuery,
+              show: selectedShow,
               status: selectedStatus,
             }),
             label: t("filters.all"),
@@ -361,6 +414,7 @@ export default async function ClubsPage({
             href: clubsPageHref(1, {
               category,
               q: searchQuery,
+              show: selectedShow,
               status: selectedStatus,
             }),
             label: categoryLabel(category, t),
@@ -375,6 +429,7 @@ export default async function ClubsPage({
               href: clubsPageHref(1, {
                 category: selectedCategory ?? "",
                 q: searchQuery,
+                show: selectedShow,
                 status,
               }),
               label: status === "all" ? t("filters.all") : statusLabel(status, t),
@@ -396,6 +451,9 @@ export default async function ClubsPage({
           ) : null}
           {selectedStatus !== "active" ? (
             <input name="status" type="hidden" value={selectedStatus} />
+          ) : null}
+          {selectedShow !== "all" ? (
+            <input name="show" type="hidden" value={selectedShow} />
           ) : null}
         </form>
       </CategoryChips>
@@ -471,12 +529,13 @@ export default async function ClubsPage({
                         category={club.category}
                         label={club.category ? categoryLabel(club.category, t) : null}
                       />
-                      {isStudent && classmatesByClub.get(club.id)?.length ? (
-                        <p className="mt-1 text-sm font-semibold text-[var(--primary-strong)]">
-                          {tf("clubs.classmates.fromYourClass", {
-                            names: classmatesLine(classmatesByClub.get(club.id) ?? []),
+                      {isStudent ? (
+                        <ClassmatesFromClass
+                          label={tf("clubs.classmates.count", {
+                            count: classmatesByClub.get(club.id)?.length ?? 0,
                           })}
-                        </p>
+                          names={classmatesByClub.get(club.id) ?? []}
+                        />
                       ) : null}
                     </div>
                     {isStaff && club.status !== "active" ? (
@@ -622,6 +681,7 @@ export default async function ClubsPage({
               clubsPageHref(nextPage, {
                 category: selectedCategory ?? "",
                 q: searchQuery,
+                show: selectedShow,
                 status: selectedStatus,
               })
             }
@@ -637,12 +697,6 @@ export default async function ClubsPage({
       </section>
     </div>
   );
-}
-
-function classmatesLine(names: string[]) {
-  const shown = names.slice(0, 3).join(", ");
-
-  return names.length > 3 ? `${shown} +${names.length - 3}` : shown;
 }
 
 function ClubTile({ category, name }: { category: string | null; name: string }) {
@@ -1060,9 +1114,13 @@ function categoryLabel(category: string, t: (key: string) => string) {
 
 function clubsPageHref(
   page: number,
-  filters: { category: string; q: string; status: string },
+  filters: { category: string; q: string; show?: string; status: string },
 ) {
   const params = new URLSearchParams();
+
+  if (filters.show && filters.show !== "all") {
+    params.set("show", filters.show);
+  }
 
   if (filters.q) {
     params.set("q", filters.q);

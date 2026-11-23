@@ -170,11 +170,11 @@ export async function getStudentLinks(schoolId: string, rosterId: string) {
   const [{ data: memberships }, { data: attended }] = await Promise.all([
     supabase
       .from("club_memberships")
-      .select("club_id, joined_at")
+      .select("club_id, role, joined_at")
       .eq("school_id", schoolId)
       .eq("student_roster_id", rosterId)
       .eq("status", "active")
-      .returns<ClubMembershipPeriod[]>(),
+      .returns<Array<ClubMembershipPeriod & { role: "leader" | "member" }>>(),
     supabase
       .from("event_attendees")
       .select("event_id")
@@ -189,13 +189,11 @@ export async function getStudentLinks(schoolId: string, rosterId: string) {
       clubIds.length
         ? supabase
             .from("clubs")
-            .select("id, name, category")
+            .select("id, name")
             .in("id", clubIds)
             .order("name")
-            .returns<{ category: string | null; id: string; name: string }[]>()
-        : Promise.resolve({
-            data: [] as { category: string | null; id: string; name: string }[],
-          }),
+            .returns<{ id: string; name: string }[]>()
+        : Promise.resolve({ data: [] as { id: string; name: string }[] }),
       eventIds.length
         ? supabase
             .from("events")
@@ -226,9 +224,9 @@ export async function getStudentLinks(schoolId: string, rosterId: string) {
   return {
     attendedCount: eventIds.length,
     clubs: (clubs ?? []).map((club) => ({
-      category: club.category,
       id: club.id,
       label: club.name,
+      role: (memberships ?? []).find((row) => row.club_id === club.id)?.role ?? "member",
     })),
     // An entry can only be linked to an event of the student's own school.
     events: participation

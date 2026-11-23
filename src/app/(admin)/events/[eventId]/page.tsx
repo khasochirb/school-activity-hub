@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getClassmatesAmong } from "@/lib/classmates/classmates";
+import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
@@ -27,7 +29,6 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
-import { countClassmatesGoing } from "@/lib/events/event-classmates";
 import { getEventPosterLabels } from "@/lib/events/event-poster-labels";
 import { getEventPosterDeliveryUrl } from "@/lib/events/event-poster";
 import {
@@ -240,13 +241,17 @@ export default async function EventDetailPage({
   ]);
   const canEditPoster = canEditPosterResult.data === true;
   const registeredCount = attendees.length;
-  const classmatesGoing = currentStudent
-    ? await countClassmatesGoing(admin, {
-        attendeeRosterIds: attendees.flatMap((item) => item.student_roster_id ?? []),
-        schoolId: profile.school_id,
-        studentId: currentStudent.id,
-      })
-    : 0;
+  // Classmates from the student's own class who are going.
+  const classmatesGoing =
+    currentStudent && profile.school_id
+      ? await getClassmatesAmong(
+          admin,
+          { profileId: profile.id, schoolId: profile.school_id },
+          attendees
+            .filter((attendee) => attendee.event_id === event.id && attendee.student_roster_id)
+            .map((attendee) => attendee.student_roster_id as string),
+        )
+      : [];
   const isFull =
     event.capacity !== null && registeredCount >= event.capacity;
   const currentRegistration = getCurrentRegistration(
@@ -349,10 +354,11 @@ export default async function EventDetailPage({
                 })}`
               : ""}
           </p>
-          {classmatesGoing ? (
-            <p className="cl-evcount">
-              {tf("events.detail.classmatesGoing", { count: classmatesGoing })}
-            </p>
+          {currentStudent ? (
+            <ClassmatesFromClass
+              label={tf("events.classmates.going", { count: classmatesGoing.length })}
+              names={classmatesGoing}
+            />
           ) : null}
           <EventBadges
             clubName={club?.name ?? null}

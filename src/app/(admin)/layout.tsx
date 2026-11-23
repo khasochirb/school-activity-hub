@@ -45,6 +45,15 @@ export default async function AdminLayout({
     getCurrentPlatformAdminProfile(),
     getCurrentSafeguardingAccess(),
   ]);
+  // Unread in-app notifications for the bell. Any error (for example before the
+  // notifications migration has run) just shows no badge.
+  const { count: unreadNotifications } = await timeServer("admin-layout.unread-notifications", () =>
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("recipient_profile_id", user.id)
+      .is("read_at", null),
+  );
 
   if (!schoolExists) {
     redirect("/setup");
@@ -57,6 +66,7 @@ export default async function AdminLayout({
       email={user.email ?? null}
       isPlatformAdmin={Boolean(platformAdminProfile)}
       isSafeguardingStaff={safeguardingAccess.isDesignated}
+      unreadNotifications={unreadNotifications ?? 0}
       profile={
         profile
           ? {
