@@ -8249,3 +8249,4 @@ html[data-theme="dark"] .cl-land::before {
 .join-builder-options li input { flex: 1 1 0; width: auto; }
 .join-builder-q > *, .join-builder-options li { min-width: 0; }
 .join-switch input { width: 18px; }
+.join-q-hint { margin-top: -4px; color: var(--muted); font-size: 13px; }

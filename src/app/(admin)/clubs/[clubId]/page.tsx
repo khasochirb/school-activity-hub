@@ -17,7 +17,7 @@ import {
 } from "@/lib/i18n/dictionary";
 import { formatCalendarDateBadge, formatTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
-import { countPendingJoinRequests } from "@/lib/clubs/club-access";
+import { countPendingClubRequests } from "@/lib/clubs/club-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -25,7 +25,7 @@ import {
 } from "../../_components/page-ui";
 import { DetailTabs } from "../../_components/detail-tabs";
 import { CategoryLabel, Cover } from "../../_components/clean-ui";
-import { joinClub, leaveClub } from "../actions";
+import { joinClub } from "../actions";
 import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 
 type Club = {
@@ -216,8 +216,8 @@ export default async function ClubProfilePage({
   );
   const isApplyStudent =
     actor.profile?.role === "student" && club.join_mode === "apply" && !activeMembership;
-  const [pendingJoinCount, { data: myJoinRequest }] = await Promise.all([
-    canReviewJoins ? countPendingJoinRequests(createAdminClient(), club.id) : Promise.resolve(0),
+  const [pendingJoinCount, { data: myJoinRequest }, { data: myLeaveRequest }] = await Promise.all([
+    canReviewJoins ? countPendingClubRequests(createAdminClient(), club.id) : Promise.resolve(0),
     isApplyStudent
       ? supabase
           .from("club_join_requests")
@@ -227,7 +227,20 @@ export default async function ClubProfilePage({
           .eq("status", "pending")
           .maybeSingle<{ id: string }>()
       : Promise.resolve({ data: null }),
+    actor.profile?.role === "student" && activeMembership
+      ? supabase
+          .from("club_leave_requests")
+          .select("id")
+          .eq("club_id", club.id)
+          .eq("profile_id", actor.profile.id)
+          .eq("status", "pending")
+          .maybeSingle<{ id: string }>()
+      : Promise.resolve({ data: null }),
   ]);
+  const leaveLabels = {
+    href: `/clubs/${club.id}/leave`,
+    label: myLeaveRequest ? t("clubs.leave.pendingButton") : t("clubs.actions.leave"),
+  };
   const applyLabels = {
     apply: myJoinRequest ? t("clubs.join.apply.pendingButton") : t("clubs.join.apply.button"),
     href: `/clubs/${club.id}/apply`,
@@ -351,6 +364,7 @@ export default async function ClubProfilePage({
                 apply={isApplyStudent ? applyLabels : null}
                 clubId={club.id}
                 isJoined={Boolean(activeMembership)}
+                leave={leaveLabels}
                 labels={{
                   join: t("clubs.actions.join"),
                   joining: t("clubs.actions.joining"),
@@ -440,6 +454,7 @@ export default async function ClubProfilePage({
                 apply={isApplyStudent ? applyLabels : null}
                 clubId={club.id}
                 isJoined={false}
+                leave={leaveLabels}
                 labels={{
                   join: t("clubs.actions.join"),
                   joining: t("clubs.actions.joining"),
@@ -624,12 +639,23 @@ function MembershipAction({
   clubId,
   isJoined,
   labels,
+  leave,
 }: {
   apply: { apply: string; href: string } | null;
   clubId: string;
   isJoined: boolean;
   labels: { join: string; joining: string; leave: string; leaving: string };
+  leave: { href: string; label: string };
 }) {
+  // Leaving goes through a request with a reason, approved by the club.
+  if (isJoined) {
+    return (
+      <Link className="btn btn-secondary min-h-11 w-full sm:w-auto" href={leave.href} prefetch={false}>
+        {leave.label}
+      </Link>
+    );
+  }
+
   // Clubs that take applications: the button opens the application form.
   if (apply && !isJoined) {
     return (
@@ -640,14 +666,14 @@ function MembershipAction({
   }
 
   return (
-    <form action={isJoined ? leaveClub : joinClub} className="w-full sm:w-auto">
+    <form action={joinClub} className="w-full sm:w-auto">
       <input name="club_id" type="hidden" value={clubId} />
       <PendingSubmitButton
-        className={`btn min-h-11 w-full sm:w-auto ${isJoined ? "btn-secondary" : "btn-primary"}`}
-        pendingLabel={isJoined ? labels.leaving : labels.joining}
-        toastMessage={isJoined ? labels.leaving : labels.joining}
+        className="btn btn-primary min-h-11 w-full sm:w-auto"
+        pendingLabel={labels.joining}
+        toastMessage={labels.joining}
       >
-        {isJoined ? labels.leave : labels.join}
+        {labels.join}
       </PendingSubmitButton>
     </form>
   );
