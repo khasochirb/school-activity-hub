@@ -199,6 +199,7 @@ export default async function InviteCodesPage({
             items={[
               { href: "#generate-invite", label: t("invites.actions.generate") },
               { href: "#bulk-generate", label: t("invites.actions.bulkGenerateShort") },
+              { href: "#parent-codes", label: t("invites.parents.title") },
             ]}
             label={t("invites.list.generate")}
           />
