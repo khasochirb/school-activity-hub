@@ -46,6 +46,14 @@ import {
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
 import { isEventSchemaError } from "@/lib/events/event-errors";
 import {
+  EVENT_LIST_FILTERS,
+  eventListColumnFilters,
+  parseEventListFilters,
+  toggleEventListFilter,
+  weekDayKeys,
+  type EventListFilter,
+} from "@/lib/events/event-list-filters";
+import {
   formatEventCost,
   type EventCostType,
 } from "@/lib/events/event-practical-details";
@@ -211,11 +219,13 @@ type EventsSearchParams = {
   time?: string | string[];
   view?: string | string[];
   week?: string | string[];
+  with?: string | string[];
 };
 
 type EventsUrlState = {
   audience: EventAudience;
   category: string | null;
+  extra: EventListFilter[];
   month: string;
   searchQuery: string;
   schoolId: string;
@@ -250,6 +260,7 @@ export default async function EventsPage({
   const selectedTime = parseEventTime(getSearchParam(params.time));
   const selectedView = parseEventBrowseView(getSearchParam(params.view));
   const selectedWeek = parseWeekStart(getSearchParam(params.week), new Date());
+  const selectedExtra = parseEventListFilters(getSearchParam(params.with));
   const page = getPageParam(params.page);
   const range = pageRange(page, EVENTS_PAGE_SIZE);
   const actor = await timeServer("events.query.actor", () => getCurrentEventActor());
@@ -305,6 +316,12 @@ export default async function EventsPage({
         : selectedDay
           ? getDayQueryRange(selectedDay, calendarTimeZone)
           : null;
+  // "This week" only narrows the list; the calendars and a picked day already
+  // name their own dates.
+  const weekRange =
+    selectedExtra.includes("week") && !calendarRange
+      ? getCurrentWeekRange(calendarTimeZone)
+      : null;
   const selectedAudience = isPlatformAdmin
     ? "all"
     : parseEventAudience(
@@ -382,6 +399,8 @@ export default async function EventsPage({
     now,
     range,
     calendarRange,
+    columnFilters: eventListColumnFilters(selectedExtra),
+    weekRange,
     isPlatformAdmin,
     platformSchoolId: selectedPlatformSchool?.id ?? null,
     },
@@ -467,6 +486,7 @@ export default async function EventsPage({
   const hasResultFilters = Boolean(
     searchQuery ||
       selectedCategory ||
+      selectedExtra.length ||
       selectedAudience !== defaultAudience ||
       selectedStatus !== "approved" ||
       isEventTimeFilterActive(selectedView, selectedTime),
@@ -679,6 +699,7 @@ export default async function EventsPage({
   const filterUrlState: EventsUrlState = {
     audience: selectedAudience,
     category: selectedCategory,
+    extra: selectedExtra,
     month: selectedMonth,
     searchQuery,
     schoolId: selectedPlatformSchool?.id ?? "",
@@ -958,6 +979,31 @@ export default async function EventsPage({
             label: categoryLabel(category, t),
           })),
         ]}
+        extraLabel={t("events.list.extraFilters")}
+        extraLinks={[
+          ...(isStaff
+            ? []
+            : [
+                {
+                  active: selectedAudience === "my-clubs",
+                  href: buildEventsHref({
+                    ...filterUrlState,
+                    audience: selectedAudience === "my-clubs" ? defaultAudience : "my-clubs",
+                  }),
+                  label: t("events.filters.myClubEvents"),
+                },
+              ]),
+          ...EVENT_LIST_FILTERS.filter(
+            (filter) => filter !== "week" || selectedView === "list",
+          ).map((filter) => ({
+            active: selectedExtra.includes(filter),
+            href: buildEventsHref({
+              ...filterUrlState,
+              extra: toggleEventListFilter(selectedExtra, filter),
+            }),
+            label: eventListFilterLabel(filter, t),
+          })),
+        ]}
         label={t("filters.filter")}
         menuItems={buildEventsMenu(filterUrlState, isStaff, isPlatformAdmin, platformSchools, t)}
         menuLabel={t("events.list.moreFilters")}
@@ -998,6 +1044,7 @@ export default async function EventsPage({
               time: filterUrlState.time,
               view: filterUrlState.view === "list" ? "" : filterUrlState.view,
               week: filterUrlState.view === "week" ? filterUrlState.week : "",
+              with: filterUrlState.extra.join(","),
             }}
             label={t("filters.searchEvents")}
             placeholder={t("events.list.searchPlaceholder")}
@@ -1274,6 +1321,7 @@ async function getFilteredEvents(
     applyTimeFilter,
     audience,
     calendarRange,
+    columnFilters,
     connectedSchoolIds,
     currentStudentClubIds,
     isStaff,
@@ -1289,10 +1337,12 @@ async function getFilteredEvents(
     selectedTime,
     sharedEventIds,
     range,
+    weekRange,
   }: {
     applyTimeFilter: boolean;
     audience: EventAudience;
     calendarRange: { from: string; to: string } | null;
+    columnFilters: ReturnType<typeof eventListColumnFilters>;
     connectedSchoolIds: string[];
     currentStudentClubIds: string[];
     isStaff: boolean;
@@ -1308,6 +1358,7 @@ async function getFilteredEvents(
     selectedTime: EventTimeFilter;
     sharedEventIds: string[];
     range: { from: number; to: number };
+    weekRange: { from: string; to: string } | null;
   },
 ) {
   if (audience === "registered" && registeredEventIds.length === 0) {
@@ -1362,6 +1413,16 @@ async function getFilteredEvents(
     query = query
       .gte("starts_at", calendarRange.from)
       .lt("starts_at", calendarRange.to);
+  }
+
+  if (weekRange) {
+    query = query
+      .gte("starts_at", weekRange.from)
+      .lt("starts_at", weekRange.to);
+  }
+
+  for (const [column, value] of columnFilters) {
+    query = query.eq(column, value);
   }
 
   if (audience === "registered") {
@@ -1953,6 +2014,28 @@ function offsetWeek(week: string, days: number) {
   return currentWeekStart(date);
 }
 
+function getCurrentWeekRange(timeZone: string) {
+  const { monday, sunday } = weekDayKeys(eventCalendarDayKey(new Date(), timeZone));
+
+  return {
+    from: getDayQueryRange(monday, timeZone).from,
+    to: getDayQueryRange(sunday, timeZone).to,
+  };
+}
+
+function eventListFilterLabel(filter: EventListFilter, t: Translate) {
+  switch (filter) {
+    case "beginner":
+      return t("events.experience.beginnerFriendly");
+    case "free":
+      return t("events.practicalDetails.free");
+    case "no-permission":
+      return t("events.permission.status.notRequired");
+    case "week":
+      return t("events.list.thisWeek");
+  }
+}
+
 function getWeekQueryRange(week: string) {
   const weekStart = dateFromDayKey(week) ?? new Date();
   weekStart.setHours(0, 0, 0, 0);
@@ -2051,6 +2134,10 @@ function buildEventsHref(
 
   if (!omitted.includes("category") && state.category) {
     query.set("category", state.category);
+  }
+
+  if (state.extra.length) {
+    query.set("with", state.extra.join(","));
   }
 
   if (!omitted.includes("status")) {

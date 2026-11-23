@@ -27,6 +27,7 @@ import {
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
+import { countClassmatesGoing } from "@/lib/events/event-classmates";
 import { getEventPosterLabels } from "@/lib/events/event-poster-labels";
 import { getEventPosterDeliveryUrl } from "@/lib/events/event-poster";
 import {
@@ -239,6 +240,13 @@ export default async function EventDetailPage({
   ]);
   const canEditPoster = canEditPosterResult.data === true;
   const registeredCount = attendees.length;
+  const classmatesGoing = currentStudent
+    ? await countClassmatesGoing(admin, {
+        attendeeRosterIds: attendees.flatMap((item) => item.student_roster_id ?? []),
+        schoolId: profile.school_id,
+        studentId: currentStudent.id,
+      })
+    : 0;
   const isFull =
     event.capacity !== null && registeredCount >= event.capacity;
   const currentRegistration = getCurrentRegistration(
@@ -341,6 +349,11 @@ export default async function EventDetailPage({
                 })}`
               : ""}
           </p>
+          {classmatesGoing ? (
+            <p className="cl-evcount">
+              {tf("events.detail.classmatesGoing", { count: classmatesGoing })}
+            </p>
+          ) : null}
           <EventBadges
             clubName={club?.name ?? null}
             event={event}

@@ -9,6 +9,11 @@ import {
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createClient } from "@/lib/supabase/server";
 import {
+  buildParticipationRecords,
+  type ClubMembershipPeriod,
+  type ParticipationEvent,
+} from "./participation";
+import {
   PORTFOLIO_ENTRY_SELECT,
   type PortfolioEntry,
 } from "./portfolio";
@@ -154,17 +159,22 @@ export async function getFeedbackCounts(entryIds: string[]) {
   return counts;
 }
 
-/** Joined clubs and attended events, for the entry form and the stats. */
+const PARTICIPATION_EVENT_SELECT =
+  "id, school_id, club_id, title, category, starts_at, ends_at, status";
+const CLUB_EVENT_LIMIT = 200;
+
+/** Joined clubs, and the events the student took part in. */
 export async function getStudentLinks(schoolId: string, rosterId: string) {
   const supabase = await createClient();
+  const now = new Date();
   const [{ data: memberships }, { data: attended }] = await Promise.all([
     supabase
       .from("club_memberships")
-      .select("club_id")
+      .select("club_id, joined_at")
       .eq("school_id", schoolId)
       .eq("student_roster_id", rosterId)
       .eq("status", "active")
-      .returns<{ club_id: string }[]>(),
+      .returns<ClubMembershipPeriod[]>(),
     supabase
       .from("event_attendees")
       .select("event_id")
@@ -174,34 +184,56 @@ export async function getStudentLinks(schoolId: string, rosterId: string) {
   ]);
   const clubIds = (memberships ?? []).map((row) => row.club_id);
   const eventIds = (attended ?? []).map((row) => row.event_id);
-  const [{ data: clubs }, { data: events }] = await Promise.all([
-    clubIds.length
-      ? supabase
-          .from("clubs")
-          .select("id, name")
-          .in("id", clubIds)
-          .order("name")
-          .returns<{ id: string; name: string }[]>()
-      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
-    eventIds.length
-      ? supabase
-          .from("events")
-          .select("id, title, starts_at")
-          .in("id", eventIds)
-          .eq("school_id", schoolId)
-          .order("starts_at", { ascending: false })
-          .returns<{ id: string; starts_at: string; title: string }[]>()
-      : Promise.resolve({
-          data: [] as { id: string; starts_at: string; title: string }[],
-        }),
-  ]);
+  const [{ data: clubs }, { data: attendedEvents }, { data: clubEvents }] =
+    await Promise.all([
+      clubIds.length
+        ? supabase
+            .from("clubs")
+            .select("id, name, category")
+            .in("id", clubIds)
+            .order("name")
+            .returns<{ category: string | null; id: string; name: string }[]>()
+        : Promise.resolve({
+            data: [] as { category: string | null; id: string; name: string }[],
+          }),
+      eventIds.length
+        ? supabase
+            .from("events")
+            .select(PARTICIPATION_EVENT_SELECT)
+            .in("id", eventIds)
+            .returns<ParticipationEvent[]>()
+        : Promise.resolve({ data: [] as ParticipationEvent[] }),
+      clubIds.length
+        ? supabase
+            .from("events")
+            .select(PARTICIPATION_EVENT_SELECT)
+            .eq("school_id", schoolId)
+            .in("club_id", clubIds)
+            .in("status", ["approved", "completed"])
+            .lt("ends_at", now.toISOString())
+            .order("starts_at", { ascending: false })
+            .limit(CLUB_EVENT_LIMIT)
+            .returns<ParticipationEvent[]>()
+        : Promise.resolve({ data: [] as ParticipationEvent[] }),
+    ]);
+  const participation = buildParticipationRecords({
+    attendedEvents: attendedEvents ?? [],
+    clubEvents: clubEvents ?? [],
+    memberships: memberships ?? [],
+    now,
+  });
 
   return {
     attendedCount: eventIds.length,
-    clubs: (clubs ?? []).map((club) => ({ id: club.id, label: club.name })),
-    events: (events ?? []).map((event) => ({
-      id: event.id,
-      label: event.title,
+    clubs: (clubs ?? []).map((club) => ({
+      category: club.category,
+      id: club.id,
+      label: club.name,
     })),
+    // An entry can only be linked to an event of the student's own school.
+    events: participation
+      .filter((record) => record.schoolId === schoolId)
+      .map((record) => ({ id: record.eventId, label: record.title })),
+    participation,
   };
 }

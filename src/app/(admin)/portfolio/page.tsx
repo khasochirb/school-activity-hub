@@ -1,10 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatDate } from "@/lib/i18n/date-format";
-import {
-  entryVisibleAs,
-  type PortfolioViewAs,
-} from "@/lib/portfolio/portfolio";
+import { recordsWithoutEntry } from "@/lib/portfolio/participation";
 import {
   getFeedbackCounts,
   getOwnRoster,
@@ -14,15 +10,11 @@ import {
   getStudentLinks,
 } from "@/lib/portfolio/portfolio-data";
 import { EmptyState, HeaderActionLink } from "../_components/page-ui";
+import { PortfolioClubs } from "./portfolio-clubs";
 import { PortfolioGrid, type PortfolioGridLabels } from "./portfolio-grid";
+import { PortfolioRecords } from "./portfolio-records";
 
-const VIEWS: PortfolioViewAs[] = ["me", "teacher", "classmate"];
-
-export default async function PortfolioPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ as?: string }>;
-}) {
+export default async function PortfolioPage() {
   const { locale, t, tf } = await getPortfolioI18n();
   const viewer = await getPortfolioViewer();
 
@@ -57,10 +49,6 @@ export default async function PortfolioPage({
     );
   }
 
-  const params = await searchParams;
-  const viewAs: PortfolioViewAs = VIEWS.includes(params.as as PortfolioViewAs)
-    ? (params.as as PortfolioViewAs)
-    : "me";
   const [entries, links] = await Promise.all([
     getPortfolioEntries(student.id),
     getStudentLinks(viewer.schoolId, student.id),
@@ -68,8 +56,7 @@ export default async function PortfolioPage({
   const shared = entries.filter((entry) => !entry.is_draft);
   const feedbackCounts = await getFeedbackCounts(shared.map((entry) => entry.id));
   const notes = [...feedbackCounts.values()].reduce((sum, n) => sum + n, 0);
-  const visible = entries.filter((entry) => entryVisibleAs(entry, viewAs));
-  const owner = viewAs === "me";
+  const records = recordsWithoutEntry(links.participation, entries);
   const labels: PortfolioGridLabels = {
     add: t("portfolio.add"),
     addDescription: t("portfolio.addDescription"),
@@ -91,19 +78,6 @@ export default async function PortfolioPage({
 
   return (
     <div className="page-stack">
-      {!owner ? (
-        <div className="portfolio-preview-banner" role="status">
-          <span>
-            {viewAs === "teacher"
-              ? t("portfolio.viewAs.bannerTeacher")
-              : t("portfolio.viewAs.bannerClassmate")}
-          </span>
-          <Link className="btn btn-secondary" href="/portfolio">
-            {t("portfolio.viewAs.back")}
-          </Link>
-        </div>
-      ) : null}
-
       <section className="portfolio-profile">
         <span aria-hidden="true" className="portfolio-avatar">
           {student.initials}
@@ -128,59 +102,46 @@ export default async function PortfolioPage({
             <b>{notes}</b> {t("portfolio.stats.teacherNotes")}
           </span>
         </div>
-        {owner ? (
-          <div className="mt-2">
-            <HeaderActionLink href="/portfolio/new">
-              + {t("portfolio.add")}
-            </HeaderActionLink>
-          </div>
-        ) : null}
+        <div className="mt-2">
+          <HeaderActionLink href="/portfolio/new">
+            + {t("portfolio.add")}
+          </HeaderActionLink>
+        </div>
       </section>
 
-      <div className="portfolio-bar">
-        <span className="portfolio-viewas">
-          {t("portfolio.viewAs.label")}
-          <span
-            aria-label={t("portfolio.viewAs.label")}
-            className="portfolio-segtabs"
-            role="group"
-          >
-            {VIEWS.map((view) => (
-              <Link
-                aria-current={view === viewAs ? "page" : undefined}
-                href={view === "me" ? "/portfolio" : `/portfolio?as=${view}`}
-                key={view}
-                scroll={false}
-              >
-                {t(`portfolio.viewAs.${view}`)}
-              </Link>
-            ))}
-          </span>
-        </span>
-      </div>
+      <PortfolioClubs
+        clubs={links.clubs}
+        emptyLabel={t("studentProfile.clubs.empty")}
+        findLabel={t("studentProfile.clubs.find")}
+        title={t("studentProfile.clubs.title")}
+      />
 
-      {!visible.length && !owner ? (
+      <PortfolioGrid
+        addHref="/portfolio/new"
+        entries={entries}
+        formatDate={(value) => formatDate(`${value}T12:00:00`, locale)}
+        labels={labels}
+        showVisibility
+      />
+      {!entries.length ? (
         <EmptyState
-          description={t("portfolio.description")}
-          title={t("portfolio.empty.viewerTitle")}
+          description={t("portfolio.empty.ownerText")}
+          title={t("portfolio.empty.ownerTitle")}
         />
-      ) : (
-        <>
-          <PortfolioGrid
-            addHref={owner ? "/portfolio/new" : undefined}
-            entries={visible}
-            formatDate={(value) => formatDate(`${value}T12:00:00`, locale)}
-            labels={labels}
-            showVisibility={owner}
-          />
-          {owner && !entries.length ? (
-            <EmptyState
-              description={t("portfolio.empty.ownerText")}
-              title={t("portfolio.empty.ownerTitle")}
-            />
-          ) : null}
-        </>
-      )}
+      ) : null}
+
+      <PortfolioRecords
+        formatDate={(value) => formatDate(value, locale)}
+        labels={{
+          addReflection: t("portfolio.records.addReflection"),
+          attended: t("portfolio.records.attended"),
+          club: t("portfolio.records.club"),
+          description: t("portfolio.records.description"),
+          title: t("portfolio.records.title"),
+        }}
+        ownSchoolId={viewer.schoolId}
+        records={records}
+      />
     </div>
   );
 }

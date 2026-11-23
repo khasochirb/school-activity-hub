@@ -4,7 +4,6 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   buildPortfolioMediaPath,
-  entryVisibleAs,
   isControlledPortfolioMediaPath,
   isPortfolioKind,
   isPortfolioVisibility,
@@ -90,15 +89,7 @@ test("photo paths are scoped to one school, student and entry", () => {
   assert.equal(isControlledPortfolioMediaPath(path, "not-a-uuid", rosterId, entryId), false);
 });
 
-test("View as matches the database rules", () => {
-  const base = { is_draft: false, visibility: "school" };
-
-  assert.equal(entryVisibleAs({ ...base, is_draft: true }, "me"), true);
-  assert.equal(entryVisibleAs({ ...base, is_draft: true }, "teacher"), false);
-  assert.equal(entryVisibleAs({ ...base, visibility: "private" }, "teacher"), false);
-  assert.equal(entryVisibleAs({ ...base, visibility: "staff" }, "teacher"), true);
-  assert.equal(entryVisibleAs({ ...base, visibility: "staff" }, "classmate"), false);
-  assert.equal(entryVisibleAs(base, "classmate"), true);
+test("only known kinds and visibilities are accepted", () => {
   assert.equal(isPortfolioKind("photos"), true);
   assert.equal(isPortfolioKind("hack"), false);
   assert.equal(isPortfolioVisibility("public"), false);
@@ -134,7 +125,6 @@ test("portfolio text exists in English and Mongolian and students can find it", 
 
   for (const dictionary of [en, mn]) {
     assert.match(dictionary, /\n  portfolio: \{/);
-    assert.match(dictionary, /bannerClassmate:/);
     assert.match(dictionary, /noRoster:/);
   }
   assert.match(shell, /href: "\/portfolio", labelKey: "nav\.portfolio"/);
