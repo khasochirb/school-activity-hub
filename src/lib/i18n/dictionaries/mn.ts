@@ -1109,6 +1109,19 @@ export const mn = {
     title: "Үйл ажиллагаа",
   },
   approvals: {
+    tabs: {
+      activities: "Үйл ажиллагаа",
+      clubs: "Шинэ клуб",
+    },
+    clubs: {
+      adminOnly: "Шинэ клубыг зөвхөн сургуулийн удирдлага батална.",
+      approve: "Клубыг батлах",
+      chooseTeacher: "Багш сонгох",
+      emptyDescription: "Саналын таван үүсгэн байгуулагч бүгд зөвшөөрөхөд энд гарч ирнэ.",
+      emptyTitle: "Хүлээгдэж буй клубын санал алга",
+      foundersCount: "{count} үүсгэн байгуулагч",
+      reject: "Татгалзах",
+    },
     list: {
       subtitle: "{count} таныг хүлээж байна",
     },
@@ -2106,7 +2119,7 @@ export const mn = {
     account: "Бүртгэл",
     activities: "Үйл ажиллагаа",
     announcements: "Зарлал",
-    approvals: "Үйл ажиллагааны зөвшөөрөл",
+    approvals: "Зөвшөөрөл",
     attendance: "Ирц",
     auditLog: "Платформын аудитын бүртгэл",
     calendar: "Хуанли",

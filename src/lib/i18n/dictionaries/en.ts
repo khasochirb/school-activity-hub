@@ -1011,7 +1011,7 @@ export const en = {
     account: "Account",
     activities: "Activities",
     announcements: "Announcements",
-    approvals: "Event Approvals",
+    approvals: "Approvals",
     attendance: "Attendance",
     auditLog: "Platform Audit Log",
     calendar: "Calendar",
@@ -1803,6 +1803,19 @@ export const en = {
     title: "Events",
   },
   approvals: {
+    tabs: {
+      activities: "Activities",
+      clubs: "New clubs",
+    },
+    clubs: {
+      adminOnly: "Only school admins can approve new clubs.",
+      approve: "Approve club",
+      chooseTeacher: "Choose a teacher",
+      emptyDescription: "When all five founders of a proposal confirm, it shows up here.",
+      emptyTitle: "No club proposals waiting",
+      foundersCount: "{count} founders",
+      reject: "Reject",
+    },
     list: {
       subtitle: "{count} waiting for you",
     },

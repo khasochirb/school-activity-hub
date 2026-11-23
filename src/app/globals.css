@@ -4418,6 +4418,21 @@ html[data-theme="dark"] {
 .cl-chip:hover {
   color: var(--foreground);
 }
+.cl-chip-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cl-line-strong);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.cl-chip[aria-current="page"] .cl-chip-count {
+  background: rgb(255 255 255 / 0.25);
+  color: inherit;
+}
 .cl-chip[aria-current="page"] {
   border-color: var(--primary);
   background: var(--primary);

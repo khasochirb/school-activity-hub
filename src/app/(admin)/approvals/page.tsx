@@ -33,6 +33,7 @@ import {
 import Link from "next/link";
 import { CategoryLabel, Cover, initialsOf, PageHead } from "../_components/clean-ui";
 import { approveEvent, rejectEvent } from "./actions";
+import { ClubApprovals, countPendingClubRequests } from "./club-approvals";
 
 type PendingEvent = {
   id: string;
@@ -85,6 +86,7 @@ type Translate = (key: string) => string;
 type ApprovalsSearchParams = {
   q?: string | string[];
   selected?: string | string[];
+  type?: string | string[];
 };
 
 export default async function ApprovalsPage({
@@ -115,6 +117,12 @@ export default async function ApprovalsPage({
   if (!isEventStaffActor(actor)) {
     redirect("/dashboard");
   }
+
+  // Approvals has two queues: activities and new clubs. Club proposals belong
+  // to one school, so the clubs tab needs a school profile.
+  const clubSchoolId = actor.profile?.school_id ?? null;
+  const view = clubSchoolId && getSearchParam(params.type) === "clubs" ? "clubs" : "events";
+  const pendingClubCount = clubSchoolId ? await countPendingClubRequests(clubSchoolId) : 0;
 
   let eventsQuery = supabase
     .from("events")
@@ -196,9 +204,44 @@ export default async function ApprovalsPage({
   return (
     <div className="cl-page">
       <PageHead
-        subtitle={tf("approvals.list.subtitle", { count: pendingQueue.length })}
+        subtitle={tf("approvals.list.subtitle", { count: pendingQueue.length + pendingClubCount })}
         title={t("approvals.title")}
       />
+
+      {clubSchoolId ? (
+        <nav aria-label={t("approvals.title")} className="cl-filters">
+          <Link
+            aria-current={view === "events" ? "page" : undefined}
+            className="cl-chip"
+            href="/approvals"
+            prefetch={false}
+          >
+            {t("approvals.tabs.activities")}
+            {pendingQueue.length ? <span className="cl-chip-count">{pendingQueue.length}</span> : null}
+          </Link>
+          <Link
+            aria-current={view === "clubs" ? "page" : undefined}
+            className="cl-chip"
+            href="/approvals?type=clubs"
+            prefetch={false}
+          >
+            {t("approvals.tabs.clubs")}
+            {pendingClubCount ? <span className="cl-chip-count">{pendingClubCount}</span> : null}
+          </Link>
+        </nav>
+      ) : null}
+
+      {view === "clubs" && clubSchoolId ? (
+        <ClubApprovals
+          canDecide={actor.profile?.role === "school_admin"}
+          locale={locale}
+          schoolId={clubSchoolId}
+          selectedId={getSearchParam(params.selected)}
+          t={t}
+          tf={tf}
+        />
+      ) : (
+      <>
 
       {pendingQueue.length > 4 || searchQuery ? (
         <div className="cl-filters">
@@ -483,6 +526,8 @@ export default async function ApprovalsPage({
           <b className="block text-[var(--foreground)]">{t("approvals.empty.title")}</b>
           <p className="mt-1">{t("approvals.empty.description")}</p>
         </div>
+      )}
+      </>
       )}
     </div>
   );

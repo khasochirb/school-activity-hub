@@ -414,5 +414,6 @@ function isStaff(profile: Profile) {
 function revalidateClubRequestPaths() {
   revalidatePath("/club-requests");
   revalidatePath("/clubs");
+  revalidatePath("/approvals");
 }
 

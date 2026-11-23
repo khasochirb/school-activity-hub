@@ -54,6 +54,7 @@ const primaryIntentHrefs: Record<Role, ReadonlySet<string>> = {
 const platformPrimaryIntentHrefs = new Set(["/super-admin/schools"]);
 
 const platformEventMobilePrimaryNav: RoleAwareNavItem[] = [
+  { href: "/approvals", labelKey: "nav.approvals" },
   { href: "/events", labelKey: "nav.activities", match: "events" },
   {
     href: "/events?view=month",
@@ -61,7 +62,6 @@ const platformEventMobilePrimaryNav: RoleAwareNavItem[] = [
     match: "calendar",
     intentPrefetch: false,
   },
-  { href: "/approvals", labelKey: "nav.approvals" },
   {
     href: staffAttendanceHref,
     labelKey: "nav.attendance",
@@ -87,6 +87,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
   ],
   teacher: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
+    { href: "/approvals", labelKey: "nav.approvals" },
     { href: "/events", labelKey: "nav.activities", match: "events" },
     {
       href: "/events?view=month",
@@ -95,7 +96,6 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
       intentPrefetch: false,
     },
     { href: "/clubs", labelKey: "nav.clubs" },
-    { href: "/approvals", labelKey: "nav.approvals" },
     {
       href: staffAttendanceHref,
       labelKey: "nav.attendance",
@@ -105,6 +105,7 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
   ],
   school_admin: [
     { href: "/dashboard", labelKey: "nav.dashboard" },
+    { href: "/approvals", labelKey: "nav.approvals" },
     { href: "/events", labelKey: "nav.activities", match: "events" },
     {
       href: "/events?view=month",
@@ -114,7 +115,6 @@ const mobilePrimaryNav: Record<Role, RoleAwareNavItem[]> = {
     },
     { href: "/students", labelKey: "nav.students" },
     { href: "/staff", labelKey: "nav.staff" },
-    { href: "/approvals", labelKey: "nav.approvals" },
     { href: "/reports", labelKey: "nav.reports" },
   ],
 };
@@ -695,10 +695,10 @@ function getTopTabs(
 
   return [
     { exact: true, href: "/dashboard", icon: "home", label: t("nav.tabs.home") },
+    { href: "/approvals", icon: "approvals", label: t("nav.tabs.approvals") },
     { href: "/events", icon: "events", label: t("nav.tabs.activities") },
     { href: "/clubs", icon: "clubs", label: t("nav.tabs.clubs") },
     { href: "/students", icon: "students", label: t("nav.tabs.students") },
-    { href: "/approvals", icon: "approvals", label: t("nav.tabs.approvals") },
   ];
 }
 
