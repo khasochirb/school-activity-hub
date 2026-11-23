@@ -39,7 +39,6 @@ import { ClassmatesFromClass } from "../_components/classmates-from-class";
 import {
   assignClubLeader,
   joinClub,
-  leaveClub,
 } from "./actions";
 import {
   CollapsibleFormSection,
@@ -759,6 +758,19 @@ function ClubActions({
     return null;
   }
 
+  // Leaving goes through a request with a reason, approved by the club.
+  if (isJoined) {
+    return (
+      <Link
+        className="btn btn-quiet min-h-11 w-full px-4 sm:min-h-10 sm:w-auto"
+        href={`/clubs/${club.id}/leave`}
+        prefetch={false}
+      >
+        {labels.leave}
+      </Link>
+    );
+  }
+
   // Clubs that take applications: open the application form instead.
   if (!isJoined && club.join_mode === "apply") {
     return (
@@ -773,18 +785,14 @@ function ClubActions({
   }
 
   return (
-    <form action={isJoined ? leaveClub : joinClub} className="w-full sm:w-auto">
+    <form action={joinClub} className="w-full sm:w-auto">
       <input name="club_id" type="hidden" value={club.id} />
       <PendingSubmitButton
-        className={
-          isJoined
-            ? "btn btn-quiet min-h-11 w-full px-4 sm:min-h-10 sm:w-auto"
-            : "btn btn-soft min-h-11 w-full px-4 sm:min-h-10 sm:w-auto"
-        }
-        pendingLabel={isJoined ? labels.leaving : labels.joining}
-        toastMessage={isJoined ? labels.leaving : labels.joining}
+        className="btn btn-soft min-h-11 w-full px-4 sm:min-h-10 sm:w-auto"
+        pendingLabel={labels.joining}
+        toastMessage={labels.joining}
       >
-        {isJoined ? labels.leave : labels.join}
+        {labels.join}
       </PendingSubmitButton>
     </form>
   );

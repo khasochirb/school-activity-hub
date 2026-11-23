@@ -209,38 +209,18 @@ export async function joinClub(formData: FormData) {
   revalidatePath(`/clubs/${clubId}`);
 }
 
+// Leaving needs a reason and the club leader's or supervising teacher's
+// approval (meeting notes 23 Nov 2026), so this only sends students to the
+// leave form; it never ends a membership itself.
 export async function leaveClub(formData: FormData) {
   const profile = await getCurrentProfile();
+  const clubId = String(formData.get("club_id") ?? "").trim();
 
-  if (!profile || profile.role !== "student") {
+  if (!profile || profile.role !== "student" || !clubId) {
     redirect("/clubs");
   }
 
-  const clubId = String(formData.get("club_id") ?? "").trim();
-
-  if (!clubId) {
-    return;
-  }
-
-  const admin = createAdminClient();
-  const student = await getCurrentStudentRoster(admin, profile);
-
-  if (!student) {
-    return;
-  }
-
-  await timeServer("clubs.action.leave.update-membership", () =>
-    admin
-      .from("club_memberships")
-      .update({ status: "inactive" })
-      .eq("club_id", clubId)
-      .eq("student_roster_id", student.id)
-      .eq("school_id", profile.school_id)
-      .eq("status", "active"),
-  );
-
-  revalidatePath("/clubs");
-  revalidatePath(`/clubs/${clubId}`);
+  redirect(`/clubs/${clubId}/leave`);
 }
 
 export async function assignClubLeader(formData: FormData) {

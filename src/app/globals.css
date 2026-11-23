@@ -8268,3 +8268,8 @@ html[data-theme="dark"] .cl-land::before {
 .join-builder-options li input { flex: 1 1 0; width: auto; }
 .join-builder-q > *, .join-builder-options li { min-width: 0; }
 .join-switch input { width: 18px; }
+.join-q-hint { margin-top: -4px; color: var(--muted); font-size: 13px; }
+/* Form buttons sit at the start, not centred under the floating tab bar,
+   and form pages keep extra room below them while the tab bar shows. */
+.join-apply > button[type="submit"], .join-builder > button[type="submit"] { justify-self: start; }
+@media (max-width: 1023.98px) { .join-card { margin-bottom: 4.5rem; } }

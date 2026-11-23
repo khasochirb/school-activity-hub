@@ -92,12 +92,39 @@ export async function getClubReviewerIds(admin: Admin, club: ClubForAccess) {
   return Array.from(ids);
 }
 
-export async function countPendingJoinRequests(admin: Admin, clubId: string) {
-  const { count } = await admin
-    .from("club_join_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("club_id", clubId)
-    .eq("status", "pending");
+// Waiting join and leave requests together, for the club page's badge.
+export async function countPendingClubRequests(admin: Admin, clubId: string) {
+  const [{ count: joins }, { count: leaves }] = await Promise.all([
+    admin
+      .from("club_join_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("club_id", clubId)
+      .eq("status", "pending"),
+    admin
+      .from("club_leave_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("club_id", clubId)
+      .eq("status", "pending"),
+  ]);
 
-  return count ?? 0;
+  return (joins ?? 0) + (leaves ?? 0);
+}
+
+// Who is told about a leave request: the club's leaders and supervising
+// teacher except the student leaving, or the school admins when that leaves
+// nobody (a club with no other leader and no supervisor).
+export async function getLeaveReviewerIds(admin: Admin, club: ClubForAccess, leaverProfileId: string) {
+  const reviewers = (await getClubReviewerIds(admin, club)).filter((id) => id !== leaverProfileId);
+
+  if (reviewers.length) return reviewers;
+
+  const { data: admins } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("school_id", club.school_id)
+    .eq("role", "school_admin")
+    .eq("status", "active")
+    .returns<Array<{ id: string }>>();
+
+  return (admins ?? []).map((row) => row.id);
 }
