@@ -22,9 +22,9 @@ test("a proposal needs five confirmed founders and nobody still deciding", () =>
   );
 });
 
-test("founders are shown as given name and family initial", () => {
-  assert.equal(founderDisplayName({ first_name: "Болд", last_name: "Батболд" }), "Болд Б.");
-  assert.equal(founderDisplayName({ first_name: "Leon Adiya", last_name: "rammin", preferred_name: "" }), "Leon Adiya R.");
+test("founders are shown with their full name so namesakes differ", () => {
+  assert.equal(founderDisplayName({ first_name: "Болд", last_name: "Батболд" }), "Болд Батболд");
+  assert.equal(founderDisplayName({ first_name: "Leon Adiya", last_name: "Rammin", preferred_name: "" }), "Leon Adiya Rammin");
 });
 
 test("student search exposes only name and class of visible, signed-up schoolmates", () => {
@@ -85,4 +85,25 @@ test("founder lookups avoid the ambiguous rosters-to-profiles join", () => {
   // student_rosters references profiles twice, so an embedded join fails and
   // every proposer looked "not on the school list".
   assert.doesNotMatch(read("src/app/(admin)/club-requests/proposal-actions.ts"), /profiles!/);
+});
+
+test("search works in Latin or Cyrillic and narrows by several words", () => {
+  const flexible = read("supabase/migrations/202611230002_flexible_student_search.sql");
+
+  assert.match(flexible, /function public\.mn_search_fold/);
+  assert.match(flexible, /'kh', 'h'\)/);
+  assert.match(flexible, /from unnest\(q\.words\) as word/);
+  assert.match(flexible, /sr\.show_name_to_classmates/);
+  assert.match(flexible, /sr\.profile_id <> me\.id/);
+  assert.match(flexible, /limit 10/);
+  assert.match(flexible, /revoke all on function public\.search_school_students\(text\) from public, anon;/);
+});
+
+test("bulk founder inserts set every column on every row", () => {
+  const actions = read("src/app/(admin)/club-requests/proposal-actions.ts");
+  const invites = actions.match(/status: "invited",/g) ?? [];
+  const flags = actions.match(/is_proposer: false,/g) ?? [];
+
+  assert.ok(invites.length >= 2);
+  assert.equal(flags.length, invites.length);
 });

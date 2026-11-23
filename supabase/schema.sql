@@ -5030,7 +5030,25 @@ create policy "Users mark their own notifications read"
   using (recipient_profile_id = auth.uid())
   with check (recipient_profile_id = auth.uid());
 
--- 4. Finding classmates to tag as founders.
+-- 4. Finding classmates to tag as founders (flexible search, 202611230002).
+create or replace function public.mn_search_fold(value text)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = pg_catalog
+as $$
+  select replace(replace(replace(replace(replace(replace(
+    translate(
+      replace(replace(replace(replace(replace(replace(replace(replace(replace(
+        lower(coalesce(value, '')),
+        'ё', 'yo'), 'ж', 'j'), 'ц', 'ts'), 'ч', 'ch'), 'ш', 'sh'), 'щ', 'sh'), 'ю', 'yu'), 'я', 'ya'), 'х', 'h'),
+      'абвгдезийклмноөпрстуүфыэьъ',
+      'abvgdeziiklmnooprstuufyei'
+    ),
+    'kh', 'h'), 'zh', 'j'), 'ö', 'o'), 'ü', 'u'), '%', ''), '_', '')
+$$;
+
 create or replace function public.search_school_students(search text)
 returns table (profile_id uuid, display_name text, homeroom text)
 language sql
@@ -5045,12 +5063,13 @@ as $$
       and p.status = 'active'
       and p.role = 'student'
   ), q as (
-    select lower(btrim(coalesce(search, ''))) as term
+    select array_remove(regexp_split_to_array(public.mn_search_fold(btrim(coalesce(search, ''))), '\s+'), '') as words,
+           length(btrim(coalesce(search, ''))) as total
   )
   select
     sr.profile_id,
     btrim(coalesce(nullif(btrim(sr.preferred_name), ''), sr.first_name))
-      || ' ' || upper(left(btrim(sr.last_name), 1)) || '.' as display_name,
+      || ' ' || btrim(sr.last_name) as display_name,
     nullif(btrim(sr.homeroom), '') as homeroom
   from me
   cross join q
@@ -5064,15 +5083,20 @@ as $$
     on student.id = sr.profile_id
    and student.status = 'active'
    and student.role = 'student'
-  where length(q.term) >= 2
-    and (
-      lower(sr.first_name) like '%' || q.term || '%'
-      or lower(sr.last_name) like '%' || q.term || '%'
-      or lower(coalesce(sr.preferred_name, '')) like '%' || q.term || '%'
-      or lower(coalesce(sr.homeroom, '')) = q.term
+  where q.total >= 2
+    and cardinality(q.words) between 1 and 4
+    and not exists (
+      select 1
+      from unnest(q.words) as word
+      where not (
+        public.mn_search_fold(sr.first_name) like '%' || word || '%'
+        or public.mn_search_fold(sr.last_name) like '%' || word || '%'
+        or public.mn_search_fold(coalesce(sr.preferred_name, '')) like '%' || word || '%'
+        or public.mn_search_fold(coalesce(sr.homeroom, '')) like word || '%'
+      )
     )
-  order by sr.first_name, sr.last_name
-  limit 8
+  order by sr.homeroom, sr.first_name, sr.last_name
+  limit 10
 $$;
 
 alter function public.search_school_students(text) owner to postgres;

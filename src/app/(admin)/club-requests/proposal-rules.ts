@@ -15,14 +15,15 @@ export function canSubmitProposal(statuses: FounderStatus[]) {
   return waiting === 0 && confirmed >= FOUNDERS_REQUIRED;
 }
 
-// "Болд Б." — given (or preferred) name and family-name initial, as the picker shows.
+// "Болд Батболд": given (or preferred) name and the full family name, as the
+// picker shows, so classmates with the same given name can be told apart.
 export function founderDisplayName(student: {
   first_name: string;
   last_name: string;
   preferred_name?: string | null;
 }) {
   const given = (student.preferred_name ?? "").trim() || student.first_name.trim();
-  const initial = student.last_name.trim().slice(0, 1).toUpperCase();
+  const family = student.last_name.trim();
 
-  return initial ? `${given} ${initial}.` : given;
+  return family ? `${given} ${family}` : given;
 }

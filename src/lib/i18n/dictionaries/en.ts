@@ -572,7 +572,7 @@ export const en = {
       picker: {
         count: "{count} tagged · at least {min}",
         noMatches: "No signed-up student found. They need an account first.",
-        placeholder: "Type a name or class, e.g. Болд or 10а",
+        placeholder: "Name, family name or class, in Mongolian or English: Болд 11б, bold batbold",
         remove: "Remove",
         search: "Find classmates",
       },

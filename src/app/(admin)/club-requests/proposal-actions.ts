@@ -129,9 +129,13 @@ export async function createClubProposal(
       school_id: student.school_id,
       status: "confirmed",
     },
+    // Every row carries every column: in a bulk insert, a key missing from
+    // one row is sent as null, not as the column default.
     ...founderIds.map((profileId) => ({
       club_request_id: request.id,
+      is_proposer: false,
       profile_id: profileId,
+      responded_at: null,
       school_id: student.school_id,
       status: "invited",
     })),
@@ -239,7 +243,9 @@ export async function addProposalFounders(formData: FormData) {
     await admin.from("club_request_founders").insert(
       fresh.map((profileId) => ({
         club_request_id: requestId,
+        is_proposer: false,
         profile_id: profileId,
+        responded_at: null,
         school_id: student.school_id,
         status: "invited",
       })),
