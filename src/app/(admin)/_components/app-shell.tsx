@@ -255,12 +255,14 @@ export async function AppShell({
   isPlatformAdmin,
   isSafeguardingStaff,
   profile,
+  unreadNotifications = 0,
 }: {
   children: React.ReactNode;
   email: string | null;
   isPlatformAdmin: boolean;
   isSafeguardingStaff: boolean;
   profile: Profile;
+  unreadNotifications?: number;
 }) {
   const locale = await getCurrentLocale();
   const theme = await getCurrentTheme();
@@ -319,6 +321,28 @@ export async function AppShell({
                     : []),
                 ]}
               />
+              {profile ? (
+                <Link
+                  aria-label={
+                    unreadNotifications
+                      ? `${t("notifications.title")} (${unreadNotifications})`
+                      : t("notifications.title")
+                  }
+                  className="topbar-bell"
+                  href="/notifications"
+                  prefetch={false}
+                >
+                  <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 24 24">
+                    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" />
+                    <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+                  </svg>
+                  {unreadNotifications ? (
+                    <span aria-hidden="true" className="topbar-bell-count">
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </span>
+                  ) : null}
+                </Link>
+              ) : null}
             <MobileMenuDrawer
               closeLabel={t("common.close")}
               header={

@@ -23,6 +23,7 @@ import {
 } from "@/lib/list-filters";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import { timeServer } from "@/lib/server-timing";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   archiveClubRequest,
@@ -34,6 +35,8 @@ import {
 import { categoryColor } from "@/lib/ui/category-colors";
 import { CategoryLabel, PageHead, Widget } from "../_components/clean-ui";
 import { CreateClubRequestForm } from "./create-club-request-form";
+import { FounderList, MyProposals, getFoundersByRequest, type FounderSummary } from "./proposals-section";
+import { FOUNDERS_REQUIRED, MAX_FOUNDERS } from "./proposal-rules";
 import {
   CollapsibleFormSection,
   EmptyState,
@@ -55,9 +58,10 @@ type ClubRequest = {
   created_at: string;
   created_by_profile_id: string;
   description: string | null;
+  reason: string | null;
   rejection_reason: string | null;
   reviewed_at: string | null;
-  status: "pending" | "approved" | "rejected" | "archived";
+  status: "gathering" | "pending" | "approved" | "rejected" | "archived";
   title: string;
 };
 
@@ -123,9 +127,11 @@ export default async function ClubRequestsPage({
   let requestsQuery = supabase
     .from("club_requests")
     .select(
-      "id, title, description, category, status, rejection_reason, converted_club_id, created_by_profile_id, reviewed_at, created_at",
+      "id, title, description, reason, category, status, rejection_reason, converted_club_id, created_by_profile_id, reviewed_at, created_at",
     )
-    .eq("school_id", profile.school_id);
+    .eq("school_id", profile.school_id)
+    // Proposals still gathering founders are shown only to their founders.
+    .neq("status", "gathering");
 
   if (selectedStatus !== "all") {
     requestsQuery = requestsQuery.eq("status", selectedStatus);
@@ -197,6 +203,29 @@ export default async function ClubRequestsPage({
         requestRows.map((request) => request.created_by_profile_id),
       )
     : new Map<string, string>();
+  const canDecide = profile.role === "school_admin";
+  const foundersByRequest: Map<string, FounderSummary[]> = isStaff
+    ? await getFoundersByRequest(createAdminClient(), requestIds)
+    : new Map();
+  const advisorOptions = canDecide
+    ? (
+        await supabase
+          .from("profiles")
+          .select("id, full_name, role")
+          .eq("school_id", profile.school_id)
+          .eq("status", "active")
+          .in("role", ["teacher", "school_admin"])
+          .order("full_name")
+          .returns<Array<{ full_name: string | null; id: string; role: string }>>()
+      ).data ?? []
+    : [];
+  const pickerLabels = {
+    count: t("clubRequests.proposal.picker.count"),
+    noMatches: t("clubRequests.proposal.picker.noMatches"),
+    placeholder: t("clubRequests.proposal.picker.placeholder"),
+    remove: t("clubRequests.proposal.picker.remove"),
+    search: t("clubRequests.proposal.picker.search"),
+  };
   const supportCounts = countSupportsByRequest(supports ?? []);
   const supportedRequestIds = new Set(
     (supports ?? [])
@@ -237,13 +266,30 @@ export default async function ClubRequestsPage({
             labels={{
               category: t("clubRequests.fields.category"),
               description: t("clubRequests.fields.description"),
+              founders: t("clubRequests.proposal.founders"),
+              foundersHint: tf("clubRequests.proposal.foundersHint", { min: FOUNDERS_REQUIRED - 1 }),
               noCategory: t("clubs.form.noCategory"),
-              submit: t("clubRequests.actions.submit"),
+              picker: pickerLabels,
+              reason: t("clubRequests.proposal.reason"),
+              reasonHint: t("clubRequests.proposal.reasonHint"),
+              submit: t("clubRequests.proposal.submit"),
               submitting: t("clubRequests.actions.submitting"),
               title: t("clubRequests.fields.title"),
             }}
+            maxFounders={MAX_FOUNDERS - 1}
+            minFounders={FOUNDERS_REQUIRED - 1}
           />
         </CollapsibleFormSection>
+      ) : null}
+
+      {profile.role === "student" ? (
+        <MyProposals
+          pickerLabels={pickerLabels}
+          profileId={profile.id}
+          schoolId={profile.school_id}
+          t={t}
+          tf={tf}
+        />
       ) : null}
 
       <div className="flex flex-col gap-2.5">
@@ -362,6 +408,16 @@ export default async function ClubRequestsPage({
                     </p>
                   ) : null}
 
+                  {request.reason ? (
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      <b>{t("clubRequests.proposal.why")}</b> {request.reason}
+                    </p>
+                  ) : null}
+
+                  {isStaff && foundersByRequest.get(request.id)?.length ? (
+                    <FounderList founders={foundersByRequest.get(request.id) ?? []} t={t} />
+                  ) : null}
+
                   <dl className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
                     {isStaff ? (
                       <div>
@@ -419,6 +475,12 @@ export default async function ClubRequestsPage({
                   ) : null}
 
                   <ClubRequestActions
+                    advisorLabel={t("clubRequests.proposal.advisor")}
+                    advisorOptions={advisorOptions.map((staff) => ({
+                      id: staff.id,
+                      label: staff.full_name || t("clubRequests.fallback.staff"),
+                    }))}
+                    canDecide={canDecide}
                     isStaff={isStaff}
                     isSupported={isSupported}
                     labels={{
@@ -513,12 +575,18 @@ export default async function ClubRequestsPage({
 }
 
 function ClubRequestActions({
+  advisorLabel,
+  advisorOptions,
+  canDecide,
   isStaff,
   isSupported,
   labels,
   profileRole,
   request,
 }: {
+  advisorLabel: string;
+  advisorOptions: Array<{ id: string; label: string }>;
+  canDecide: boolean;
   isStaff: boolean;
   isSupported: boolean;
   labels: {
@@ -540,10 +608,25 @@ function ClubRequestActions({
   if (isStaff) {
     return (
       <div className="mt-4 flex flex-col gap-2">
-        {request.status === "pending" ? (
+        {request.status === "pending" && canDecide ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <form action={approveClubRequest}>
+            <form action={approveClubRequest} className="grid gap-2 sm:flex sm:flex-wrap sm:items-end">
               <input name="club_request_id" type="hidden" value={request.id} />
+              <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-slate-800 sm:w-64">
+                {advisorLabel}
+                <select
+                  className="h-10 cursor-pointer rounded-md border bg-white px-3 text-base font-normal outline-none transition"
+                  name="advisor_profile_id"
+                  required
+                >
+                  <option value="">—</option>
+                  {advisorOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <PendingSubmitButton
                 className="btn btn-primary w-full sm:w-auto"
                 pendingLabel={labels.approving}
