@@ -155,15 +155,21 @@ export async function joinClub(formData: FormData) {
   const { data: club } = await timeServer("clubs.action.join.club-lookup", () =>
     admin
       .from("clubs")
-      .select("id")
+      .select("id, join_mode")
       .eq("id", clubId)
       .eq("school_id", profile.school_id)
       .eq("status", "active")
-      .maybeSingle<{ id: string }>(),
+      .maybeSingle<{ id: string; join_mode: string }>(),
   );
 
   if (!club) {
     return;
+  }
+
+  // Clubs that take applications are joined through a request the leader or
+  // supervising teacher approves, never directly.
+  if (club.join_mode === "apply") {
+    redirect(`/clubs/${club.id}/apply`);
   }
 
   const { data: existingMembership } = await timeServer(
