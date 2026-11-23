@@ -5269,3 +5269,6 @@ create policy "Students read their own leave requests; staff read their school"
   to authenticated
   using (profile_id = auth.uid() or public.current_user_can_manage_school(school_id));
 
+
+-- Mirrors supabase/migrations/202611230006_allow_event_poster_path_check.sql
+grant execute on function public.event_poster_path_is_valid(text, uuid, uuid) to authenticated;
