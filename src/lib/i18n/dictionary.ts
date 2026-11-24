@@ -1,6 +1,6 @@
 import { en, type Dictionary, type PartialDictionary } from "./dictionaries/en";
 import { mn } from "./dictionaries/mn";
-import { DEFAULT_LOCALE, type Locale } from "./locales";
+import type { Locale } from "./locales";
 
 const dictionaries: Record<Locale, PartialDictionary> = {
   en,
@@ -8,7 +8,9 @@ const dictionaries: Record<Locale, PartialDictionary> = {
 };
 
 export function getDictionary(locale: Locale): Dictionary {
-  if (locale === DEFAULT_LOCALE) {
+  // English is the complete dictionary that fills gaps in the others, whatever
+  // the default language is.
+  if (locale === "en") {
     return en;
   }
 

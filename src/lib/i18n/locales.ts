@@ -1,4 +1,5 @@
-export const DEFAULT_LOCALE = "en";
+// What a visitor sees before choosing a language. The schools are Mongolian.
+export const DEFAULT_LOCALE = "mn";
 export const LANGUAGE_COOKIE = "sah_locale";
 export const SUPPORTED_LOCALES = ["en", "mn"] as const;
 
