@@ -5,6 +5,7 @@ import { getCurrentSafeguardingAccess } from "@/lib/auth/sensitive-workflows";
 import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
+import { ConsoleFrame } from "../(console)/console-frame";
 import { AppShell } from "./_components/app-shell";
 
 type AppShellProfile = {
@@ -57,6 +58,18 @@ export default async function AdminLayout({
 
   if (!schoolExists) {
     redirect("/setup");
+  }
+
+  // Platform admins keep one frame on every page they open: the school app's
+  // pages sit inside the console instead of switching to the top bar.
+  if (platformAdminProfile) {
+    return (
+      <ConsoleFrame email={user.email ?? null} name={platformAdminProfile.full_name}>
+        <div className="console-app app-surface dark">
+          <main>{children}</main>
+        </div>
+      </ConsoleFrame>
+    );
   }
 
   const { data: profile } = profileResult;

@@ -45,6 +45,12 @@ type SchoolConnection = {
   status: "pending" | "approved" | "rejected" | "blocked" | "archived";
 };
 
+type SchoolClub = {
+  id: string;
+  name: string;
+  status: "active" | "archived";
+};
+
 type DetailPageParams = {
   schoolId: string;
 };
@@ -90,6 +96,7 @@ export default async function SuperAdminSchoolDetailPage({
     teacherCountResult,
     studentCountResult,
     { data: connections, error: connectionsError },
+    clubsResult,
   ] = await Promise.all([
     admin
       .from("schools")
@@ -119,6 +126,12 @@ export default async function SuperAdminSchoolDetailPage({
         `requester_school_id.eq.${schoolId},receiver_school_id.eq.${schoolId}`,
       )
       .returns<SchoolConnection[]>(),
+    admin
+      .from("clubs")
+      .select("id, name, status")
+      .eq("school_id", schoolId)
+      .order("name")
+      .returns<SchoolClub[]>(),
   ]);
 
   if (schoolError) {
@@ -141,6 +154,7 @@ export default async function SuperAdminSchoolDetailPage({
     schoolAdminsResult.error ||
       teacherCountResult.error ||
       studentCountResult.error ||
+      clubsResult.error ||
       connectionsError,
   );
 
@@ -203,6 +217,40 @@ export default async function SuperAdminSchoolDetailPage({
           label={t("superAdmin.schoolDetail.connectionsSummary.active")}
           value={activeConnections}
         />
+      </section>
+
+      {/* What a platform admin may run for this school. Student lists and codes
+          are not here: the platform promises not to open them. */}
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">{t("superAdmin.sites.console.sectionManage")}</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {[
+            { href: `/dashboard?school=${school.id}`, label: t("nav.dashboard") },
+            { href: `/events?school=${school.id}`, label: t("nav.activities") },
+            { href: "/approvals", label: t("nav.approvals") },
+            { href: `/reports?school=${school.id}`, label: t("nav.reports") },
+          ].map((item) => (
+            <Link className="btn btn-secondary" href={item.href} key={item.href} prefetch={false}>
+              {item.label}
+            </Link>
+          ))}
+          <a className="btn btn-secondary" href={`/s/${school.slug}`} rel="noreferrer" target="_blank">
+            /s/{school.slug} ↗
+          </a>
+        </div>
+        {clubsResult.data?.length ? (
+          <>
+            <h3 className="mt-5 text-sm font-semibold">{t("nav.clubs")}</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {clubsResult.data.map((club) => (
+                <Link className="btn btn-secondary" href={`/clubs/${club.id}`} key={club.id} prefetch={false}>
+                  {club.name}
+                  {club.status === "archived" ? ` (${t("status.archived")})` : ""}
+                </Link>
+              ))}
+            </div>
+          </>
+        ) : null}
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">

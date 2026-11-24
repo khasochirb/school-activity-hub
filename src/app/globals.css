@@ -7830,6 +7830,65 @@ html[data-theme="dark"] .cl-land::before {
   font-size: 0.72rem;
 }
 
+/* The school app's pages inside the console. Their tokens take the console's
+   colours whatever the app theme is; "dark" on the same element switches the
+   few rules that name a theme instead of a token. */
+.console-app {
+  --background: var(--c-bg);
+  --foreground: var(--c-text);
+  --card: var(--c-card);
+  --card-soft: var(--c-raise);
+  --border: var(--c-line-strong);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --muted: #a3a9b4;
+  --primary: #4f7dff;
+  --primary-strong: #9db5ff;
+  --primary-soft: rgba(79, 125, 255, 0.16);
+  --primary-border: rgba(79, 125, 255, 0.4);
+  --primary-contrast: #fff;
+  --ink: var(--c-text);
+  --ink-contrast: var(--c-bg);
+  --warning: var(--c-warn);
+  --danger: var(--c-fail);
+  --success: var(--c-ok);
+  --app-gradient: none;
+  --page-header-gradient: var(--c-card);
+  --panel-gradient: var(--c-card);
+  --stat-gradient: var(--c-card);
+  --empty-gradient: var(--c-raise);
+  --input-bg: #0e1013;
+  --input-placeholder: #7b818c;
+  --row-hover: var(--c-raise);
+  --card-overlay: var(--c-card);
+  --card-soft-overlay: var(--c-raise);
+  --border-subtle: var(--c-line);
+  --notice-bg: var(--c-raise);
+  --btn-secondary-bg: transparent;
+  --btn-secondary-hover: var(--c-raise);
+  --btn-secondary-text: var(--c-text);
+  --danger-soft: var(--c-fail-soft);
+  --danger-soft-hover: rgba(255, 122, 92, 0.24);
+  --cl-faint: #7b818c;
+  --cl-line: var(--c-line);
+  --cl-line-strong: var(--c-line-strong);
+  --cl-hover: var(--c-raise);
+  --cl-shadow: none;
+  --cl-shadow-lift: 0 8px 28px rgba(0, 0, 0, 0.5);
+  --cl-green: var(--c-ok);
+  --cl-green-soft: var(--c-ok-soft);
+  --cl-amber: var(--c-warn);
+  --cl-amber-soft: var(--c-warn-soft);
+  min-height: 100vh;
+  padding: 24px 28px 48px;
+}
+.console-app > main { max-width: 75rem; }
+.console .console-app::before { display: none; }
+.console .console-app :is(input:not([type="checkbox"], [type="radio"]), select, textarea) { border-color: var(--c-line-strong); background-color: var(--input-bg); color: var(--c-text); }
+.console .console-app thead { background: none; }
+.console-account { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; }
+.console-logout { border-radius: 8px; padding: 6px 10px; color: var(--c-muted); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.console-logout:hover { background: var(--c-raise); color: var(--c-text); }
+
 .console-action { border-radius: 8px; padding: 7px 12px; background: var(--c-blue); color: #fff; font-size: 0.82rem; font-weight: 650; }
 .console a.console-action { color: #fff; }
 .console-panel-link { color: #9db5ff; font-size: 0.8rem; font-weight: 600; }
@@ -7878,9 +7937,12 @@ html[data-theme="dark"] .cl-land::before {
     padding: 0 10px 10px;
   }
 
-  .console-nav p,
-  .console-user {
+  .console-nav p {
     display: none;
+  }
+
+  .console-app {
+    padding-inline: 16px;
   }
 
   .console-nav a {

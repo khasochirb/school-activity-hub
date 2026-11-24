@@ -112,7 +112,7 @@ export default async function PlatformOverviewPage({ searchParams }: { searchPar
             school.pending,
             school.lastSignup ? formatDate(school.lastSignup, locale) : "—",
           ],
-          href: `/dashboard?school=${school.id}`,
+          href: `/super-admin/schools/${school.id}`,
           id: school.id,
           name: school.name,
           note: school.isDemo ? t("superAdmin.overview.demoNote") : `/s/${school.slug}`,
