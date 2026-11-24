@@ -3,6 +3,7 @@ import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { redirect } from "next/navigation";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
+import { getCurrentPlatformAdminProfile } from "@/lib/auth/platform-admin";
 import {
   DetailsDisclosure,
   EmptyState,
@@ -192,6 +193,14 @@ export default async function DashboardPage({
     const supabase = await createClient();
     const params = await searchParams;
     const requestedSchoolId = getSearchValue(params.school);
+
+    // Without a school picked there is nothing to show here. The profile check
+    // is the overview's own rule: without it the two pages would send an admin
+    // with no active profile back and forth.
+    if (!requestedSchoolId && (await getCurrentPlatformAdminProfile())) {
+      redirect("/super-admin");
+    }
+
     const platformSchoolResult = await getPlatformDashboardSchools(supabase);
     const selectedSchool = platformSchoolResult.schools.find(
       (school) => school.id === requestedSchoolId,

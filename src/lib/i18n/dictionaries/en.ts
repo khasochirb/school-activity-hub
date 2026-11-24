@@ -2666,6 +2666,74 @@ export const en = {
     },
   },
   superAdmin: {
+    overview: {
+      title: "Overview",
+      description: "All schools in totals. Student names and personal records do not appear here.",
+      loadFailed: "Some figures could not be loaded, so none are shown. Reload the page.",
+      demoNote: "Demo, not counted in totals",
+      chart: {
+        checkins: "Check-ins per day",
+        signups: "New student accounts per day",
+      },
+      funnel: {
+        title: "From the list to taking part",
+        note: "Share of students on the list",
+        students: "On the school list",
+        codeIssued: "Code created",
+        joined: "Joined the app",
+        inClub: "In a club",
+        registered: "Registered for an event",
+        attended: "Checked in at an event",
+      },
+      kpi: {
+        schools: "Active schools",
+        teachers: "Teachers",
+        clubs: "Active clubs",
+        upcoming: "Events in the next 30 days",
+        checkinsRecent: "Check-ins in the last 7 days",
+        pending: "Waiting for approval",
+      },
+      table: {
+        school: "School",
+        students: "Students",
+        joined: "Joined",
+        inClub: "In a club",
+        clubs: "Clubs",
+        upcoming: "Events in the next 30 days",
+        checkinsRecent: "Check-ins in the last 7 days",
+        teachers: "Teachers",
+        admins: "Admins",
+        pending: "Waiting",
+        lastSignup: "Last joined",
+      },
+      checks: {
+        adminMissing: {
+          title: "School without an admin",
+          summary: "{count} schools have no active admin",
+          action: "Create a school admin account.",
+        },
+        codesExpiring: {
+          title: "Codes about to expire",
+          summary: "{count} students' codes expire within 7 days",
+          action: "Ask the school to hand them out, or issue new ones.",
+        },
+        noCode: {
+          title: "Students without a code",
+          summary: "{count} students who have not joined have no valid code",
+          action: "Ask the school admin to issue codes.",
+        },
+        pendingOld: {
+          title: "Requests overdue for a decision",
+          summary: "{count} requests have waited more than 3 days",
+          action: "Remind the school admin to decide.",
+        },
+        noUpcoming: {
+          title: "No events planned",
+          summary: "{count} schools have no approved event in the next 30 days",
+          action: "Remind the school to add and approve this month's events.",
+        },
+      },
+    },
     sites: {
       console: {
         backToApp: "Back to the app",

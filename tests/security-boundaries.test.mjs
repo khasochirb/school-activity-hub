@@ -118,7 +118,7 @@ test("client modules cannot import privileged server helpers", () => {
 
 test("platform routes and actions call the separate platform-admin guard", () => {
   const guardedFiles = [
-    "src/app/(admin)/super-admin/page.tsx",
+    "src/app/(console)/super-admin/page.tsx",
     "src/app/(admin)/super-admin/audit-log/page.tsx",
     "src/app/(admin)/super-admin/connections/actions.ts",
     "src/app/(admin)/super-admin/connections/page.tsx",
