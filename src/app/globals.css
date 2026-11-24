@@ -8377,3 +8377,43 @@ html[data-theme="dark"] .cl-land::before {
    and form pages keep extra room below them while the tab bar shows. */
 .join-apply > button[type="submit"], .join-builder > button[type="submit"] { justify-self: start; }
 @media (max-width: 1023.98px) { .join-card { margin-bottom: 4.5rem; } }
+
+/* Family (parent) pages: their own simple frame, no school navigation. */
+.family-page { min-height: 100vh; background: var(--background); color: var(--foreground); }
+.family-top { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--card); }
+.family-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.family-brand > span { display: grid; min-width: 0; }
+.family-brand small { overflow: hidden; color: var(--muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.family-top-actions { display: flex; flex: none; align-items: center; gap: 6px; }
+.family-main { display: grid; gap: 16px; max-width: 44rem; margin: 0 auto; padding: 20px 16px 48px; }
+.family-child { display: grid; gap: 18px; padding: 18px; }
+.family-child-head { display: flex; align-items: center; gap: 12px; }
+.family-child-head > span:last-child { display: grid; }
+.family-child-head h1 { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.2; }
+.family-child-head small { color: var(--muted); font-size: 13px; }
+.family-block { display: grid; gap: 8px; }
+.family-block h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.family-muted { color: var(--muted); font-size: 13.5px; }
+.family-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.family-tags li { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 13.5px; font-weight: 600; }
+.family-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.family-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); }
+.family-list li > span:first-child { display: grid; }
+.family-list small { color: var(--muted); font-size: 12.5px; }
+.family-add { display: grid; gap: 10px; }
+.family-add label { display: grid; gap: 6px; font-size: 13.5px; font-weight: 600; }
+.family-add input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--card); color: var(--foreground); font-size: 16px; }
+.family-add button { justify-self: start; }
+.family-foot { text-align: center; }
+.family-child-head .family-portfolio-link { margin-left: auto; flex: none; }
+.family-list li { flex-wrap: wrap; }
+.family-list li[data-needs-answer] { border-color: var(--warning, #d97706); background: color-mix(in srgb, var(--warning, #d97706) 7%, transparent); }
+.family-event-text { display: grid; flex: 1 1 12rem; min-width: 0; }
+.family-permission { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.family-permission-actions { display: inline-flex; gap: 6px; }
+.family-entry { display: grid; gap: 6px; padding: 16px; }
+.family-entry small { color: var(--muted); font-size: 12.5px; }
+.family-entry h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.family-entry p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.family-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin-top: 4px; }
+.family-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-control); }

@@ -13,6 +13,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type InviteRecord = {
+  audience: string;
   id: string;
   school_id: string;
   student_roster_id: string | null;
@@ -76,7 +77,7 @@ export async function redeemInviteCode(
   const now = new Date().toISOString();
   const { data: invite } = await admin
     .from("invite_codes")
-    .select("id, school_id, student_roster_id, status, use_count, expires_at, redeemed_at")
+    .select("id, school_id, student_roster_id, status, use_count, expires_at, redeemed_at, audience")
     .eq("code_hash", hashInviteCode(normalizedCode))
     .maybeSingle<InviteRecord>();
 
@@ -234,6 +235,11 @@ function validateInvite(
 
   if (!invite.student_roster_id) {
     return t("auth.join.errors.inviteNoRoster");
+  }
+
+  // A parent code never creates a student account.
+  if (invite.audience !== "student") {
+    return t("auth.join.errors.parentCode");
   }
 
   return null;

@@ -9,7 +9,7 @@ import { ConsoleFrame } from "../(console)/console-frame";
 import { AppShell } from "./_components/app-shell";
 
 type AppShellProfile = {
-  role: "school_admin" | "student" | "teacher";
+  role: "parent" | "school_admin" | "student" | "teacher";
   full_name: string | null;
   school_id: string;
   schools: { name: string; timezone: string | null } | null;
@@ -73,6 +73,11 @@ export default async function AdminLayout({
   }
 
   const { data: profile } = profileResult;
+
+  // Parents have their own pages; the school app is for staff and students.
+  if (profile?.role === "parent") {
+    redirect("/family");
+  }
 
   return (
     <AppShell
