@@ -13,6 +13,7 @@ drop policy if exists "Platform admins can view event clubs" on public.clubs;
 drop policy if exists "Platform admins can create event attendees" on public.event_attendees;
 drop policy if exists "Platform admins can update event attendees" on public.event_attendees;
 drop policy if exists "Platform admins can view event attendees" on public.event_attendees;
+drop policy if exists "Platform admins can create event shares" on public.event_school_shares;
 drop policy if exists "Platform admins can remove event shares" on public.event_school_shares;
 drop policy if exists "Platform admins can view event shares" on public.event_school_shares;
 drop policy if exists "Platform admins can create events" on public.events;
