@@ -1,7 +1,7 @@
 "use client";
 
+import { submitKeepingInput } from "@/components/submit-keeping-input";
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import { LEAVE_REASONS, type LeaveReason } from "@/lib/clubs/leave-form";
 import { submitLeaveRequest, type LeaveActionState } from "../../leave-actions";
 
@@ -21,10 +21,10 @@ export type LeaveFormLabels = {
 
 // Why the student is leaving, and anything they want the club to know.
 export function LeaveForm({ clubId, labels }: { clubId: string; labels: LeaveFormLabels }) {
-  const [state, formAction] = useActionState(submitLeaveRequest, initialState);
+  const [state, formAction, pending] = useActionState(submitLeaveRequest, initialState);
 
   return (
-    <form action={formAction} className="join-apply">
+    <form onSubmit={submitKeepingInput(formAction)} className="join-apply">
       <input name="club_id" type="hidden" value={clubId} />
       <fieldset className="join-q">
         <legend>
@@ -64,13 +64,13 @@ export function LeaveForm({ clubId, labels }: { clubId: string; labels: LeaveFor
           {state.message}
         </p>
       ) : null}
-      <Submit label={labels.send} pending={labels.sending} />
+      <Submit busy={pending} label={labels.send} pending={labels.sending} />
     </form>
   );
 }
 
-function Submit({ label, pending }: { label: string; pending: string }) {
-  const status = useFormStatus();
+function Submit({ busy, label, pending }: { busy: boolean; label: string; pending: string }) {
+  const status = { pending: busy };
 
   return (
     <button className="btn btn-secondary min-h-11 w-full sm:w-auto" disabled={status.pending} type="submit">
