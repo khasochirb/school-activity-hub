@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BrandGlyph } from "@/components/brand-mark";
+import { ConsoleNavLink } from "./console-nav-link";
 
 export type ConsoleShellLabels = {
+  appName: string;
   auditLog: string;
   backToApp: string;
   brandSub: string;
   connections: string;
-  dashboard: string;
+  overview: string;
   platformAdmins: string;
   schoolSites: string;
   schools: string;
@@ -49,12 +51,12 @@ export function ConsoleShell({
   name: string;
 }) {
   const manage = [
-    { href: "/super-admin/sites", icon: "sites", label: labels.schoolSites, current: true },
+    { href: "/super-admin", icon: "dashboard", label: labels.overview },
     { href: "/super-admin/schools", icon: "schools", label: labels.schools },
+    { href: "/super-admin/sites", icon: "sites", label: labels.schoolSites },
     { href: "/super-admin/connections", icon: "connections", label: labels.connections },
   ];
   const system = [
-    { href: "/super-admin", icon: "dashboard", label: labels.dashboard },
     { href: "/super-admin/audit-log", icon: "log", label: labels.auditLog },
     { href: "/super-admin/platform-admins", icon: "admins", label: labels.platformAdmins },
   ];
@@ -67,28 +69,28 @@ export function ConsoleShell({
             <BrandGlyph />
           </span>
           <span className="min-w-0">
-            <b>{labels.schoolSites}</b>
+            <b>{labels.appName}</b>
             <small>{labels.brandSub}</small>
           </span>
         </div>
         <nav aria-label={labels.brandSub} className="console-nav">
           <p>{labels.sectionManage}</p>
           {manage.map((item) => (
-            <Link aria-current={item.current ? "page" : undefined} href={item.href} key={item.href} prefetch={false}>
+            <ConsoleNavLink href={item.href} key={item.href}>
               <Icon name={item.icon} />
               {item.label}
-            </Link>
+            </ConsoleNavLink>
           ))}
           <p>{labels.sectionSystem}</p>
           {system.map((item) => (
-            <Link href={item.href} key={item.href} prefetch={false}>
+            <ConsoleNavLink href={item.href} key={item.href}>
               <Icon name={item.icon} />
               {item.label}
-            </Link>
+            </ConsoleNavLink>
           ))}
         </nav>
         <div className="console-user">
-          <Link className="console-back" href="/dashboard" prefetch={false}>
+          <Link className="console-back" href="/events" prefetch={false}>
             <Icon name="back" />
             {labels.backToApp}
           </Link>

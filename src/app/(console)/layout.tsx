@@ -15,11 +15,12 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
     <ConsoleShell
       email={admin.email}
       labels={{
+        appName: t("app.name"),
         auditLog: t("nav.auditLog"),
         backToApp: t("superAdmin.sites.console.backToApp"),
         brandSub: t("superAdmin.sites.console.brandSub"),
         connections: t("nav.platformConnections"),
-        dashboard: t("nav.platformDashboard"),
+        overview: t("superAdmin.overview.title"),
         platformAdmins: t("nav.platformAdmins"),
         schoolSites: t("nav.schoolSites"),
         schools: t("nav.schools"),

@@ -160,8 +160,7 @@ test("demo schools never count: console and platform totals filter them out", ()
   assert.match(data, /const pages = \(pagesResult\.data \?\? \[\]\)\.filter\(\(page\) => counted\.has\(page\.school_id\)\);/);
   assert.match(data, /const views = \(viewsResult\.data \?\? \[\]\)\.filter\(\(row\) => counted\.has\(row\.school_id\)\);/);
   assert.match(data, /\(eventsResult\.data \?\? \[\]\)\.filter\(\(row\) => counted\.has\(row\.school_id\)\)/);
-  const platform = read("src/app/(admin)/super-admin/page.tsx");
-  assert.equal(platform.match(/\.eq\("is_demo", false\)/g)?.length, 2);
+  // The overview's own demo rule is pinned in platform-overview.test.mjs.
   assert.match(read("supabase/schema.sql"), /add column if not exists is_demo boolean not null default false/);
   // The demo cleanup must never delete the real school's pages after the split.
   assert.match(read("supabase/demo/demo-school-cleanup.sql"), /and school_id in \(select id from public\.schools where is_demo\)/);
