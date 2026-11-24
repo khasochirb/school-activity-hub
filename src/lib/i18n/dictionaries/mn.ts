@@ -2523,6 +2523,7 @@ export const mn = {
       alreadyInactive: "Аль хэдийн идэвхгүй",
       importCsv: "Сурагчдыг жагсаалтад нэмэх",
       markInactive: "Идэвхгүй болгох",
+      reactivate: "Идэвхтэй болгох",
     },
     addSection: {
       description: "Хурдан нэмэлт эсвэл жижиг туршилтын жагсаалтад үүнийг ашиглана уу.",

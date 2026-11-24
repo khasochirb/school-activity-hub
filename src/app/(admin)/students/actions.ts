@@ -288,6 +288,35 @@ export async function markStudentInactive(formData: FormData) {
   revalidatePath("/students");
 }
 
+// Brings back a student marked inactive by mistake. School admins only, because
+// it gives the student their access back; graduated and withdrawn students are
+// left alone. Row-level security repeats the school check.
+export async function reactivateStudent(formData: FormData) {
+  const profile = await getCurrentStaffProfile();
+
+  if (!profile || profile.role !== "school_admin") {
+    redirect("/dashboard");
+  }
+
+  const studentId = String(formData.get("student_id") ?? "").trim();
+
+  if (!studentId) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await timeServer("students.action.reactivate.update", () =>
+    supabase
+      .from("student_rosters")
+      .update({ status: "active" })
+      .eq("id", studentId)
+      .eq("school_id", profile.school_id)
+      .eq("status", "inactive"),
+  );
+
+  revalidatePath("/students");
+}
+
 async function getCurrentStaffProfile(): Promise<StaffProfile | null> {
   const supabase = await createClient();
   const {

@@ -27,7 +27,7 @@ import {
 } from "../_components/page-ui";
 import { ActionMenu } from "../_components/action-menu";
 import { PageHead, Widget } from "../_components/clean-ui";
-import { markStudentInactive } from "./actions";
+import { markStudentInactive, reactivateStudent } from "./actions";
 import { CreateStudentForm } from "./create-student-form";
 import { ImportStudentsForm } from "./import-students-form";
 
@@ -265,10 +265,11 @@ export default async function StudentsPage({
                   ) : (
                     <span className="cl-tag" data-tone="warn">{t("students.list.notJoined")}</span>
                   )}
-                  <InactiveForm
+                  <StatusForm
+                    canReactivate={profile.role === "school_admin"}
                     labels={{
-                      alreadyInactive: "",
                       markInactive: t("students.actions.markInactive"),
+                      reactivate: t("students.actions.reactivate"),
                       saving: t("common.saving"),
                     }}
                     student={student}
@@ -387,32 +388,34 @@ export default async function StudentsPage({
   );
 }
 
-function InactiveForm({
+function StatusForm({
+  canReactivate,
   labels,
   student,
 }: {
+  canReactivate: boolean;
   labels: {
-    alreadyInactive: string;
     markInactive: string;
+    reactivate: string;
     saving: string;
   };
   student: Student;
 }) {
-  if (student.status !== "active") {
-    return labels.alreadyInactive ? (
-      <span className="text-sm text-zinc-500">{labels.alreadyInactive}</span>
-    ) : null;
+  const reactivate = student.status === "inactive" && canReactivate;
+
+  if (student.status !== "active" && !reactivate) {
+    return null;
   }
 
   return (
-    <form action={markStudentInactive}>
+    <form action={reactivate ? reactivateStudent : markStudentInactive}>
       <input name="student_id" type="hidden" value={student.id} />
       <PendingSubmitButton
         className="btn btn-quiet min-h-9 px-3"
         pendingLabel={labels.saving}
         toastMessage={labels.saving}
       >
-        {labels.markInactive}
+        {reactivate ? labels.reactivate : labels.markInactive}
       </PendingSubmitButton>
     </form>
   );
