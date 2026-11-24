@@ -1,4 +1,7 @@
 const actionLabelKeyByAction: Record<string, string> = {
+  "platform.club.archived": "superAdmin.auditLog.actionLabels.clubArchived",
+  "platform.club.created": "superAdmin.auditLog.actionLabels.clubCreated",
+  "platform.club.restored": "superAdmin.auditLog.actionLabels.clubRestored",
   "platform.connection.approved":
     "superAdmin.auditLog.actionLabels.connectionApproved",
   "platform.connection.created":

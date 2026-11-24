@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { parseActivityCategory } from "@/lib/activity-categories";
 import { createPlatformAuditLog } from "@/lib/audit/platform-audit";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import {
@@ -10,6 +11,7 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { toSlug } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const SCHOOL_STATUS_VALUES = ["active", "archived"] as const;
@@ -310,6 +312,144 @@ export async function updatePlatformSchoolAdminStatus(formData: FormData) {
       ? i18n.t("superAdmin.schoolDetail.success.adminReactivated")
       : i18n.t("superAdmin.schoolDetail.success.adminDeactivated"),
   );
+}
+
+// A club for a school that is not the platform admin's own. The same rules as a
+// school's staff creating one; it belongs to no person until the school assigns
+// a leader. Written with the service role after the platform-admin check.
+export async function createPlatformClub(formData: FormData) {
+  const platformAdmin = await requirePlatformAdmin();
+
+  const i18n = await getServerI18n();
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const categoryInput = String(formData.get("category") ?? "").trim();
+  const category = parseActivityCategory(categoryInput);
+
+  if (!isUuid(schoolId)) {
+    redirect("/super-admin/schools");
+  }
+
+  if (!name) {
+    redirectWithMessage(schoolId, "error", i18n.t("clubs.errors.nameRequired"));
+  }
+
+  if (categoryInput && !category) {
+    redirectWithMessage(schoolId, "error", i18n.t("clubs.errors.invalidCategory"));
+  }
+
+  const slug = toSlug(name);
+
+  if (slug.length < 3) {
+    redirectWithMessage(schoolId, "error", i18n.t("clubs.errors.nameTooShort"));
+  }
+
+  const admin = createAdminClient();
+  const { data: school } = await admin
+    .from("schools")
+    .select("id")
+    .eq("id", schoolId)
+    .eq("status", "active")
+    .maybeSingle<{ id: string }>();
+
+  if (!school) {
+    redirectWithMessage(schoolId, "error", i18n.t("superAdmin.schoolDetail.errors.schoolNotFound"));
+  }
+
+  const { data: club, error } = await admin
+    .from("clubs")
+    .insert({
+      category: category || null,
+      created_by_profile_id: null,
+      description: description || null,
+      name,
+      school_id: schoolId,
+      slug,
+      status: "active",
+    })
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (error || !club) {
+    redirectWithMessage(
+      schoolId,
+      "error",
+      i18n.t(
+        error?.code === "23505"
+          ? "clubs.errors.duplicateName"
+          : "superAdmin.schoolDetail.clubs.createFailed",
+      ),
+    );
+  }
+
+  await createPlatformAuditLog({
+    action: "platform.club.created",
+    actor: platformAdmin,
+    metadata: { club_name: name },
+    targetId: club.id,
+    targetSchoolId: schoolId,
+    targetType: "club",
+  });
+
+  revalidateClubPages(schoolId, club.id);
+  redirectWithMessage(schoolId, "success", i18n.t("clubs.success.created"));
+}
+
+// Archive or restore a club of this school. Archiving keeps the members and
+// everything the club has done; restoring brings it back as it was.
+export async function updatePlatformClubStatus(formData: FormData) {
+  const platformAdmin = await requirePlatformAdmin();
+
+  const i18n = await getServerI18n();
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const clubId = String(formData.get("club_id") ?? "").trim();
+  const status = parseSchoolStatus(String(formData.get("status") ?? "").trim());
+
+  if (!isUuid(schoolId) || !isUuid(clubId) || !status) {
+    redirect("/super-admin/schools");
+  }
+
+  const admin = createAdminClient();
+  const { data: club, error } = await admin
+    .from("clubs")
+    .update({ status })
+    .eq("id", clubId)
+    .eq("school_id", schoolId)
+    .eq("status", status === "active" ? "archived" : "active")
+    .select("id, name")
+    .maybeSingle<{ id: string; name: string }>();
+
+  // No row: another school's club, or one already in that state.
+  if (error || !club) {
+    redirectWithMessage(schoolId, "error", i18n.t("superAdmin.schoolDetail.clubs.statusFailed"));
+  }
+
+  await createPlatformAuditLog({
+    action: status === "active" ? "platform.club.restored" : "platform.club.archived",
+    actor: platformAdmin,
+    metadata: { club_name: club.name },
+    targetId: club.id,
+    targetSchoolId: schoolId,
+    targetType: "club",
+  });
+
+  revalidateClubPages(schoolId, club.id);
+  redirectWithMessage(
+    schoolId,
+    "success",
+    i18n.t(
+      status === "active"
+        ? "superAdmin.schoolDetail.clubs.restored"
+        : "superAdmin.schoolDetail.clubs.archived",
+    ),
+  );
+}
+
+function revalidateClubPages(schoolId: string, clubId: string) {
+  revalidateSchoolPages(schoolId);
+  revalidatePath("/clubs");
+  revalidatePath(`/clubs/${clubId}`);
 }
 
 function parseSchoolStatus(status: string): SchoolStatus | null {

@@ -20,6 +20,7 @@ import {
   updatePlatformSchool,
   updatePlatformSchoolAdminStatus,
 } from "./actions";
+import { AddClubForm, PlatformClubs, type SchoolClub } from "./club-controls";
 
 type SchoolStatus = "active" | "archived";
 type ProfileStatus = "active" | "inactive";
@@ -43,12 +44,6 @@ type SchoolAdminProfile = {
 
 type SchoolConnection = {
   status: "pending" | "approved" | "rejected" | "blocked" | "archived";
-};
-
-type SchoolClub = {
-  id: string;
-  name: string;
-  status: "active" | "archived";
 };
 
 type DetailPageParams = {
@@ -238,19 +233,12 @@ export default async function SuperAdminSchoolDetailPage({
             /s/{school.slug} ↗
           </a>
         </div>
-        {clubsResult.data?.length ? (
-          <>
-            <h3 className="mt-5 text-sm font-semibold">{t("nav.clubs")}</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {clubsResult.data.map((club) => (
-                <Link className="btn btn-secondary" href={`/clubs/${club.id}`} key={club.id} prefetch={false}>
-                  {club.name}
-                  {club.status === "archived" ? ` (${t("status.archived")})` : ""}
-                </Link>
-              ))}
-            </div>
-          </>
-        ) : null}
+      </section>
+
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">{t("nav.clubs")}</h2>
+        <PlatformClubs clubs={clubsResult.data ?? []} schoolId={school.id} t={t} />
+        <AddClubForm schoolId={school.id} t={t} />
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">

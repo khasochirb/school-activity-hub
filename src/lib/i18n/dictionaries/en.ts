@@ -2712,6 +2712,11 @@ export const en = {
           summary: "{count} schools have no active admin",
           action: "Create a school admin account.",
         },
+        noClubs: {
+          title: "School without clubs",
+          summary: "{count} schools have no active club",
+          action: "Create a club on the school's page.",
+        },
         codesExpiring: {
           title: "Codes about to expire",
           summary: "{count} students' codes expire within 7 days",
@@ -2853,6 +2858,9 @@ export const en = {
     },
     auditLog: {
       actionLabels: {
+        clubArchived: "Club archived",
+        clubCreated: "Club created",
+        clubRestored: "Club made active again",
         connectionApproved: "Connection approved",
         connectionCreated: "Connection created",
         connectionRejected: "Connection rejected",
@@ -3065,6 +3073,15 @@ export const en = {
       title: "Manage platform admins",
     },
     schoolDetail: {
+      clubs: {
+        empty: "No clubs yet.",
+        restore: "Make active again",
+        archiveConfirm: "Students will no longer find this club in the list or join it. Its members are kept, and you can make it active again.",
+        archived: "Club archived.",
+        restored: "Club is active again.",
+        createFailed: "The club could not be created. Check the details and try again.",
+        statusFailed: "The club's status could not be changed. Reload and try again.",
+      },
       actions: {
         addAdmin: "Add school admin",
         addingAdmin: "Creating...",
