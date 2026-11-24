@@ -440,6 +440,12 @@ export const en = {
       leave: "Leave club",
       leaving: "Leaving...",
       makeLeader: "Make club leader",
+      removeLeader: "Remove as leader",
+    },
+    removeLeader: {
+      description:
+        "{name} stays in the club as a member, but can no longer manage the club or its events. You can make them leader again.",
+      title: "Remove this club leader?",
     },
     active: {
       title: "Active clubs",

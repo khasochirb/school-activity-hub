@@ -8,6 +8,7 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { logServerError } from "@/lib/errors/server-error";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { toSlug } from "@/lib/slug";
 import { timeServer } from "@/lib/server-timing";
@@ -247,6 +248,46 @@ export async function assignClubLeader(formData: FormData) {
   );
 
   revalidatePath("/clubs");
+}
+
+// The student stays in the club as a member; what a leader may do is checked
+// on every request, so it ends at once.
+export async function removeClubLeader(formData: FormData) {
+  const profile = await getCurrentProfile();
+
+  if (!profile || !isStaff(profile)) {
+    redirect("/clubs");
+  }
+
+  const membershipId = String(formData.get("membership_id") ?? "").trim();
+
+  if (!membershipId) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const { data: membership, error } = await timeServer("clubs.action.remove-leader.update", () =>
+    supabase
+      .from("club_memberships")
+      .update({ role: "member" })
+      .eq("id", membershipId)
+      .eq("school_id", profile.school_id)
+      .eq("role", "leader")
+      .eq("status", "active")
+      .select("club_id")
+      .maybeSingle<{ club_id: string }>(),
+  );
+
+  if (error) {
+    logServerError("Club leader removal failed", error, { membershipId });
+  }
+
+  revalidatePath("/clubs");
+
+  if (membership) {
+    revalidatePath(`/clubs/${membership.club_id}`);
+    revalidatePath(`/clubs/${membership.club_id}/applications`);
+  }
 }
 
 async function getCurrentProfile(): Promise<Profile | null> {

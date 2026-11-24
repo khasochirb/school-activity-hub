@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/i18n/date-format";
 import { ActionMenu } from "../_components/action-menu";
 import { CategoryLabel, ClubAvatar, Cover, PageHead } from "../_components/clean-ui";
 import { redirect } from "next/navigation";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ShareClubButton } from "@/components/share-club-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -38,6 +39,7 @@ import { ChipPending } from "../_components/chip-pending";
 import { ClassmatesFromClass } from "../_components/classmates-from-class";
 import {
   assignClubLeader,
+  removeClubLeader,
   joinClub,
 } from "./actions";
 import {
@@ -632,7 +634,30 @@ export default async function ClubsPage({
                                     {t("clubs.actions.makeLeader")}
                                   </PendingSubmitButton>
                                 </form>
-                              ) : null}
+                              ) : (
+                                <form action={removeClubLeader}>
+                                  <input
+                                    name="membership_id"
+                                    type="hidden"
+                                    value={membership.id}
+                                  />
+                                  <ConfirmSubmitButton
+                                    cancelLabel={t("common.cancel")}
+                                    className="btn btn-secondary min-h-9 px-3"
+                                    confirmDescription={tf("clubs.removeLeader.description", {
+                                      name: memberName(
+                                        membership,
+                                        t("clubs.fallback.rosterStudent"),
+                                      ),
+                                    })}
+                                    confirmLabel={t("clubs.actions.removeLeader")}
+                                    confirmTitle={t("clubs.removeLeader.title")}
+                                    pendingLabel={t("common.saving")}
+                                  >
+                                    {t("clubs.actions.removeLeader")}
+                                  </ConfirmSubmitButton>
+                                </form>
+                              )}
                             </li>
                           ))}
                         </ul>
