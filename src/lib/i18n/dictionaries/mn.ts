@@ -2727,6 +2727,11 @@ export const mn = {
           summary: "Идэвхтэй клубгүй {count} сургууль",
           action: "Сургуулийн хуудаснаас клуб үүсгэнэ.",
         },
+        noTeachers: {
+          title: "Багшгүй сургууль",
+          summary: "Идэвхтэй багшгүй {count} сургууль",
+          action: "Сургуулийн хуудаснаас багшийн бүртгэл үүсгэнэ.",
+        },
         codesExpiring: {
           title: "Хугацаа нь дуусах код",
           summary: "{count} сурагчийн код 7 хоногийн дотор дуусна",
@@ -2868,6 +2873,9 @@ export const mn = {
     },
     auditLog: {
       actionLabels: {
+        teacherCreated: "Багшийн бүртгэл үүссэн",
+        teacherDeactivated: "Багш идэвхгүй болсон",
+        teacherReactivated: "Багш идэвхтэй болсон",
         clubArchived: "Клуб архивлагдсан",
         clubCreated: "Клуб үүссэн",
         clubRestored: "Клуб идэвхтэй болсон",
@@ -3084,6 +3092,14 @@ export const mn = {
       title: "Платформын админуудыг удирдах",
     },
     schoolDetail: {
+      teachers: {
+        empty: "Багш одоогоор байхгүй.",
+        reactivate: "Идэвхтэй болгох",
+        deactivateConfirm: "Багш сургуулийн мэдээлэлд хандах эрхгүй болно. Дахин идэвхтэй болгож болно.",
+        deactivated: "Багш идэвхгүй боллоо.",
+        reactivated: "Багш идэвхтэй боллоо.",
+        statusFailed: "Багшийн төлөвийг өөрчилж чадсангүй. Хуудсыг дахин ачаалаад оролдоно уу.",
+      },
       clubs: {
         empty: "Клуб одоогоор байхгүй.",
         restore: "Идэвхтэй болгох",

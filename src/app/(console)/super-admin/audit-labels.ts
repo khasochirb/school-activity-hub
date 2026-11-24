@@ -24,6 +24,9 @@ const actionLabelKeyByAction: Record<string, string> = {
     "superAdmin.auditLog.actionLabels.schoolAdminDeactivated",
   "platform.school_admin.reactivated":
     "superAdmin.auditLog.actionLabels.schoolAdminReactivated",
+  "platform.teacher.created": "superAdmin.auditLog.actionLabels.teacherCreated",
+  "platform.teacher.deactivated": "superAdmin.auditLog.actionLabels.teacherDeactivated",
+  "platform.teacher.reactivated": "superAdmin.auditLog.actionLabels.teacherReactivated",
 };
 
 // An action with no label yet shows as its own name.

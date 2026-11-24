@@ -2717,6 +2717,11 @@ export const en = {
           summary: "{count} schools have no active club",
           action: "Create a club on the school's page.",
         },
+        noTeachers: {
+          title: "School without teachers",
+          summary: "{count} schools have no active teacher",
+          action: "Create a teacher account on the school's page.",
+        },
         codesExpiring: {
           title: "Codes about to expire",
           summary: "{count} students' codes expire within 7 days",
@@ -2858,6 +2863,9 @@ export const en = {
     },
     auditLog: {
       actionLabels: {
+        teacherCreated: "Teacher account created",
+        teacherDeactivated: "Teacher made inactive",
+        teacherReactivated: "Teacher made active again",
         clubArchived: "Club archived",
         clubCreated: "Club created",
         clubRestored: "Club made active again",
@@ -3073,6 +3081,14 @@ export const en = {
       title: "Manage platform admins",
     },
     schoolDetail: {
+      teachers: {
+        empty: "No teachers yet.",
+        reactivate: "Make active again",
+        deactivateConfirm: "The teacher will lose access to the school's information. You can make them active again.",
+        deactivated: "Teacher is now inactive.",
+        reactivated: "Teacher is active again.",
+        statusFailed: "The teacher's status could not be changed. Reload the page and try again.",
+      },
       clubs: {
         empty: "No clubs yet.",
         restore: "Make active again",

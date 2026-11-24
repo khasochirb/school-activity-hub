@@ -446,6 +446,154 @@ export async function updatePlatformClubStatus(formData: FormData) {
   );
 }
 
+// A teacher account for a school that is not the platform admin's own. The same
+// rules as the school admin's own staff page.
+export async function createPlatformTeacher(formData: FormData) {
+  const platformAdmin = await requirePlatformAdmin();
+
+  const i18n = await getServerI18n();
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+
+  if (!isUuid(schoolId)) {
+    redirect("/super-admin/schools");
+  }
+
+  if (!fullName) {
+    redirectWithMessage(schoolId, "error", i18n.t("staff.errors.fullNameRequired"));
+  }
+
+  if (!email) {
+    redirectWithMessage(schoolId, "error", i18n.t("staff.errors.emailRequired"));
+  }
+
+  if (password.length < 8) {
+    redirectWithMessage(schoolId, "error", i18n.t("staff.errors.passwordMinLength"));
+  }
+
+  const admin = createAdminClient();
+  const { data: school } = await admin
+    .from("schools")
+    .select("id")
+    .eq("id", schoolId)
+    .eq("status", "active")
+    .maybeSingle<{ id: string }>();
+
+  if (!school) {
+    redirectWithMessage(schoolId, "error", i18n.t("superAdmin.schoolDetail.errors.schoolNotFound"));
+  }
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    password,
+    user_metadata: { full_name: fullName },
+  });
+
+  if (authError || !authData.user) {
+    redirectWithMessage(
+      schoolId,
+      "error",
+      i18n.t(
+        isExistingAuthUserError(authError?.message)
+          ? "superAdmin.schoolDetail.errors.adminAlreadyExists"
+          : "staff.errors.teacherCreateFailed",
+      ),
+    );
+  }
+
+  const { error: profileError } = await admin.from("profiles").insert({
+    full_name: fullName,
+    id: authData.user.id,
+    role: "teacher",
+    school_id: schoolId,
+    status: "active",
+  });
+
+  if (profileError) {
+    // No account without a profile.
+    await admin.auth.admin.deleteUser(authData.user.id);
+    redirectWithMessage(schoolId, "error", i18n.t("staff.errors.teacherCreateFailed"));
+  }
+
+  await createPlatformAuditLog({
+    action: "platform.teacher.created",
+    actor: platformAdmin,
+    metadata: { teacher_name: fullName },
+    targetId: authData.user.id,
+    targetSchoolId: schoolId,
+    targetType: "profile",
+  });
+
+  revalidateTeacherPages(schoolId);
+  redirectWithMessage(schoolId, "success", i18n.t("staff.success.created"));
+}
+
+// Only a teacher of this school, and only from the other state. School admins
+// have their own action; students are not reachable from here.
+export async function updatePlatformTeacherStatus(formData: FormData) {
+  const platformAdmin = await requirePlatformAdmin();
+
+  const i18n = await getServerI18n();
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const profileId = String(formData.get("profile_id") ?? "").trim();
+  const status = parseProfileStatus(String(formData.get("status") ?? "").trim());
+
+  if (!isUuid(schoolId) || !isUuid(profileId) || !status) {
+    redirect("/super-admin/schools");
+  }
+
+  if (profileId === platformAdmin.id) {
+    redirectWithMessage(
+      schoolId,
+      "error",
+      i18n.t("superAdmin.schoolDetail.errors.cannotDeactivateSelf"),
+    );
+  }
+
+  const admin = createAdminClient();
+  const { data: teacher, error } = await admin
+    .from("profiles")
+    .update({ status })
+    .eq("id", profileId)
+    .eq("school_id", schoolId)
+    .eq("role", "teacher")
+    .eq("status", status === "active" ? "inactive" : "active")
+    .select("id, full_name")
+    .maybeSingle<{ full_name: string; id: string }>();
+
+  if (error || !teacher) {
+    redirectWithMessage(schoolId, "error", i18n.t("superAdmin.schoolDetail.teachers.statusFailed"));
+  }
+
+  await createPlatformAuditLog({
+    action: status === "active" ? "platform.teacher.reactivated" : "platform.teacher.deactivated",
+    actor: platformAdmin,
+    metadata: { teacher_name: teacher.full_name },
+    targetId: teacher.id,
+    targetSchoolId: schoolId,
+    targetType: "profile",
+  });
+
+  revalidateTeacherPages(schoolId);
+  redirectWithMessage(
+    schoolId,
+    "success",
+    i18n.t(
+      status === "active"
+        ? "superAdmin.schoolDetail.teachers.reactivated"
+        : "superAdmin.schoolDetail.teachers.deactivated",
+    ),
+  );
+}
+
+function revalidateTeacherPages(schoolId: string) {
+  revalidateSchoolPages(schoolId);
+  revalidatePath("/staff");
+}
+
 function revalidateClubPages(schoolId: string, clubId: string) {
   revalidateSchoolPages(schoolId);
   revalidatePath("/clubs");
