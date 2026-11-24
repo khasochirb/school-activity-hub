@@ -3294,6 +3294,8 @@ a:has(.pending-link-indicator[data-pending="true"]) {
 .schedule-days ul li + li { border-top: 1px solid var(--border); }
 .schedule-days ul a { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 10px 0; color: inherit; text-decoration: none; }
 .schedule-days time { flex: none; width: 6.5rem; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+/* Phone: the time gets its own line, so the title keeps the width. */
+@media (max-width: 639px) { .schedule-days time { width: 100%; } }
 .schedule-clubs { display: flex; flex-direction: column; gap: 10px; }
 .schedule-clubs h2 { font-size: 18px; font-weight: 700; }
 .schedule-clubs ul { border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--card); }
