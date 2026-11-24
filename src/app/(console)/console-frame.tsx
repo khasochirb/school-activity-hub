@@ -9,10 +9,12 @@ export async function ConsoleFrame({
   children,
   email,
   name,
+  schoolSwitcher,
 }: {
   children: ReactNode;
   email: string | null;
   name: string;
+  schoolSwitcher?: ReactNode;
 }) {
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
@@ -27,6 +29,11 @@ export async function ConsoleFrame({
         approvals: t("nav.approvals"),
         auditLog: t("nav.auditLog"),
         brandSub: t("superAdmin.sites.console.brandSub"),
+        clubs: t("nav.clubs"),
+        home: t("nav.dashboard"),
+        inviteCodes: t("nav.inviteCodes"),
+        sectionSchool: t("superAdmin.sites.console.sectionSchool"),
+        students: t("nav.students"),
         connections: t("nav.platformConnections"),
         language: t("language.label"),
         loggingOut: t("nav.loggingOut"),
@@ -41,6 +48,7 @@ export async function ConsoleFrame({
       }}
       locale={locale}
       name={name}
+      schoolSwitcher={schoolSwitcher}
     >
       {children}
     </ConsoleShell>

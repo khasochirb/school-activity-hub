@@ -43,7 +43,10 @@ export const getCurrentEventActor = cache(async (): Promise<EventActor | null> =
     profileResult.data?.status === "active" ? profileResult.data : null;
 
   return {
-    isPlatformAdmin: Boolean(platformAdminResult.data),
+    // A platform admin with a school profile works as that school's admin in
+    // the school pages: one school at a time, never every school at once.
+    // Their platform-wide tools live in the platform console.
+    isPlatformAdmin: Boolean(platformAdminResult.data) && !profile,
     profile,
     userId: user.id,
   };

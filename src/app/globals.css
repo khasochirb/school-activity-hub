@@ -8417,3 +8417,8 @@ html[data-theme="dark"] .cl-land::before {
 .family-entry p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .family-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin-top: 4px; }
 .family-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-control); }
+/* Platform console: the school picker above the school pages. */
+.school-switcher { margin: 2px 8px 8px; }
+.school-switcher select { width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 8px; background: rgb(255 255 255 / 0.06); color: inherit; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.school-switcher select option { color: #111; }
+.school-switcher p { margin-top: 6px; color: #fca5a5; font-size: 12.5px; line-height: 1.4; }

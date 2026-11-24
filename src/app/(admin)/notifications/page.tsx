@@ -25,10 +25,18 @@ export default async function NotificationsPage() {
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
   const supabase = await createClient();
+  // Only the school this account is in now: a platform admin who switches
+  // schools never sees another school's notifications mixed in.
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("school_id")
+    .eq("id", user.id)
+    .maybeSingle<{ school_id: string }>();
   const { data, error } = await supabase
     .from("notifications")
     .select("id, kind, data, read_at, created_at")
     .eq("recipient_profile_id", user.id)
+    .eq("school_id", me?.school_id ?? "00000000-0000-0000-0000-000000000000")
     .order("created_at", { ascending: false })
     .limit(60)
     .returns<NotificationRow[]>();

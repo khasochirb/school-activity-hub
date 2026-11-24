@@ -158,20 +158,22 @@ test("platform admins keep the console frame on every page, with a way to sign o
 
   // Signed-out visitors are turned away before the frame is chosen.
   assert.ok(layout.indexOf('redirect("/login")') < layout.indexOf("if (platformAdminProfile) {"));
-  assert.match(layout, /if \(platformAdminProfile\) \{\s+return \(\s+<ConsoleFrame/);
+  assert.match(layout, /if \(platformAdminProfile\) \{[\s\S]*?return \(\s+<ConsoleFrame/);
   // Everyone else keeps the school app.
   assert.ok(layout.indexOf("<ConsoleFrame") < layout.lastIndexOf("<AppShell"));
   assert.match(shell, /<form action=\{logout\}>/);
-  // Nothing in the sidebar opens student lists, codes or safety reports.
-  assert.doesNotMatch(shell, /href: "\/(students|invite-codes|safety)/);
+  // School pages sit under the school picker and show that one school.
+  // (Owner's call, 24 Nov 2026: platform admins switch school, never mix.)
+  assert.match(shell, /href: "\/students"/);
+  assert.ok(shell.indexOf("{schoolSwitcher}") < shell.indexOf("{school.map("));
+  assert.doesNotMatch(shell, /href: "\/safety/);
 });
 
-test("a school's page offers its controls, not its students", () => {
+test("a school's page switches the console to that school", () => {
   const page = read("src/app/(admin)/super-admin/schools/[schoolId]/page.tsx");
 
-  for (const path of ["/dashboard?school=", "/events?school=", "/reports?school="]) {
-    assert.ok(page.includes(path + "${school.id}"), path);
-  }
-  assert.doesNotMatch(page, /["`]\/(students|invite-codes)/);
+  // No cross-school links: switching is the only way into a school's pages.
+  assert.doesNotMatch(page, /\?school=/);
+  assert.match(page, /<SwitchToSchoolButton/);
   assert.match(page, /\.from\("clubs"\)\s+\.select\("id, name, status"\)\s+\.eq\("school_id", schoolId\)/);
 });
