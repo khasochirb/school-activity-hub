@@ -17,6 +17,13 @@ import {
   postgrestSearchPattern,
 } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
+import {
+  classOptions,
+  findOption,
+  gradeOptions,
+  type ClassOption,
+  type RosterClass,
+} from "@/lib/students/class-filters";
 import { createClient } from "@/lib/supabase/server";
 import {
   CollapsibleFormSection,
@@ -26,6 +33,7 @@ import {
   PaginationControls,
 } from "../_components/page-ui";
 import { ActionMenu } from "../_components/action-menu";
+import { ChipPending } from "../_components/chip-pending";
 import { PageHead, Widget } from "../_components/clean-ui";
 import { markStudentInactive } from "./actions";
 import { CreateStudentForm } from "./create-student-form";
@@ -49,6 +57,8 @@ type Student = {
 };
 
 type StudentsSearchParams = {
+  class?: string | string[];
+  grade?: string | string[];
   page?: string | string[];
   q?: string | string[];
   status?: string | string[];
@@ -92,6 +102,18 @@ export default async function StudentsPage({
     redirect("/dashboard");
   }
 
+  const rosterClasses = await getRosterClasses(supabase, profile.school_id);
+  const grades = gradeOptions(rosterClasses);
+  const selectedGrade = findOption(grades, getSearchParam(params.grade));
+  const classes = selectedGrade ? classOptions(rosterClasses, selectedGrade) : [];
+  const selectedClass = findOption(classes, getSearchParam(params.class));
+  const filters: StudentFilters = {
+    classGroup: selectedClass?.label ?? "",
+    grade: selectedGrade?.label ?? "",
+    q: searchQuery,
+    status: selectedStatus,
+  };
+
   let studentsQuery = supabase
     .from("student_rosters")
     .select(
@@ -101,6 +123,14 @@ export default async function StudentsPage({
 
   if (selectedStatus) {
     studentsQuery = studentsQuery.eq("status", selectedStatus);
+  }
+
+  if (selectedGrade) {
+    studentsQuery = studentsQuery.in("grade_level", selectedGrade.values);
+  }
+
+  if (selectedClass) {
+    studentsQuery = studentsQuery.in("homeroom", selectedClass.values);
   }
 
   const searchFilter = studentSearchFilter(searchQuery);
@@ -128,7 +158,7 @@ export default async function StudentsPage({
         `${student.first_name} ${student.last_name}`,
       ]),
   );
-  const hasFilters = Boolean(searchQuery || selectedStatus);
+  const hasFilters = Boolean(searchQuery || selectedStatus || selectedGrade);
   const [rowStats, summary] = await Promise.all([
     getRowStats(supabase, profile.school_id, filteredStudents.map((student) => student.id)),
     getRosterSummary(supabase, profile.school_id),
@@ -198,7 +228,7 @@ export default async function StudentsPage({
           <Link
             aria-current={selectedStatus === value ? "page" : undefined}
             className="cl-chip"
-            href={studentsPageHref(1, searchQuery, value)}
+            href={studentsPageHref(1, { ...filters, status: value })}
             key={value || "all"}
             prefetch={false}
           >
@@ -213,8 +243,30 @@ export default async function StudentsPage({
           <span className="sr-only">{t("filters.search")}</span>
           <input defaultValue={searchQuery} name="q" placeholder={t("students.list.searchPlaceholder")} type="search" />
           {selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+          {filters.grade ? <input name="grade" type="hidden" value={filters.grade} /> : null}
+          {filters.classGroup ? <input name="class" type="hidden" value={filters.classGroup} /> : null}
         </form>
       </div>
+      {grades.length ? (
+        <div className="flex flex-col gap-2">
+          <ClassChips
+            allLabel={t("filters.all")}
+            getHref={(grade) => studentsPageHref(1, { ...filters, classGroup: "", grade })}
+            label={t("students.form.grade")}
+            options={grades}
+            selected={filters.grade}
+          />
+          {classes.length ? (
+            <ClassChips
+              allLabel={t("filters.all")}
+              getHref={(classGroup) => studentsPageHref(1, { ...filters, classGroup })}
+              label={t("students.form.classGroup")}
+              options={classes}
+              selected={filters.classGroup}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="cl-split">
       <div className="cl-main">
@@ -284,7 +336,7 @@ export default async function StudentsPage({
               );
             })}
           </div>
-        ) : roster.length && hasFilters ? (
+        ) : hasFilters ? (
           <div className="p-4">
             <NoResultsState
               clearHref="/students"
@@ -314,7 +366,7 @@ export default async function StudentsPage({
         {!error && (filteredStudents.length > 0 || page > 1) ? (
           <PaginationControls
             getHref={(nextPage) =>
-              studentsPageHref(nextPage, searchQuery, selectedStatus)
+              studentsPageHref(nextPage, filters)
             }
             hasNextPage={hasNextPage}
             labels={{
@@ -387,6 +439,41 @@ export default async function StudentsPage({
   );
 }
 
+// One row of chips: all, then every grade (or every class of the grade).
+function ClassChips({
+  allLabel,
+  getHref,
+  label,
+  options,
+  selected,
+}: {
+  allLabel: string;
+  getHref: (value: string) => string;
+  label: string;
+  options: ClassOption[];
+  selected: string;
+}) {
+  return (
+    <nav aria-label={label} className="cl-filters">
+      <span className="text-sm font-semibold text-[var(--muted)]">{label}</span>
+      {[{ label: allLabel, value: "" }, ...options.map((option) => ({ label: option.label, value: option.label }))].map(
+        (chip) => (
+          <Link
+            aria-current={selected === chip.value ? "page" : undefined}
+            className="cl-chip"
+            href={getHref(chip.value)}
+            key={chip.value || "all"}
+            prefetch={false}
+          >
+            {chip.label}
+            <ChipPending />
+          </Link>
+        ),
+      )}
+    </nav>
+  );
+}
+
 function InactiveForm({
   labels,
   student,
@@ -449,19 +536,30 @@ function studentSearchFilter(searchQuery: string) {
   return filters.length ? filters.join(",") : "";
 }
 
-function studentsPageHref(
-  page: number,
-  searchQuery: string,
-  selectedStatus: string,
-) {
+type StudentFilters = {
+  classGroup: string;
+  grade: string;
+  q: string;
+  status: string;
+};
+
+function studentsPageHref(page: number, filters: StudentFilters) {
   const params = new URLSearchParams();
 
-  if (searchQuery) {
-    params.set("q", searchQuery);
+  if (filters.q) {
+    params.set("q", filters.q);
   }
 
-  if (selectedStatus) {
-    params.set("status", selectedStatus);
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+
+  if (filters.grade) {
+    params.set("grade", filters.grade);
+  }
+
+  if (filters.classGroup) {
+    params.set("class", filters.classGroup);
   }
 
   if (page > 1) {
@@ -471,6 +569,32 @@ function studentsPageHref(
   const query = params.toString();
 
   return query ? `/students?${query}` : "/students";
+}
+
+// Every grade and class on the list. The database returns at most 1,000 rows
+// a time, so a bigger school is read in pages.
+async function getRosterClasses(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const pageSize = 1000;
+  const rows: RosterClass[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data } = await timeServer("students.query.roster-classes", () =>
+      supabase
+        .from("student_rosters")
+        .select("grade_level, homeroom")
+        .eq("school_id", schoolId)
+        .order("id")
+        .range(from, from + pageSize - 1)
+        .returns<RosterClass[]>(),
+    );
+
+    rows.push(...(data ?? []));
+
+    if ((data?.length ?? 0) < pageSize) return rows;
+  }
 }
 
 // Clubs and event sign-ups for the students shown on this page.
