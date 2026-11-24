@@ -6,6 +6,10 @@ import { timeServer } from "@/lib/server-timing";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 import { ConsoleFrame } from "../(console)/console-frame";
+import { getDictionary, translate } from "@/lib/i18n/dictionary";
+import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { SchoolSwitcher } from "./_components/school-switcher";
 import { AppShell } from "./_components/app-shell";
 
 type AppShellProfile = {
@@ -53,6 +57,8 @@ export default async function AdminLayout({
       .from("notifications")
       .select("id", { count: "exact", head: true })
       .eq("recipient_profile_id", user.id)
+      // Only the school this account is in now (platform admins switch).
+      .eq("school_id", profileResult.data?.school_id ?? "00000000-0000-0000-0000-000000000000")
       .is("read_at", null),
   );
 
@@ -63,8 +69,31 @@ export default async function AdminLayout({
   // Platform admins keep one frame on every page they open: the school app's
   // pages sit inside the console instead of switching to the top bar.
   if (platformAdminProfile) {
+    const { data: schools } = await createAdminClient()
+      .from("schools")
+      .select("id, name, is_demo")
+      .eq("status", "active")
+      .order("is_demo")
+      .order("name")
+      .returns<Array<{ id: string; is_demo: boolean; name: string }>>();
+    const dictionary = getDictionary(await getCurrentLocale());
+
     return (
-      <ConsoleFrame email={user.email ?? null} name={platformAdminProfile.full_name}>
+      <ConsoleFrame
+        email={user.email ?? null}
+        name={platformAdminProfile.full_name}
+        schoolSwitcher={
+          <SchoolSwitcher
+            currentSchoolId={platformAdminProfile.school_id}
+            label={translate(dictionary, "superAdmin.sites.console.switchSchool")}
+            schools={(schools ?? []).map((school) => ({
+              id: school.id,
+              isDemo: school.is_demo,
+              name: school.name,
+            }))}
+          />
+        }
+      >
         <div className="console-app app-surface dark">
           <main>{children}</main>
         </div>

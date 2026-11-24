@@ -12,6 +12,11 @@ export type ConsoleShellLabels = {
   approvals: string;
   auditLog: string;
   brandSub: string;
+  clubs: string;
+  home: string;
+  inviteCodes: string;
+  sectionSchool: string;
+  students: string;
   connections: string;
   language: string;
   loggingOut: string;
@@ -55,21 +60,32 @@ export function ConsoleShell({
   labels,
   locale,
   name,
+  schoolSwitcher,
 }: {
   children: ReactNode;
+  /** Picks the one school the school pages below show. */
+  schoolSwitcher?: ReactNode;
   email: string | null;
   labels: ConsoleShellLabels;
   locale: Locale;
   name: string;
 }) {
+  // Across all schools: the platform's own pages.
   const manage = [
     { href: "/super-admin", icon: "dashboard", label: labels.overview },
     { href: "/super-admin/schools", icon: "schools", label: labels.schools },
-    { href: "/approvals", icon: "approvals", label: labels.approvals },
-    { href: "/events", icon: "events", label: labels.activities },
-    { href: "/reports", icon: "reports", label: labels.reports },
     { href: "/super-admin/sites", icon: "sites", label: labels.schoolSites },
     { href: "/super-admin/connections", icon: "connections", label: labels.connections },
+  ];
+  // One school at a time, the one picked above them. Never mixed.
+  const school = [
+    { href: "/dashboard", icon: "dashboard", label: labels.home },
+    { href: "/approvals", icon: "approvals", label: labels.approvals },
+    { href: "/events", icon: "events", label: labels.activities },
+    { href: "/clubs", icon: "connections", label: labels.clubs },
+    { href: "/students", icon: "admins", label: labels.students },
+    { href: "/invite-codes", icon: "log", label: labels.inviteCodes },
+    { href: "/reports", icon: "reports", label: labels.reports },
   ];
   const system = [
     { href: "/super-admin/audit-log", icon: "log", label: labels.auditLog },
@@ -91,6 +107,14 @@ export function ConsoleShell({
         <nav aria-label={labels.brandSub} className="console-nav">
           <p>{labels.sectionManage}</p>
           {manage.map((item) => (
+            <ConsoleNavLink href={item.href} key={item.href}>
+              <Icon name={item.icon} />
+              {item.label}
+            </ConsoleNavLink>
+          ))}
+          <p>{labels.sectionSchool}</p>
+          {schoolSwitcher}
+          {school.map((item) => (
             <ConsoleNavLink href={item.href} key={item.href}>
               <Icon name={item.icon} />
               {item.label}

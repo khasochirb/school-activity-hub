@@ -8377,3 +8377,9 @@ html[data-theme="dark"] .cl-land::before {
    and form pages keep extra room below them while the tab bar shows. */
 .join-apply > button[type="submit"], .join-builder > button[type="submit"] { justify-self: start; }
 @media (max-width: 1023.98px) { .join-card { margin-bottom: 4.5rem; } }
+
+/* Platform console: the school picker above the school pages. */
+.school-switcher { margin: 2px 8px 8px; }
+.school-switcher select { width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 8px; background: rgb(255 255 255 / 0.06); color: inherit; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.school-switcher select option { color: #111; }
+.school-switcher p { margin-top: 6px; color: #fca5a5; font-size: 12.5px; line-height: 1.4; }

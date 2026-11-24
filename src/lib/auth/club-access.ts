@@ -39,10 +39,14 @@ export const getCurrentClubActor = cache(async (): Promise<ClubActor | null> => 
       .maybeSingle<{ profile_id: string }>(),
   ]);
 
+  const profile =
+    profileResult.data?.status === "active" ? profileResult.data : null;
+
   return {
-    isPlatformAdmin: Boolean(platformAdminResult.data),
-    profile:
-      profileResult.data?.status === "active" ? profileResult.data : null,
+    // As in event-access: a platform admin with a school profile works as
+    // that school's admin here, one school at a time.
+    isPlatformAdmin: Boolean(platformAdminResult.data) && !profile,
+    profile,
     userId: user.id,
   };
 });

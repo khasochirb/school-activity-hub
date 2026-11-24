@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SwitchToSchoolButton } from "../../../_components/school-switcher";
 import {
   EmptyState,
   HeaderActionLink,
@@ -74,6 +75,7 @@ export default async function SuperAdminSchoolDetailPage({
   searchParams: Promise<DetailSearchParams>;
 }) {
   const platformAdmin = await requirePlatformAdmin();
+  const currentSchoolId = platformAdmin.school_id;
   const { schoolId } = await params;
 
   if (!isUuid(schoolId)) {
@@ -219,21 +221,21 @@ export default async function SuperAdminSchoolDetailPage({
         />
       </section>
 
-      {/* What a platform admin may run for this school. Student lists and codes
-          are not here: the platform promises not to open them. */}
+      {/* Platform admins work in one school at a time: switching here makes
+          every school page in the console (home, approvals, activities, clubs,
+          students, invite codes, reports) show this school and only this one. */}
       <section className="section-card section-card-padded">
         <h2 className="section-title">{t("superAdmin.sites.console.sectionManage")}</h2>
         <div className="mt-3 flex flex-wrap gap-2">
-          {[
-            { href: `/dashboard?school=${school.id}`, label: t("nav.dashboard") },
-            { href: `/events?school=${school.id}`, label: t("nav.activities") },
-            { href: "/approvals", label: t("nav.approvals") },
-            { href: `/reports?school=${school.id}`, label: t("nav.reports") },
-          ].map((item) => (
-            <Link className="btn btn-secondary" href={item.href} key={item.href} prefetch={false}>
-              {item.label}
-            </Link>
-          ))}
+          <SwitchToSchoolButton
+            disabled={currentSchoolId === school.id}
+            label={
+              currentSchoolId === school.id
+                ? t("superAdmin.sites.console.currentSchool")
+                : t("superAdmin.sites.console.switchToSchool")
+            }
+            schoolId={school.id}
+          />
           <a className="btn btn-secondary" href={`/s/${school.slug}`} rel="noreferrer" target="_blank">
             /s/{school.slug} ↗
           </a>
