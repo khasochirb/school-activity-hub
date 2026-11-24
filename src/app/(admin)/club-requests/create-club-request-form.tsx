@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { submitKeepingInput } from "@/components/submit-keeping-input";
+import { useActionState, useEffect, useRef } from "react";
 import { ActionToast } from "@/components/toast-provider";
 import { FounderPicker, type FounderPickerLabels } from "./founder-picker";
 import { createClubProposal, type ProposalState } from "./proposal-actions";
@@ -41,11 +41,17 @@ export function CreateClubRequestForm({
   maxFounders: number;
   minFounders: number;
 }) {
-  const [state, formAction] = useActionState(createClubProposal, initialState);
+  const [state, formAction, pending] = useActionState(createClubProposal, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Fields stay after a mistake; they clear only once the idea is sent.
+  useEffect(() => {
+    if (state.success) formRef.current?.reset();
+  }, [state]);
 
   return (
     <form
-      action={formAction}
+      onSubmit={submitKeepingInput(formAction)} ref={formRef}
       className="compact-form-xl grid gap-3 md:grid-cols-[minmax(16rem,2fr)_minmax(12rem,1fr)]"
     >
       <ActionToast message={state.message} success={state.success} />
@@ -107,6 +113,7 @@ export function CreateClubRequestForm({
       ) : null}
       <div className="md:col-span-2">
         <SubmitButton
+        pending={pending}
           submitLabel={labels.submit}
           submittingLabel={labels.submitting}
         />
@@ -116,13 +123,14 @@ export function CreateClubRequestForm({
 }
 
 function SubmitButton({
+  pending,
   submitLabel,
   submittingLabel,
 }: {
+  pending: boolean;
   submitLabel: string;
   submittingLabel: string;
 }) {
-  const { pending } = useFormStatus();
 
   return (
     <button

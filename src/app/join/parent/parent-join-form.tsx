@@ -1,7 +1,7 @@
 "use client";
 
+import { submitKeepingInput } from "@/components/submit-keeping-input";
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import type { ParentJoinState } from "@/lib/family/parent-codes";
 import { redeemParentInviteCode } from "./actions";
 
@@ -20,11 +20,11 @@ export type ParentJoinLabels = {
 };
 
 export function ParentJoinForm({ labels }: { labels: ParentJoinLabels }) {
-  const [state, formAction] = useActionState(redeemParentInviteCode, initialState);
+  const [state, formAction, pending] = useActionState(redeemParentInviteCode, initialState);
   const field = "h-12 rounded-md border px-3 text-base font-normal outline-none transition";
 
   return (
-    <form action={formAction} className="mt-5 flex flex-col gap-3">
+    <form onSubmit={submitKeepingInput(formAction)} className="mt-5 flex flex-col gap-3">
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800">
         {labels.inviteCode}
         <input
@@ -75,13 +75,13 @@ export function ParentJoinForm({ labels }: { labels: ParentJoinLabels }) {
           {state.message}
         </p>
       ) : null}
-      <Submit label={labels.createAccount} pending={labels.creatingAccount} />
+      <Submit busy={pending} label={labels.createAccount} pending={labels.creatingAccount} />
     </form>
   );
 }
 
-function Submit({ label, pending }: { label: string; pending: string }) {
-  const status = useFormStatus();
+function Submit({ busy, label, pending }: { busy: boolean; label: string; pending: string }) {
+  const status = { pending: busy };
 
   return (
     <button

@@ -1,7 +1,7 @@
 "use client";
 
+import { submitKeepingInput } from "@/components/submit-keeping-input";
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import type { JoinQuestion } from "@/lib/clubs/join-form";
 import { submitJoinRequest, type JoinActionState } from "../../join-actions";
 
@@ -25,10 +25,10 @@ export function ApplyForm({
   labels: ApplyFormLabels;
   questions: Array<JoinQuestion & { id: string }>;
 }) {
-  const [state, formAction] = useActionState(submitJoinRequest, initialState);
+  const [state, formAction, pending] = useActionState(submitJoinRequest, initialState);
 
   return (
-    <form action={formAction} className="join-apply">
+    <form onSubmit={submitKeepingInput(formAction)} className="join-apply">
       <input name="club_id" type="hidden" value={clubId} />
       <p className="join-apply-intro">{questions.length ? labels.intro : labels.noQuestions}</p>
       {questions.map((question, index) => {
@@ -74,13 +74,13 @@ export function ApplyForm({
           {state.message}
         </p>
       ) : null}
-      <Submit label={labels.send} pending={labels.sending} />
+      <Submit busy={pending} label={labels.send} pending={labels.sending} />
     </form>
   );
 }
 
-function Submit({ label, pending }: { label: string; pending: string }) {
-  const status = useFormStatus();
+function Submit({ busy, label, pending }: { busy: boolean; label: string; pending: string }) {
+  const status = { pending: busy };
 
   return (
     <button className="btn btn-primary min-h-11 w-full sm:w-auto" disabled={status.pending} type="submit">
