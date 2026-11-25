@@ -4378,6 +4378,15 @@ html[data-theme="dark"] {
     grid-template-columns: minmax(0, 1fr) 20rem;
   }
 }
+/* One column: the first side box comes before the list, the rest after it. */
+@media (max-width: 919.98px) {
+  .cl-split[data-lead-box] > .cl-side {
+    display: contents;
+  }
+  .cl-split[data-lead-box] > .cl-side > .cl-widget:first-child {
+    order: -1;
+  }
+}
 .cl-main {
   display: flex;
   min-width: 0;

@@ -69,3 +69,13 @@ test("the counts read every student of the viewer's own school", () => {
   assert.match(reader, /\.range\(from, from \+ pageSize - 1\)/);
   assert.match(reader, /< pageSize\) return rows/);
 });
+
+test("on one column the counts by class come before the list", () => {
+  const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8").replaceAll("\r\n", "\n");
+  assert.match(page, /<div className="cl-split" data-lead-box="">/);
+  assert.match(page, /<aside className="cl-side">\n\s+<Widget title=\{t\("students\.list\.byGrade"\)\}>/);
+  assert.match(
+    css,
+    /@media \(max-width: 919\.98px\) \{\n  \.cl-split\[data-lead-box\] > \.cl-side \{\n    display: contents;\n  \}\n  \.cl-split\[data-lead-box\] > \.cl-side > \.cl-widget:first-child \{\n    order: -1;/,
+  );
+});
