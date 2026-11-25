@@ -1752,6 +1752,11 @@ a:has(.pending-link-indicator[data-pending="true"]) {
   border-color: var(--border);
 }
 
+:is(.dark, html[data-theme="dark"]) :is(.divide-slate-200, .divide-zinc-200) > :not(:last-child),
+:is(.dark, html[data-theme="dark"]) input[type="file"] {
+  border-color: var(--border);
+}
+
 :is(.dark, html[data-theme="dark"]) :is(.hover\:border-slate-200:hover, .hover\:border-zinc-200:hover) {
   border-color: var(--border-strong);
 }
