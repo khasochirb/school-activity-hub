@@ -1514,6 +1514,7 @@ export const en = {
       alreadyInactive: "Already inactive",
       importCsv: "Import CSV",
       markInactive: "Mark as inactive",
+      reactivate: "Make active again",
     },
     addSection: {
       description: "Use this for quick additions or small pilot rosters.",
