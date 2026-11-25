@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AutoSubmitSelect } from "../_components/auto-submit-select";
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -49,6 +50,8 @@ type Student = {
 };
 
 type StudentsSearchParams = {
+  class?: string | string[];
+  grade?: string | string[];
   page?: string | string[];
   q?: string | string[];
   status?: string | string[];
@@ -68,6 +71,9 @@ export default async function StudentsPage({
     formatTranslation(dictionary, key, values);
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
+  // Grade (анги) and class group (бүлэг), e.g. grade "10", class "10а".
+  const selectedGrade = getSearchParam(params.grade);
+  const selectedClass = getSearchParam(params.class);
   const selectedStatus = parseRosterStatus(getSearchParam(params.status));
   const page = getPageParam(params.page);
   const range = pageRange(page, STUDENTS_PAGE_SIZE);
@@ -103,6 +109,14 @@ export default async function StudentsPage({
     studentsQuery = studentsQuery.eq("status", selectedStatus);
   }
 
+  if (selectedGrade) {
+    studentsQuery = studentsQuery.eq("grade_level", selectedGrade);
+  }
+
+  if (selectedClass) {
+    studentsQuery = studentsQuery.eq("homeroom", selectedClass);
+  }
+
   const searchFilter = studentSearchFilter(searchQuery);
 
   if (searchFilter) {
@@ -118,6 +132,31 @@ export default async function StudentsPage({
         .returns<Student[]>(),
   );
   const { hasNextPage, rows: roster } = pageRows(students, STUDENTS_PAGE_SIZE);
+  // The grades and classes this school actually has, for the filters. Picking
+  // a grade narrows the class list to that grade.
+  const { data: groupRows } = await timeServer("students.query.filter-options", () =>
+    supabase
+      .from("student_rosters")
+      .select("grade_level, homeroom")
+      .eq("school_id", profile.school_id)
+      .returns<Array<{ grade_level: string | null; homeroom: string | null }>>(),
+  );
+  const sortNatural = (values: string[]) =>
+    values.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const gradeOptions = sortNatural(
+    Array.from(new Set((groupRows ?? []).map((row) => row.grade_level?.trim()).filter((v): v is string => Boolean(v)))),
+  );
+  const classOptions = sortNatural(
+    Array.from(
+      new Set(
+        (groupRows ?? [])
+          .filter((row) => !selectedGrade || row.grade_level?.trim() === selectedGrade)
+          .map((row) => row.homeroom?.trim())
+          .filter((v): v is string => Boolean(v)),
+      ),
+    ),
+  );
+  const listFilters = { classGroup: selectedClass, grade: selectedGrade };
   const filteredStudents = roster.filter(
     (student) =>
       (!selectedStatus || student.status === selectedStatus) &&
@@ -198,7 +237,7 @@ export default async function StudentsPage({
           <Link
             aria-current={selectedStatus === value ? "page" : undefined}
             className="cl-chip"
-            href={studentsPageHref(1, searchQuery, value)}
+            href={studentsPageHref(1, searchQuery, value, listFilters)}
             key={value || "all"}
             prefetch={false}
           >
@@ -213,6 +252,36 @@ export default async function StudentsPage({
           <span className="sr-only">{t("filters.search")}</span>
           <input defaultValue={searchQuery} name="q" placeholder={t("students.list.searchPlaceholder")} type="search" />
           {selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+          {selectedGrade ? <input name="grade" type="hidden" value={selectedGrade} /> : null}
+          {selectedClass ? <input name="class" type="hidden" value={selectedClass} /> : null}
+        </form>
+        <form action="/students" className="cl-filter-selects">
+          {searchQuery ? <input name="q" type="hidden" value={searchQuery} /> : null}
+          {selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+          <AutoSubmitSelect defaultValue={selectedGrade} label={t("students.filters.grade")} name="grade">
+            <option value="">{t("students.filters.allGrades")}</option>
+            {gradeOptions.map((grade) => (
+              <option key={grade} value={grade}>
+                {t("students.table.grade")} {grade}
+              </option>
+            ))}
+          </AutoSubmitSelect>
+          <AutoSubmitSelect
+            defaultValue={classOptions.includes(selectedClass) ? selectedClass : ""}
+            key={selectedGrade}
+            label={t("students.filters.classGroup")}
+            name="class"
+          >
+            <option value="">{t("students.filters.allClasses")}</option>
+            {classOptions.map((classGroup) => (
+              <option key={classGroup} value={classGroup}>
+                {classGroup}
+              </option>
+            ))}
+          </AutoSubmitSelect>
+          <noscript>
+            <button className="cl-chip" type="submit">{t("filters.apply")}</button>
+          </noscript>
         </form>
       </div>
 
@@ -314,7 +383,7 @@ export default async function StudentsPage({
         {!error && (filteredStudents.length > 0 || page > 1) ? (
           <PaginationControls
             getHref={(nextPage) =>
-              studentsPageHref(nextPage, searchQuery, selectedStatus)
+              studentsPageHref(nextPage, searchQuery, selectedStatus, listFilters)
             }
             hasNextPage={hasNextPage}
             labels={{
@@ -453,8 +522,17 @@ function studentsPageHref(
   page: number,
   searchQuery: string,
   selectedStatus: string,
+  filters: { classGroup: string; grade: string },
 ) {
   const params = new URLSearchParams();
+
+  if (filters.grade) {
+    params.set("grade", filters.grade);
+  }
+
+  if (filters.classGroup) {
+    params.set("class", filters.classGroup);
+  }
 
   if (searchQuery) {
     params.set("q", searchQuery);

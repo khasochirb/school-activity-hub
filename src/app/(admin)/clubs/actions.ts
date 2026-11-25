@@ -249,6 +249,33 @@ export async function assignClubLeader(formData: FormData) {
   revalidatePath("/clubs");
 }
 
+// Takes the leader role away; the student stays in the club as a member.
+export async function revokeClubLeader(formData: FormData) {
+  const profile = await getCurrentProfile();
+
+  if (!profile || !isStaff(profile)) {
+    redirect("/clubs");
+  }
+
+  const membershipId = String(formData.get("membership_id") ?? "").trim();
+
+  if (!membershipId) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await timeServer("clubs.action.revoke-leader.update", () =>
+    supabase
+      .from("club_memberships")
+      .update({ role: "member" })
+      .eq("id", membershipId)
+      .eq("school_id", profile.school_id)
+      .eq("role", "leader"),
+  );
+
+  revalidatePath("/clubs");
+}
+
 async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const {

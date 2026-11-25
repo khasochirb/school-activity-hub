@@ -19,6 +19,9 @@ import {
 } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { AttachmentRow } from "@/lib/attachments/attachment-access";
+import { AttachmentsPanel } from "../attachments/attachments-panel";
 import {
   CollapsibleFormSection,
   EmptyState,
@@ -131,6 +134,23 @@ export default async function AnnouncementsPage({
   const featured =
     !hasFilters && page === 1 ? filteredAnnouncements.find((item) => item.status === "active") ?? null : null;
   const rows = filteredAnnouncements.filter((item) => item.id !== featured?.id);
+  // Files of every announcement on this page, in one query. Staff manage them;
+  // students can download files of active announcements.
+  const shownIds = [featured?.id, ...rows.map((row) => row.id)].filter((id): id is string => Boolean(id));
+  const { data: fileRows } = shownIds.length
+    ? await createAdminClient()
+        .from("attachments")
+        .select("id, owner_id, file_name, content_type, size_bytes, created_at")
+        .eq("owner_type", "announcement")
+        .eq("school_id", profile.school_id)
+        .in("owner_id", shownIds)
+        .order("created_at")
+        .returns<Array<AttachmentRow & { owner_id: string }>>()
+    : { data: [] };
+  const filesFor = (announcementId: string) => ({
+    canManage: isStaff,
+    files: (fileRows ?? []).filter((file) => file.owner_id === announcementId),
+  });
 
   return (
     <div className="cl-page">
@@ -206,6 +226,7 @@ export default async function AnnouncementsPage({
           </small>
           <h2>{featured.title}</h2>
           <p>{featured.body}</p>
+          <AttachmentsPanel compact ownerId={featured.id} ownerType="announcement" preloaded={filesFor(featured.id)} />
         </article>
       ) : null}
 
@@ -250,6 +271,12 @@ export default async function AnnouncementsPage({
                       </summary>
                       <p className="mt-1 whitespace-pre-line text-sm leading-6">{announcement.body}</p>
                     </details>
+                    <AttachmentsPanel
+                      compact
+                      ownerId={announcement.id}
+                      ownerType="announcement"
+                      preloaded={filesFor(announcement.id)}
+                    />
                   </span>
                   {isStaff ? (
                     <ArchiveForm

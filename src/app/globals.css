@@ -8422,3 +8422,26 @@ html[data-theme="dark"] .cl-land::before {
 .school-switcher select { width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 8px; background: rgb(255 255 255 / 0.06); color: inherit; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
 .school-switcher select option { color: #111; }
 .school-switcher p { margin-top: 6px; color: #fca5a5; font-size: 12.5px; line-height: 1.4; }
+
+/* Filter dropdowns next to the chips (Students: grade and class). */
+.cl-filter-selects { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.cl-select select { min-height: 36px; padding: 6px 30px 6px 12px; border: 1px solid var(--cl-line-strong); border-radius: 10px; background: var(--card); color: var(--foreground); font-size: 13.5px; font-weight: 600; cursor: pointer; }
+
+/* Files (PDF/Word) on clubs, events and announcements. */
+.attach { display: grid; gap: 10px; }
+.attach h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.attach[data-compact] { gap: 6px; margin-top: 8px; }
+.attach ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.attach li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.attach li > a { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--card); color: var(--foreground); text-decoration: none; }
+.attach li > a:hover { border-color: var(--primary-border); }
+.attach-icon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.02em; color: #fff; background: #2b579a; }
+.attach-icon[data-kind="pdf"] { background: #c4302b; }
+.attach-name { display: grid; min-width: 0; }
+.attach-name b { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.attach-name small { color: var(--muted); font-size: 12px; }
+.attach-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.attach-upload label { cursor: pointer; }
+.attach-upload label[data-busy] { opacity: 0.6; cursor: progress; }
+.attach-hint { color: var(--muted); font-size: 12.5px; }
+.attach-error { flex-basis: 100%; color: var(--danger, #dc2626); font-size: 13px; }

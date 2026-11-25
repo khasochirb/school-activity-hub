@@ -203,6 +203,7 @@ export const mn = {
     revoked: "Цуцалсан",
   },
   filters: {
+    apply: "Хэрэглэх",
     active: "Идэвхтэй",
     all: "Бүгд",
     allCategories: "Бүх ангилал",
@@ -444,6 +445,9 @@ export const mn = {
       joining: "Элсэж байна...",
       leave: "Клубээс гарах",
       leaving: "Гарч байна...",
+      removeLeader: "Ахлагчаас чөлөөлөх",
+      removeLeaderDescription: "Сурагч клубт гишүүнээр үлдэнэ. Дараа нь дахин ахлагч болгож болно.",
+      removeLeaderTitle: "Ахлагчийн эрхийг хасах уу?",
       makeLeader: "Клубын удирдагч болгох",
     },
     active: {
@@ -2333,6 +2337,22 @@ export const mn = {
       title: "Удахгүй болох үйл ажиллагаа",
     },
   },
+  attachments: {
+    add: "Файл нэмэх",
+    delete: "Устгах",
+    deleteTitle: "Энэ файлыг устгах уу?",
+    errors: {
+      denied: "Та энд файл нэмэх эрхгүй.",
+      invalidType: "Зөвхөн PDF болон Word файл (.pdf, .doc, .docx) нэмж болно.",
+      saveFailed: "Файлыг хадгалж чадсангүй. Дахин оролдоно уу.",
+      tooLarge: "Файл хэт том байна (дээд тал нь 10 MB).",
+      tooMany: "Энд хамгийн ихдээ 10 файл байна. Эхлээд нэгийг устгана уу.",
+      uploadFailed: "Хуулж чадсангүй. Дахин оролдоно уу.",
+    },
+    hint: "PDF эсвэл Word, 10 MB хүртэл",
+    title: "Файлууд",
+    uploading: "Хуулж байна…",
+  },
   notifications: {
     empty: "Мэдэгдэл алга.",
     generic: "Танд шинэ мэдээлэл байна.",
@@ -2583,6 +2603,12 @@ export const mn = {
     teacher: "Багш",
   },
   students: {
+    filters: {
+      allClasses: "Бүх бүлэг",
+      allGrades: "Бүх анги",
+      classGroup: "Бүлэг",
+      grade: "Анги",
+    },
     list: {
       add: "Сурагч нэмэх",
       byGrade: "Ангиар",

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AttachmentsPanel } from "../../attachments/attachments-panel";
 import { getClassmatesAmong } from "@/lib/classmates/classmates";
 import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 import { redirect } from "next/navigation";
@@ -433,6 +434,7 @@ export default async function EventDetailPage({
                     <p className="cl-evabout">
                       {event.description || t("events.detail.noDescription")}
                     </p>
+                    <AttachmentsPanel ownerId={event.id} ownerType="event" />
                     {club ? (
                       <Link className="cl-card cl-row" href={`/clubs/${club.id}`} prefetch={false}>
                         <ClubAvatar category={event.category} name={club.name} size={48} />
