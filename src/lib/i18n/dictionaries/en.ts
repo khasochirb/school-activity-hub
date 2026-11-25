@@ -182,6 +182,7 @@ export const en = {
     yes: "Yes",
   },
   filters: {
+    apply: "Apply",
     active: "Active",
     all: "All",
     allCategories: "All categories",
@@ -439,6 +440,9 @@ export const en = {
       joining: "Joining...",
       leave: "Leave club",
       leaving: "Leaving...",
+      removeLeader: "Remove leader role",
+      removeLeaderDescription: "The student stays in the club as a member. You can make them leader again any time.",
+      removeLeaderTitle: "Remove the leader role?",
       makeLeader: "Make club leader",
     },
     active: {
@@ -1217,6 +1221,22 @@ export const en = {
       title: "Upcoming activities",
     },
   },
+  attachments: {
+    add: "Add file",
+    delete: "Delete",
+    deleteTitle: "Delete this file?",
+    errors: {
+      denied: "You can't add files here.",
+      invalidType: "Only PDF and Word files (.pdf, .doc, .docx) can be added.",
+      saveFailed: "The file couldn't be saved. Please try again.",
+      tooLarge: "The file is too large (10 MB at most).",
+      tooMany: "There can be at most 10 files here. Delete one first.",
+      uploadFailed: "The upload didn't work. Please try again.",
+    },
+    hint: "PDF or Word, up to 10 MB",
+    title: "Files",
+    uploading: "Uploading…",
+  },
   notifications: {
     empty: "No notifications yet.",
     generic: "You have an update.",
@@ -1467,6 +1487,12 @@ export const en = {
     teacher: "Teacher",
   },
   students: {
+    filters: {
+      allClasses: "All classes",
+      allGrades: "All grades",
+      classGroup: "Class",
+      grade: "Grade",
+    },
     list: {
       add: "Add students",
       byGrade: "By grade",

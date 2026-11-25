@@ -26,6 +26,7 @@ import {
 import { DetailTabs } from "../../_components/detail-tabs";
 import { CategoryLabel, Cover } from "../../_components/clean-ui";
 import { joinClub } from "../actions";
+import { AttachmentsPanel } from "../../attachments/attachments-panel";
 import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 
 type Club = {
@@ -511,6 +512,7 @@ export default async function ClubProfilePage({
                         {t("clubs.profile.tabs.noDetails")}
                       </p>
                     ) : null}
+                    <AttachmentsPanel ownerId={club.id} ownerType="club" />
                   </div>
                 ),
                 id: "about",
