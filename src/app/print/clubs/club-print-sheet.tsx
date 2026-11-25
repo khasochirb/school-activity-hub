@@ -38,7 +38,7 @@ export function ClubPrintSheet({
         <PrintButton label={t("clubs.print.printButton")} />
       </div>
 
-      <header className="flex items-start justify-between gap-6 border-b-2 border-[#0f172a] pb-4">
+      <header className="flex items-start justify-between gap-6 border-b-2 max-sm:flex-col print:flex-row border-[#0f172a] pb-4">
         <div className="min-w-0">
           <p className="text-sm font-semibold uppercase tracking-wide text-[#475569]">
             {t("app.name")}
@@ -62,7 +62,7 @@ export function ClubPrintSheet({
       </header>
 
       {clubs.length ? (
-        <ul className="mt-5 grid grid-cols-2 gap-3">
+        <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 print:grid-cols-2">
           {clubs.map((club) => {
             const facts = [
               [t("studentProfile.clubFacts.when"), club.meetingSchedule],

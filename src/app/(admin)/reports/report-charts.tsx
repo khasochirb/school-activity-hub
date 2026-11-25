@@ -324,7 +324,8 @@ function AccessibleTable({
   title: string;
 }) {
   return (
-    <table className="report-visually-hidden">
+    <div className="report-visually-hidden">
+    <table>
       <caption>{title}</caption>
       <thead><tr>{columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr></thead>
       <tbody>
@@ -337,6 +338,7 @@ function AccessibleTable({
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 

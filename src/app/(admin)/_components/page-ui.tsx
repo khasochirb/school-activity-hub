@@ -32,7 +32,7 @@ export function PageHeader({
         {description ? <p>{description}</p> : null}
       </div>
       {actions ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
           {actions}
         </div>
       ) : null}

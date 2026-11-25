@@ -150,10 +150,12 @@ export function StudentProfile({
               <Link className="cl-row" href={`/clubs/${club.id}`} key={club.id} prefetch={false}>
                 <ClubAvatar category={club.category} name={club.name} />
                 <span className="cl-grow cl-row-title">{club.name}</span>
-                <CategoryLabel
-                  category={club.category}
-                  label={club.category ? categoryLabel(club.category, t) : null}
-                />
+                <span className="cl-row-end">
+                  <CategoryLabel
+                    category={club.category}
+                    label={club.category ? categoryLabel(club.category, t) : null}
+                  />
+                </span>
               </Link>
             ))}
           </div>

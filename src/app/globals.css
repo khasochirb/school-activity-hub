@@ -8454,3 +8454,193 @@ html[data-theme="dark"] .cl-land::before {
 .attach-upload label[data-busy] { opacity: 0.6; cursor: progress; }
 .attach-hint { color: var(--muted); font-size: 12.5px; }
 .attach-error { flex-basis: 100%; color: var(--danger, #dc2626); font-size: 13px; }
+
+/* ---------- Phones ----------
+   Rules that hold on every page at phone width, so one long name or one wide
+   field cannot push the page sideways. */
+
+/* A label, a field or a button inside a grid may be narrower than its text. */
+@media (max-width: 767.98px) {
+  :where(.grid, .compact-filter-grid, .family-main, .family-child, .family-block) > * {
+    min-width: 0;
+  }
+
+  select {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* iPhones zoom the page in when a field's text is under 16px. */
+  input:not([type="checkbox"], [type="radio"], [type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* A label for screen readers inside a sideways scroller stays inside it. */
+  .overflow-x-auto,
+  .console-nav {
+    position: relative;
+  }
+
+  /* A closed form above the list takes no space. */
+  .cl-page > .collapsible-section-shell[data-open="false"] {
+    margin-bottom: -28px;
+  }
+  .page-stack > .collapsible-section-shell[data-open="false"] {
+    margin-bottom: -24px;
+  }
+
+  .badge {
+    width: fit-content;
+    max-width: 100%;
+  }
+}
+
+/* The end of a list row: tags and buttons. Beside the name on wide screens, on
+   a line of their own under it on phones. */
+.cl-row-end {
+  display: contents;
+}
+@media (max-width: 640px) {
+  .cl-row:has(> .cl-row-end) {
+    display: grid;
+    gap: 8px 12px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .cl-row > .cl-grow {
+    flex-basis: 9rem;
+  }
+  .cl-row:has(> .cl-row-end) > .cl-grow {
+    grid-column: 2 / -1;
+  }
+  .cl-row:has(> .cl-row-end):has(> .cl-menu) > .cl-grow {
+    grid-column: 2;
+  }
+  .cl-row > .cl-row-end {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 2 / -1;
+    align-items: center;
+    gap: 6px 8px;
+    grid-row: 2;
+  }
+  .cl-row > .cl-row-end:empty {
+    display: none;
+  }
+  .cl-row:has(> .cl-row-end) > .cl-menu {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .cl-row-end > form {
+    margin-left: auto;
+  }
+
+  /* Filters: the search box and the dropdowns use the full width. */
+  .cl-filters > .cl-search {
+    max-width: none;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+  .cl-filter-selects {
+    display: flex;
+    width: 100%;
+  }
+  .cl-filter-selects > .cl-select {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+  .cl-filter-selects select {
+    width: 100%;
+    min-height: 40px;
+  }
+  .cl-chip-scroll {
+    flex-basis: 10rem;
+  }
+
+  /* The loading dot sits at the edge, so the label stays in the middle. */
+  :is(.btn, .cl-btn-soft):has(> .pending-link-indicator) {
+    position: relative;
+  }
+  :is(.btn, .cl-btn-soft) > .pending-link-indicator {
+    position: absolute;
+    right: 4px;
+  }
+
+  /* Profile and school header: picture above the name. */
+  .cl-pfhead {
+    flex-direction: column;
+    gap: 10px;
+    padding-left: 12px;
+  }
+  .cl-pfhead > :last-child {
+    padding-top: 0;
+  }
+  .cl-tlcard {
+    position: relative;
+  }
+  .cl-tl-action:has(> .cl-menu) {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+  }
+  .cl-evcover {
+    max-width: none;
+  }
+
+  .founder-pill {
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow-wrap: anywhere;
+  }
+  .family-child-head {
+    flex-wrap: wrap;
+  }
+  .family-child-head > span:nth-child(2) {
+    flex: 1 1 10rem;
+  }
+
+  /* Console: brand and account on one line, then the menu. */
+  .console-side {
+    display: grid;
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .console-brand {
+    padding: 12px 0 10px 16px;
+  }
+  .console-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .console-user {
+    border-top: 0;
+    padding: 8px 10px;
+  }
+  .console-user > :not(.console-account) {
+    display: none;
+  }
+  .console-brand small {
+    display: none;
+  }
+  .console-brand b {
+    display: -webkit-box;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .console-nav .school-switcher {
+    width: 12rem;
+    flex: none;
+    margin: 0 4px;
+  }
+  .console-axis span:nth-child(even),
+  .console-axis span:nth-last-child(2) {
+    display: none;
+  }
+  .console-axis span:last-child {
+    display: block;
+  }
+}

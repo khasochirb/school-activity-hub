@@ -300,11 +300,11 @@ export default async function ClubProfilePage({
             />
           )}
         </div>
-        <div className="flex flex-col gap-4 px-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 flex-1 items-start gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:px-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:gap-4">
             <div
               aria-label={tf("clubs.profile.media.logoAlt", { club: club.name })}
-              className="relative -mt-8 h-20 w-20 shrink-0 overflow-hidden rounded-xl border-4 border-[var(--card)] bg-[var(--primary-soft)] shadow-md sm:-mt-10 sm:h-24 sm:w-24"
+              className="relative -mt-12 ml-3 h-20 w-20 shrink-0 overflow-hidden rounded-xl border-4 border-[var(--card)] bg-[var(--primary-soft)] shadow-md sm:-mt-10 sm:ml-0 sm:h-24 sm:w-24"
               role={logoUrl ? undefined : "img"}
             >
               {logoUrl ? (
@@ -323,7 +323,7 @@ export default async function ClubProfilePage({
               )}
             </div>
             <div className="min-w-0 pt-3">
-              <h1 className="break-words text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-[2.1rem]">
+              <h1 className="break-words text-3xl max-sm:text-2xl font-bold tracking-tight text-[var(--foreground)] sm:text-[2.1rem]">
                 {club.name}
               </h1>
               {profile?.tagline ? (
@@ -445,7 +445,7 @@ export default async function ClubProfilePage({
       {actor.profile?.role === "student" &&
       club.status === "active" &&
       !activeMembership ? (
-        <div className="fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-20 border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
           <div className="mx-auto flex max-w-lg items-center gap-3">
             <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-950">
               {club.name}

@@ -279,6 +279,7 @@ export default async function AnnouncementsPage({
                     />
                   </span>
                   {isStaff ? (
+                    <span className="cl-row-end">
                     <ArchiveForm
                       announcement={announcement}
                       labels={{
@@ -289,6 +290,7 @@ export default async function AnnouncementsPage({
                         confirmDescription: t("feedback.cannotBeUndone"),
                       }}
                     />
+                    </span>
                   ) : null}
                 </article>
               );

@@ -104,7 +104,7 @@ export function ReportTabs({
           <button
             aria-controls={`${id}-${tab}-panel`}
             aria-selected={activeTab === tab}
-            className="interactive-chip min-h-10 min-w-0 rounded-md px-3 py-2 text-sm font-bold leading-snug text-slate-600 aria-selected:bg-[var(--primary-soft)] aria-selected:text-[var(--primary-strong)]"
+            className="interactive-chip min-h-10 min-w-0 rounded-md px-1 py-2 sm:px-3 text-sm font-bold leading-snug text-slate-600 aria-selected:bg-[var(--primary-soft)] aria-selected:text-[var(--primary-strong)]"
             data-report-tab={tab}
             id={`${id}-${tab}-tab`}
             key={tab}

@@ -432,7 +432,7 @@ function ConnectionCard({
 
   return (
     <article className="p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
         <div>
           <h3 className="font-medium text-zinc-950">
             <SchoolName school={requester} t={t} />

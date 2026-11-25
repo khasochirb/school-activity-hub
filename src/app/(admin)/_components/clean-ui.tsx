@@ -269,6 +269,8 @@ export type WeekDay = {
   href: string;
   isToday: boolean;
   label: string;
+  /** Shown on phones, where "today" does not fit in a seventh of the screen. */
+  weekday: string;
 };
 
 export function WeekStrip({ days, label }: { days: WeekDay[]; label: string }) {
@@ -276,13 +278,17 @@ export function WeekStrip({ days, label }: { days: WeekDay[]; label: string }) {
     <nav aria-label={label} className="cl-week">
       {days.map((day) => (
         <Link
+          aria-current={day.isToday ? "date" : undefined}
           className="cl-day"
           data-today={day.isToday ? "" : undefined}
           href={day.href}
           key={`${day.label}-${day.day}`}
           prefetch={false}
         >
-          <small>{day.label}</small>
+          <small>
+            <span className="max-sm:hidden">{day.label}</span>
+            <span className="sm:hidden">{day.weekday}</span>
+          </small>
           <b>{day.day}</b>
           <span aria-hidden="true" className="cl-dots">
             {day.colors.slice(0, 3).map((color, index) => (
