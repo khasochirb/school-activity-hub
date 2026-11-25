@@ -275,7 +275,10 @@ export default async function InviteCodesPage({
         ) : null}
         <GenerateInviteForm
           labels={{
+            change: t("invites.single.change"),
             chooseStudent: t("invites.single.chooseStudent"),
+            noMatches: t("invites.single.noMatches"),
+            searchPlaceholder: t("invites.single.searchPlaceholder"),
             generate: t("invites.actions.generate"),
             generating: t("invites.actions.generating"),
             gradeOption: t("invites.single.gradeOption"),

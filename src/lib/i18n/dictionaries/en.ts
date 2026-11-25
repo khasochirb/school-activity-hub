@@ -1459,6 +1459,9 @@ export const en = {
       title: "Invite code history",
     },
     single: {
+      change: "Change",
+      noMatches: "No student without an account matches that.",
+      searchPlaceholder: "Type a name or class, e.g. Хүслэн or 10ё",
       chooseStudent: "Choose a student",
       description: "Generate a single code for an active student.",
       gradeOption: "grade {grade}",
@@ -1487,6 +1490,29 @@ export const en = {
     teacher: "Teacher",
   },
   students: {
+    reset: {
+      checkFirst: "Ask the student first: often they just typed a different email (an extra letter or number). If so, they can sign in with that email and nothing needs resetting.",
+      codeHint: "Give this to the student. It works once, for 30 days, on the normal sign-up page. They can use any email, including the one they meant to type.",
+      codeLabel: "New one-time code",
+      confirm: "Turn off this login and make a new code",
+      confirmNoAccount: "Make a new code",
+      currentLogin: "Current login",
+      done: "Done. The old login is turned off.",
+      effectCode: "A new one-time code is made and any unused code for this student stops working.",
+      effectKeep: "Their clubs, activities, attendance and portfolio stay; the new account gets them.",
+      effectOff: "This login stops working at once.",
+      errors: {
+        adminsOnly: "Only school admins can reset a student's sign-in.",
+        failed: "That didn't work. Please try again.",
+        notFound: "Student not found.",
+      },
+      lastSignIn: "Last signed in {date}",
+      menu: "Reset sign-in",
+      neverSignedIn: "Never signed in.",
+      noAccount: "This student has no account yet.",
+      title: "Reset sign-in",
+      working: "Working…",
+    },
     filters: {
       allClasses: "All classes",
       allGrades: "All grades",
@@ -1510,6 +1536,7 @@ export const en = {
       subtitle: "{count} active on the roster",
     },
     actions: {
+      reactivate: "Reactivate",
       add: "Add student",
       alreadyInactive: "Already inactive",
       importCsv: "Import CSV",
