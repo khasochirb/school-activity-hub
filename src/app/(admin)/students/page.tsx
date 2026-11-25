@@ -285,7 +285,7 @@ export default async function StudentsPage({
         </form>
       </div>
 
-      <div className="cl-split">
+      <div className="cl-split" data-lead-box="">
       <div className="cl-main">
 
       <section className="flex min-w-0 flex-col gap-3">
