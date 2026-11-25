@@ -18,6 +18,13 @@ import {
   postgrestSearchPattern,
 } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
+import {
+  countJoined,
+  joinedByClass,
+  rosterClasses,
+  rosterGrades,
+  type RosterRow,
+} from "@/lib/students/roster-counts";
 import { createClient } from "@/lib/supabase/server";
 import {
   CollapsibleFormSection,
@@ -71,9 +78,6 @@ export default async function StudentsPage({
     formatTranslation(dictionary, key, values);
   const params = await searchParams;
   const searchQuery = getSearchParam(params.q);
-  // Grade (анги) and class group (бүлэг), e.g. grade "10", class "10а".
-  const selectedGrade = getSearchParam(params.grade);
-  const selectedClass = getSearchParam(params.class);
   const selectedStatus = parseRosterStatus(getSearchParam(params.status));
   const page = getPageParam(params.page);
   const range = pageRange(page, STUDENTS_PAGE_SIZE);
@@ -98,6 +102,17 @@ export default async function StudentsPage({
     redirect("/dashboard");
   }
 
+  // Grade (анги) and class group (бүлэг), e.g. grade "10", class "10а". A class
+  // left over from another grade is dropped, so the list matches the menus.
+  const rosterRows = await getRosterRows(supabase, profile.school_id);
+  const gradeOptions = rosterGrades(rosterRows);
+  const selectedGrade = pickOption(gradeOptions, getSearchParam(params.grade));
+  const classOptions = rosterClasses(rosterRows, selectedGrade);
+  const selectedClass = pickOption(classOptions, getSearchParam(params.class));
+  const listFilters = { classGroup: selectedClass, grade: selectedGrade };
+  const joinedCount = countJoined(rosterRows, selectedGrade, selectedClass);
+  const joinedLines = joinedByClass(rosterRows, selectedGrade);
+
   let studentsQuery = supabase
     .from("student_rosters")
     .select(
@@ -105,7 +120,11 @@ export default async function StudentsPage({
     )
     .eq("school_id", profile.school_id);
 
-  if (selectedStatus) {
+  if (selectedStatus === "joined") {
+    studentsQuery = studentsQuery.eq("status", "active").not("profile_id", "is", null);
+  } else if (selectedStatus === "not-joined") {
+    studentsQuery = studentsQuery.eq("status", "active").is("profile_id", null);
+  } else if (selectedStatus) {
     studentsQuery = studentsQuery.eq("status", selectedStatus);
   }
 
@@ -132,42 +151,15 @@ export default async function StudentsPage({
         .returns<Student[]>(),
   );
   const { hasNextPage, rows: roster } = pageRows(students, STUDENTS_PAGE_SIZE);
-  // The grades and classes this school actually has, for the filters. Picking
-  // a grade narrows the class list to that grade.
-  const { data: groupRows } = await timeServer("students.query.filter-options", () =>
-    supabase
-      .from("student_rosters")
-      .select("grade_level, homeroom")
-      .eq("school_id", profile.school_id)
-      .returns<Array<{ grade_level: string | null; homeroom: string | null }>>(),
+  const filteredStudents = roster.filter((student) =>
+    matchesSearch(searchQuery, [
+      student.first_name,
+      student.last_name,
+      student.student_number,
+      `${student.first_name} ${student.last_name}`,
+    ]),
   );
-  const sortNatural = (values: string[]) =>
-    values.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  const gradeOptions = sortNatural(
-    Array.from(new Set((groupRows ?? []).map((row) => row.grade_level?.trim()).filter((v): v is string => Boolean(v)))),
-  );
-  const classOptions = sortNatural(
-    Array.from(
-      new Set(
-        (groupRows ?? [])
-          .filter((row) => !selectedGrade || row.grade_level?.trim() === selectedGrade)
-          .map((row) => row.homeroom?.trim())
-          .filter((v): v is string => Boolean(v)),
-      ),
-    ),
-  );
-  const listFilters = { classGroup: selectedClass, grade: selectedGrade };
-  const filteredStudents = roster.filter(
-    (student) =>
-      (!selectedStatus || student.status === selectedStatus) &&
-      matchesSearch(searchQuery, [
-        student.first_name,
-        student.last_name,
-        student.student_number,
-        `${student.first_name} ${student.last_name}`,
-      ]),
-  );
-  const hasFilters = Boolean(searchQuery || selectedStatus);
+  const hasFilters = Boolean(searchQuery || selectedStatus || selectedGrade || selectedClass);
   const [rowStats, summary] = await Promise.all([
     getRowStats(supabase, profile.school_id, filteredStudents.map((student) => student.id)),
     getRosterSummary(supabase, profile.school_id),
@@ -230,10 +222,12 @@ export default async function StudentsPage({
 
       <div className="cl-filters">
         {([
-          ["active", t("filters.active")],
-          ["inactive", t("filters.inactive")],
-          ["", t("filters.all")],
-        ] as const).map(([value, label]) => (
+          ["active", t("filters.active"), null],
+          ["inactive", t("filters.inactive"), null],
+          ["", t("filters.all"), null],
+          ["joined", t("students.list.joinedApp"), joinedCount.joined],
+          ["not-joined", t("students.list.notJoined"), joinedCount.notJoined],
+        ] as const).map(([value, label, count]) => (
           <Link
             aria-current={selectedStatus === value ? "page" : undefined}
             className="cl-chip"
@@ -242,6 +236,7 @@ export default async function StudentsPage({
             prefetch={false}
           >
             {label}
+            {count === null ? null : <span className="cl-chip-count">{count}</span>}
           </Link>
         ))}
         <form action="/students" className="cl-search" role="search">
@@ -258,7 +253,12 @@ export default async function StudentsPage({
         <form action="/students" className="cl-filter-selects">
           {searchQuery ? <input name="q" type="hidden" value={searchQuery} /> : null}
           {selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
-          <AutoSubmitSelect defaultValue={selectedGrade} label={t("students.filters.grade")} name="grade">
+          <AutoSubmitSelect
+            defaultValue={selectedGrade}
+            key={`grade-${selectedGrade}`}
+            label={t("students.filters.grade")}
+            name="grade"
+          >
             <option value="">{t("students.filters.allGrades")}</option>
             {gradeOptions.map((grade) => (
               <option key={grade} value={grade}>
@@ -267,8 +267,8 @@ export default async function StudentsPage({
             ))}
           </AutoSubmitSelect>
           <AutoSubmitSelect
-            defaultValue={classOptions.includes(selectedClass) ? selectedClass : ""}
-            key={selectedGrade}
+            defaultValue={selectedClass}
+            key={`class-${selectedGrade}-${selectedClass}`}
             label={t("students.filters.classGroup")}
             name="class"
           >
@@ -353,7 +353,7 @@ export default async function StudentsPage({
               );
             })}
           </div>
-        ) : roster.length && hasFilters ? (
+        ) : hasFilters ? (
           <div className="p-4">
             <NoResultsState
               clearHref="/students"
@@ -399,17 +399,20 @@ export default async function StudentsPage({
 
       <aside className="cl-side">
         <Widget title={t("students.list.byGrade")}>
-          {summary.grades.length ? (
-            summary.grades.map((grade) => (
-              <div className="cl-goal" key={grade.label}>
+          {joinedLines.length ? (
+            joinedLines.map((line) => (
+              <div className="cl-goal" key={line.label}>
                 <div>
+                  <span>{selectedGrade ? line.label : `${t("students.table.grade")} ${line.label}`}</span>
                   <span>
-                    {t("students.table.grade")} {grade.label}
+                    {t("students.list.joinedApp")}{" "}
+                    <b>
+                      {line.joined} / {line.total}
+                    </b>
                   </span>
-                  <b>{grade.count}</b>
                 </div>
                 <div className="cl-bar">
-                  <i style={{ width: `${(grade.count / summary.maxGrade) * 100}%` }} />
+                  <i style={{ width: `${(line.joined / line.total) * 100}%` }} />
                 </div>
               </div>
             ))
@@ -500,7 +503,11 @@ function statusLabel(status: string, t: (key: string) => string) {
 }
 
 function parseRosterStatus(value: string) {
-  return value === "active" || value === "inactive" ? value : "";
+  return ["active", "inactive", "joined", "not-joined"].includes(value) ? value : "";
+}
+
+function pickOption(options: string[], value: string) {
+  return options.includes(value) ? value : "";
 }
 
 function studentSearchFilter(searchQuery: string) {
@@ -549,6 +556,32 @@ function studentsPageHref(
   const query = params.toString();
 
   return query ? `/students?${query}` : "/students";
+}
+
+// Every student's grade, class and whether they joined. The database returns
+// at most 1,000 rows a time, so a bigger school is read in pages.
+async function getRosterRows(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const pageSize = 1000;
+  const rows: RosterRow[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data } = await timeServer("students.query.roster-rows", () =>
+      supabase
+        .from("student_rosters")
+        .select("grade_level, homeroom, profile_id, status")
+        .eq("school_id", schoolId)
+        .order("id")
+        .range(from, from + pageSize - 1)
+        .returns<RosterRow[]>(),
+    );
+
+    rows.push(...(data ?? []));
+
+    if ((data?.length ?? 0) < pageSize) return rows;
+  }
 }
 
 // Clubs and event sign-ups for the students shown on this page.
@@ -634,27 +667,15 @@ async function getRosterSummary(
     ),
   ]);
   const active = rosters ?? [];
-  const gradeCounts = new Map<string, number>();
-
-  for (const roster of active) {
-    const key = roster.grade_level?.trim() || "-";
-    gradeCounts.set(key, (gradeCounts.get(key) ?? 0) + 1);
-  }
-
-  const grades = Array.from(gradeCounts, ([label, count]) => ({ count, label })).sort((left, right) =>
-    left.label.localeCompare(right.label, undefined, { numeric: true }),
-  );
   const activeIds = new Set(active.map((roster) => roster.id));
 
   return {
     active: active.length,
-    grades,
     inClub: new Set(
       (memberships ?? [])
         .map((row) => row.student_roster_id)
         .filter((id) => activeIds.has(id)),
     ).size,
-    maxGrade: Math.max(1, ...grades.map((grade) => grade.count)),
     notJoined: active.filter((roster) => !roster.profile_id),
     signups: signups ?? 0,
   };
