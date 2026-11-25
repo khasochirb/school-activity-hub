@@ -319,6 +319,7 @@ export default async function StudentsPage({
                         .join(" · ")}
                     </span>
                   </span>
+                  <span className="cl-row-end">
                   <span className="cl-row-cols">
                     <span>
                       <b>{stats?.clubs ?? 0}</b> {t("students.list.clubs")}
@@ -342,6 +343,7 @@ export default async function StudentsPage({
                     }}
                     student={student}
                   />
+                  </span>
                   <ActionMenu
                     items={[
                       { href: `/portfolio/students/${student.id}`, label: t("portfolio.staff.viewPortfolio") },

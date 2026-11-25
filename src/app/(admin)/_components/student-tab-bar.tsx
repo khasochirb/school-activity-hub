@@ -24,7 +24,7 @@ export function StudentTabBar({
       aria-label={label}
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] lg:hidden"
     >
-      <ul className="pointer-events-auto mx-auto grid max-w-md grid-cols-4 gap-1 rounded-[1.4rem] border border-slate-200/80 bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.16)] backdrop-blur">
+      <ul className="pointer-events-auto mx-auto grid max-w-md grid-cols-4 rounded-[1.4rem] border border-slate-200/80 bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.16)] backdrop-blur">
         {tabs.map((tab) => {
           const active = isActiveTab(tab.href, pathname);
 
@@ -33,7 +33,7 @@ export function StudentTabBar({
               <ProtectedAppLink
                 aria-current={active ? "page" : undefined}
                 className={[
-                  "relative flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[0.7rem] leading-tight transition-colors [&>span:last-child]:absolute [&>span:last-child]:right-3 [&>span:last-child]:top-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--primary)]",
+                  "relative flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl text-[clamp(0.56rem,2.85vw,0.7rem)] leading-tight transition-colors [&>span:last-child]:absolute [&>span:last-child]:right-3 [&>span:last-child]:top-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--primary)]",
                   active
                     ? "bg-[var(--primary-soft)] font-extrabold text-[var(--primary-strong)]"
                     : "font-semibold text-slate-500",

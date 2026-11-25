@@ -1004,6 +1004,7 @@ function buildWeekDays(
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(now.getTime() + index * 24 * 60 * 60 * 1000);
     const key = dayKeyInZone(date, timeZone);
+    const weekday = formatInZone(date.toISOString(), timeZone, locale, { weekday: "short" });
     const onDay = events.filter((event) => dayKeyInZone(new Date(event.startsAt), timeZone) === key);
 
     return {
@@ -1011,7 +1012,8 @@ function buildWeekDays(
       day: Number(key.slice(8, 10)),
       href: `/events?day=${key}`,
       isToday: index === 0,
-      label: index === 0 ? todayLabel : formatInZone(date.toISOString(), timeZone, locale, { weekday: "short" }),
+      label: index === 0 ? todayLabel : weekday,
+      weekday,
     };
   });
 }
@@ -1203,7 +1205,9 @@ function StudentClubRow({
         {detail ? <span className="cl-row-sub">{detail}</span> : null}
       </span>
       {label && club.category ? (
-        <CategoryLabel category={club.category} label={label} />
+        <span className="cl-row-end">
+          <CategoryLabel category={club.category} label={label} />
+        </span>
       ) : null}
     </Link>
   );

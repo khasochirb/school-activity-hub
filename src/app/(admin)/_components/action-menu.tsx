@@ -7,6 +7,17 @@ export type ActionMenuItem =
   | { hint?: string; href: string; label: string }
   | "divider";
 
+// The menu lines up with its button's right edge. When the button is near the
+// left edge of a phone, move the menu right until all of it is on screen.
+function keepOnScreen(menu: HTMLSpanElement | null) {
+  if (!menu) return;
+
+  const margin = 8;
+  const { left } = menu.getBoundingClientRect();
+
+  if (left < margin) menu.style.right = `${left - margin}px`;
+}
+
 // The draft's menus: "+ New" in a page head, and ⋯ on cards and rows, so
 // secondary actions stay out of the way until asked for.
 export function ActionMenu({
@@ -63,7 +74,7 @@ export function ActionMenu({
         )}
       </button>
       {open ? (
-        <span aria-label={label} className="cl-menu-pop" id={menuId} role="menu">
+        <span aria-label={label} className="cl-menu-pop" id={menuId} ref={keepOnScreen} role="menu">
           {items.map((item, index) =>
             item === "divider" ? (
               <hr key={`divider-${index}`} />

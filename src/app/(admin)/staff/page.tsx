@@ -236,6 +236,7 @@ export default async function StaffPage({
                       {emailByProfileId.get(staff.id) ?? t("staff.fallback.emailUnavailable")}
                     </span>
                   </span>
+                  <span className="cl-row-end">
                   <span className="cl-row-cols">
                     <span>{tf("staff.list.added", { date: formatDate(staff.created_at, locale) })}</span>
                   </span>
@@ -260,6 +261,7 @@ export default async function StaffPage({
                             }}
                             staff={staff}
                           />
+                  </span>
                 </div>
               ))}
             </div>

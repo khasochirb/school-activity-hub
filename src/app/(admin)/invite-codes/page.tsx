@@ -348,6 +348,7 @@ export default async function InviteCodesPage({
                         .join(" · ") || "-"}
                     </span>
                   </span>
+                  <span className="cl-row-end">
                   <span className="cl-row-cols flex-col items-end gap-0 text-right">
                     <span>
                       {invite.redeemed_at
@@ -376,6 +377,7 @@ export default async function InviteCodesPage({
                       revoking: t("invites.actions.revoking"),
                     }}
                   />
+                  </span>
                 </div>
               );
             })}
