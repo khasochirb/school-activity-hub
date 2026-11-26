@@ -163,7 +163,7 @@ export function shareOf(value: number, base: number) {
   return base ? Math.round((value / base) * 100) : null;
 }
 
-export type OverviewCheckId = "adminMissing" | "noCode" | "codesExpiring" | "pendingOld" | "noUpcoming";
+export type OverviewCheckId = "adminMissing" | "noClubs" | "noTeachers" | "noCode" | "codesExpiring" | "pendingOld" | "noUpcoming";
 export type OverviewCheck = {
   count: number;
   id: OverviewCheckId;
@@ -191,6 +191,9 @@ export function overviewChecks(schools: SchoolSummary[]): OverviewCheck[] {
 
   return [
     check("adminMissing", "fail", (school) => (school.admins ? 0 : 1)),
+    // Students who sign up would find nothing to join.
+    check("noClubs", "warn", (school) => (school.clubs ? 0 : 1)),
+    check("noTeachers", "warn", (school) => (school.teachers ? 0 : 1)),
     check("codesExpiring", "warn", (school) => school.codesExpiring),
     check("noCode", "warn", (school) => school.noCode),
     check("pendingOld", "warn", (school) => school.pendingOld),

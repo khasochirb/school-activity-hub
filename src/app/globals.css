@@ -7899,6 +7899,8 @@ html[data-theme="dark"] .cl-land::before {
 .console .console-app::before { display: none; }
 .console .console-app :is(input:not([type="checkbox"], [type="radio"]), select, textarea) { border-color: var(--c-line-strong); background-color: var(--input-bg); color: var(--c-text); }
 .console .console-app thead { background: none; }
+/* Category colours are picked for white; lift them so the words read on dark. */
+.console-app .cl-cat { color: color-mix(in srgb, var(--c) 45%, #fff); }
 .console-account { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; }
 .console-logout { border-radius: 8px; padding: 6px 10px; color: var(--c-muted); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
 .console-logout:hover { background: var(--c-raise); color: var(--c-text); }

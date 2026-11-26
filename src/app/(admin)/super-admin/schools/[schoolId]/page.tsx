@@ -21,6 +21,8 @@ import {
   updatePlatformSchool,
   updatePlatformSchoolAdminStatus,
 } from "./actions";
+import { AddClubForm, PlatformClubs, type SchoolClub } from "./club-controls";
+import { AddTeacherForm, PlatformTeachers, type SchoolTeacher } from "./teacher-controls";
 
 type SchoolStatus = "active" | "archived";
 type ProfileStatus = "active" | "inactive";
@@ -44,12 +46,6 @@ type SchoolAdminProfile = {
 
 type SchoolConnection = {
   status: "pending" | "approved" | "rejected" | "blocked" | "archived";
-};
-
-type SchoolClub = {
-  id: string;
-  name: string;
-  status: "active" | "archived";
 };
 
 type DetailPageParams = {
@@ -95,7 +91,7 @@ export default async function SuperAdminSchoolDetailPage({
   const [
     { data: school, error: schoolError },
     schoolAdminsResult,
-    teacherCountResult,
+    teachersResult,
     studentCountResult,
     { data: connections, error: connectionsError },
     clubsResult,
@@ -114,9 +110,11 @@ export default async function SuperAdminSchoolDetailPage({
       .returns<SchoolAdminProfile[]>(),
     admin
       .from("profiles")
-      .select("id", { count: "exact", head: true })
+      .select("id, full_name, status")
       .eq("school_id", schoolId)
-      .eq("role", "teacher"),
+      .eq("role", "teacher")
+      .order("full_name")
+      .returns<SchoolTeacher[]>(),
     admin
       .from("student_rosters")
       .select("id", { count: "exact", head: true })
@@ -154,7 +152,7 @@ export default async function SuperAdminSchoolDetailPage({
       .length ?? 0;
   const hasLoadError = Boolean(
     schoolAdminsResult.error ||
-      teacherCountResult.error ||
+      teachersResult.error ||
       studentCountResult.error ||
       clubsResult.error ||
       connectionsError,
@@ -209,7 +207,7 @@ export default async function SuperAdminSchoolDetailPage({
         />
         <MetricCard
           label={t("superAdmin.schoolDetail.fields.teachers")}
-          value={countValue(teacherCountResult)}
+          value={teachersResult.data?.length ?? 0}
         />
         <MetricCard
           label={t("superAdmin.schoolDetail.fields.students")}
@@ -240,19 +238,23 @@ export default async function SuperAdminSchoolDetailPage({
             /s/{school.slug} ↗
           </a>
         </div>
-        {clubsResult.data?.length ? (
-          <>
-            <h3 className="mt-5 text-sm font-semibold">{t("nav.clubs")}</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {clubsResult.data.map((club) => (
-                <Link className="btn btn-secondary" href={`/clubs/${club.id}`} key={club.id} prefetch={false}>
-                  {club.name}
-                  {club.status === "archived" ? ` (${t("status.archived")})` : ""}
-                </Link>
-              ))}
-            </div>
-          </>
-        ) : null}
+      </section>
+
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">{t("nav.clubs")}</h2>
+        <PlatformClubs clubs={clubsResult.data ?? []} schoolId={school.id} t={t} />
+        <AddClubForm schoolId={school.id} t={t} />
+      </section>
+
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">{t("superAdmin.schoolDetail.fields.teachers")}</h2>
+        <PlatformTeachers
+          currentProfileId={platformAdmin.id}
+          schoolId={school.id}
+          t={t}
+          teachers={teachersResult.data ?? []}
+        />
+        <AddTeacherForm schoolId={school.id} t={t} />
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">

@@ -1,4 +1,7 @@
 const actionLabelKeyByAction: Record<string, string> = {
+  "platform.club.archived": "superAdmin.auditLog.actionLabels.clubArchived",
+  "platform.club.created": "superAdmin.auditLog.actionLabels.clubCreated",
+  "platform.club.restored": "superAdmin.auditLog.actionLabels.clubRestored",
   "platform.connection.approved":
     "superAdmin.auditLog.actionLabels.connectionApproved",
   "platform.connection.created":
@@ -21,6 +24,9 @@ const actionLabelKeyByAction: Record<string, string> = {
     "superAdmin.auditLog.actionLabels.schoolAdminDeactivated",
   "platform.school_admin.reactivated":
     "superAdmin.auditLog.actionLabels.schoolAdminReactivated",
+  "platform.teacher.created": "superAdmin.auditLog.actionLabels.teacherCreated",
+  "platform.teacher.deactivated": "superAdmin.auditLog.actionLabels.teacherDeactivated",
+  "platform.teacher.reactivated": "superAdmin.auditLog.actionLabels.teacherReactivated",
 };
 
 // An action with no label yet shows as its own name.
