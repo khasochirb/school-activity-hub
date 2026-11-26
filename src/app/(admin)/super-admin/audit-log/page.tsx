@@ -4,6 +4,7 @@ import {
   loadPlatformAuditLogs,
   type PlatformAuditLog,
 } from "@/lib/audit/platform-audit-query";
+import { auditActionLabelKey } from "@/app/(console)/super-admin/audit-labels";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import {
@@ -41,31 +42,6 @@ type AuditLogSearchParams = {
 
 type Translator = (key: string) => string;
 type Locale = Awaited<ReturnType<typeof getCurrentLocale>>;
-
-const actionLabelKeyByAction: Record<string, string> = {
-  "platform.connection.approved":
-    "superAdmin.auditLog.actionLabels.connectionApproved",
-  "platform.connection.created":
-    "superAdmin.auditLog.actionLabels.connectionCreated",
-  "platform.connection.rejected":
-    "superAdmin.auditLog.actionLabels.connectionRejected",
-  "platform.connection.revoked":
-    "superAdmin.auditLog.actionLabels.connectionRevoked",
-  "platform.platform_admin.added":
-    "superAdmin.auditLog.actionLabels.platformAdminAdded",
-  "platform.platform_admin.deactivated":
-    "superAdmin.auditLog.actionLabels.platformAdminDeactivated",
-  "platform.platform_admin.reactivated":
-    "superAdmin.auditLog.actionLabels.platformAdminReactivated",
-  "platform.school.created": "superAdmin.auditLog.actionLabels.schoolCreated",
-  "platform.school.updated": "superAdmin.auditLog.actionLabels.schoolUpdated",
-  "platform.school_admin.created":
-    "superAdmin.auditLog.actionLabels.schoolAdminCreated",
-  "platform.school_admin.deactivated":
-    "superAdmin.auditLog.actionLabels.schoolAdminDeactivated",
-  "platform.school_admin.reactivated":
-    "superAdmin.auditLog.actionLabels.schoolAdminReactivated",
-};
 
 export default async function SuperAdminAuditLogPage({
   searchParams,
@@ -610,9 +586,7 @@ function shortId(id: string) {
 }
 
 function auditActionLabel(action: string, t: Translator) {
-  const key = actionLabelKeyByAction[action];
-
-  return key ? t(key) : action;
+  return t(auditActionLabelKey(action));
 }
 
 function uniqueStrings(values: Array<string | null | undefined>) {
