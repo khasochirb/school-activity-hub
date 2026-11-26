@@ -6,6 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function logout() {
   const supabase = await createClient();
-  await timeServer("logout.action.auth-sign-out", () => supabase.auth.signOut());
+  // "local" ends the session on this device only. The library default ends
+  // every session of the account, which signs out a student's other devices and
+  // everyone sharing a demo account.
+  await timeServer("logout.action.auth-sign-out", () =>
+    supabase.auth.signOut({ scope: "local" }),
+  );
   redirect("/login");
 }
