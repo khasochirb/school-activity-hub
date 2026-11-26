@@ -11,6 +11,21 @@ import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+// A student can hide their name from classmates on club rows. Names show by default.
+export async function setShowNameToClassmates(formData: FormData) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_show_name_to_classmates", {
+    show_name: formData.get("show_name") === "on",
+  });
+
+  if (error) {
+    console.error("profile.action.show-name-to-classmates failed", { code: error.code });
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/clubs");
+}
+
 export type UpdateProfileState = {
   message: string;
   success: boolean;

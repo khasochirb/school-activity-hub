@@ -580,3 +580,29 @@ function formatImportMessage(
 
   return lines.join("\n");
 }
+
+// Undo "Mark inactive".
+export async function markStudentActive(formData: FormData) {
+  const profile = await getCurrentStaffProfile();
+
+  if (!profile) {
+    redirect("/dashboard");
+  }
+
+  const studentId = String(formData.get("student_id") ?? "").trim();
+
+  if (!studentId) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await timeServer("students.action.mark-active.update", () =>
+    supabase
+      .from("student_rosters")
+      .update({ status: "active" })
+      .eq("id", studentId)
+      .eq("school_id", profile.school_id),
+  );
+
+  revalidatePath("/students");
+}

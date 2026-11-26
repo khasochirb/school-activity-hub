@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getCurrentSafeguardingAccess } from "@/lib/auth/sensitive-workflows";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
-import { PageHeader } from "../_components/page-ui";
+import { Section, Widget } from "../_components/clean-ui";
 
 export default async function SafetyPage() {
   const locale = await getCurrentLocale();
@@ -11,60 +11,89 @@ export default async function SafetyPage() {
   const access = await getCurrentSafeguardingAccess();
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        description={t("safety.description")}
-        title={t("safety.title")}
-      />
-
-      <section className="notice-box notice-warning">
-        <h2 className="font-bold">{t("safety.urgent.title")}</h2>
-        <p className="mt-2 text-sm leading-6">{t("safety.urgent.notEmergency")}</p>
-        <p className="mt-2 text-sm leading-6">{t("safety.urgent.urgentProcess")}</p>
-        <p className="mt-2 text-sm leading-6">{t("safety.urgent.designatedOnly")}</p>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <SafetyLinkCard
-          description={t("safety.cards.reportDescription")}
-          href="/safety/report"
-          label={t("safety.cards.reportAction")}
-          title={t("safety.cards.reportTitle")}
-        />
-        <SafetyLinkCard
-          description={t("safety.cards.myReportsDescription")}
-          href="/safety/my-reports"
-          label={t("safety.cards.myReportsAction")}
-          title={t("safety.cards.myReportsTitle")}
-        />
-      </section>
-
-      <section className="section-card section-card-padded">
-        <h2 className="section-title">{t("safety.confidentiality.title")}</h2>
-        <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-700">
-          <p>{t("safety.confidentiality.identity")}</p>
-          <p>{t("safety.confidentiality.restricted")}</p>
-          <p>{t("safety.confidentiality.offline")}</p>
+    <div className="cl-page">
+      <section className="cl-card cl-safehero">
+        <div className="min-w-0">
+          <h1>{t("safety.title")}</h1>
+          <p>{t("safety.description")}</p>
         </div>
+        <span aria-hidden="true" className="cl-safeicon">
+          <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 24 24">
+            <path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z" />
+            <path d="M9 12l2 2 4-4" />
+          </svg>
+        </span>
       </section>
 
-      {access.isDesignated ? (
-        <SafetyLinkCard
-          description={t("safety.cards.inboxDescription")}
-          href="/safety/reports"
-          label={t("safety.cards.inboxAction")}
-          title={t("safety.cards.inboxTitle")}
-        />
-      ) : null}
+      <section className="cl-safenotice" role="note">
+        <b>{t("safety.urgent.title")}</b>
+        <p>{t("safety.urgent.notEmergency")}</p>
+        <p>{t("safety.urgent.urgentProcess")}</p>
+        <p>{t("safety.urgent.designatedOnly")}</p>
+      </section>
 
-      {access.profile?.role === "school_admin" ? (
-        <SafetyLinkCard
-          description={t("safety.cards.designationsDescription")}
-          href="/safety/designations"
-          label={t("safety.cards.designationsAction")}
-          title={t("safety.cards.designationsTitle")}
-        />
-      ) : null}
+      <div className="cl-split">
+        <div className="cl-main">
+          <div className="cl-egrid">
+            <SafetyLinkCard
+              description={t("safety.cards.reportDescription")}
+              href="/safety/report"
+              label={t("safety.cards.reportAction")}
+              primary
+              title={t("safety.cards.reportTitle")}
+            />
+            <SafetyLinkCard
+              description={t("safety.cards.myReportsDescription")}
+              href="/safety/my-reports"
+              label={t("safety.cards.myReportsAction")}
+              title={t("safety.cards.myReportsTitle")}
+            />
+            {access.isDesignated ? (
+              <SafetyLinkCard
+                description={t("safety.cards.inboxDescription")}
+                href="/safety/reports"
+                label={t("safety.cards.inboxAction")}
+                title={t("safety.cards.inboxTitle")}
+              />
+            ) : null}
+            {access.profile?.role === "school_admin" ? (
+              <SafetyLinkCard
+                description={t("safety.cards.designationsDescription")}
+                href="/safety/designations"
+                label={t("safety.cards.designationsAction")}
+                title={t("safety.cards.designationsTitle")}
+              />
+            ) : null}
+          </div>
+
+          <Section title={t("safety.confidentiality.title")}>
+            <div className="cl-facts">
+              {[
+                t("safety.confidentiality.identity"),
+                t("safety.confidentiality.restricted"),
+                t("safety.confidentiality.offline"),
+              ].map((text) => (
+                <p className="cl-card p-4 text-[13.5px] leading-6 text-[var(--foreground)]" key={text}>
+                  {text}
+                </p>
+              ))}
+            </div>
+          </Section>
+        </div>
+
+        <aside className="cl-side">
+          <Widget title={t("safety.next.title")}>
+            <ol className="cl-steps">
+              {[1, 2, 3].map((step) => (
+                <li key={step}>
+                  <b>{t(`safety.next.step${step}Title`)}</b>
+                  <span>{t(`safety.next.step${step}Text`)}</span>
+                </li>
+              ))}
+            </ol>
+          </Widget>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -73,22 +102,28 @@ function SafetyLinkCard({
   description,
   href,
   label,
+  primary = false,
   title,
 }: {
   description: string;
   href: string;
   label: string;
+  primary?: boolean;
   title: string;
 }) {
   return (
-    <section className="section-card section-card-padded flex min-w-0 flex-col">
-      <h2 className="section-title">{title}</h2>
-      <p className="section-description flex-1">{description}</p>
-      <div className="mt-4">
-        <Link className="btn btn-primary w-full sm:w-auto" href={href} prefetch={false}>
+    <section className="cl-card cl-panel min-w-0">
+      <h2 className="cl-panel-big">{title}</h2>
+      <p className="flex-1 text-[13.5px] text-[var(--muted)]">{description}</p>
+      {primary ? (
+        <Link className="btn btn-primary min-h-11 w-full sm:w-auto" href={href} prefetch={false}>
           {label}
         </Link>
-      </div>
+      ) : (
+        <Link className="cl-widget-link" href={href} prefetch={false}>
+          {label} →
+        </Link>
+      )}
     </section>
   );
 }

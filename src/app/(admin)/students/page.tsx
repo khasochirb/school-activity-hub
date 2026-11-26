@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { AutoSubmitSelect } from "../_components/auto-submit-select";
 import { redirect } from "next/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -6,7 +8,6 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
-import { formatDate } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import {
   getPageParam,
@@ -17,21 +18,24 @@ import {
   postgrestSearchPattern,
 } from "@/lib/list-filters";
 import { timeServer } from "@/lib/server-timing";
+import {
+  countJoined,
+  joinedByClass,
+  rosterClasses,
+  rosterGrades,
+  type RosterRow,
+} from "@/lib/students/roster-counts";
 import { createClient } from "@/lib/supabase/server";
 import {
   CollapsibleFormSection,
   EmptyState,
-  DetailsDisclosure,
-  FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
   PaginationControls,
-  PageHeader,
-  SearchField,
-  SelectFilter,
-  StatusBadge,
 } from "../_components/page-ui";
-import { markStudentInactive } from "./actions";
+import { ActionMenu } from "../_components/action-menu";
+import { PageHead, Widget } from "../_components/clean-ui";
+import { markStudentActive, markStudentInactive } from "./actions";
 import { CreateStudentForm } from "./create-student-form";
 import { ImportStudentsForm } from "./import-students-form";
 
@@ -49,9 +53,12 @@ type Student = {
   student_number: string | null;
   status: string;
   created_at: string;
+  profile_id: string | null;
 };
 
 type StudentsSearchParams = {
+  class?: string | string[];
+  grade?: string | string[];
   page?: string | string[];
   q?: string | string[];
   status?: string | string[];
@@ -95,15 +102,38 @@ export default async function StudentsPage({
     redirect("/dashboard");
   }
 
+  // Grade (анги) and class group (бүлэг), e.g. grade "10", class "10а". A class
+  // left over from another grade is dropped, so the list matches the menus.
+  const rosterRows = await getRosterRows(supabase, profile.school_id);
+  const gradeOptions = rosterGrades(rosterRows);
+  const selectedGrade = pickOption(gradeOptions, getSearchParam(params.grade));
+  const classOptions = rosterClasses(rosterRows, selectedGrade);
+  const selectedClass = pickOption(classOptions, getSearchParam(params.class));
+  const listFilters = { classGroup: selectedClass, grade: selectedGrade };
+  const joinedCount = countJoined(rosterRows, selectedGrade, selectedClass);
+  const joinedLines = joinedByClass(rosterRows, selectedGrade);
+
   let studentsQuery = supabase
     .from("student_rosters")
     .select(
-      "id, first_name, last_name, grade_level, homeroom, student_number, status, created_at",
+      "id, first_name, last_name, grade_level, homeroom, student_number, status, created_at, profile_id",
     )
     .eq("school_id", profile.school_id);
 
-  if (selectedStatus) {
+  if (selectedStatus === "joined") {
+    studentsQuery = studentsQuery.eq("status", "active").not("profile_id", "is", null);
+  } else if (selectedStatus === "not-joined") {
+    studentsQuery = studentsQuery.eq("status", "active").is("profile_id", null);
+  } else if (selectedStatus) {
     studentsQuery = studentsQuery.eq("status", selectedStatus);
+  }
+
+  if (selectedGrade) {
+    studentsQuery = studentsQuery.eq("grade_level", selectedGrade);
+  }
+
+  if (selectedClass) {
+    studentsQuery = studentsQuery.eq("homeroom", selectedClass);
   }
 
   const searchFilter = studentSearchFilter(searchQuery);
@@ -121,33 +151,35 @@ export default async function StudentsPage({
         .returns<Student[]>(),
   );
   const { hasNextPage, rows: roster } = pageRows(students, STUDENTS_PAGE_SIZE);
-  const filteredStudents = roster.filter(
-    (student) =>
-      (!selectedStatus || student.status === selectedStatus) &&
-      matchesSearch(searchQuery, [
-        student.first_name,
-        student.last_name,
-        student.student_number,
-        `${student.first_name} ${student.last_name}`,
-      ]),
+  const filteredStudents = roster.filter((student) =>
+    matchesSearch(searchQuery, [
+      student.first_name,
+      student.last_name,
+      student.student_number,
+      `${student.first_name} ${student.last_name}`,
+    ]),
   );
-  const hasFilters = Boolean(searchQuery || selectedStatus);
+  const hasFilters = Boolean(searchQuery || selectedStatus || selectedGrade || selectedClass);
+  const [rowStats, summary] = await Promise.all([
+    getRowStats(supabase, profile.school_id, filteredStudents.map((student) => student.id)),
+    getRosterSummary(supabase, profile.school_id),
+  ]);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
-          <>
-            <FormSectionToggleButton targetId="add-student">
-              {t("students.actions.add")}
-            </FormSectionToggleButton>
-            <FormSectionToggleButton targetId="import-csv" variant="secondary">
-              {t("students.actions.importCsv")}
-            </FormSectionToggleButton>
-          </>
+    <div className="cl-page">
+      <PageHead
+        action={
+          <ActionMenu
+            buttonClassName="btn btn-primary min-h-11 gap-1.5"
+            buttonLabel={<>+ {t("students.list.add")}</>}
+            items={[
+              { hint: t("students.addSection.description"), href: "#add-student", label: t("students.actions.add") },
+              { hint: t("students.importSection.description"), href: "#import-csv", label: t("students.actions.importCsv") },
+            ]}
+            label={t("students.list.add")}
+          />
         }
-        description={t("students.description")}
-        eyebrow={t("students.eyebrow")}
+        subtitle={tf("students.list.subtitle", { count: summary.active })}
         title={t("students.title")}
       />
 
@@ -188,164 +220,146 @@ export default async function StudentsPage({
         />
       </CollapsibleFormSection>
 
-      <FilterPanel
-        action="/students"
-        clearHref="/students"
-        clearLabel={t("filters.clear")}
-        resultCountLabel={tf("filters.showingResults", {
-          count: filteredStudents.length,
-        })}
-        submitLabel={t("filters.filter")}
-      >
-        <SearchField
-          defaultValue={searchQuery}
-          label={t("filters.search")}
-          placeholder={t("filters.searchStudents")}
-        />
-        <SelectFilter
-          defaultValue={selectedStatus ?? ""}
-          label={t("filters.status")}
-          name="status"
-          options={[
-            { label: t("filters.all"), value: "" },
-            { label: t("filters.active"), value: "active" },
-            { label: t("filters.inactive"), value: "inactive" },
-          ]}
-        />
-      </FilterPanel>
+      <div className="cl-filters">
+        {([
+          ["active", t("filters.active"), null],
+          ["inactive", t("filters.inactive"), null],
+          ["", t("filters.all"), null],
+          ["joined", t("students.list.joinedApp"), joinedCount.joined],
+          ["not-joined", t("students.list.notJoined"), joinedCount.notJoined],
+        ] as const).map(([value, label, count]) => (
+          <Link
+            aria-current={selectedStatus === value ? "page" : undefined}
+            className="cl-chip"
+            href={studentsPageHref(1, searchQuery, value, listFilters)}
+            key={value || "all"}
+            prefetch={false}
+          >
+            {label}
+            {count === null ? null : <span className="cl-chip-count">{count}</span>}
+          </Link>
+        ))}
+        <form action="/students" className="cl-search" role="search">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <span className="sr-only">{t("filters.search")}</span>
+          <input defaultValue={searchQuery} name="q" placeholder={t("students.list.searchPlaceholder")} type="search" />
+          {selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+          {selectedGrade ? <input name="grade" type="hidden" value={selectedGrade} /> : null}
+          {selectedClass ? <input name="class" type="hidden" value={selectedClass} /> : null}
+        </form>
+        <form action="/students" className="cl-filter-selects">
+          {searchQuery ? <input name="q" type="hidden" value={searchQuery} /> : null}
+          {selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+          <AutoSubmitSelect
+            defaultValue={selectedGrade}
+            key={`grade-${selectedGrade}`}
+            label={t("students.filters.grade")}
+            name="grade"
+          >
+            <option value="">{t("students.filters.allGrades")}</option>
+            {gradeOptions.map((grade) => (
+              <option key={grade} value={grade}>
+                {t("students.table.grade")} {grade}
+              </option>
+            ))}
+          </AutoSubmitSelect>
+          <AutoSubmitSelect
+            defaultValue={selectedClass}
+            key={`class-${selectedGrade}-${selectedClass}`}
+            label={t("students.filters.classGroup")}
+            name="class"
+          >
+            <option value="">{t("students.filters.allClasses")}</option>
+            {classOptions.map((classGroup) => (
+              <option key={classGroup} value={classGroup}>
+                {classGroup}
+              </option>
+            ))}
+          </AutoSubmitSelect>
+          <noscript>
+            <button className="cl-chip" type="submit">{t("filters.apply")}</button>
+          </noscript>
+        </form>
+      </div>
 
-      <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">{t("students.roster.title")}</h2>
-          {error ? (
-            <p className="mt-2 text-sm text-red-600">
-              {tf("students.errors.loadFailed", {
-                error: t("common.somethingWentWrong"),
-              })}
-            </p>
-          ) : null}
-        </div>
+      <div className="cl-split" data-lead-box="">
+      <div className="cl-main">
+
+      <section className="flex min-w-0 flex-col gap-3">
+        {error ? (
+          <p className="notice-box notice-warning">
+            {tf("students.errors.loadFailed", {
+              error: t("common.somethingWentWrong"),
+            })}
+          </p>
+        ) : null}
         {roster.length && filteredStudents.length ? (
-          <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">
-                      {t("students.table.fullName")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("students.table.grade")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("students.table.classGroup")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("students.table.studentNumber")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("students.table.status")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("students.table.created")}
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      {t("students.table.actions")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200">
-                  {filteredStudents.map((student) => (
-                    <tr key={student.id}>
-                      <td className="px-4 py-3 font-medium text-zinc-950">
-                        {student.first_name} {student.last_name}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {student.grade_level}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {student.homeroom || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {student.student_number || "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={student.status}>
-                          {statusLabel(student.status, t)}
-                        </StatusBadge>
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        {formatDate(student.created_at, locale)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <InactiveForm
-                          labels={{
-                            alreadyInactive: t(
-                              "students.actions.alreadyInactive",
-                            ),
-                            markInactive: t("students.actions.markInactive"),
-                            saving: t("common.saving"),
-                          }}
-                          student={student}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="divide-y divide-zinc-200 md:hidden">
-              {filteredStudents.map((student) => (
-                <article className="p-4" key={student.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-medium text-zinc-950">
-                        {student.first_name} {student.last_name}
-                      </h3>
-                      <p className="mt-1 text-sm text-zinc-600">
-                        {t("students.table.grade")} {student.grade_level}
-                        {student.homeroom ? `, ${student.homeroom}` : ""}
-                      </p>
-                    </div>
-                    <StatusBadge status={student.status}>
-                      {statusLabel(student.status, t)}
-                    </StatusBadge>
-                  </div>
-                  <DetailsDisclosure label={t("common.viewDetails")}>
-                    <dl className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("students.table.studentNumber")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          {student.student_number || "-"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-zinc-500">
-                          {t("students.table.created")}
-                        </dt>
-                        <dd className="text-zinc-800">
-                          {formatDate(student.created_at, locale)}
-                        </dd>
-                      </div>
-                    </dl>
-                  </DetailsDisclosure>
-                  <div className="mt-4">
-                    <InactiveForm
-                      labels={{
-                        alreadyInactive: t("students.actions.alreadyInactive"),
-                        markInactive: t("students.actions.markInactive"),
-                        saving: t("common.saving"),
-                      }}
-                      student={student}
-                    />
-                  </div>
-                </article>
-              ))}
-            </div>
-          </>
-        ) : roster.length && hasFilters ? (
+          <div className="cl-card cl-rows">
+            {filteredStudents.map((student) => {
+              const name = `${student.first_name} ${student.last_name}`;
+              const stats = rowStats.get(student.id);
+
+              return (
+                <div className="cl-row" key={student.id}>
+                  <span aria-hidden="true" className="cl-av" style={{ background: avatarColor(name), color: "#1b1a17" }}>
+                    {(student.first_name[0] ?? "") + (student.last_name[0] ?? "")}
+                  </span>
+                  <span className="cl-grow">
+                    <span className="cl-row-title">{name}</span>
+                    <span className="cl-row-sub">
+                      {[
+                        student.grade_level ? `${t("students.table.grade")} ${student.grade_level}` : null,
+                        student.homeroom,
+                        student.student_number,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </span>
+                  <span className="cl-row-end">
+                  <span className="cl-row-cols">
+                    <span>
+                      <b>{stats?.clubs ?? 0}</b> {t("students.list.clubs")}
+                    </span>
+                    <span>
+                      <b>{stats?.events ?? 0}</b> {t("students.list.events")}
+                    </span>
+                  </span>
+                  {student.status !== "active" ? (
+                    <span className="cl-tag">{statusLabel(student.status, t)}</span>
+                  ) : student.profile_id ? (
+                    <span className="cl-tag" data-tone="ok">{t("students.list.joinedApp")}</span>
+                  ) : (
+                    <span className="cl-tag" data-tone="warn">{t("students.list.notJoined")}</span>
+                  )}
+                  <InactiveForm
+                    labels={{
+                      alreadyInactive: "",
+                      markInactive: t("students.actions.markInactive"),
+                      reactivate: t("students.actions.reactivate"),
+                      saving: t("common.saving"),
+                    }}
+                    student={student}
+                  />
+                  </span>
+                  <ActionMenu
+                    items={[
+                      { href: `/portfolio/students/${student.id}`, label: t("portfolio.staff.viewPortfolio") },
+                      { href: "/invite-codes", label: t("students.list.inviteCode") },
+                      ...(profile.role === "school_admin"
+                        ? [{ href: `/students/${student.id}/reset`, label: t("students.reset.menu") }]
+                        : []),
+                    ]}
+                    label={t("common.moreActions")}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ) : hasFilters ? (
           <div className="p-4">
             <NoResultsState
               clearHref="/students"
@@ -375,7 +389,7 @@ export default async function StudentsPage({
         {!error && (filteredStudents.length > 0 || page > 1) ? (
           <PaginationControls
             getHref={(nextPage) =>
-              studentsPageHref(nextPage, searchQuery, selectedStatus)
+              studentsPageHref(nextPage, searchQuery, selectedStatus, listFilters)
             }
             hasNextPage={hasNextPage}
             labels={{
@@ -387,6 +401,66 @@ export default async function StudentsPage({
           />
         ) : null}
       </section>
+      </div>
+
+      <aside className="cl-side">
+        <Widget title={t("students.list.byGrade")}>
+          {joinedLines.length ? (
+            joinedLines.map((line) => (
+              <div className="cl-goal" key={line.label}>
+                <div>
+                  <span>{selectedGrade ? line.label : `${t("students.table.grade")} ${line.label}`}</span>
+                  <span>
+                    {t("students.list.joinedApp")}{" "}
+                    <b>
+                      {line.joined} / {line.total}
+                    </b>
+                  </span>
+                </div>
+                <div className="cl-bar">
+                  <i style={{ width: `${(line.joined / line.total) * 100}%` }} />
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-[var(--muted)]">{t("students.empty.title")}</p>
+          )}
+        </Widget>
+        <Widget
+          link={{ href: "/invite-codes", label: t("nav.inviteCodes") }}
+          title={t("students.list.notJoinedYet")}
+        >
+          {summary.notJoined.length ? (
+            summary.notJoined.slice(0, 4).map((student) => (
+              <div key={student.id}>
+                <b className="block text-sm">
+                  {student.first_name} {student.last_name}
+                </b>
+                <span className="text-[13px] text-[var(--muted)]">
+                  {[student.grade_level ? `${t("students.table.grade")} ${student.grade_level}` : null, student.homeroom]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-[var(--muted)]">{t("students.list.everyoneJoined")}</p>
+          )}
+        </Widget>
+        <Widget title={t("students.list.participation")}>
+          <p className="cl-statline">
+            <span>
+              <b>{summary.active ? Math.round((summary.inClub / summary.active) * 100) : 0}%</b>
+              {t("students.list.inAClub")}
+            </span>
+            <span>
+              <b>{summary.active ? (summary.signups / summary.active).toFixed(1) : "0"}</b>
+              {t("students.list.eventsEach")}
+            </span>
+          </p>
+        </Widget>
+      </aside>
+      </div>
     </div>
   );
 }
@@ -398,19 +472,31 @@ function InactiveForm({
   labels: {
     alreadyInactive: string;
     markInactive: string;
+    reactivate: string;
     saving: string;
   };
   student: Student;
 }) {
   if (student.status !== "active") {
-    return <span className="text-sm text-zinc-500">{labels.alreadyInactive}</span>;
+    return (
+      <form action={markStudentActive}>
+        <input name="student_id" type="hidden" value={student.id} />
+        <PendingSubmitButton
+          className="btn btn-secondary min-h-9 px-3"
+          pendingLabel={labels.saving}
+          toastMessage={labels.saving}
+        >
+          {labels.reactivate}
+        </PendingSubmitButton>
+      </form>
+    );
   }
 
   return (
     <form action={markStudentInactive}>
       <input name="student_id" type="hidden" value={student.id} />
       <PendingSubmitButton
-        className="btn btn-secondary min-h-9 px-3"
+        className="btn btn-quiet min-h-9 px-3"
         pendingLabel={labels.saving}
         toastMessage={labels.saving}
       >
@@ -433,7 +519,11 @@ function statusLabel(status: string, t: (key: string) => string) {
 }
 
 function parseRosterStatus(value: string) {
-  return value === "active" || value === "inactive" ? value : "";
+  return ["active", "inactive", "joined", "not-joined"].includes(value) ? value : "";
+}
+
+function pickOption(options: string[], value: string) {
+  return options.includes(value) ? value : "";
 }
 
 function studentSearchFilter(searchQuery: string) {
@@ -455,8 +545,17 @@ function studentsPageHref(
   page: number,
   searchQuery: string,
   selectedStatus: string,
+  filters: { classGroup: string; grade: string },
 ) {
   const params = new URLSearchParams();
+
+  if (filters.grade) {
+    params.set("grade", filters.grade);
+  }
+
+  if (filters.classGroup) {
+    params.set("class", filters.classGroup);
+  }
 
   if (searchQuery) {
     params.set("q", searchQuery);
@@ -473,4 +572,135 @@ function studentsPageHref(
   const query = params.toString();
 
   return query ? `/students?${query}` : "/students";
+}
+
+// Every student's grade, class and whether they joined. The database returns
+// at most 1,000 rows a time, so a bigger school is read in pages.
+async function getRosterRows(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const pageSize = 1000;
+  const rows: RosterRow[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data } = await timeServer("students.query.roster-rows", () =>
+      supabase
+        .from("student_rosters")
+        .select("grade_level, homeroom, profile_id, status")
+        .eq("school_id", schoolId)
+        .order("id")
+        .range(from, from + pageSize - 1)
+        .returns<RosterRow[]>(),
+    );
+
+    rows.push(...(data ?? []));
+
+    if ((data?.length ?? 0) < pageSize) return rows;
+  }
+}
+
+// Clubs and event sign-ups for the students shown on this page.
+async function getRowStats(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+  rosterIds: string[],
+) {
+  const stats = new Map<string, { clubs: number; events: number }>();
+
+  if (!rosterIds.length) return stats;
+
+  const [{ data: memberships }, { data: attendees }] = await Promise.all([
+    timeServer("students.query.row-clubs", () =>
+      supabase
+        .from("club_memberships")
+        .select("student_roster_id")
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .in("student_roster_id", rosterIds)
+        .returns<Array<{ student_roster_id: string }>>(),
+    ),
+    timeServer("students.query.row-events", () =>
+      supabase
+        .from("event_attendees")
+        .select("student_roster_id")
+        .eq("school_id", schoolId)
+        .in("status", ["registered", "attended"])
+        .in("student_roster_id", rosterIds)
+        .returns<Array<{ student_roster_id: string }>>(),
+    ),
+  ]);
+  const bump = (id: string, key: "clubs" | "events") => {
+    const current = stats.get(id) ?? { clubs: 0, events: 0 };
+    current[key] += 1;
+    stats.set(id, current);
+  };
+
+  for (const row of memberships ?? []) bump(row.student_roster_id, "clubs");
+  for (const row of attendees ?? []) bump(row.student_roster_id, "events");
+
+  return stats;
+}
+
+// Whole-school numbers for the side column.
+async function getRosterSummary(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schoolId: string,
+) {
+  const [{ data: rosters }, { data: memberships }, { count: signups }] = await Promise.all([
+    timeServer("students.query.summary-rosters", () =>
+      supabase
+        .from("student_rosters")
+        .select("id, first_name, last_name, grade_level, homeroom, profile_id")
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .returns<
+          Array<{
+            first_name: string;
+            grade_level: string | null;
+            homeroom: string | null;
+            id: string;
+            last_name: string;
+            profile_id: string | null;
+          }>
+        >(),
+    ),
+    timeServer("students.query.summary-memberships", () =>
+      supabase
+        .from("club_memberships")
+        .select("student_roster_id")
+        .eq("school_id", schoolId)
+        .eq("status", "active")
+        .returns<Array<{ student_roster_id: string }>>(),
+    ),
+    timeServer("students.query.summary-signups", () =>
+      supabase
+        .from("event_attendees")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .not("student_roster_id", "is", null)
+        .in("status", ["registered", "attended"]),
+    ),
+  ]);
+  const active = rosters ?? [];
+  const activeIds = new Set(active.map((roster) => roster.id));
+
+  return {
+    active: active.length,
+    inClub: new Set(
+      (memberships ?? [])
+        .map((row) => row.student_roster_id)
+        .filter((id) => activeIds.has(id)),
+    ).size,
+    notJoined: active.filter((roster) => !roster.profile_id),
+    signups: signups ?? 0,
+  };
+}
+
+const AVATAR_COLORS = ["#ffc23d", "#b9c1ec", "#ffb59f", "#9fe0bd", "#e3c8ff"];
+
+function avatarColor(name: string) {
+  let sum = 0;
+  for (const char of name) sum += char.charCodeAt(0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }

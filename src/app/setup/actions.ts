@@ -7,6 +7,7 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { toSlug } from "@/lib/slug";
 import { hasAnySchool } from "@/lib/supabase/bootstrap";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -36,7 +37,7 @@ export async function createFirstSchool(
   const name = String(formData.get("name") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
   const timezone =
-    String(formData.get("timezone") ?? "").trim() || "America/Vancouver";
+    String(formData.get("timezone") ?? "").trim() || "Asia/Ulaanbaatar";
 
   if (!name) {
     return { message: i18n.t("setup.errors.nameRequired") };
@@ -102,13 +103,6 @@ async function getServerI18n() {
   };
 }
 
-function toSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
-}
 
 function usernameFromEmail(email: string | undefined) {
   const username = email

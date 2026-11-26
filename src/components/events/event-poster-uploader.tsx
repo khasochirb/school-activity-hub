@@ -269,7 +269,7 @@ export function EventPosterUploader({
       </div>
 
       <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-start">
-        <div className="relative aspect-[4/5] w-full max-w-48 overflow-hidden rounded-lg border border-[var(--border)] bg-[linear-gradient(145deg,#f8d8b4,#f2af68_55%,#7c3f25)]">
+        <div className="relative aspect-[4/5] w-full max-w-48 overflow-hidden rounded-lg border border-[var(--border)] bg-[linear-gradient(145deg,var(--primary-soft),var(--primary)_55%,var(--primary-strong))]">
           {visiblePoster && !imageFailed ? (
             <Image
               alt={labels.alt.replace("{event}", eventTitle)}

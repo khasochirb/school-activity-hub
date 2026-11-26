@@ -3,30 +3,39 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ShareClubButton } from "@/components/share-club-button";
 import { getCurrentClubActor } from "@/lib/auth/club-access";
 import {
   getActivityCategoryTranslationKey,
 } from "@/lib/activity-categories";
 import { type ClubProfileTheme, isUuid } from "@/lib/clubs/club-profile";
+import { buildClubShareText } from "@/lib/clubs/club-share";
 import {
   formatTranslation,
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
-import { formatDateTime, formatTime } from "@/lib/i18n/date-format";
+import { formatCalendarDateBadge, formatTime } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { countPendingClubRequests } from "@/lib/clubs/club-access";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
-  CategoryBadge,
   StatusBadge,
 } from "../../_components/page-ui";
-import { joinClub, leaveClub } from "../actions";
+import { DetailTabs } from "../../_components/detail-tabs";
+import { CategoryLabel, Cover } from "../../_components/clean-ui";
+import { joinClub } from "../actions";
+import { AttachmentsPanel } from "../../attachments/attachments-panel";
+import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 
 type Club = {
   category: string | null;
   description: string | null;
   id: string;
   name: string;
+  advisor_profile_id: string | null;
+  join_mode: "apply" | "open";
   school_id: string;
   status: "active" | "archived";
 };
@@ -35,9 +44,11 @@ type ClubProfileRow = {
   about: string | null;
   accessibility_notes: string | null;
   banner_path: string | null;
+  beginners_welcome: boolean | null;
   commitment_notes: string | null;
   cost_notes: string | null;
   eligibility_notes: string | null;
+  first_visit_free: boolean | null;
   materials_notes: string | null;
   meeting_location: string | null;
   meeting_schedule: string | null;
@@ -66,6 +77,7 @@ type Registration = {
 };
 
 type ClubProfileSearchParams = {
+  applied?: string | string[];
   updated?: string | string[];
 };
 
@@ -100,7 +112,7 @@ export default async function ClubProfilePage({
   const supabase = await createClient();
   const { data: club } = await supabase
     .from("clubs")
-    .select("id, school_id, name, description, category, status")
+    .select("id, school_id, name, description, category, status, advisor_profile_id, join_mode")
     .eq("id", clubId)
     .maybeSingle<Club>();
 
@@ -142,12 +154,12 @@ export default async function ClubProfilePage({
     notFound();
   }
 
-  const [{ data: profile }, { data: memberCount }, { data: upcomingEvents }] =
+  const [{ data: profile }, { data: memberCount }, { data: upcomingEvents }, { data: classmateRows }] =
     await Promise.all([
       supabase
         .from("club_profiles")
         .select(
-          "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key, logo_path, banner_path, updated_at",
+          "tagline, about, meeting_schedule, meeting_location, eligibility_notes, commitment_notes, accessibility_notes, cost_notes, materials_notes, theme_key, beginners_welcome, first_visit_free, logo_path, banner_path, updated_at",
         )
         .eq("club_id", club.id)
         .maybeSingle<ClubProfileRow>(),
@@ -162,8 +174,15 @@ export default async function ClubProfilePage({
         .order("starts_at", { ascending: true })
         .limit(3)
         .returns<UpcomingEvent[]>(),
+      // Classmates from the student's own class who are members.
+      actor.profile?.role === "student"
+        ? supabase.rpc("get_club_classmates", { target_club_ids: [club.id] })
+        : Promise.resolve({ data: [] }),
     ]);
   const eventRows = upcomingEvents ?? [];
+  const classmateNames = ((classmateRows ?? []) as Array<{ display_name: string }>).map(
+    (row) => row.display_name,
+  );
   const { data: registrations } =
     actor.profile?.role === "student" && eventRows.length
       ? await supabase
@@ -184,26 +203,82 @@ export default async function ClubProfilePage({
   );
   const details = getProfileDetails(club, profile);
   const showIncompleteNotice = details.completedCount < 3;
-  const profileUpdated = getFirst((await searchParams).updated) === "1";
+  const query = await searchParams;
+  const profileUpdated = getFirst(query.updated) === "1";
+  const justApplied = getFirst(query.applied) === "1";
+  // Join requests: reviewers (leader, supervising teacher, school admin) get
+  // a link to them; a student applying to an "apply" club sees their request.
+  const canReviewJoins = Boolean(
+    actor.profile &&
+      actor.profile.school_id === club.school_id &&
+      (isLeader ||
+        club.advisor_profile_id === actor.profile.id ||
+        actor.profile.role === "school_admin"),
+  );
+  const isApplyStudent =
+    actor.profile?.role === "student" && club.join_mode === "apply" && !activeMembership;
+  const [pendingJoinCount, { data: myJoinRequest }, { data: myLeaveRequest }] = await Promise.all([
+    canReviewJoins ? countPendingClubRequests(createAdminClient(), club.id) : Promise.resolve(0),
+    isApplyStudent
+      ? supabase
+          .from("club_join_requests")
+          .select("id")
+          .eq("club_id", club.id)
+          .eq("profile_id", actor.profile!.id)
+          .eq("status", "pending")
+          .maybeSingle<{ id: string }>()
+      : Promise.resolve({ data: null }),
+    actor.profile?.role === "student" && activeMembership
+      ? supabase
+          .from("club_leave_requests")
+          .select("id")
+          .eq("club_id", club.id)
+          .eq("profile_id", actor.profile.id)
+          .eq("status", "pending")
+          .maybeSingle<{ id: string }>()
+      : Promise.resolve({ data: null }),
+  ]);
+  const leaveLabels = {
+    href: `/clubs/${club.id}/leave`,
+    label: myLeaveRequest ? t("clubs.leave.pendingButton") : t("clubs.actions.leave"),
+  };
+  const applyLabels = {
+    apply: myJoinRequest ? t("clubs.join.apply.pendingButton") : t("clubs.join.apply.button"),
+    href: `/clubs/${club.id}/apply`,
+  };
   const canManageProfile = canEdit === true || isLeader || isOwnSchoolStaff;
-  const themeClass = getThemeClass(profile?.theme_key ?? "warm");
   const bannerUrl = getMediaUrl(club.id, "banner", profile);
   const logoUrl = getMediaUrl(club.id, "logo", profile);
 
+  const aboutFacts = [
+    { label: t("clubs.profile.sections.meetingSchedule"), value: profile?.meeting_schedule },
+    { label: t("clubs.profile.sections.meetingLocation"), value: profile?.meeting_location },
+    { label: t("clubs.profile.fields.costNotes"), value: profile?.cost_notes },
+    { label: t("clubs.profile.fields.materialsNotes"), value: profile?.materials_notes },
+    { label: t("clubs.profile.sections.eligibility"), value: profile?.eligibility_notes },
+    { label: t("clubs.profile.sections.commitment"), value: profile?.commitment_notes },
+    { label: t("clubs.profile.sections.accessibility"), value: profile?.accessibility_notes },
+  ].filter((fact): fact is { label: string; value: string } => Boolean(fact.value));
+  const hasAboutDetails = Boolean(
+    details.about ||
+      profile?.meeting_schedule ||
+      profile?.meeting_location ||
+      profile?.eligibility_notes ||
+      profile?.commitment_notes ||
+      profile?.accessibility_notes ||
+      profile?.cost_notes ||
+      profile?.materials_notes,
+  );
+
   return (
-    <div className="page-stack">
-      <section className={`overflow-hidden rounded-xl border shadow-sm ${themeClass}`}>
-        <Link
-          className="m-4 mb-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary-strong)] sm:m-6 sm:mb-0"
-          href="/clubs"
-          prefetch={false}
-        >
-          {t("clubs.profile.actions.backToClubs")}
-          <PendingLinkIndicator />
-        </Link>
+    <div className="cl-page">
+      <Link className="cl-back" href="/clubs" prefetch={false}>
+        ← {t("clubs.title")}
+      </Link>
+      <section className="cl-clubhero">
         <div
           aria-label={tf("clubs.profile.media.bannerAlt", { club: club.name })}
-          className="relative mx-4 mt-4 aspect-[3/1] min-h-28 max-h-72 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card-soft)] sm:mx-6"
+          className="relative aspect-[3/1] max-h-72 overflow-hidden rounded-2xl bg-[var(--card-soft)]"
           role={bannerUrl ? undefined : "img"}
         >
           {bannerUrl ? (
@@ -217,14 +292,19 @@ export default async function ClubProfilePage({
               unoptimized
             />
           ) : (
-            <div className="h-full w-full bg-[linear-gradient(135deg,var(--card-soft),var(--primary-soft))]" />
+            <Cover
+              category={club.category}
+              className="absolute inset-0"
+              imageUrl={null}
+              initials=""
+            />
           )}
         </div>
-        <div className="flex flex-col gap-5 p-4 pt-0 sm:p-6 sm:pt-0 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 flex-1 items-start gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:px-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:gap-4">
             <div
               aria-label={tf("clubs.profile.media.logoAlt", { club: club.name })}
-              className="relative -mt-8 h-20 w-20 shrink-0 overflow-hidden rounded-xl border-4 border-[var(--card)] bg-[var(--primary-soft)] shadow-md sm:-mt-10 sm:h-24 sm:w-24"
+              className="relative -mt-12 ml-3 h-20 w-20 shrink-0 overflow-hidden rounded-xl border-4 border-[var(--card)] bg-[var(--primary-soft)] shadow-md sm:-mt-10 sm:ml-0 sm:h-24 sm:w-24"
               role={logoUrl ? undefined : "img"}
             >
               {logoUrl ? (
@@ -243,8 +323,7 @@ export default async function ClubProfilePage({
               )}
             </div>
             <div className="min-w-0 pt-3">
-              <p className="page-eyebrow">{t("clubs.profile.clubPage")}</p>
-              <h1 className="break-words text-3xl font-black tracking-normal text-slate-950 sm:text-4xl">
+              <h1 className="break-words text-3xl max-sm:text-2xl font-bold tracking-tight text-[var(--foreground)] sm:text-[2.1rem]">
                 {club.name}
               </h1>
               {profile?.tagline ? (
@@ -253,16 +332,23 @@ export default async function ClubProfilePage({
                 </p>
               ) : null}
               <div className="mt-4 flex flex-wrap gap-2">
-                {club.category ? (
-                  <CategoryBadge category={club.category}>
-                    {categoryLabel(club.category, t)}
-                  </CategoryBadge>
+                <CategoryLabel
+                  category={club.category}
+                  label={club.category ? categoryLabel(club.category, t) : null}
+                />
+                {club.status !== "active" ? (
+                  <StatusBadge status={club.status}>{t("status.archived")}</StatusBadge>
                 ) : null}
-                <StatusBadge status={club.status}>
-                  {club.status === "active"
-                    ? t("status.active")
-                    : t("status.archived")}
-                </StatusBadge>
+                {profile?.beginners_welcome ? (
+                  <StatusBadge variant="info">
+                    {t("clubs.profile.fields.beginnersWelcome")}
+                  </StatusBadge>
+                ) : null}
+                {profile?.first_visit_free ? (
+                  <StatusBadge variant="info">
+                    {t("clubs.profile.fields.firstVisitFree")}
+                  </StatusBadge>
+                ) : null}
                 {activeMembership ? (
                   <StatusBadge variant="success">
                     {isLeader
@@ -276,8 +362,10 @@ export default async function ClubProfilePage({
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap lg:pt-3 lg:justify-end">
             {actor.profile?.role === "student" && club.status === "active" ? (
               <MembershipAction
+                apply={isApplyStudent ? applyLabels : null}
                 clubId={club.id}
                 isJoined={Boolean(activeMembership)}
+                leave={leaveLabels}
                 labels={{
                   join: t("clubs.actions.join"),
                   joining: t("clubs.actions.joining"),
@@ -286,9 +374,46 @@ export default async function ClubProfilePage({
                 }}
               />
             ) : null}
+            {canReviewJoins ? (
+              <Link
+                className="cl-btn-soft min-h-11"
+                href={`/clubs/${club.id}/applications`}
+                prefetch={false}
+              >
+                {t("clubs.join.review.link")}
+                {pendingJoinCount ? <span className="cl-chip-count">{pendingJoinCount}</span> : null}
+              </Link>
+            ) : null}
+            {club.status === "active" ? (
+              <ShareClubButton
+                className="cl-btn-soft min-h-11"
+                clubId={club.id}
+                labels={{
+                  copied: t("clubs.share.copied"),
+                  failed: t("clubs.share.failed"),
+                  share: t("clubs.share.action"),
+                }}
+                text={buildClubShareText(
+                  {
+                    beginnersWelcome: Boolean(profile?.beginners_welcome),
+                    firstVisitFree: Boolean(profile?.first_visit_free),
+                    meetingLocation: profile?.meeting_location ?? null,
+                    meetingSchedule: profile?.meeting_schedule ?? null,
+                    name: club.name,
+                  },
+                  {
+                    beginnersWelcome: t("clubs.profile.fields.beginnersWelcome"),
+                    firstVisitFree: t("clubs.profile.fields.firstVisitFree"),
+                    meetingLocation: t("studentProfile.clubFacts.where"),
+                    meetingSchedule: t("studentProfile.clubFacts.when"),
+                  },
+                )}
+                title={club.name}
+              />
+            ) : null}
             {canManageProfile ? (
               <Link
-                className="btn btn-secondary min-h-11 gap-2"
+                className="cl-btn-soft min-h-11"
                 href={`/clubs/${club.id}/edit`}
                 prefetch={false}
               >
@@ -300,9 +425,58 @@ export default async function ClubProfilePage({
         </div>
       </section>
 
+      <p className="cl-statline">
+        <span>
+          <b>{Number(memberCount ?? 0)}</b>
+          {t("clubs.profile.statline.members")}
+        </span>
+        <span>
+          <b>{eventRows.length}</b>
+          {t("clubs.profile.statline.upcoming")}
+        </span>
+      </p>
+      {actor.profile?.role === "student" ? (
+        <ClassmatesFromClass
+          label={tf("clubs.classmates.count", { count: classmateNames.length })}
+          names={classmateNames}
+        />
+      ) : null}
+
+      {actor.profile?.role === "student" &&
+      club.status === "active" &&
+      !activeMembership ? (
+        <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-lg items-center gap-3">
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-950">
+              {club.name}
+            </p>
+            <div className="shrink-0">
+              <MembershipAction
+                apply={isApplyStudent ? applyLabels : null}
+                clubId={club.id}
+                isJoined={false}
+                leave={leaveLabels}
+                labels={{
+                  join: t("clubs.actions.join"),
+                  joining: t("clubs.actions.joining"),
+                  leave: t("clubs.actions.leave"),
+                  leaving: t("clubs.actions.leaving"),
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {profileUpdated ? (
         <p className="notice-box notice-success" role="status">
           {t("clubs.profile.success.saved")}
+        </p>
+      ) : null}
+
+      {justApplied && myJoinRequest ? (
+        <p className="notice-box notice-success" role="status">
+          {t("clubs.join.apply.sentNotice")}
         </p>
       ) : null}
 
@@ -313,120 +487,84 @@ export default async function ClubProfilePage({
       ) : null}
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
-        <main className="flex min-w-0 flex-col gap-4">
-          {details.about ? (
-            <ProfileSection title={t("clubs.profile.sections.about")}>
-              {details.about}
-            </ProfileSection>
-          ) : null}
+        <div className="min-w-0">
+          <DetailTabs
+            label={t("clubs.profile.tabs.label")}
+            tabs={[
+              {
+                content: (
+                  <div className="detail-tab-stack">
+                    {details.about ? (
+                      <p className="cl-evabout">{details.about}</p>
+                    ) : null}
+                    {aboutFacts.length ? (
+                      <div className="cl-facts">
+                        {aboutFacts.map((fact) => (
+                          <div className="cl-card" key={fact.label}>
+                            <span>{fact.label}</span>
+                            <b className="whitespace-pre-line">{fact.value}</b>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    {!hasAboutDetails ? (
+                      <p className="section-card section-card-padded text-sm text-slate-600">
+                        {t("clubs.profile.tabs.noDetails")}
+                      </p>
+                    ) : null}
+                    <AttachmentsPanel ownerId={club.id} ownerType="club" />
+                  </div>
+                ),
+                id: "about",
+                label: t("clubs.profile.tabs.about"),
+              },
+              {
+                content: (
+                  <div className="cl-card cl-rows">
+                    {eventRows.length ? (
+                      eventRows.map((event) => {
+                        const registration = registrationByEvent.get(event.id);
+                        const tile = formatCalendarDateBadge(event.starts_at, locale);
 
-          {profile?.meeting_schedule || profile?.meeting_location ? (
-            <section className="grid gap-4 md:grid-cols-2">
-              {profile.meeting_schedule ? (
-                <ProfileSection title={t("clubs.profile.sections.meetingSchedule")}>
-                  {profile.meeting_schedule}
-                </ProfileSection>
-              ) : null}
-              {profile.meeting_location ? (
-                <ProfileSection title={t("clubs.profile.sections.meetingLocation")}>
-                  {profile.meeting_location}
-                </ProfileSection>
-              ) : null}
-            </section>
-          ) : null}
-
-          {profile?.eligibility_notes ? (
-            <ProfileSection title={t("clubs.profile.sections.eligibility")}>
-              {profile.eligibility_notes}
-            </ProfileSection>
-          ) : null}
-
-          {profile?.commitment_notes ? (
-            <ProfileSection title={t("clubs.profile.sections.commitment")}>
-              {profile.commitment_notes}
-            </ProfileSection>
-          ) : null}
-
-          {profile?.accessibility_notes ? (
-            <ProfileSection title={t("clubs.profile.sections.accessibility")}>
-              {profile.accessibility_notes}
-            </ProfileSection>
-          ) : null}
-
-          {profile?.cost_notes || profile?.materials_notes ? (
-            <section className="section-card section-card-padded">
-              <h2 className="section-title">
-                {t("clubs.profile.sections.costMaterials")}
-              </h2>
-              <dl className="mt-3 grid gap-4 sm:grid-cols-2">
-                {profile.cost_notes ? (
-                  <DetailItem
-                    label={t("clubs.profile.fields.costNotes")}
-                    value={profile.cost_notes}
-                  />
-                ) : null}
-                {profile.materials_notes ? (
-                  <DetailItem
-                    label={t("clubs.profile.fields.materialsNotes")}
-                    value={profile.materials_notes}
-                  />
-                ) : null}
-              </dl>
-            </section>
-          ) : null}
-
-          <section className="section-card">
-            <div className="section-header">
-              <h2 className="section-title">
-                {t("clubs.profile.sections.upcomingActivities")}
-              </h2>
-            </div>
-            {eventRows.length ? (
-              <ul className="divide-y divide-[var(--border)]">
-                {eventRows.map((event) => {
-                  const registration = registrationByEvent.get(event.id);
-
-                  return (
-                    <li className="p-4" key={event.id}>
-                      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
+                        return (
                           <Link
-                            className="font-bold text-slate-950 hover:text-[var(--primary-strong)]"
+                            className="cl-row"
                             href={`/events/${event.id}`}
+                            key={event.id}
                             prefetch={false}
                           >
-                            <span className="break-words">{event.title}</span>
-                            <PendingLinkIndicator />
+                            <span aria-hidden="true" className="cl-dtile">
+                              <span>{tile.month}</span>
+                              <b>{Number(tile.day)}</b>
+                            </span>
+                            <span className="cl-grow">
+                              <span className="cl-row-title">{event.title}</span>
+                              <span className="cl-row-sub">
+                                {formatTime(event.starts_at, locale)}–{formatTime(event.ends_at, locale)}
+                                {event.location ? ` · ${event.location}` : ""}
+                              </span>
+                            </span>
+                            {registration ? (
+                              <span className="cl-tag" data-tone="ok">
+                                {registration === "attended"
+                                  ? t("events.registration.checkedIn")
+                                  : t("dashboard.home.going")}
+                              </span>
+                            ) : null}
                           </Link>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {formatDateTime(event.starts_at, locale)} -{" "}
-                            {formatTime(event.ends_at, locale)}
-                          </p>
-                          {event.location ? (
-                            <p className="mt-1 break-words text-sm text-slate-600">
-                              {event.location}
-                            </p>
-                          ) : null}
-                        </div>
-                        {registration ? (
-                          <StatusBadge variant="success">
-                            {registration === "attended"
-                              ? t("events.registration.checkedIn")
-                              : t("events.registration.youAreRegistered")}
-                          </StatusBadge>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="p-4 text-sm text-slate-600">
-                {t("clubs.profile.upcomingEmpty")}
-              </p>
-            )}
-          </section>
-        </main>
+                        );
+                      })
+                    ) : (
+                      <p className="cl-empty">{t("clubs.profile.upcomingEmpty")}</p>
+                    )}
+                  </div>
+                ),
+                id: "events",
+                label: tf("clubs.profile.tabs.events", { count: eventRows.length }),
+              },
+            ]}
+          />
+        </div>
 
         <aside className="flex min-w-0 flex-col gap-4 self-start">
           <section className="section-card section-card-padded">
@@ -478,24 +616,12 @@ export default async function ClubProfilePage({
           </section>
         </aside>
       </div>
+      {actor.profile?.role === "student" &&
+      club.status === "active" &&
+      !activeMembership ? (
+        <div aria-hidden="true" className="h-16 lg:hidden" />
+      ) : null}
     </div>
-  );
-}
-
-function ProfileSection({
-  children,
-  title,
-}: {
-  children: string;
-  title: string;
-}) {
-  return (
-    <section className="section-card section-card-padded">
-      <h2 className="section-title">{title}</h2>
-      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
-        {children}
-      </p>
-    </section>
   );
 }
 
@@ -511,23 +637,45 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 }
 
 function MembershipAction({
+  apply,
   clubId,
   isJoined,
   labels,
+  leave,
 }: {
+  apply: { apply: string; href: string } | null;
   clubId: string;
   isJoined: boolean;
   labels: { join: string; joining: string; leave: string; leaving: string };
+  leave: { href: string; label: string };
 }) {
+  // Leaving goes through a request with a reason, approved by the club.
+  if (isJoined) {
+    return (
+      <Link className="btn btn-secondary min-h-11 w-full sm:w-auto" href={leave.href} prefetch={false}>
+        {leave.label}
+      </Link>
+    );
+  }
+
+  // Clubs that take applications: the button opens the application form.
+  if (apply && !isJoined) {
+    return (
+      <Link className="btn btn-primary min-h-11 w-full sm:w-auto" href={apply.href} prefetch={false}>
+        {apply.apply}
+      </Link>
+    );
+  }
+
   return (
-    <form action={isJoined ? leaveClub : joinClub} className="w-full sm:w-auto">
+    <form action={joinClub} className="w-full sm:w-auto">
       <input name="club_id" type="hidden" value={clubId} />
       <PendingSubmitButton
-        className={`btn min-h-11 w-full sm:w-auto ${isJoined ? "btn-secondary" : "btn-primary"}`}
-        pendingLabel={isJoined ? labels.leaving : labels.joining}
-        toastMessage={isJoined ? labels.leaving : labels.joining}
+        className="btn btn-primary min-h-11 w-full sm:w-auto"
+        pendingLabel={labels.joining}
+        toastMessage={labels.joining}
       >
-        {isJoined ? labels.leave : labels.join}
+        {labels.join}
       </PendingSubmitButton>
     </form>
   );
@@ -550,20 +698,6 @@ function getProfileDetails(club: Club, profile: ClubProfileRow | null) {
     about: profile?.about ?? club.description,
     completedCount: values.filter(Boolean).length,
   };
-}
-
-function getThemeClass(theme: ClubProfileTheme) {
-  const themes: Record<ClubProfileTheme, string> = {
-    forest:
-      "border-emerald-300/60 bg-[linear-gradient(135deg,var(--card),var(--card-soft))]",
-    plum:
-      "border-fuchsia-300/50 bg-[linear-gradient(135deg,var(--card),var(--card-soft))]",
-    sky: "border-sky-300/60 bg-[linear-gradient(135deg,var(--card),var(--card-soft))]",
-    warm:
-      "border-[color:var(--primary)] bg-[linear-gradient(135deg,var(--card),var(--primary-soft))]",
-  };
-
-  return themes[theme];
 }
 
 function getMediaUrl(

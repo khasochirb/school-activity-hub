@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { selectedCountLabel, toggleAll, toggleOne } from "./selection";
 import { useFormStatus } from "react-dom";
 import { ActionToast } from "@/components/toast-provider";
 import {
@@ -44,14 +45,19 @@ type BulkGenerateInviteFormLabels = {
   scope: string;
   selectedDescription: string;
   selectedLabel: string;
+  selectAll: string;
+  selectedCount: string;
   selectStudents: string;
   selectStudentsDescription: string;
 };
 
 export function BulkGenerateInviteForm({
+  audience = "student",
   labels,
   students,
 }: {
+  /** Parent codes can be made for every student, signed up or not. */
+  audience?: "parent" | "student";
   labels: BulkGenerateInviteFormLabels;
   students: ActiveStudent[];
 }) {
@@ -60,7 +66,9 @@ export function BulkGenerateInviteForm({
     initialState,
   );
   const [mode, setMode] = useState("all_unlinked");
-  const eligibleStudents = students.filter((student) => !student.profile_id);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const eligibleStudents =
+    audience === "parent" ? students : students.filter((student) => !student.profile_id);
   const gradeOptions = useMemo(
     () => uniqueOptions(eligibleStudents.map((student) => student.grade_level)),
     [eligibleStudents],
@@ -70,11 +78,25 @@ export function BulkGenerateInviteForm({
     [eligibleStudents],
   );
   const hasEligibleStudents = eligibleStudents.length > 0;
+  const eligibleIds = eligibleStudents.map((student) => student.id);
+  const allSelected = hasEligibleStudents && eligibleIds.every((id) => selected.has(id));
+  const someSelected = !allSelected && eligibleIds.some((id) => selected.has(id));
+
+  function chooseAll(checked: boolean) {
+    setSelected(toggleAll(eligibleIds, checked));
+    if (checked) setMode("selected");
+  }
+
+  function chooseOne(id: string, checked: boolean) {
+    setSelected((current) => toggleOne(current, id, checked));
+    if (checked) setMode("selected");
+  }
 
   return (
     <div className="compact-form-xl flex flex-col gap-3">
       <form action={formAction} className="flex flex-col gap-3">
         <ActionToast message={state.message} success={state.success} />
+        <input name="audience" type="hidden" value={audience} />
         <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-semibold text-slate-800">
             {labels.scope}
@@ -146,6 +168,25 @@ export function BulkGenerateInviteForm({
             <p className="mt-1 text-sm text-slate-600">
               {labels.selectStudentsDescription}
             </p>
+            {hasEligibleStudents ? (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800">
+                  <input
+                    checked={allSelected}
+                    className="cursor-pointer"
+                    onChange={(event) => chooseAll(event.target.checked)}
+                    ref={(input) => {
+                      if (input) input.indeterminate = someSelected;
+                    }}
+                    type="checkbox"
+                  />
+                  {labels.selectAll}
+                </label>
+                <span aria-live="polite" className="text-sm text-slate-600">
+                  {selectedCountLabel(labels.selectedCount, selected.size, eligibleIds.length)}
+                </span>
+              </div>
+            ) : null}
           </div>
           {hasEligibleStudents ? (
             <div className="max-h-72 divide-y divide-slate-200 overflow-y-auto">
@@ -155,9 +196,10 @@ export function BulkGenerateInviteForm({
                   key={student.id}
                 >
                   <input
+                    checked={selected.has(student.id)}
                     className="mt-1 cursor-pointer"
-                    disabled={mode !== "selected"}
-                    name="student_roster_ids"
+                    name={mode === "selected" ? "student_roster_ids" : undefined}
+                    onChange={(event) => chooseOne(student.id, event.target.checked)}
                     type="checkbox"
                     value={student.id}
                   />

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ToastProvider } from "@/components/toast-provider";
 import { getCurrentTheme } from "@/lib/get-theme";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
@@ -8,6 +8,12 @@ import {
   SUPPORTED_THEMES,
   THEME_COOKIE,
 } from "@/lib/theme";
+import "@fontsource-variable/onest";
+import "@fontsource/pt-serif/400.css";
+import "@fontsource/pt-serif/400-italic.css";
+import "@fontsource/pt-serif/700.css";
+import "@fontsource/pt-serif/700-italic.css";
+import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,8 +24,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("app.name"),
     description: t("metadata.description"),
+    // Opened from the home screen on an iPhone, the app runs full screen.
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: t("app.shortName"),
+    },
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1120" },
+  ],
+};
 
 export default async function RootLayout({
   children,

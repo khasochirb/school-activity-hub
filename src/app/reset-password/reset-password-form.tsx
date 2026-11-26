@@ -25,6 +25,7 @@ export function ResetPasswordForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setError(null);
     setMessage(null);
     setIsSubmitting(true);
@@ -69,7 +70,7 @@ export function ResetPasswordForm({
       title: toast.labels.success,
       variant: "success",
     });
-    event.currentTarget.reset();
+    form.reset();
   }
 
   return (

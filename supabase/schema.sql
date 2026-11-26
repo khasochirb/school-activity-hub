@@ -13,7 +13,7 @@ end $$;
 
 do $$
 begin
-  create type public.profile_role as enum ('school_admin', 'teacher', 'student');
+  create type public.profile_role as enum ('school_admin', 'teacher', 'student', 'parent');
 exception
   when duplicate_object then null;
 end $$;
@@ -158,7 +158,7 @@ create table if not exists public.schools (
   name text not null,
   slug text not null unique,
   province text,
-  timezone text not null default 'America/Vancouver',
+  timezone text not null default 'Asia/Ulaanbaatar',
   status public.school_status not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -253,6 +253,7 @@ create table if not exists public.student_rosters (
   grade_level text,
   homeroom text,
   status public.roster_status not null default 'active',
+  show_name_to_classmates boolean not null default true,
   created_by_profile_id uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -506,14 +507,16 @@ create table if not exists public.club_requests (
   title text not null,
   description text,
   category text,
+  reason text,
   status text not null default 'pending',
   rejection_reason text,
   reviewed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint club_requests_title_not_blank check (length(btrim(title)) > 0),
+  constraint club_requests_reason_length check (reason is null or length(reason) <= 2000),
   constraint club_requests_status_check check (
-    status in ('pending', 'approved', 'rejected', 'archived')
+    status in ('gathering', 'pending', 'approved', 'rejected', 'archived')
   )
 );
 
@@ -3738,6 +3741,214 @@ grant execute on function public.get_my_safety_report_receipts()
 
 
 
+-- Students choose the activity categories they are interested in, so the clubs
+-- page can show matching clubs first. Rows hold only a category from the fixed
+-- platform list: no free text. Students manage their own rows; school staff can
+-- read them for their own school.
+
+create table if not exists public.student_interests (
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  category text not null,
+  created_at timestamptz not null default now(),
+  constraint student_interests_pkey primary key (profile_id, category),
+  constraint student_interests_category_check check (
+    category in (
+      'Mental Health',
+      'Sports',
+      'Arts',
+      'Volunteering',
+      'Academic',
+      'Career',
+      'Outdoor',
+      'Culture',
+      'Leadership',
+      'Social',
+      'Other'
+    )
+  )
+);
+
+create index if not exists student_interests_school_category_idx
+  on public.student_interests (school_id, category);
+
+alter table public.student_interests enable row level security;
+
+drop policy if exists "Students and their school staff can view interests"
+  on public.student_interests;
+create policy "Students and their school staff can view interests"
+  on public.student_interests
+  for select
+  to authenticated
+  using (
+    profile_id = auth.uid()
+    or public.current_user_can_manage_school(school_id)
+  );
+
+drop policy if exists "Students can add their own interests"
+  on public.student_interests;
+create policy "Students can add their own interests"
+  on public.student_interests
+  for insert
+  to authenticated
+  with check (
+    profile_id = auth.uid()
+    and school_id = public.current_profile_school_id()
+    and public.current_profile_role() = 'student'
+  );
+
+drop policy if exists "Students can remove their own interests"
+  on public.student_interests;
+create policy "Students can remove their own interests"
+  on public.student_interests
+  for delete
+  to authenticated
+  using (profile_id = auth.uid());
+
+revoke all on table public.student_interests from public, anon;
+grant select, insert, delete on table public.student_interests to authenticated;
+
+revoke update, truncate, trigger, references
+  on table public.student_interests
+  from authenticated;
+
+
+-- Two first-visit labels that staff or club leaders set on a club page:
+-- beginners are welcome, and the first visit is free. The student survey
+-- named both as what would help a first visit.
+--
+-- upsert_club_profile gains two optional boolean parameters. A null keeps
+-- the stored value, so a save from an older form never clears a label.
+
+alter table public.club_profiles
+  add column if not exists beginners_welcome boolean not null default false,
+  add column if not exists first_visit_free boolean not null default false;
+
+drop function if exists public.upsert_club_profile(
+  uuid, text, text, text, text, text, text, text, text, text, text
+);
+
+create or replace function public.upsert_club_profile(
+  target_club_id uuid,
+  profile_tagline text default null,
+  profile_about text default null,
+  profile_meeting_schedule text default null,
+  profile_meeting_location text default null,
+  profile_eligibility_notes text default null,
+  profile_commitment_notes text default null,
+  profile_accessibility_notes text default null,
+  profile_cost_notes text default null,
+  profile_materials_notes text default null,
+  profile_theme_key text default null,
+  profile_beginners_welcome boolean default null,
+  profile_first_visit_free boolean default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  actor_id uuid := auth.uid();
+  club_school_id uuid;
+  normalized_tagline text := nullif(btrim(profile_tagline), '');
+  normalized_about text := nullif(btrim(profile_about), '');
+  normalized_meeting_schedule text := nullif(btrim(profile_meeting_schedule), '');
+  normalized_meeting_location text := nullif(btrim(profile_meeting_location), '');
+  normalized_eligibility_notes text := nullif(btrim(profile_eligibility_notes), '');
+  normalized_commitment_notes text := nullif(btrim(profile_commitment_notes), '');
+  normalized_accessibility_notes text := nullif(btrim(profile_accessibility_notes), '');
+  normalized_cost_notes text := nullif(btrim(profile_cost_notes), '');
+  normalized_materials_notes text := nullif(btrim(profile_materials_notes), '');
+  normalized_theme_key text := nullif(btrim(profile_theme_key), '');
+begin
+  if actor_id is null then
+    raise exception using errcode = '42501', message = 'authentication required';
+  end if;
+
+  select c.school_id
+    into club_school_id
+  from public.clubs c
+  where c.id = target_club_id;
+
+  if club_school_id is null then
+    raise exception using errcode = '22023', message = 'club not found';
+  end if;
+
+  if not public.current_user_can_edit_club_profile(target_club_id) then
+    raise exception using errcode = '42501', message = 'club profile edit denied';
+  end if;
+
+  insert into public.club_profiles (
+    club_id,
+    school_id,
+    tagline,
+    about,
+    meeting_schedule,
+    meeting_location,
+    eligibility_notes,
+    commitment_notes,
+    accessibility_notes,
+    cost_notes,
+    materials_notes,
+    theme_key,
+    beginners_welcome,
+    first_visit_free,
+    updated_by_profile_id
+  ) values (
+    target_club_id,
+    club_school_id,
+    normalized_tagline,
+    normalized_about,
+    normalized_meeting_schedule,
+    normalized_meeting_location,
+    normalized_eligibility_notes,
+    normalized_commitment_notes,
+    normalized_accessibility_notes,
+    normalized_cost_notes,
+    normalized_materials_notes,
+    normalized_theme_key,
+    coalesce(profile_beginners_welcome, false),
+    coalesce(profile_first_visit_free, false),
+    actor_id
+  )
+  on conflict (club_id) do update set
+    tagline = excluded.tagline,
+    about = excluded.about,
+    meeting_schedule = excluded.meeting_schedule,
+    meeting_location = excluded.meeting_location,
+    eligibility_notes = excluded.eligibility_notes,
+    commitment_notes = excluded.commitment_notes,
+    accessibility_notes = excluded.accessibility_notes,
+    cost_notes = excluded.cost_notes,
+    materials_notes = excluded.materials_notes,
+    theme_key = excluded.theme_key,
+    beginners_welcome = coalesce(
+      profile_beginners_welcome,
+      public.club_profiles.beginners_welcome
+    ),
+    first_visit_free = coalesce(
+      profile_first_visit_free,
+      public.club_profiles.first_visit_free
+    ),
+    updated_by_profile_id = excluded.updated_by_profile_id;
+
+  return target_club_id;
+end;
+$$;
+
+alter function public.upsert_club_profile(
+  uuid, text, text, text, text, text, text, text, text, text, text, boolean, boolean
+) owner to postgres;
+revoke all on function public.upsert_club_profile(
+  uuid, text, text, text, text, text, text, text, text, text, text, boolean, boolean
+) from public, anon;
+grant execute on function public.upsert_club_profile(
+  uuid, text, text, text, text, text, text, text, text, text, text, boolean, boolean
+) to authenticated;
+
+notify pgrst, 'reload schema';
+
 -- Fake seed data only. These rows are for local/demo development and should be
 -- removed or replaced before production. No auth.users are created here because
 -- Supabase Auth should own login identities.
@@ -3999,3 +4210,1280 @@ values (
   '{"seed": true}'::jsonb
 )
 on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Student portfolios (migration 202611070001_add_student_portfolios.sql)
+-- ---------------------------------------------------------------------------
+
+-- Student portfolios: entries (photos, projects, achievements, reflections),
+-- per-entry visibility, one featured entry, and teacher notes.
+--
+-- Access model
+--   * Only the student who owns an entry can create, edit, feature or delete it.
+--   * Drafts and "private" entries are visible to the owner only.
+--   * "staff" entries are also visible to active teachers and school admins
+--     at the student's school.
+--   * "school" entries are also visible to every active profile at that school.
+--   * Teacher notes are written by staff who can see the entry and are read by
+--     the owner and staff only (never by classmates).
+--   * Platform admins get no access: portfolios are student-owned content.
+--   * All writes go through the functions below; table privileges are
+--     select-only. Photos live in a private bucket with no client policies:
+--     the app uploads through signed URLs and serves images through a route
+--     that checks current_user_can_view_portfolio_entry first.
+
+create table if not exists public.portfolio_entries (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schools(id) on delete cascade,
+  student_roster_id uuid not null,
+  kind text not null default 'reflection',
+  title text not null,
+  body text,
+  entry_date date not null default current_date,
+  club_id uuid,
+  event_id uuid,
+  visibility text not null default 'staff',
+  is_draft boolean not null default false,
+  is_featured boolean not null default false,
+  media_paths text[] not null default '{}'::text[],
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint portfolio_entries_id_school_unique unique (id, school_id),
+  constraint portfolio_entries_roster_school_fk
+    foreign key (student_roster_id, school_id)
+    references public.student_rosters(id, school_id)
+    on delete cascade,
+  constraint portfolio_entries_club_school_fk
+    foreign key (club_id, school_id)
+    references public.clubs(id, school_id)
+    on delete set null (club_id),
+  constraint portfolio_entries_event_school_fk
+    foreign key (event_id, school_id)
+    references public.events(id, school_id)
+    on delete set null (event_id),
+  constraint portfolio_entries_kind_check check (
+    kind in ('reflection', 'project', 'achievement', 'photos')
+  ),
+  constraint portfolio_entries_visibility_check check (
+    visibility in ('private', 'staff', 'school')
+  ),
+  constraint portfolio_entries_title_valid check (
+    public.club_profile_text_is_valid(title, 140)
+  ),
+  constraint portfolio_entries_body_valid check (
+    body is null or public.club_profile_text_is_valid(body, 5000)
+  ),
+  constraint portfolio_entries_media_count check (
+    coalesce(array_length(media_paths, 1), 0) <= 6
+  ),
+  constraint portfolio_entries_draft_not_featured check (
+    not (is_draft and is_featured)
+  )
+);
+
+create index if not exists portfolio_entries_owner_idx
+  on public.portfolio_entries (student_roster_id, entry_date desc);
+create index if not exists portfolio_entries_school_idx
+  on public.portfolio_entries (school_id, visibility, entry_date desc);
+create unique index if not exists portfolio_entries_one_featured
+  on public.portfolio_entries (student_roster_id)
+  where is_featured;
+
+drop trigger if exists set_portfolio_entries_updated_at
+  on public.portfolio_entries;
+create trigger set_portfolio_entries_updated_at
+  before update on public.portfolio_entries
+  for each row execute function public.set_updated_at();
+
+create table if not exists public.portfolio_feedback (
+  id uuid primary key default gen_random_uuid(),
+  entry_id uuid not null,
+  school_id uuid not null,
+  author_profile_id uuid references public.profiles(id) on delete set null,
+  body text not null,
+  created_at timestamptz not null default now(),
+  constraint portfolio_feedback_entry_school_fk
+    foreign key (entry_id, school_id)
+    references public.portfolio_entries(id, school_id)
+    on delete cascade,
+  constraint portfolio_feedback_body_valid check (
+    public.club_profile_text_is_valid(body, 1000)
+  )
+);
+
+create index if not exists portfolio_feedback_entry_idx
+  on public.portfolio_feedback (entry_id, created_at);
+
+-- Path: <school_id>/<student_roster_id>/<entry_id>/<uuid>.<jpg|png|webp>
+create or replace function public.portfolio_media_path_is_valid(
+  object_path text,
+  expected_school_id uuid,
+  expected_roster_id uuid,
+  expected_entry_id uuid
+)
+returns boolean
+language sql
+immutable
+set search_path = pg_catalog
+as $$
+  select object_path is not null
+    and expected_school_id is not null
+    and expected_roster_id is not null
+    and expected_entry_id is not null
+    and object_path ~ (
+      '^' || expected_school_id::text || '/' || expected_roster_id::text || '/'
+      || expected_entry_id::text
+      || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)$'
+    )
+$$;
+
+alter function public.portfolio_media_path_is_valid(text, uuid, uuid, uuid)
+  owner to postgres;
+revoke all on function public.portfolio_media_path_is_valid(text, uuid, uuid, uuid)
+  from public, anon, authenticated;
+
+create or replace function public.current_user_owns_portfolio_entry(
+  target_entry_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  select exists (
+    select 1
+    from public.portfolio_entries e
+    where e.id = target_entry_id
+      and e.school_id = public.current_profile_school_id()
+      and e.student_roster_id = public.current_student_roster_id()
+  )
+$$;
+
+alter function public.current_user_owns_portfolio_entry(uuid) owner to postgres;
+revoke all on function public.current_user_owns_portfolio_entry(uuid)
+  from public, anon;
+grant execute on function public.current_user_owns_portfolio_entry(uuid)
+  to authenticated;
+
+create or replace function public.current_user_can_view_portfolio_entry(
+  target_entry_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  select exists (
+    select 1
+    from public.portfolio_entries e
+    join public.schools s on s.id = e.school_id
+    join public.student_rosters sr
+      on sr.id = e.student_roster_id and sr.school_id = e.school_id
+    where e.id = target_entry_id
+      and s.status = 'active'
+      and e.school_id = public.current_profile_school_id()
+      and (
+        e.student_roster_id = public.current_student_roster_id()
+        or (
+          not e.is_draft
+          and sr.status = 'active'
+          and (
+            (e.visibility in ('staff', 'school') and public.current_profile_is_staff())
+            or e.visibility = 'school'
+          )
+        )
+      )
+  )
+$$;
+
+alter function public.current_user_can_view_portfolio_entry(uuid) owner to postgres;
+revoke all on function public.current_user_can_view_portfolio_entry(uuid)
+  from public, anon;
+grant execute on function public.current_user_can_view_portfolio_entry(uuid)
+  to authenticated;
+
+create or replace function public.save_portfolio_entry(
+  target_entry_id uuid,
+  entry_kind text,
+  entry_title text,
+  entry_body text,
+  entry_on date,
+  entry_club_id uuid,
+  entry_event_id uuid,
+  entry_visibility text,
+  entry_is_draft boolean
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  actor_school_id uuid := public.current_profile_school_id();
+  actor_roster_id uuid := public.current_student_roster_id();
+  normalized_title text := nullif(btrim(entry_title), '');
+  normalized_body text := nullif(btrim(entry_body), '');
+  saved_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception using errcode = '42501', message = 'authentication required';
+  end if;
+
+  if actor_school_id is null
+    or actor_roster_id is null
+    or public.current_profile_role() <> 'student' then
+    raise exception using errcode = '42501', message = 'portfolio edit denied';
+  end if;
+
+  if entry_club_id is not null and not exists (
+    select 1 from public.clubs c
+    where c.id = entry_club_id and c.school_id = actor_school_id
+  ) then
+    raise exception using errcode = '22023', message = 'club not found';
+  end if;
+
+  if entry_event_id is not null and not exists (
+    select 1 from public.events ev
+    where ev.id = entry_event_id and ev.school_id = actor_school_id
+  ) then
+    raise exception using errcode = '22023', message = 'event not found';
+  end if;
+
+  if target_entry_id is null then
+    insert into public.portfolio_entries (
+      school_id, student_roster_id, kind, title, body, entry_date,
+      club_id, event_id, visibility, is_draft
+    ) values (
+      actor_school_id, actor_roster_id, entry_kind, normalized_title,
+      normalized_body, coalesce(entry_on, current_date), entry_club_id,
+      entry_event_id, entry_visibility, coalesce(entry_is_draft, false)
+    )
+    returning id into saved_id;
+  else
+    update public.portfolio_entries e set
+      kind = entry_kind,
+      title = normalized_title,
+      body = normalized_body,
+      entry_date = coalesce(entry_on, e.entry_date),
+      club_id = entry_club_id,
+      event_id = entry_event_id,
+      visibility = entry_visibility,
+      is_draft = coalesce(entry_is_draft, false),
+      is_featured = e.is_featured and not coalesce(entry_is_draft, false)
+    where e.id = target_entry_id
+      and e.school_id = actor_school_id
+      and e.student_roster_id = actor_roster_id
+    returning e.id into saved_id;
+
+    if saved_id is null then
+      raise exception using errcode = '42501', message = 'portfolio edit denied';
+    end if;
+  end if;
+
+  return saved_id;
+end;
+$$;
+
+alter function public.save_portfolio_entry(
+  uuid, text, text, text, date, uuid, uuid, text, boolean
+) owner to postgres;
+revoke all on function public.save_portfolio_entry(
+  uuid, text, text, text, date, uuid, uuid, text, boolean
+) from public, anon;
+grant execute on function public.save_portfolio_entry(
+  uuid, text, text, text, date, uuid, uuid, text, boolean
+) to authenticated;
+
+-- Returns the deleted entry's photo paths so the app can remove the files.
+create or replace function public.delete_portfolio_entry(target_entry_id uuid)
+returns text[]
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  removed_paths text[];
+begin
+  delete from public.portfolio_entries e
+  where e.id = target_entry_id
+    and e.school_id = public.current_profile_school_id()
+    and e.student_roster_id = public.current_student_roster_id()
+  returning e.media_paths into removed_paths;
+
+  if removed_paths is null then
+    raise exception using errcode = '42501', message = 'portfolio edit denied';
+  end if;
+
+  return removed_paths;
+end;
+$$;
+
+alter function public.delete_portfolio_entry(uuid) owner to postgres;
+revoke all on function public.delete_portfolio_entry(uuid) from public, anon;
+grant execute on function public.delete_portfolio_entry(uuid) to authenticated;
+
+-- Pass null to clear the featured entry.
+create or replace function public.set_featured_portfolio_entry(
+  target_entry_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  actor_roster_id uuid := public.current_student_roster_id();
+begin
+  if actor_roster_id is null then
+    raise exception using errcode = '42501', message = 'portfolio edit denied';
+  end if;
+
+  if target_entry_id is not null and not exists (
+    select 1 from public.portfolio_entries e
+    where e.id = target_entry_id
+      and e.student_roster_id = actor_roster_id
+      and not e.is_draft
+  ) then
+    raise exception using errcode = '42501', message = 'portfolio edit denied';
+  end if;
+
+  update public.portfolio_entries
+  set is_featured = false
+  where student_roster_id = actor_roster_id
+    and is_featured;
+
+  if target_entry_id is not null then
+    update public.portfolio_entries
+    set is_featured = true
+    where id = target_entry_id
+      and student_roster_id = actor_roster_id;
+  end if;
+end;
+$$;
+
+alter function public.set_featured_portfolio_entry(uuid) owner to postgres;
+revoke all on function public.set_featured_portfolio_entry(uuid)
+  from public, anon;
+grant execute on function public.set_featured_portfolio_entry(uuid)
+  to authenticated;
+
+create or replace function public.add_portfolio_feedback(
+  target_entry_id uuid,
+  feedback_body text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  entry_school_id uuid;
+  saved_id uuid;
+begin
+  if not public.current_profile_is_staff()
+    or not public.current_user_can_view_portfolio_entry(target_entry_id) then
+    raise exception using errcode = '42501', message = 'portfolio feedback denied';
+  end if;
+
+  select e.school_id into entry_school_id
+  from public.portfolio_entries e
+  where e.id = target_entry_id;
+
+  insert into public.portfolio_feedback (entry_id, school_id, author_profile_id, body)
+  values (target_entry_id, entry_school_id, auth.uid(), nullif(btrim(feedback_body), ''))
+  returning id into saved_id;
+
+  return saved_id;
+end;
+$$;
+
+alter function public.add_portfolio_feedback(uuid, text) owner to postgres;
+revoke all on function public.add_portfolio_feedback(uuid, text)
+  from public, anon;
+grant execute on function public.add_portfolio_feedback(uuid, text)
+  to authenticated;
+
+-- Server-only: called by the app after it has validated the uploaded image.
+create or replace function public.set_portfolio_entry_media(
+  target_entry_id uuid,
+  new_media_paths text[],
+  actor_profile_id uuid
+)
+returns text[]
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  entry_record public.portfolio_entries;
+  media_path text;
+begin
+  select e.* into entry_record
+  from public.portfolio_entries e
+  join public.student_rosters sr
+    on sr.id = e.student_roster_id and sr.school_id = e.school_id
+  join public.profiles p on p.id = sr.profile_id
+  where e.id = target_entry_id
+    and sr.profile_id = actor_profile_id
+    and sr.status = 'active'
+    and p.status = 'active'
+    and p.role = 'student';
+
+  if entry_record.id is null then
+    raise exception using errcode = '42501', message = 'portfolio edit denied';
+  end if;
+
+  foreach media_path in array coalesce(new_media_paths, '{}'::text[]) loop
+    if not public.portfolio_media_path_is_valid(
+      media_path,
+      entry_record.school_id,
+      entry_record.student_roster_id,
+      entry_record.id
+    ) then
+      raise exception using errcode = '22023', message = 'invalid portfolio media path';
+    end if;
+  end loop;
+
+  update public.portfolio_entries
+  set media_paths = coalesce(new_media_paths, '{}'::text[])
+  where id = entry_record.id;
+
+  return entry_record.media_paths;
+end;
+$$;
+
+alter function public.set_portfolio_entry_media(uuid, text[], uuid) owner to postgres;
+revoke all on function public.set_portfolio_entry_media(uuid, text[], uuid)
+  from public, anon, authenticated;
+grant execute on function public.set_portfolio_entry_media(uuid, text[], uuid)
+  to service_role;
+
+alter table public.portfolio_entries enable row level security;
+alter table public.portfolio_feedback enable row level security;
+
+drop policy if exists "Allowed viewers can read portfolio entries"
+  on public.portfolio_entries;
+create policy "Allowed viewers can read portfolio entries"
+  on public.portfolio_entries
+  for select
+  to authenticated
+  using (public.current_user_can_view_portfolio_entry(id));
+
+drop policy if exists "Owners and staff can read portfolio feedback"
+  on public.portfolio_feedback;
+create policy "Owners and staff can read portfolio feedback"
+  on public.portfolio_feedback
+  for select
+  to authenticated
+  using (
+    public.current_user_can_view_portfolio_entry(entry_id)
+    and (
+      public.current_user_owns_portfolio_entry(entry_id)
+      or public.current_profile_is_staff()
+    )
+  );
+
+revoke all privileges on table public.portfolio_entries from anon;
+revoke all privileges on table public.portfolio_feedback from anon;
+revoke insert, update, delete, truncate, trigger, references
+  on table public.portfolio_entries from authenticated;
+revoke insert, update, delete, truncate, trigger, references
+  on table public.portfolio_feedback from authenticated;
+grant select on table public.portfolio_entries to authenticated;
+grant select on table public.portfolio_feedback to authenticated;
+
+-- Private photo bucket. No storage.objects policies on purpose: browsers never
+-- read or write it directly.
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+) values (
+  'portfolio-media',
+  'portfolio-media',
+  false,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+on conflict (id) do update set
+  name = excluded.name,
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- Classmates in clubs: under each club, a student sees which classmates from
+-- their own class are members ("Б. Болд, Т. Сараа +2"). Students join clubs
+-- their friends are in.
+--
+-- Access model
+--   * Rosters and memberships stay hidden from students (RLS unchanged). The
+--     names come only through get_club_classmates, which runs as the owner.
+--   * A student sees members of their own school AND their own homeroom only,
+--     never themselves, and only active rosters with active memberships.
+--   * Only a first name (or preferred name) and the family-name initial leave
+--     the database. No ids, numbers or other fields.
+--   * Each student can hide their name with set_show_name_to_classmates(false).
+--     Names show by default.
+
+create or replace function public.get_club_classmates(target_club_ids uuid[])
+returns table (club_id uuid, display_name text)
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  with me as (
+    select sr.id, sr.school_id, sr.homeroom
+    from public.student_rosters sr
+    where sr.id = public.current_student_roster_id()
+      and nullif(btrim(sr.homeroom), '') is not null
+  )
+  select
+    cm.club_id,
+    -- Mongolian order: the family-name initial first, then the given name («Б. Болд»).
+    upper(left(btrim(classmate.last_name), 1)) || '. '
+      || btrim(coalesce(nullif(btrim(classmate.preferred_name), ''), classmate.first_name)) as display_name
+  from me
+  join public.club_memberships cm
+    on cm.school_id = me.school_id
+   and cm.status = 'active'
+   and cm.club_id = any(target_club_ids)
+  join public.student_rosters classmate
+    on classmate.id = cm.student_roster_id
+   and classmate.school_id = me.school_id
+   and classmate.status = 'active'
+   and classmate.show_name_to_classmates
+   and lower(btrim(classmate.homeroom)) = lower(btrim(me.homeroom))
+   and classmate.id <> me.id
+  order by cm.club_id, display_name
+$$;
+
+create or replace function public.set_show_name_to_classmates(show_name boolean)
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  roster_id uuid := public.current_student_roster_id();
+begin
+  if roster_id is null then
+    raise exception using errcode = '42501', message = 'active student roster required';
+  end if;
+
+  update public.student_rosters
+  set show_name_to_classmates = coalesce(show_name, true)
+  where id = roster_id;
+
+  return coalesce(show_name, true);
+end;
+$$;
+
+alter function public.get_club_classmates(uuid[]) owner to postgres;
+revoke all on function public.get_club_classmates(uuid[]) from public, anon;
+grant execute on function public.get_club_classmates(uuid[]) to authenticated;
+
+alter function public.set_show_name_to_classmates(boolean) owner to postgres;
+revoke all on function public.set_show_name_to_classmates(boolean) from public, anon;
+grant execute on function public.set_show_name_to_classmates(boolean) to authenticated;
+
+
+-- School site: public information pages a school's staff write themselves
+-- (about us, management, news, timetable), shown at /s/<school slug>.
+--
+-- Access model
+--   * Staff (school admin, teacher) of the school can read and write its pages.
+--   * No policy for anon and none for students: the table is closed to both.
+--     The public site reads published pages on the server with the service
+--     role, through src/lib/site/school-site.ts, which selects published pages
+--     of an active school only.
+--   * A page holds a title and plain text. No student data belongs here.
+
+create table if not exists public.school_pages (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schools(id) on delete cascade,
+  parent_id uuid references public.school_pages(id) on delete cascade,
+  slug text not null,
+  title text not null,
+  body text not null default '',
+  position integer not null default 0,
+  status text not null default 'draft',
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint school_pages_school_slug_unique unique (school_id, slug),
+  constraint school_pages_title_not_blank check (length(btrim(title)) > 0),
+  constraint school_pages_title_length check (length(title) <= 120),
+  constraint school_pages_body_length check (length(body) <= 20000),
+  constraint school_pages_slug_format check (slug ~ '^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$'),
+  constraint school_pages_status_valid check (status in ('draft', 'published')),
+  constraint school_pages_not_own_parent check (parent_id is null or parent_id <> id)
+);
+
+create index if not exists school_pages_school_position_idx
+  on public.school_pages (school_id, parent_id, position);
+
+alter table public.school_pages enable row level security;
+
+revoke all on public.school_pages from anon;
+grant select, insert, update, delete on public.school_pages to authenticated;
+
+drop policy if exists "School staff can read their school pages" on public.school_pages;
+create policy "School staff can read their school pages"
+  on public.school_pages
+  for select
+  to authenticated
+  using (public.current_user_can_manage_school(school_id));
+
+drop policy if exists "School staff can create their school pages" on public.school_pages;
+create policy "School staff can create their school pages"
+  on public.school_pages
+  for insert
+  to authenticated
+  with check (public.current_user_can_manage_school(school_id));
+
+drop policy if exists "School staff can update their school pages" on public.school_pages;
+create policy "School staff can update their school pages"
+  on public.school_pages
+  for update
+  to authenticated
+  using (public.current_user_can_manage_school(school_id))
+  with check (public.current_user_can_manage_school(school_id));
+
+drop policy if exists "School staff can delete their school pages" on public.school_pages;
+create policy "School staff can delete their school pages"
+  on public.school_pages
+  for delete
+  to authenticated
+  using (public.current_user_can_manage_school(school_id));
+
+
+notify pgrst, 'reload schema';
+
+-- School site cover photos: one optional photo per page, shown on the home
+-- page's section cards and behind the page title.
+--
+-- Access model
+--   * cover_path is written by staff of the school through the page editor
+--     (same row-level security as the rest of school_pages).
+--   * The photos sit in a private bucket with no storage.objects policies:
+--     browsers never read or write it directly. Staff upload through a signed
+--     upload URL the server issues after checking their role; the public site
+--     serves a photo only for a published page of an active school, through
+--     /s/<school>/<page>/cover.
+
+alter table public.school_pages
+  add column if not exists cover_path text;
+
+alter table public.school_pages
+  drop constraint if exists school_pages_cover_path_length;
+alter table public.school_pages
+  add constraint school_pages_cover_path_length
+  check (cover_path is null or length(cover_path) <= 300);
+
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+) values (
+  'site-media',
+  'site-media',
+  false,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+on conflict (id) do update set
+  name = excluded.name,
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- School site visit counter: one number per page per day, for the platform
+-- admins' sites console (/super-admin/sites).
+--
+-- Access model
+--   * Nothing about the visitor is stored: no IP address, cookie, device or
+--     user id. Only the school, the page ('' = the home page), the day and a
+--     count.
+--   * Closed to anon and authenticated. The server writes it with the service
+--     role through record_school_site_view(), after checking that the school is
+--     active and the page is published, and the sites console reads it with the
+--     service role after checking that the viewer is a platform admin.
+
+create table if not exists public.school_site_views (
+  school_id uuid not null references public.schools(id) on delete cascade,
+  page_key text not null default '',
+  day date not null,
+  views integer not null default 0,
+  primary key (school_id, page_key, day),
+  constraint school_site_views_page_key_format
+    check (page_key = '' or page_key ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'),
+  constraint school_site_views_views_not_negative check (views >= 0)
+);
+
+create index if not exists school_site_views_day_idx
+  on public.school_site_views (day);
+
+alter table public.school_site_views enable row level security;
+revoke all on table public.school_site_views from anon, authenticated;
+
+create or replace function public.record_school_site_view(
+  target_school_id uuid,
+  target_page_key text,
+  view_day date
+)
+returns void
+language sql
+security invoker
+set search_path = pg_catalog, public
+as $$
+  insert into public.school_site_views (school_id, page_key, day, views)
+  values (target_school_id, coalesce(target_page_key, ''), view_day, 1)
+  on conflict (school_id, page_key, day)
+  do update set views = public.school_site_views.views + 1;
+$$;
+
+revoke execute on function public.record_school_site_view(uuid, text, date)
+  from public, anon, authenticated;
+grant execute on function public.record_school_site_view(uuid, text, date)
+  to service_role;
+
+-- Demo schools: a school whose students, clubs and activities are made up for
+-- showing the platform. Flagged schools stay fully usable, but platform-level
+-- counts (the platform dashboard's school totals and the school sites console)
+-- leave them out, so pilot figures never mix real and made-up data.
+
+alter table public.schools
+  add column if not exists is_demo boolean not null default false;
+
+-- Club proposal founders and in-app notifications (202611230001).
+
+-- 2. Founders of a proposal.
+create table if not exists public.club_request_founders (
+  id uuid primary key default gen_random_uuid(),
+  club_request_id uuid not null references public.club_requests(id) on delete cascade,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  is_proposer boolean not null default false,
+  status text not null default 'invited',
+  responded_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint club_request_founders_unique unique (club_request_id, profile_id),
+  constraint club_request_founders_status_check check (status in ('invited', 'confirmed', 'declined'))
+);
+
+create index if not exists club_request_founders_profile_idx
+  on public.club_request_founders (profile_id, status);
+
+alter table public.club_request_founders enable row level security;
+revoke all on public.club_request_founders from anon, authenticated;
+grant select on public.club_request_founders to authenticated;
+
+drop policy if exists "Founders read their own rows; staff read their school" on public.club_request_founders;
+create policy "Founders read their own rows; staff read their school"
+  on public.club_request_founders
+  for select
+  to authenticated
+  using (profile_id = auth.uid() or public.current_user_can_manage_school(school_id));
+
+-- 3. In-app notifications.
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schools(id) on delete cascade,
+  recipient_profile_id uuid not null references public.profiles(id) on delete cascade,
+  kind text not null,
+  data jsonb not null default '{}'::jsonb,
+  link text,
+  read_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint notifications_kind_format check (kind ~ '^[a-z][a-z_]{2,40}$'),
+  constraint notifications_link_internal check (link is null or (link ~ '^/[A-Za-z0-9/_?=&#.-]*$' and length(link) <= 300))
+);
+
+create index if not exists notifications_recipient_idx
+  on public.notifications (recipient_profile_id, created_at desc);
+
+alter table public.notifications enable row level security;
+revoke all on public.notifications from anon, authenticated;
+grant select on public.notifications to authenticated;
+-- RLS gates rows, not columns: only read_at may be changed by its owner.
+grant update (read_at) on public.notifications to authenticated;
+
+drop policy if exists "Users read their own notifications" on public.notifications;
+create policy "Users read their own notifications"
+  on public.notifications
+  for select
+  to authenticated
+  using (recipient_profile_id = auth.uid());
+
+drop policy if exists "Users mark their own notifications read" on public.notifications;
+create policy "Users mark their own notifications read"
+  on public.notifications
+  for update
+  to authenticated
+  using (recipient_profile_id = auth.uid())
+  with check (recipient_profile_id = auth.uid());
+
+-- 4. Finding classmates to tag as founders (flexible search, 202611230002).
+create or replace function public.mn_search_fold(value text)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = pg_catalog
+as $$
+  select replace(replace(replace(replace(replace(replace(
+    translate(
+      replace(replace(replace(replace(replace(replace(replace(replace(replace(
+        lower(coalesce(value, '')),
+        'ё', 'yo'), 'ж', 'j'), 'ц', 'ts'), 'ч', 'ch'), 'ш', 'sh'), 'щ', 'sh'), 'ю', 'yu'), 'я', 'ya'), 'х', 'h'),
+      'абвгдезийклмноөпрстуүфыэьъ',
+      'abvgdeziiklmnooprstuufyei'
+    ),
+    'kh', 'h'), 'zh', 'j'), 'ö', 'o'), 'ü', 'u'), '%', ''), '_', '')
+$$;
+
+create or replace function public.search_school_students(search text)
+returns table (profile_id uuid, display_name text, homeroom text)
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  with me as (
+    select p.id, p.school_id
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.status = 'active'
+      and p.role = 'student'
+  ), q as (
+    select array_remove(regexp_split_to_array(public.mn_search_fold(btrim(coalesce(search, ''))), '\s+'), '') as words,
+           length(btrim(coalesce(search, ''))) as total
+  )
+  select
+    sr.profile_id,
+    btrim(coalesce(nullif(btrim(sr.preferred_name), ''), sr.first_name))
+      || ' ' || btrim(sr.last_name) as display_name,
+    nullif(btrim(sr.homeroom), '') as homeroom
+  from me
+  cross join q
+  join public.student_rosters sr
+    on sr.school_id = me.school_id
+   and sr.status = 'active'
+   and sr.profile_id is not null
+   and sr.profile_id <> me.id
+   and sr.show_name_to_classmates
+  join public.profiles student
+    on student.id = sr.profile_id
+   and student.status = 'active'
+   and student.role = 'student'
+  where q.total >= 2
+    and cardinality(q.words) between 1 and 4
+    and not exists (
+      select 1
+      from unnest(q.words) as word
+      where not (
+        public.mn_search_fold(sr.first_name) like '%' || word || '%'
+        or public.mn_search_fold(sr.last_name) like '%' || word || '%'
+        or public.mn_search_fold(coalesce(sr.preferred_name, '')) like '%' || word || '%'
+        or public.mn_search_fold(coalesce(sr.homeroom, '')) like word || '%'
+      )
+    )
+  order by sr.homeroom, sr.first_name, sr.last_name
+  limit 10
+$$;
+
+alter function public.search_school_students(text) owner to postgres;
+revoke all on function public.search_school_students(text) from public, anon;
+grant execute on function public.search_school_students(text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Mirrors supabase/migrations/202611230003_add_club_join_applications.sql
+-- ---------------------------------------------------------------------------
+-- Joining a club by application (meeting notes 23 Nov 2026, §3b "Joining a club").
+--
+-- * Each club chooses how students join: 'open' (join straight away, as
+--   before) or 'apply' (send a request with the club's application form).
+--   Existing clubs stay 'open' so nothing changes for clubs that have no one
+--   to review requests; clubs started from an approved proposal begin as
+--   'apply' (the app sets that when it creates them).
+-- * club_join_questions: the application form the club leader (or the
+--   supervising teacher) builds. Short answer, paragraph, one choice or
+--   several choices, each optional or required.
+-- * club_join_requests: a student's request with their answers. The answers
+--   are stored with the question text as it was, so editing the form later
+--   never changes what a student already sent.
+--
+-- Access model: all writes go through server actions using the service role
+-- after they check who is acting (the student themselves; the club leader,
+-- the supervising teacher or a school admin for decisions). Clients get
+-- read access only: questions to anyone in the school, requests to the
+-- student who sent them and to school staff.
+
+alter table public.clubs
+  add column if not exists join_mode text not null default 'open';
+
+alter table public.clubs
+  drop constraint if exists clubs_join_mode_check;
+alter table public.clubs
+  add constraint clubs_join_mode_check check (join_mode in ('open', 'apply'));
+
+create table if not exists public.club_join_questions (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  position integer not null default 0,
+  prompt text not null,
+  kind text not null default 'short',
+  options jsonb not null default '[]'::jsonb,
+  required boolean not null default true,
+  created_at timestamptz not null default now(),
+  constraint club_join_questions_club_fk foreign key (club_id, school_id)
+    references public.clubs(id, school_id) on delete cascade,
+  constraint club_join_questions_kind_check check (kind in ('short', 'long', 'choice', 'checkbox')),
+  constraint club_join_questions_prompt_length check (length(btrim(prompt)) between 1 and 300),
+  constraint club_join_questions_options_array check (jsonb_typeof(options) = 'array' and jsonb_array_length(options) <= 12)
+);
+
+create index if not exists club_join_questions_club_idx
+  on public.club_join_questions (club_id, position);
+
+create table if not exists public.club_join_requests (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  student_roster_id uuid not null,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  status text not null default 'pending',
+  answers jsonb not null default '[]'::jsonb,
+  decided_by_profile_id uuid references public.profiles(id) on delete set null,
+  decided_at timestamptz,
+  decision_note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint club_join_requests_club_fk foreign key (club_id, school_id)
+    references public.clubs(id, school_id) on delete cascade,
+  constraint club_join_requests_student_fk foreign key (student_roster_id, school_id)
+    references public.student_rosters(id, school_id) on delete cascade,
+  constraint club_join_requests_status_check check (status in ('pending', 'approved', 'rejected', 'withdrawn')),
+  constraint club_join_requests_answers_array check (jsonb_typeof(answers) = 'array'),
+  constraint club_join_requests_note_length check (decision_note is null or length(decision_note) <= 1000)
+);
+
+-- One open request per student per club.
+create unique index if not exists club_join_requests_one_pending
+  on public.club_join_requests (club_id, student_roster_id)
+  where status = 'pending';
+
+create index if not exists club_join_requests_club_status_idx
+  on public.club_join_requests (club_id, status, created_at);
+
+create index if not exists club_join_requests_profile_idx
+  on public.club_join_requests (profile_id, created_at desc);
+
+alter table public.club_join_questions enable row level security;
+revoke all on public.club_join_questions from anon, authenticated;
+grant select on public.club_join_questions to authenticated;
+
+drop policy if exists "School members read club application questions" on public.club_join_questions;
+create policy "School members read club application questions"
+  on public.club_join_questions
+  for select
+  to authenticated
+  using (school_id = public.current_profile_school_id());
+
+alter table public.club_join_requests enable row level security;
+revoke all on public.club_join_requests from anon, authenticated;
+grant select on public.club_join_requests to authenticated;
+
+drop policy if exists "Students read their own join requests; staff read their school" on public.club_join_requests;
+create policy "Students read their own join requests; staff read their school"
+  on public.club_join_requests
+  for select
+  to authenticated
+  using (profile_id = auth.uid() or public.current_user_can_manage_school(school_id));
+
+
+-- ---------------------------------------------------------------------------
+-- Mirrors supabase/migrations/202611230004_add_club_leave_requests.sql
+-- ---------------------------------------------------------------------------
+-- Leaving a club (meeting notes 23 Nov 2026, §3b "Leaving a club").
+--
+-- A student who wants to quit says why (a reason from a short list plus
+-- their own words) and can leave feedback for the club. The club leader, the
+-- supervising teacher or a school admin reads it and approves the request;
+-- only then does the membership end. Nobody decides their own request.
+--
+-- Access model: as for join requests. Writes go through server actions using
+-- the service role after they check who is acting. Clients may only read:
+-- the student their own requests, school staff their school's.
+
+create table if not exists public.club_leave_requests (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  student_roster_id uuid not null,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  reason_kind text not null,
+  reason text not null,
+  feedback text,
+  status text not null default 'pending',
+  decided_by_profile_id uuid references public.profiles(id) on delete set null,
+  decided_at timestamptz,
+  decision_note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint club_leave_requests_club_fk foreign key (club_id, school_id)
+    references public.clubs(id, school_id) on delete cascade,
+  constraint club_leave_requests_student_fk foreign key (student_roster_id, school_id)
+    references public.student_rosters(id, school_id) on delete cascade,
+  constraint club_leave_requests_status_check check (status in ('pending', 'approved', 'rejected', 'withdrawn')),
+  constraint club_leave_requests_reason_kind_check check (reason_kind in ('busy', 'schedule', 'interest', 'expectations', 'people', 'other')),
+  constraint club_leave_requests_reason_length check (length(btrim(reason)) between 1 and 1000),
+  constraint club_leave_requests_feedback_length check (feedback is null or length(feedback) <= 2000),
+  constraint club_leave_requests_note_length check (decision_note is null or length(decision_note) <= 1000)
+);
+
+-- One open request per student per club.
+create unique index if not exists club_leave_requests_one_pending
+  on public.club_leave_requests (club_id, student_roster_id)
+  where status = 'pending';
+
+create index if not exists club_leave_requests_club_status_idx
+  on public.club_leave_requests (club_id, status, created_at);
+
+alter table public.club_leave_requests enable row level security;
+revoke all on public.club_leave_requests from anon, authenticated;
+grant select on public.club_leave_requests to authenticated;
+
+drop policy if exists "Students read their own leave requests; staff read their school" on public.club_leave_requests;
+create policy "Students read their own leave requests; staff read their school"
+  on public.club_leave_requests
+  for select
+  to authenticated
+  using (profile_id = auth.uid() or public.current_user_can_manage_school(school_id));
+
+
+-- ---------------------------------------------------------------------------
+-- Mirrors supabase/migrations/202611230005_add_parent_accounts.sql
+-- ---------------------------------------------------------------------------
+-- Parent accounts (meeting notes 23 Nov 2026, §2: "Generate two codes per
+-- student: one for the student, one for their parent").
+--
+-- * profile_role gains 'parent'.
+-- * invite_codes.audience says who a code is for. Every existing code is a
+--   student code; a parent code is redeemed at /join/parent.
+-- * parent_links ties a parent account to each child it may see. A parent
+--   with two children redeems two codes into one account.
+--
+-- Access model: a parent sees only their own children, and only through
+-- server code that checks parent_links first. In the database a parent can
+-- read their own profile and their own links and nothing school-wide:
+-- current_profile_school_id() returns null for parents, so the "anyone at this
+-- school" read policies (school, clubs, club proposals, join questions) do not
+-- apply to them. Parents are adults outside the school; students are minors.
+
+alter type public.profile_role add value if not exists 'parent';
+
+alter table public.invite_codes
+  add column if not exists audience text not null default 'student';
+
+alter table public.invite_codes
+  drop constraint if exists invite_codes_audience_check;
+alter table public.invite_codes
+  add constraint invite_codes_audience_check check (audience in ('student', 'parent'));
+
+create table if not exists public.parent_links (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schools(id) on delete cascade,
+  parent_profile_id uuid not null references public.profiles(id) on delete cascade,
+  student_roster_id uuid not null,
+  invite_code_id uuid references public.invite_codes(id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint parent_links_unique unique (parent_profile_id, student_roster_id),
+  constraint parent_links_student_school_fk foreign key (student_roster_id, school_id)
+    references public.student_rosters(id, school_id) on delete cascade
+);
+
+create index if not exists parent_links_student_idx
+  on public.parent_links (student_roster_id);
+
+alter table public.parent_links enable row level security;
+revoke all on public.parent_links from anon, authenticated;
+grant select on public.parent_links to authenticated;
+
+drop policy if exists "Parents read their own links; staff read their school" on public.parent_links;
+create policy "Parents read their own links; staff read their school"
+  on public.parent_links
+  for select
+  to authenticated
+  using (parent_profile_id = auth.uid() or public.current_user_can_manage_school(school_id));
+
+-- Parents get no school-wide reads. (The text cast keeps this valid in the
+-- same transaction that adds the enum value.)
+create or replace function public.current_profile_school_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.school_id
+  from public.profiles p
+  where p.id = auth.uid()
+    and p.status = 'active'
+    and p.role::text <> 'parent'
+  limit 1
+$$;
+
+-- Mirrors supabase/migrations/202611230006_allow_event_poster_path_check.sql
+grant execute on function public.event_poster_path_is_valid(text, uuid, uuid) to authenticated;
+-- Mirrors supabase/migrations/202611240001_platform_admin_school_switcher.sql
+-- ---------------------------------------------------------------------------
+-- Platform admins work in one school at a time (owner's call, 24 Nov 2026:
+-- "when you switch and choose to see one school, only see stuff from that
+-- school. never mix").
+--
+-- * A platform admin's account is an ordinary school admin of exactly one
+--   school, its profiles.school_id. platform_admin_switch_school() moves it to
+--   another school and records the switch in platform_audit_logs. Only a
+--   platform admin can call it, and only for themselves.
+-- * The school pages then see one school, like any school admin. The
+--   platform-wide powers that let platform admins read and change every
+--   school's events, attendance, event shares and event clubs from those
+--   pages are removed. The platform console reads with the service role and
+--   does not use these policies.
+
+create or replace function public.platform_admin_switch_school(target_school_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  me uuid := auth.uid();
+  from_school uuid;
+begin
+  if me is null or not exists (
+    select 1 from public.platform_admins pa where pa.profile_id = me and pa.status = 'active'
+  ) then
+    raise exception using errcode = '42501', message = 'platform admin required';
+  end if;
+
+  if not exists (select 1 from public.schools s where s.id = target_school_id and s.status = 'active') then
+    raise exception using errcode = 'P0002', message = 'school not found';
+  end if;
+
+  select p.school_id into from_school
+  from public.profiles p
+  where p.id = me and p.status = 'active' and p.role = 'school_admin';
+
+  if from_school is null then
+    raise exception using errcode = '42501', message = 'platform admin profile must be an active school admin';
+  end if;
+
+  if from_school = target_school_id then
+    return target_school_id;
+  end if;
+
+  begin
+    update public.profiles set school_id = target_school_id where id = me;
+  exception when foreign_key_violation then
+    -- Still named as responsible staff, a safeguarding designate or a
+    -- reporter in the current school.
+    raise exception using errcode = '23503', message = 'school ties block switching';
+  end;
+
+  insert into public.platform_audit_logs (actor_profile_id, action, target_type, target_id, target_school_id, metadata)
+  values (me, 'platform_admin.switch_school', 'school', target_school_id, target_school_id,
+          jsonb_build_object('from_school_id', from_school));
+
+  return target_school_id;
+end;
+$$;
+
+alter function public.platform_admin_switch_school(uuid) owner to postgres;
+revoke all on function public.platform_admin_switch_school(uuid) from public, anon;
+grant execute on function public.platform_admin_switch_school(uuid) to authenticated;
+
+drop policy if exists "Platform admins can create attendance checkins" on public.attendance_checkins;
+drop policy if exists "Platform admins can view attendance checkins" on public.attendance_checkins;
+drop policy if exists "Platform admins can view event clubs" on public.clubs;
+drop policy if exists "Platform admins can create event attendees" on public.event_attendees;
+drop policy if exists "Platform admins can update event attendees" on public.event_attendees;
+drop policy if exists "Platform admins can view event attendees" on public.event_attendees;
+drop policy if exists "Platform admins can remove event shares" on public.event_school_shares;
+drop policy if exists "Platform admins can view event shares" on public.event_school_shares;
+drop policy if exists "Platform admins can create events" on public.events;
+drop policy if exists "Platform admins can update all events" on public.events;
+drop policy if exists "Platform admins can view all events" on public.events;
+
+
+-- ---------------------------------------------------------------------------
+-- Mirrors supabase/migrations/202611250001_add_attachments.sql
+-- ---------------------------------------------------------------------------
+-- Files on clubs, events and announcements (owner's request, 25 Nov 2026:
+-- "file add option, pdf word file for clubs or events and announcements").
+--
+-- * Storage: a private bucket that takes only PDF and Word files up to 10 MB.
+--   Browsers upload straight to it with a one-time signed upload link the
+--   server hands out after checking who is uploading; the server then checks
+--   the file really is a PDF or Word document before recording it.
+-- * attachments: one row per file, tied to exactly one club, event or
+--   announcement of a school.
+--
+-- Access model: nothing here is readable or writable by clients. The app reads
+-- and writes with the service role after checking, for each file, that the
+-- person may see (download) or manage (upload, delete) the club, event or
+-- announcement it belongs to, in their own school.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'attachments',
+  'attachments',
+  false,
+  10485760,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+create table if not exists public.attachments (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schools(id) on delete cascade,
+  owner_type text not null,
+  owner_id uuid not null,
+  file_name text not null,
+  content_type text not null,
+  size_bytes integer not null,
+  storage_path text not null unique,
+  uploaded_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint attachments_owner_type_check check (owner_type in ('club', 'event', 'announcement')),
+  constraint attachments_content_type_check check (content_type in (
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  )),
+  constraint attachments_size_check check (size_bytes between 1 and 10485760),
+  constraint attachments_file_name_length check (length(btrim(file_name)) between 1 and 160)
+);
+
+create index if not exists attachments_owner_idx
+  on public.attachments (owner_type, owner_id, created_at);
+
+alter table public.attachments enable row level security;
+revoke all on public.attachments from anon, authenticated;
+

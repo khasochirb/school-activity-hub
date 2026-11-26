@@ -9,6 +9,7 @@ import {
   translate,
 } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
+import { toSlug } from "@/lib/slug";
 import { timeServer } from "@/lib/server-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -154,15 +155,21 @@ export async function joinClub(formData: FormData) {
   const { data: club } = await timeServer("clubs.action.join.club-lookup", () =>
     admin
       .from("clubs")
-      .select("id")
+      .select("id, join_mode")
       .eq("id", clubId)
       .eq("school_id", profile.school_id)
       .eq("status", "active")
-      .maybeSingle<{ id: string }>(),
+      .maybeSingle<{ id: string; join_mode: string }>(),
   );
 
   if (!club) {
     return;
+  }
+
+  // Clubs that take applications are joined through a request the leader or
+  // supervising teacher approves, never directly.
+  if (club.join_mode === "apply") {
+    redirect(`/clubs/${club.id}/apply`);
   }
 
   const { data: existingMembership } = await timeServer(
@@ -202,38 +209,18 @@ export async function joinClub(formData: FormData) {
   revalidatePath(`/clubs/${clubId}`);
 }
 
+// Leaving needs a reason and the club leader's or supervising teacher's
+// approval (meeting notes 23 Nov 2026), so this only sends students to the
+// leave form; it never ends a membership itself.
 export async function leaveClub(formData: FormData) {
   const profile = await getCurrentProfile();
+  const clubId = String(formData.get("club_id") ?? "").trim();
 
-  if (!profile || profile.role !== "student") {
+  if (!profile || profile.role !== "student" || !clubId) {
     redirect("/clubs");
   }
 
-  const clubId = String(formData.get("club_id") ?? "").trim();
-
-  if (!clubId) {
-    return;
-  }
-
-  const admin = createAdminClient();
-  const student = await getCurrentStudentRoster(admin, profile);
-
-  if (!student) {
-    return;
-  }
-
-  await timeServer("clubs.action.leave.update-membership", () =>
-    admin
-      .from("club_memberships")
-      .update({ status: "inactive" })
-      .eq("club_id", clubId)
-      .eq("student_roster_id", student.id)
-      .eq("school_id", profile.school_id)
-      .eq("status", "active"),
-  );
-
-  revalidatePath("/clubs");
-  revalidatePath(`/clubs/${clubId}`);
+  redirect(`/clubs/${clubId}/leave`);
 }
 
 export async function assignClubLeader(formData: FormData) {
@@ -262,6 +249,33 @@ export async function assignClubLeader(formData: FormData) {
   revalidatePath("/clubs");
 }
 
+// Takes the leader role away; the student stays in the club as a member.
+export async function revokeClubLeader(formData: FormData) {
+  const profile = await getCurrentProfile();
+
+  if (!profile || !isStaff(profile)) {
+    redirect("/clubs");
+  }
+
+  const membershipId = String(formData.get("membership_id") ?? "").trim();
+
+  if (!membershipId) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await timeServer("clubs.action.revoke-leader.update", () =>
+    supabase
+      .from("club_memberships")
+      .update({ role: "member" })
+      .eq("id", membershipId)
+      .eq("school_id", profile.school_id)
+      .eq("role", "leader"),
+  );
+
+  revalidatePath("/clubs");
+}
+
 async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const {
@@ -281,6 +295,7 @@ async function getCurrentProfile(): Promise<Profile | null> {
         .from("profiles")
         .select("id, school_id, role")
         .eq("id", user.id)
+        .eq("status", "active")
         .maybeSingle<Profile>(),
   );
 
@@ -320,10 +335,3 @@ function isStaff(profile: Profile) {
   return profile.role === "school_admin" || profile.role === "teacher";
 }
 
-function toSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
-}

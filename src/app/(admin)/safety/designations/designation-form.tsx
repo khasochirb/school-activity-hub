@@ -60,7 +60,7 @@ function DesignationSubmitButton({
 
   return (
     <button
-      className={`btn min-h-10 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${active ? "btn-primary" : "btn-danger"}`}
+      className={`btn min-h-10 w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${active ? "btn-soft" : "btn-danger"}`}
       disabled={pending || (active && activationDisabled)}
       type="submit"
     >

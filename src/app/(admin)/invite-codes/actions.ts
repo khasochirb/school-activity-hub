@@ -40,6 +40,8 @@ type BulkInviteStudent = {
 
 type GeneratedBulkInviteCode = {
   class_group: string;
+  /** "student" or "parent": who signs up with this code. */
+  code_for: string;
   expires_at: string;
   grade: string;
   invite_code: string;
@@ -90,6 +92,7 @@ export async function generateInviteCode(
         .eq("id", studentId)
         .eq("school_id", profile.school_id)
         .eq("status", "active")
+        .is("profile_id", null)
         .maybeSingle<{ id: string }>(),
   );
 
@@ -109,6 +112,7 @@ export async function generateInviteCode(
         .select("id")
         .eq("student_roster_id", student.id)
         .eq("school_id", profile.school_id)
+        .eq("audience", "student")
         .eq("status", "active")
         .eq("use_count", 0)
         .gt("expires_at", new Date().toISOString())
@@ -175,13 +179,16 @@ export async function bulkGenerateInviteCodes(
   }
 
   const mode = parseBulkMode(String(formData.get("bulk_mode") ?? ""));
+  // Student codes create a student account; parent codes create a parent
+  // account linked to that student (meeting notes 23 Nov 2026, §2).
+  const audience = formData.get("audience") === "parent" ? "parent" : "student";
   const selectedIds = formData
     .getAll("student_roster_ids")
     .map((value) => String(value).trim())
     .filter(Boolean);
   const grade = String(formData.get("grade") ?? "").trim();
   const classGroup = String(formData.get("class_group") ?? "").trim();
-  const eligibleStudents = await getEligibleBulkStudents(profile.school_id);
+  const eligibleStudents = await getEligibleBulkStudents(profile.school_id, audience);
   let targetStudents = eligibleStudents;
 
   if (mode === "selected") {
@@ -225,6 +232,7 @@ export async function bulkGenerateInviteCodes(
   const studentsWithActiveInvites = await getStudentsWithActiveInvites(
     profile.school_id,
     targetStudentIds,
+    audience,
   );
   const studentsNeedingInvites = targetStudents.filter(
     (student) => !studentsWithActiveInvites.has(student.id),
@@ -251,6 +259,7 @@ export async function bulkGenerateInviteCodes(
           school_id: profile.school_id,
           student_roster_id: student.id,
           created_by_profile_id: profile.id,
+          audience,
           code_hash: hashInviteCode(code),
           code_hint: `${code.slice(0, 4)}...`,
           status: "active",
@@ -274,6 +283,7 @@ export async function bulkGenerateInviteCodes(
 
   const codes = generatedCodes.map(({ code, student }) => ({
     class_group: student.homeroom ?? "",
+    code_for: audience,
     expires_at: expiresAt.toISOString(),
     grade: student.grade_level ?? "",
     invite_code: code,
@@ -364,21 +374,27 @@ async function getServerI18n(): Promise<ServerI18n> {
   return { t, tf };
 }
 
-async function getEligibleBulkStudents(schoolId: string) {
+// Student codes: students without an account yet. Parent codes: every active
+// student, whether or not they have signed up.
+async function getEligibleBulkStudents(schoolId: string, audience: "parent" | "student") {
   const supabase = await createClient();
   const { data: students } = await timeServer(
     "invite-codes.action.bulk-generate.eligible-students",
-    () =>
-      supabase
+    () => {
+      let query = supabase
         .from("student_rosters")
         .select(
           "id, first_name, last_name, grade_level, homeroom, student_number",
         )
         .eq("school_id", schoolId)
-        .eq("status", "active")
-        .is("profile_id", null)
+        .eq("status", "active");
+
+      if (audience === "student") query = query.is("profile_id", null);
+
+      return query
         .order("last_name", { ascending: true })
-        .returns<BulkInviteStudent[]>(),
+        .returns<BulkInviteStudent[]>();
+    },
   );
 
   return students ?? [];
@@ -387,6 +403,7 @@ async function getEligibleBulkStudents(schoolId: string) {
 async function getStudentsWithActiveInvites(
   schoolId: string,
   studentIds: string[],
+  audience: "parent" | "student",
 ) {
   if (!studentIds.length) {
     return new Set<string>();
@@ -400,6 +417,7 @@ async function getStudentsWithActiveInvites(
         .from("invite_codes")
         .select("student_roster_id")
         .eq("school_id", schoolId)
+        .eq("audience", audience)
         .eq("status", "active")
         .eq("use_count", 0)
         .is("redeemed_at", null)
@@ -430,7 +448,11 @@ function createBulkState({
     message,
     success,
     text: codes
-      .map((code) => `${code.student_name}: ${code.invite_code}`)
+      .map((code) =>
+        code.code_for === "parent"
+          ? `${code.student_name} (parent): ${code.invite_code}`
+          : `${code.student_name}: ${code.invite_code}`,
+      )
       .join("\n"),
   };
 }
@@ -453,6 +475,7 @@ function createInviteCodesCsv(codes: GeneratedBulkInviteCode[]) {
     "grade",
     "class_group",
     "student_number",
+    "code_for",
     "invite_code",
     "expires_at",
   ];
@@ -462,6 +485,7 @@ function createInviteCodesCsv(codes: GeneratedBulkInviteCode[]) {
       code.grade,
       code.class_group,
       code.student_number,
+      code.code_for,
       code.invite_code,
       code.expires_at,
     ]

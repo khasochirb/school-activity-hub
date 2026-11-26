@@ -1,7 +1,10 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
+import { categoryColor } from "@/lib/ui/category-colors";
+import { type ActionMenuItem } from "../_components/action-menu";
+import { PageHead, Widget } from "../_components/clean-ui";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
 import {
   ACTIVITY_CATEGORIES,
@@ -17,7 +20,10 @@ import {
   formatCalendarDateBadge,
   formatDate,
   formatDateTime,
+  formatDayKey,
   formatTime,
+  formatTimelineDay,
+  formatWeekdayLong,
 } from "@/lib/i18n/date-format";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
@@ -27,15 +33,26 @@ import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import {
   currentCalendarMonth,
   DEFAULT_EVENT_TIME_ZONE,
+  eventCalendarDayKey,
+  getDayQueryRange,
   getMonthCalendarQueryRange,
   isEventTimeFilterActive,
   offsetCalendarMonth,
+  parseCalendarDay,
   parseCalendarMonth,
   resolveEventTimeZone,
   shouldApplyEventTimeFilter,
 } from "@/lib/events/event-calendar-range";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
 import { isEventSchemaError } from "@/lib/events/event-errors";
+import {
+  EVENT_LIST_FILTERS,
+  eventListColumnFilters,
+  parseEventListFilters,
+  toggleEventListFilter,
+  weekDayKeys,
+  type EventListFilter,
+} from "@/lib/events/event-list-filters";
 import {
   formatEventCost,
   type EventCostType,
@@ -62,7 +79,6 @@ import {
   HeaderActionLink,
   NoResultsState,
   PaginationControls,
-  PageHeader,
 } from "../_components/page-ui";
 import { CreateEventForm } from "./create-event-form";
 import {
@@ -79,9 +95,9 @@ import {
   type EventWeekLabels,
 } from "./event-week-calendar";
 import {
-  EventsFilters,
+  EventsChipBar,
+  EventsSearch,
   type EventsActiveFilter,
-  type EventsFilterOption,
 } from "./events-filters";
 
 type Profile = {
@@ -192,6 +208,7 @@ type EventStatusFilter =
 
 type EventsSearchParams = {
   category?: string | string[];
+  day?: string | string[];
   filter?: string | string[];
   month?: string | string[];
   page?: string | string[];
@@ -202,11 +219,13 @@ type EventsSearchParams = {
   time?: string | string[];
   view?: string | string[];
   week?: string | string[];
+  with?: string | string[];
 };
 
 type EventsUrlState = {
   audience: EventAudience;
   category: string | null;
+  extra: EventListFilter[];
   month: string;
   searchQuery: string;
   schoolId: string;
@@ -241,6 +260,7 @@ export default async function EventsPage({
   const selectedTime = parseEventTime(getSearchParam(params.time));
   const selectedView = parseEventBrowseView(getSearchParam(params.view));
   const selectedWeek = parseWeekStart(getSearchParam(params.week), new Date());
+  const selectedExtra = parseEventListFilters(getSearchParam(params.with));
   const page = getPageParam(params.page);
   const range = pageRange(page, EVENTS_PAGE_SIZE);
   const actor = await timeServer("events.query.actor", () => getCurrentEventActor());
@@ -284,12 +304,24 @@ export default async function EventsPage({
     new Date(),
     calendarTimeZone,
   );
+  // A day picked from the mini calendar or the home week strip: the list shows
+  // just that day, past or upcoming.
+  const selectedDay =
+    selectedView === "list" ? parseCalendarDay(getSearchParam(params.day)) : null;
   const calendarRange =
     selectedView === "month"
       ? getMonthCalendarQueryRange(selectedMonth, calendarTimeZone)
       : selectedView === "week"
         ? getWeekQueryRange(selectedWeek)
-        : null;
+        : selectedDay
+          ? getDayQueryRange(selectedDay, calendarTimeZone)
+          : null;
+  // "This week" only narrows the list; the calendars and a picked day already
+  // name their own dates.
+  const weekRange =
+    selectedExtra.includes("week") && !calendarRange
+      ? getCurrentWeekRange(calendarTimeZone)
+      : null;
   const selectedAudience = isPlatformAdmin
     ? "all"
     : parseEventAudience(
@@ -361,12 +393,14 @@ export default async function EventsPage({
     selectedCategory,
     selectedStatus,
     selectedTime,
-    applyTimeFilter: shouldApplyEventTimeFilter(selectedView),
+    applyTimeFilter: shouldApplyEventTimeFilter(selectedView) && !selectedDay,
     sharedEventIds,
     isStaff,
     now,
     range,
     calendarRange,
+    columnFilters: eventListColumnFilters(selectedExtra),
+    weekRange,
     isPlatformAdmin,
     platformSchoolId: selectedPlatformSchool?.id ?? null,
     },
@@ -384,6 +418,10 @@ export default async function EventsPage({
     });
   }
 
+  const miniCalendarDays =
+    selectedView === "list" && profile.school_id
+      ? await getMiniCalendarDays(supabase, profile.school_id, calendarTimeZone, isStaff)
+      : [];
   const eventIds = events.map((event) => event.id);
   const [
     attendeeRows,
@@ -420,14 +458,6 @@ export default async function EventsPage({
         .filter((clubId): clubId is string => Boolean(clubId)),
     ),
   );
-  const linkedClubs = linkedClubIds.length
-    ? await getClubsById(
-        admin,
-        isPlatformAdmin ? null : profile.school_id,
-        linkedClubIds,
-      )
-    : [];
-  const clubNameById = new Map(linkedClubs.map((club) => [club.id, club.name]));
   const ownerSchoolIds = Array.from(
     new Set(
       events
@@ -435,12 +465,19 @@ export default async function EventsPage({
         .filter((schoolId) => isPlatformAdmin || schoolId !== profile.school_id),
     ),
   );
-  const ownerSchools = ownerSchoolIds.length
-    ? await getSchoolsById(admin, ownerSchoolIds)
-    : [];
+  // One round trip for club names and school names (the user's own school
+  // included, for the page subtitle) instead of three in a row.
+  const [linkedClubs, ownerSchools] = await Promise.all([
+    linkedClubIds.length
+      ? getClubsById(admin, isPlatformAdmin ? null : profile.school_id, linkedClubIds)
+      : Promise.resolve([]),
+    getSchoolsById(admin, Array.from(new Set([...ownerSchoolIds, profile.school_id]))),
+  ]);
+  const clubNameById = new Map(linkedClubs.map((club) => [club.id, club.name]));
   const schoolNameById = new Map(
     ownerSchools.map((school) => [school.id, school.name]),
   );
+  const ownSchoolName = schoolNameById.get(profile.school_id) ?? "";
   const sharedSchoolIdsByEventId = mapSharedSchoolIds(eventShares);
   const responsibleStaffById = new Map(
     responsibleStaffProfiles.map((staff) => [staff.id, staff]),
@@ -449,6 +486,7 @@ export default async function EventsPage({
   const hasResultFilters = Boolean(
     searchQuery ||
       selectedCategory ||
+      selectedExtra.length ||
       selectedAudience !== defaultAudience ||
       selectedStatus !== "approved" ||
       isEventTimeFilterActive(selectedView, selectedTime),
@@ -537,6 +575,14 @@ export default async function EventsPage({
       costNotes: event.cost_notes,
       costType: event.cost_type,
       dateBadgeLabel: formatDate(event.starts_at, locale),
+      dayKey: formatDayKey(event.starts_at, calendarTimeZone),
+      dayLabel: formatTimelineDay(event.starts_at, locale, calendarTimeZone),
+      weekdayLabel: formatWeekdayLong(event.starts_at, locale, calendarTimeZone),
+      timeRangeLabel: `${formatTime(event.starts_at, locale, calendarTimeZone)} \u2013 ${formatTime(
+        event.ends_at,
+        locale,
+        calendarTimeZone,
+      )}`,
       dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
         event.ends_at,
         locale,
@@ -597,8 +643,29 @@ export default async function EventsPage({
       visualInitials: getInitials(clubName ?? ownerSchoolName ?? event.title),
     };
   });
+  const myEventItems = eventBrowserItems.filter(
+    (item) =>
+      item.registrationStatus === "registered" ||
+      item.registrationStatus === "attended",
+  );
+  const eventCategoryCounts = Array.from(
+    eventBrowserItems.reduce((counts, item) => {
+      if (item.categoryValue) {
+        counts.set(item.categoryValue, (counts.get(item.categoryValue) ?? 0) + 1);
+      }
+      return counts;
+    }, new Map<string, number>()),
+  )
+    .map(([category, count]) => ({ category, count }))
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 6);
   const eventBrowserLabels: EventBrowserLabels = {
     ...getEventQuickViewLabels(t),
+    goingCount: t("events.list.goingCount"),
+    join: t("dashboard.home.join"),
+    moreActions: t("common.moreActions"),
+    openEvent: t("dashboard.home.openEvent"),
+    spotsLeft: t("dashboard.home.spotsLeft"),
     myClub: t("events.filters.myClubEvents"),
     noPoster: t("events.poster.noPoster"),
     partnerSchool: t("events.filters.partnerSchool"),
@@ -632,6 +699,7 @@ export default async function EventsPage({
   const filterUrlState: EventsUrlState = {
     audience: selectedAudience,
     category: selectedCategory,
+    extra: selectedExtra,
     month: selectedMonth,
     searchQuery,
     schoolId: selectedPlatformSchool?.id ?? "",
@@ -648,24 +716,20 @@ export default async function EventsPage({
   );
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
-          <>
-            <EventViewToggle
-              state={filterUrlState}
-              selectedView={selectedView}
-              t={t}
-            />
-            {canCreate ? (
-              <FormSectionToggleButton targetId="create-event">
-                {t("events.actions.create")}
-              </FormSectionToggleButton>
-            ) : null}
-          </>
+    <div className="cl-page">
+      <PageHead
+        action={
+          canCreate ? (
+            <FormSectionToggleButton targetId="create-event">
+              {t("events.actions.create")}
+            </FormSectionToggleButton>
+          ) : undefined
         }
-        description={t("events.description")}
-        eyebrow={t("events.eyebrow")}
+        subtitle={tf(isStaff ? "events.list.subtitleStaff" : "events.list.subtitle", {
+          count: events.length,
+          mine: myEventItems.length,
+          school: ownSchoolName,
+        })}
         title={t("events.title")}
       />
 
@@ -692,7 +756,7 @@ export default async function EventsPage({
                 ))}
               </select>
             </label>
-            <button className="btn btn-primary min-h-11" type="submit">
+            <button className="btn btn-secondary min-h-11" type="submit">
               {t("common.open")}
             </button>
           </form>
@@ -901,358 +965,273 @@ export default async function EventsPage({
         </CollapsibleFormSection>
       ) : null}
 
-      <EventFilters
-        activeFilters={activeFilters}
-        categoryOptions={categoryOptions}
-        resultCount={events.length}
-        isStaff={isStaff}
-        isPlatformAdmin={isPlatformAdmin}
-        platformSchools={platformSchools}
-        searchQuery={searchQuery}
-        selectedAudience={selectedAudience}
-        selectedCategory={selectedCategory}
-        selectedStatus={selectedStatus}
-        selectedSchoolId={selectedPlatformSchool?.id ?? ""}
-        selectedTime={selectedTime}
-        selectedView={selectedView}
-        selectedMonth={selectedMonth}
-        selectedWeek={selectedWeek}
-        timeContextMessage={
-          selectedView === "month"
-            ? t("events.calendar.pastAndUpcoming")
-            : undefined
-        }
-        t={t}
-        tf={tf}
+      <EventsChipBar
+        categoryLinks={[
+          {
+            active: !selectedCategory,
+            href: buildEventsHref({ ...filterUrlState, category: null }),
+            label: t("filters.all"),
+          },
+          ...categoryOptions.map((category) => ({
+            active: selectedCategory === category,
+            category,
+            href: buildEventsHref({ ...filterUrlState, category }),
+            label: categoryLabel(category, t),
+          })),
+        ]}
+        extraLabel={t("events.list.extraFilters")}
+        extraLinks={[
+          ...(isStaff
+            ? []
+            : [
+                {
+                  active: selectedAudience === "my-clubs",
+                  href: buildEventsHref({
+                    ...filterUrlState,
+                    audience: selectedAudience === "my-clubs" ? defaultAudience : "my-clubs",
+                  }),
+                  label: t("events.filters.myClubEvents"),
+                },
+              ]),
+          ...EVENT_LIST_FILTERS.filter(
+            (filter) => filter !== "week" || selectedView === "list",
+          ).map((filter) => ({
+            active: selectedExtra.includes(filter),
+            href: buildEventsHref({
+              ...filterUrlState,
+              extra: toggleEventListFilter(selectedExtra, filter),
+            }),
+            label: eventListFilterLabel(filter, t),
+          })),
+        ]}
+        label={t("filters.filter")}
+        menuItems={buildEventsMenu(filterUrlState, isStaff, isPlatformAdmin, platformSchools, t)}
+        menuLabel={t("events.list.moreFilters")}
+        timeLinks={[
+          {
+            active: selectedTime === "upcoming" && selectedAudience !== "registered",
+            href: buildEventsHref({ ...filterUrlState, audience: defaultAudience, time: "upcoming" }),
+            label: t("filters.upcoming"),
+          },
+          ...(isStaff
+            ? []
+            : [
+                {
+                  active: selectedAudience === "registered",
+                  href: buildEventsHref({ ...filterUrlState, audience: "registered", time: "upcoming" }),
+                  label: t("events.list.myEvents"),
+                },
+              ]),
+          {
+            active: selectedTime === "past" && selectedAudience !== "registered",
+            href: buildEventsHref({ ...filterUrlState, audience: defaultAudience, time: "past" }),
+            label: t("filters.past"),
+          },
+        ]}
       />
 
-      <section className="section-card">
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">
-              {selectedView === "month"
-                ? t("events.calendar.schoolCalendar")
-                : selectedView === "week"
-                  ? t("events.week.title")
-                : eventListTitle(
-                    selectedAudience,
-                    selectedCategory,
-                    selectedTime,
-                    t,
-                  )}
-            </h2>
-            {profile.role === "student" && !currentStudent ? (
-              <p className="mt-2 text-sm text-zinc-600">
-                {t("events.student.noRosterWarning")}
-              </p>
-            ) : null}
+      <div className="cl-split">
+        <div className="cl-main">
+          <EventsSearch
+            activeFilters={activeFilters}
+            clearLabel={t("filters.clear")}
+            hidden={{
+              category: filterUrlState.category ?? "",
+              month: filterUrlState.view === "month" ? filterUrlState.month : "",
+              school: filterUrlState.schoolId,
+              scope: filterUrlState.audience,
+              status: filterUrlState.status,
+              time: filterUrlState.time,
+              view: filterUrlState.view === "list" ? "" : filterUrlState.view,
+              week: filterUrlState.view === "week" ? filterUrlState.week : "",
+              with: filterUrlState.extra.join(","),
+            }}
+            label={t("filters.searchEvents")}
+            placeholder={t("events.list.searchPlaceholder")}
+            searchQuery={searchQuery}
+          />
+          {profile.role === "student" && !currentStudent ? (
+            <p className="notice-box notice-warning">
+              {t("events.student.noRosterWarning")}
+            </p>
+          ) : null}
+          <div className="min-w-0">
+          {selectedDay ? (
+            <div className="cl-dayfilter" role="status">
+              <b>{tf("events.list.dayHeading", { date: dayTitle(selectedDay, calendarTimeZone, locale) })}</b>
+              <Link href={eventsDayHref(null, params)} prefetch={false}>
+                {t("events.list.showAllDays")}
+              </Link>
+            </div>
+          ) : null}
+          {eventsError ? (
+            <div className="p-4">
+              <div className="error-box" role="alert">
+                {tf("events.errors.loadUnavailableWithReference", {
+                  reference: eventsErrorReference ?? "EVT-LIST",
+                })}
+              </div>
+            </div>
+          ) : selectedView === "month" ? (
+            <EventCalendar
+              items={eventBrowserItems}
+              key={selectedMonth}
+              labels={eventCalendarLabels}
+              locale={locale}
+              month={selectedMonth}
+              timeZone={calendarTimeZone}
+              navigation={{
+                nextHref: buildEventsMonthHref(
+                  filterUrlState,
+                  offsetCalendarMonth(selectedMonth, 1),
+                ),
+                previousHref: buildEventsMonthHref(
+                  filterUrlState,
+                  offsetCalendarMonth(selectedMonth, -1),
+                ),
+                todayHref: buildEventsMonthHref(
+                  filterUrlState,
+                  currentCalendarMonth(new Date(), calendarTimeZone),
+                ),
+                todayMonth: currentCalendarMonth(new Date(), calendarTimeZone),
+              }}
+            />
+          ) : selectedView === "week" ? (
+            <EventWeekCalendar
+              items={eventBrowserItems}
+              key={selectedWeek}
+              labels={eventWeekLabels}
+              locale={locale}
+              navigation={{
+                nextHref: buildEventsWeekHref(
+                  filterUrlState,
+                  offsetWeek(selectedWeek, 7),
+                ),
+                previousHref: buildEventsWeekHref(
+                  filterUrlState,
+                  offsetWeek(selectedWeek, -7),
+                ),
+                todayHref: buildEventsWeekHref(
+                  filterUrlState,
+                  currentWeekStart(new Date()),
+                ),
+                todayWeek: currentWeekStart(new Date()),
+              }}
+              weekStart={selectedWeek}
+            />
+          ) : selectedDay && !events.length ? (
+            <p className="cl-dayempty">{t("events.list.dayEmpty")}</p>
+          ) : events.length ? (
+            <EventBrowser
+              items={eventBrowserItems}
+              labels={eventBrowserLabels}
+            />
+          ) : hasResultFilters ? (
+            <div className="p-4">
+              <NoResultsState
+                clearHref="/events"
+                clearLabel={t("filters.clear")}
+                description={t("filters.noResultsDescription")}
+                title={t("filters.noResults")}
+              />
+            </div>
+          ) : (
+            <div className="p-4">
+              <EmptyState
+                action={
+                  !canCreate ? (
+                    <HeaderActionLink href="/events" variant="secondary">
+                      {t("events.actions.resetFilters")}
+                    </HeaderActionLink>
+                  ) : undefined
+                }
+                description={
+                  canCreate
+                    ? t("events.empty.staffDescription")
+                    : t("events.empty.studentDescription")
+                }
+                title={emptyTitle}
+              />
+            </div>
+          )}
+          {selectedView === "list" &&
+          !eventsError &&
+          (events.length > 0 || page > 1) ? (
+            <PaginationControls
+              getHref={(nextPage) => eventsPageHref(nextPage, params)}
+              hasNextPage={hasNextPage}
+              labels={{
+                next: t("common.next"),
+                page: tf("common.pageNumber", { number: page }),
+                previous: t("common.previous"),
+              }}
+              page={page}
+            />
+          ) : null}
           </div>
         </div>
-        {eventsError ? (
-          <div className="p-4">
-            <div className="error-box" role="alert">
-              {tf("events.errors.loadUnavailableWithReference", {
-                reference: eventsErrorReference ?? "EVT-LIST",
-              })}
-            </div>
-          </div>
-        ) : selectedView === "month" ? (
-          <EventCalendar
-            items={eventBrowserItems}
-            key={selectedMonth}
-            labels={eventCalendarLabels}
-            locale={locale}
-            month={selectedMonth}
-            timeZone={calendarTimeZone}
-            navigation={{
-              nextHref: buildEventsMonthHref(
-                filterUrlState,
-                offsetCalendarMonth(selectedMonth, 1),
-              ),
-              previousHref: buildEventsMonthHref(
-                filterUrlState,
-                offsetCalendarMonth(selectedMonth, -1),
-              ),
-              todayHref: buildEventsMonthHref(
-                filterUrlState,
-                currentCalendarMonth(new Date(), calendarTimeZone),
-              ),
-              todayMonth: currentCalendarMonth(new Date(), calendarTimeZone),
-            }}
-          />
-        ) : selectedView === "week" ? (
-          <EventWeekCalendar
-            items={eventBrowserItems}
-            key={selectedWeek}
-            labels={eventWeekLabels}
-            locale={locale}
-            navigation={{
-              nextHref: buildEventsWeekHref(
-                filterUrlState,
-                offsetWeek(selectedWeek, 7),
-              ),
-              previousHref: buildEventsWeekHref(
-                filterUrlState,
-                offsetWeek(selectedWeek, -7),
-              ),
-              todayHref: buildEventsWeekHref(
-                filterUrlState,
-                currentWeekStart(new Date()),
-              ),
-              todayWeek: currentWeekStart(new Date()),
-            }}
-            weekStart={selectedWeek}
-          />
-        ) : events.length ? (
-          <EventBrowser
-            items={eventBrowserItems}
-            labels={eventBrowserLabels}
-          />
-        ) : hasResultFilters ? (
-          <div className="p-4">
-            <NoResultsState
-              clearHref="/events"
-              clearLabel={t("filters.clear")}
-              description={t("filters.noResultsDescription")}
-              title={t("filters.noResults")}
+
+        <aside className="cl-side">
+          <Widget title={monthTitle(calendarTimeZone, locale)}>
+            <MiniCalendar
+              dayHref={(dayKey) => eventsDayHref(dayKey === selectedDay ? null : dayKey, params)}
+              eventDays={miniCalendarDays}
+              locale={locale}
+              selectedDay={selectedDay}
+              timeZone={calendarTimeZone}
             />
-          </div>
-        ) : (
-          <div className="p-4">
-            <EmptyState
-              action={
-                !canCreate ? (
-                  <HeaderActionLink href="/events" variant="secondary">
-                    {t("events.actions.resetFilters")}
-                  </HeaderActionLink>
-                ) : undefined
-              }
-              description={
-                canCreate
-                  ? t("events.empty.staffDescription")
-                  : t("events.empty.studentDescription")
-              }
-              title={emptyTitle}
-            />
-          </div>
-        )}
-        {selectedView === "list" &&
-        !eventsError &&
-        (events.length > 0 || page > 1) ? (
-          <PaginationControls
-            getHref={(nextPage) => eventsPageHref(nextPage, params)}
-            hasNextPage={hasNextPage}
-            labels={{
-              next: t("common.next"),
-              page: tf("common.pageNumber", { number: page }),
-              previous: t("common.previous"),
-            }}
-            page={page}
-          />
-        ) : null}
-      </section>
+          </Widget>
+          {!isStaff ? (
+            <Widget title={t("events.list.yourEvents")}>
+              {myEventItems.length ? (
+                <div className="-my-1 flex flex-col">
+                  {myEventItems.slice(0, 5).map((item) => (
+                    <Link
+                      className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-[var(--cl-hover)]"
+                      href={`/events/${item.id}`}
+                      key={item.id}
+                      prefetch={false}
+                    >
+                      <span className="w-10 flex-none text-center">
+                        <span className="block text-[11px] font-semibold uppercase text-[var(--muted)]">
+                          {item.posterMonth}
+                        </span>
+                        <b className="block text-base leading-tight">{item.posterDay}</b>
+                      </span>
+                      <span className="cl-grow">
+                        <span className="cl-row-title text-sm">{item.title}</span>
+                        <span className="cl-row-sub text-[13px]">{item.timeRangeLabel}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--muted)]">{t("events.list.nothingYet")}</p>
+              )}
+            </Widget>
+          ) : null}
+          {eventCategoryCounts.length ? (
+            <Widget title={t("events.list.byCategory")}>
+              {eventCategoryCounts.map((item) => (
+                <div className="cl-goal" key={item.category}>
+                  <div>
+                    <span>{categoryLabel(item.category, t)}</span>
+                    <b>{item.count}</b>
+                  </div>
+                  <div
+                    className="cl-bar"
+                    style={{ "--c": categoryColor(item.category) } as CSSProperties}
+                  >
+                    <i style={{ width: `${(item.count / eventCategoryCounts[0].count) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </Widget>
+          ) : null}
+        </aside>
+      </div>
     </div>
   );
-}
-
-function EventFilters({
-  activeFilters,
-  categoryOptions,
-  resultCount,
-  isStaff,
-  isPlatformAdmin,
-  platformSchools,
-  searchQuery,
-  selectedAudience,
-  selectedCategory,
-  selectedStatus,
-  selectedSchoolId,
-  selectedTime,
-  selectedView,
-  selectedMonth,
-  selectedWeek,
-  timeContextMessage,
-  t,
-  tf,
-}: {
-  activeFilters: EventsActiveFilter[];
-  categoryOptions: readonly string[];
-  resultCount: number;
-  isStaff: boolean;
-  isPlatformAdmin: boolean;
-  platformSchools: PlatformSchoolOption[];
-  searchQuery: string;
-  selectedAudience: EventAudience;
-  selectedCategory: string | null;
-  selectedStatus: EventStatusFilter;
-  selectedSchoolId: string;
-  selectedTime: EventTimeFilter;
-  selectedView: EventBrowseView;
-  selectedMonth: string;
-  selectedWeek: string;
-  timeContextMessage?: string;
-  t: Translate;
-  tf: FormatTranslate;
-}) {
-  const audienceOptions: EventsFilterOption[] = isPlatformAdmin
-    ? [{ label: t("events.filters.allEvents"), value: "all" }]
-    : isStaff
-    ? [
-        { label: t("events.filters.allEvents"), value: "all" },
-        { label: t("events.filters.createdByMe"), value: "created" },
-        { label: t("events.filters.schoolEvents"), value: "school" },
-        { label: t("events.filters.partnerEvents"), value: "partners" },
-      ]
-    : [
-        { label: t("events.filters.allEvents"), value: "all" },
-        { label: t("events.filters.myRegistered"), value: "registered" },
-        { label: t("events.filters.myClubEvents"), value: "my-clubs" },
-        { label: t("events.filters.schoolEvents"), value: "school" },
-        { label: t("events.filters.partnerEvents"), value: "partners" },
-      ];
-  const resultCountLabel = tf("events.filters.eventsFound", {
-    count: resultCount,
-  });
-
-  return (
-    <EventsFilters
-      activeFilters={activeFilters}
-      audienceOptions={audienceOptions}
-      categoryOptions={[
-        { label: t("filters.all"), value: "" },
-        ...categoryOptions.map((category) => ({
-          label: categoryLabel(category, t),
-          value: category,
-        })),
-      ]}
-      clearHref={
-        selectedView === "month"
-          ? `/events?view=month&month=${selectedMonth}&time=${selectedTime}${selectedSchoolId ? `&school=${selectedSchoolId}` : ""}`
-          : selectedView === "week"
-            ? `/events?view=week&week=${selectedWeek}${selectedSchoolId ? `&school=${selectedSchoolId}` : ""}`
-            : selectedSchoolId
-              ? `/events?school=${selectedSchoolId}`
-              : "/events"
-      }
-      labels={{
-        audience: t("filters.filter"),
-        category: t("filters.category"),
-        clear: t("filters.clear"),
-        filter: t("filters.filter"),
-        hideFilters: t("filters.filter"),
-        search: t("filters.search"),
-        searchEvents: t("filters.searchEvents"),
-        school: t("events.platform.school"),
-        showFilters: t("filters.filter"),
-        status: t("filters.status"),
-        time: t("filters.time"),
-      }}
-      month={selectedMonth}
-      resultCountLabel={resultCountLabel}
-      searchQuery={searchQuery}
-      selectedAudience={selectedAudience}
-      selectedCategory={selectedCategory ?? ""}
-      selectedStatus={selectedStatus}
-      selectedSchool={selectedSchoolId}
-      selectedTime={selectedTime}
-      statusOptions={
-        isStaff
-          ? [
-              { label: t("status.approved"), value: "approved" },
-              {
-                label: t("events.filters.pendingReview"),
-                value: "pending_approval",
-              },
-              { label: t("status.canceled"), value: "canceled" },
-              { label: t("status.rejected"), value: "rejected" },
-              { label: t("filters.all"), value: "all" },
-            ]
-          : []
-      }
-      schoolOptions={
-        isPlatformAdmin
-          ? [
-              { label: t("events.platform.allSchools"), value: "" },
-              ...platformSchools.map((school) => ({
-                label: school.name,
-                value: school.id,
-              })),
-            ]
-          : []
-      }
-      timeOptions={[
-        { label: t("filters.upcoming"), value: "upcoming" },
-        { label: t("filters.past"), value: "past" },
-      ]}
-      timeContextMessage={timeContextMessage}
-      view={selectedView}
-      week={selectedWeek}
-    />
-  );
-}
-
-function EventViewToggle({
-  state,
-  selectedView,
-  t,
-}: {
-  state: EventsUrlState;
-  selectedView: EventBrowseView;
-  t: Translate;
-}) {
-  return (
-    <nav
-      aria-label={t("events.filters.viewLabel")}
-      className="inline-flex w-full rounded-md border border-[var(--border)] bg-[var(--card-soft)] p-1 sm:w-auto"
-    >
-      <Link
-        aria-current={selectedView === "list" ? "page" : undefined}
-        aria-label={t("events.view.viewList")}
-        className={viewToggleClassName(selectedView === "list")}
-        href={buildEventsViewHref(state, "list")}
-        prefetch={false}
-      >
-        {t("events.view.list")}
-        <PendingLinkIndicator />
-      </Link>
-      <Link
-        aria-current={selectedView === "month" ? "page" : undefined}
-        aria-label={t("events.view.viewCalendar")}
-        className={viewToggleClassName(selectedView === "month")}
-        href={buildEventsViewHref(state, "month")}
-        prefetch={false}
-      >
-        {t("events.view.month")}
-        <PendingLinkIndicator />
-      </Link>
-      <Link
-        aria-current={selectedView === "week" ? "page" : undefined}
-        aria-label={t("events.view.viewWeek")}
-        className={viewToggleClassName(selectedView === "week")}
-        href={buildEventsViewHref(state, "week")}
-        prefetch={false}
-      >
-        {t("events.view.week")}
-        <PendingLinkIndicator />
-      </Link>
-    </nav>
-  );
-}
-
-function viewToggleClassName(isActive: boolean) {
-  return [
-    "interactive-chip flex min-h-9 flex-1 items-center justify-center gap-2 rounded px-3 text-sm font-semibold sm:flex-none",
-    isActive
-      ? "bg-[var(--primary-soft)] text-[var(--primary-strong)] shadow-sm"
-      : "text-slate-600 hover:bg-[var(--card)] hover:text-slate-950",
-  ].join(" ");
-}
-
-function buildEventsViewHref(
-  state: EventsUrlState,
-  view: EventBrowseView,
-) {
-  return buildEventsHref({ ...state, view });
 }
 
 function buildEventsMonthHref(
@@ -1342,6 +1321,7 @@ async function getFilteredEvents(
     applyTimeFilter,
     audience,
     calendarRange,
+    columnFilters,
     connectedSchoolIds,
     currentStudentClubIds,
     isStaff,
@@ -1357,10 +1337,12 @@ async function getFilteredEvents(
     selectedTime,
     sharedEventIds,
     range,
+    weekRange,
   }: {
     applyTimeFilter: boolean;
     audience: EventAudience;
     calendarRange: { from: string; to: string } | null;
+    columnFilters: ReturnType<typeof eventListColumnFilters>;
     connectedSchoolIds: string[];
     currentStudentClubIds: string[];
     isStaff: boolean;
@@ -1376,6 +1358,7 @@ async function getFilteredEvents(
     selectedTime: EventTimeFilter;
     sharedEventIds: string[];
     range: { from: number; to: number };
+    weekRange: { from: string; to: string } | null;
   },
 ) {
   if (audience === "registered" && registeredEventIds.length === 0) {
@@ -1430,6 +1413,16 @@ async function getFilteredEvents(
     query = query
       .gte("starts_at", calendarRange.from)
       .lt("starts_at", calendarRange.to);
+  }
+
+  if (weekRange) {
+    query = query
+      .gte("starts_at", weekRange.from)
+      .lt("starts_at", weekRange.to);
+  }
+
+  for (const [column, value] of columnFilters) {
+    query = query.eq(column, value);
   }
 
   if (audience === "registered") {
@@ -2021,6 +2014,28 @@ function offsetWeek(week: string, days: number) {
   return currentWeekStart(date);
 }
 
+function getCurrentWeekRange(timeZone: string) {
+  const { monday, sunday } = weekDayKeys(eventCalendarDayKey(new Date(), timeZone));
+
+  return {
+    from: getDayQueryRange(monday, timeZone).from,
+    to: getDayQueryRange(sunday, timeZone).to,
+  };
+}
+
+function eventListFilterLabel(filter: EventListFilter, t: Translate) {
+  switch (filter) {
+    case "beginner":
+      return t("events.experience.beginnerFriendly");
+    case "free":
+      return t("events.practicalDetails.free");
+    case "no-permission":
+      return t("events.permission.status.notRequired");
+    case "week":
+      return t("events.list.thisWeek");
+  }
+}
+
 function getWeekQueryRange(week: string) {
   const weekStart = dateFromDayKey(week) ?? new Date();
   weekStart.setHours(0, 0, 0, 0);
@@ -2092,31 +2107,6 @@ function eventsPageHref(page: number, params: EventsSearchParams) {
   return query ? `/events?${query}` : "/events";
 }
 
-function eventListTitle(
-  audience: EventAudience,
-  category: string | null,
-  time: EventTimeFilter,
-  t: Translate,
-) {
-  const titleKey =
-    audience === "registered"
-      ? "events.filters.myRegistered"
-      : audience === "my-clubs"
-        ? "events.filters.myClubEvents"
-        : audience === "partners"
-          ? "events.filters.partnerEvents"
-          : audience === "school"
-            ? "events.filters.schoolEvents"
-            : audience === "created"
-              ? "events.filters.createdByMe"
-              : time === "past"
-                ? "events.listTitles.past"
-                : "events.filters.allEvents";
-  const scopedTitle = t(titleKey);
-
-  return category ? `${scopedTitle}: ${categoryLabel(category, t)}` : scopedTitle;
-}
-
 function hasPartnerEvents(
   connectedSchoolIds: string[],
   sharedEventIds: string[],
@@ -2144,6 +2134,10 @@ function buildEventsHref(
 
   if (!omitted.includes("category") && state.category) {
     query.set("category", state.category);
+  }
+
+  if (state.extra.length) {
+    query.set("with", state.extra.join(","));
   }
 
   if (!omitted.includes("status")) {
@@ -2174,24 +2168,11 @@ function getActiveEventFilters(
 ): EventsActiveFilter[] {
   const filters: EventsActiveFilter[] = [];
 
-  if (state.audience !== defaultAudience) {
-    filters.push({
-      href: buildEventsHref(state, ["scope"]),
-      label: eventAudienceLabel(state.audience, isStaff, t),
-    });
-  }
-
+  // Scope and category show as chips above, so they are not repeated here.
   if (state.searchQuery) {
     filters.push({
       href: buildEventsHref(state, ["q"]),
       label: `${t("filters.search")}: ${state.searchQuery}`,
-    });
-  }
-
-  if (state.category) {
-    filters.push({
-      href: buildEventsHref(state, ["category"]),
-      label: categoryLabel(state.category, t),
     });
   }
 
@@ -2212,36 +2193,6 @@ function getActiveEventFilters(
   return filters;
 }
 
-function eventAudienceLabel(
-  audience: EventAudience,
-  isStaff: boolean,
-  t: Translate,
-) {
-  if (audience === "created") {
-    return t("events.filters.createdByMe");
-  }
-
-  if (audience === "my-clubs") {
-    return t("events.filters.myClubEvents");
-  }
-
-  if (audience === "partners") {
-    return t("events.filters.partnerEvents");
-  }
-
-  if (audience === "registered") {
-    return t("events.filters.myRegistered");
-  }
-
-  if (audience === "school") {
-    return t("events.filters.schoolEvents");
-  }
-
-  return isStaff
-    ? t("events.filters.allEvents")
-    : t("events.filters.allEvents");
-}
-
 function categoryLabel(category: string, t: Translate) {
   const key = getActivityCategoryTranslationKey(category);
 
@@ -2259,4 +2210,211 @@ function getInitials(value: string) {
     .toUpperCase();
 
   return initials || "SA";
+}
+
+function buildEventsMenu(
+  state: EventsUrlState,
+  isStaff: boolean,
+  isPlatformAdmin: boolean,
+  platformSchools: PlatformSchoolOption[],
+  t: Translate,
+): ActionMenuItem[] {
+  const items: ActionMenuItem[] = [
+    {
+      href: buildEventsHref({ ...state, view: "month" }),
+      label: t("events.view.viewCalendar"),
+    },
+    { href: buildEventsHref({ ...state, view: "week" }), label: t("events.view.viewWeek") },
+    { href: buildEventsHref({ ...state, view: "list" }), label: t("events.view.viewList") },
+  ];
+
+  if (isStaff && !isPlatformAdmin) {
+    items.push(
+      "divider",
+      { href: buildEventsHref({ ...state, audience: "created" }), label: t("events.filters.createdByMe") },
+      { href: buildEventsHref({ ...state, audience: "school" }), label: t("events.filters.schoolEvents") },
+      { href: buildEventsHref({ ...state, audience: "partners" }), label: t("events.filters.partnerEvents") },
+    );
+  }
+
+  if (!isStaff) {
+    items.push(
+      "divider",
+      { href: buildEventsHref({ ...state, audience: "my-clubs" }), label: t("events.filters.myClubEvents") },
+      { href: buildEventsHref({ ...state, audience: "school" }), label: t("events.filters.schoolEvents") },
+      { href: buildEventsHref({ ...state, audience: "partners" }), label: t("events.filters.partnerEvents") },
+    );
+  }
+
+  if (isStaff) {
+    items.push(
+      "divider",
+      { href: buildEventsHref({ ...state, status: "pending_approval" }), label: t("events.filters.pendingReview") },
+      { href: buildEventsHref({ ...state, status: "canceled" }), label: t("status.canceled") },
+      { href: buildEventsHref({ ...state, status: "rejected" }), label: t("status.rejected") },
+      { href: buildEventsHref({ ...state, status: "all" }), label: `${t("filters.status")}: ${t("filters.all")}` },
+    );
+  }
+
+  if (isPlatformAdmin && platformSchools.length) {
+    items.push(
+      "divider",
+      ...platformSchools.slice(0, 12).map((school) => ({
+        href: buildEventsHref({ ...state, schoolId: school.id }),
+        label: school.name,
+      })),
+    );
+  }
+
+  return items;
+}
+
+// The list filtered to one day, keeping the other filters; null clears the day.
+function eventsDayHref(dayKey: string | null, params: EventsSearchParams) {
+  const nextParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (["day", "page", "view", "month", "week"].includes(key)) {
+      return;
+    }
+
+    const paramValue = Array.isArray(value) ? value[0] : value;
+
+    if (paramValue) {
+      nextParams.set(key, paramValue);
+    }
+  });
+
+  if (dayKey) {
+    nextParams.set("day", dayKey);
+  }
+
+  const query = nextParams.toString();
+
+  return query ? `/events?${query}` : "/events";
+}
+
+function dayTitle(dayKey: string, timeZone: string, locale: string) {
+  try {
+    return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
+      day: "numeric",
+      month: "long",
+      timeZone: "UTC",
+      weekday: "long",
+    }).format(new Date(`${dayKey}T12:00:00Z`));
+  } catch {
+    return dayKey;
+  }
+}
+
+// Dots on the mini calendar: every day this month with an activity, whatever
+// the list below is filtered to. Read through the signed-in client, so row
+// security decides what each person may see.
+async function getMiniCalendarDays(
+  supabase: SupabaseClient,
+  schoolId: string,
+  timeZone: string,
+  isStaff: boolean,
+) {
+  const month = currentCalendarMonth(new Date(), timeZone);
+  const range = getMonthCalendarQueryRange(month, timeZone);
+  let query = supabase
+    .from("events")
+    .select("starts_at, category")
+    .eq("school_id", schoolId)
+    .gte("starts_at", range.from)
+    .lt("starts_at", range.to)
+    .limit(500);
+
+  // Students see approved activities only, as in the list; staff also see what waits for approval.
+  query = isStaff
+    ? query.in("status", ["approved", "pending_approval", "completed"])
+    : query.eq("status", "approved");
+
+  const { data } = await timeServer("events.query.mini-calendar-days", () =>
+    query.returns<Array<{ category: string | null; starts_at: string }>>(),
+  );
+
+  return (data ?? []).map((event) => ({
+    category: event.category,
+    dayKey: eventCalendarDayKey(event.starts_at, timeZone),
+  }));
+}
+
+function monthTitle(timeZone: string, locale: string) {
+  try {
+    return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
+      month: "long",
+      timeZone,
+      year: "numeric",
+    }).format(new Date());
+  } catch {
+    return "";
+  }
+}
+
+// The draft's month card: today highlighted, a dot under days with events.
+function MiniCalendar({
+  dayHref,
+  eventDays,
+  locale,
+  selectedDay,
+  timeZone,
+}: {
+  dayHref: (dayKey: string) => string;
+  eventDays: Array<{ category: string | null; dayKey: string }>;
+  locale: string;
+  selectedDay: string | null;
+  timeZone: string;
+}) {
+  let todayKey: string;
+
+  try {
+    todayKey = new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
+  } catch {
+    todayKey = new Date().toISOString().slice(0, 10);
+  }
+
+  const [year, month] = todayKey.split("-").map(Number);
+  const first = new Date(Date.UTC(year, month - 1, 1));
+  const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const lead = (first.getUTCDay() + 6) % 7;
+  const weekdays = Array.from({ length: 7 }, (_, index) =>
+    new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
+      timeZone: "UTC",
+      weekday: "narrow",
+    }).format(new Date(Date.UTC(2024, 0, 1 + index))),
+  );
+  const byDay = new Map(eventDays.map((item) => [item.dayKey, item.category]));
+
+  return (
+    <div className="cl-cal">
+      {weekdays.map((label, index) => (
+        <span className="cl-h" key={`h${index}`}>
+          {label}
+        </span>
+      ))}
+      {Array.from({ length: lead }, (_, index) => (
+        <span key={`l${index}`} />
+      ))}
+      {Array.from({ length: days }, (_, index) => {
+        const key = `${year}-${String(month).padStart(2, "0")}-${String(index + 1).padStart(2, "0")}`;
+        const has = byDay.has(key);
+
+        return (
+          <Link
+            aria-current={key === selectedDay ? "date" : undefined}
+            className={[key === todayKey ? "cl-td" : "", has ? "cl-e" : "", key === selectedDay ? "cl-sel" : ""].join(" ")}
+            href={dayHref(key)}
+            key={key}
+            prefetch={false}
+            scroll={false}
+            style={has ? ({ "--c": categoryColor(byDay.get(key) ?? null) } as CSSProperties) : undefined}
+          >
+            {index + 1}
+          </Link>
+        );
+      })}
+    </div>
+  );
 }

@@ -197,9 +197,9 @@ export function EventWeekCalendar({
                   aria-label={formatLongDate(date, locale)}
                   aria-pressed={isSelected}
                   className={[
-                    "flex min-h-16 min-w-16 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68]",
+                    "flex min-h-16 min-w-16 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
                     isSelected
-                      ? "border-[#f2af68] bg-[var(--primary-soft)] text-[var(--primary-strong)]"
+                      ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-strong)]"
                       : "border-[var(--border)] bg-[var(--card)] text-slate-700",
                   ].join(" ")}
                   key={key}
@@ -266,7 +266,7 @@ function WeekEventCard({
   return (
     <button
       aria-label={`${labels.viewEvent}: ${event.title}`}
-      className="interactive-card block min-h-20 w-full min-w-0 cursor-pointer rounded-lg border border-[var(--border)] border-l-[#f2af68] bg-[var(--card-soft)] p-2 text-left hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2af68]"
+      className="interactive-card block min-h-20 w-full min-w-0 cursor-pointer rounded-lg border border-[var(--border)] border-l-[var(--primary)] bg-[var(--card-soft)] p-2 text-left hover:bg-[var(--primary-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
       onClick={(clickEvent) => onOpen(event.id, clickEvent.currentTarget)}
       type="button"
     >

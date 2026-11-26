@@ -62,7 +62,7 @@ export default async function StudentCheckInPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(`/login?next=${encodeURIComponent(`/check-in/${eventId}`)}`);
   }
 
   const { data: profile } = await supabase

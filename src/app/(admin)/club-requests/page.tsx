@@ -23,6 +23,7 @@ import {
 } from "@/lib/list-filters";
 import { formatDateTime } from "@/lib/i18n/date-format";
 import { timeServer } from "@/lib/server-timing";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   archiveClubRequest,
@@ -31,19 +32,17 @@ import {
   removeClubRequestSupport,
   supportClubRequest,
 } from "./actions";
+import { categoryColor } from "@/lib/ui/category-colors";
+import { CategoryLabel, PageHead, Widget } from "../_components/clean-ui";
 import { CreateClubRequestForm } from "./create-club-request-form";
+import { FounderList, MyProposals, getFoundersByRequest, type FounderSummary } from "./proposals-section";
+import { FOUNDERS_REQUIRED, MAX_FOUNDERS } from "./proposal-rules";
 import {
-  CategoryBadge,
   CollapsibleFormSection,
   EmptyState,
-  FilterPanel,
   FormSectionToggleButton,
   NoResultsState,
   PaginationControls,
-  PageHeader,
-  SearchField,
-  SelectFilter,
-  StatusBadge,
 } from "../_components/page-ui";
 
 type Profile = {
@@ -59,9 +58,10 @@ type ClubRequest = {
   created_at: string;
   created_by_profile_id: string;
   description: string | null;
+  reason: string | null;
   rejection_reason: string | null;
   reviewed_at: string | null;
-  status: "pending" | "approved" | "rejected" | "archived";
+  status: "gathering" | "pending" | "approved" | "rejected" | "archived";
   title: string;
 };
 
@@ -127,9 +127,11 @@ export default async function ClubRequestsPage({
   let requestsQuery = supabase
     .from("club_requests")
     .select(
-      "id, title, description, category, status, rejection_reason, converted_club_id, created_by_profile_id, reviewed_at, created_at",
+      "id, title, description, reason, category, status, rejection_reason, converted_club_id, created_by_profile_id, reviewed_at, created_at",
     )
-    .eq("school_id", profile.school_id);
+    .eq("school_id", profile.school_id)
+    // Proposals still gathering founders are shown only to their founders.
+    .neq("status", "gathering");
 
   if (selectedStatus !== "all") {
     requestsQuery = requestsQuery.eq("status", selectedStatus);
@@ -201,6 +203,29 @@ export default async function ClubRequestsPage({
         requestRows.map((request) => request.created_by_profile_id),
       )
     : new Map<string, string>();
+  const canDecide = profile.role === "school_admin";
+  const foundersByRequest: Map<string, FounderSummary[]> = isStaff
+    ? await getFoundersByRequest(createAdminClient(), requestIds)
+    : new Map();
+  const advisorOptions = canDecide
+    ? (
+        await supabase
+          .from("profiles")
+          .select("id, full_name, role")
+          .eq("school_id", profile.school_id)
+          .eq("status", "active")
+          .in("role", ["teacher", "school_admin"])
+          .order("full_name")
+          .returns<Array<{ full_name: string | null; id: string; role: string }>>()
+      ).data ?? []
+    : [];
+  const pickerLabels = {
+    count: t("clubRequests.proposal.picker.count"),
+    noMatches: t("clubRequests.proposal.picker.noMatches"),
+    placeholder: t("clubRequests.proposal.picker.placeholder"),
+    remove: t("clubRequests.proposal.picker.remove"),
+    search: t("clubRequests.proposal.picker.search"),
+  };
   const supportCounts = countSupportsByRequest(supports ?? []);
   const supportedRequestIds = new Set(
     (supports ?? [])
@@ -215,23 +240,28 @@ export default async function ClubRequestsPage({
     : t("clubRequests.studentDescription");
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        actions={
+    <div className="cl-page">
+      <PageHead
+        action={
           profile.role === "student" ? (
             <FormSectionToggleButton targetId="suggest-club">
-              {t("clubRequests.actions.suggest")}
+              + {t("clubRequests.actions.suggest")}
             </FormSectionToggleButton>
           ) : undefined
         }
-        description={pageDescription}
-        eyebrow={t("clubRequests.eyebrow")}
+        subtitle={pageDescription}
         title={pageTitle}
       />
 
-      <section className="notice-box">
-        {t("clubRequests.staffDecisionNotice")}
-      </section>
+      {profile.role === "student" ? (
+        <MyProposals
+          pickerLabels={pickerLabels}
+          profileId={profile.id}
+          schoolId={profile.school_id}
+          t={t}
+          tf={tf}
+        />
+      ) : null}
 
       {profile.role === "student" ? (
         <CollapsibleFormSection
@@ -246,60 +276,82 @@ export default async function ClubRequestsPage({
             labels={{
               category: t("clubRequests.fields.category"),
               description: t("clubRequests.fields.description"),
+              founders: t("clubRequests.proposal.founders"),
+              foundersHint: tf("clubRequests.proposal.foundersHint", { min: FOUNDERS_REQUIRED - 1 }),
               noCategory: t("clubs.form.noCategory"),
-              submit: t("clubRequests.actions.submit"),
+              picker: pickerLabels,
+              reason: t("clubRequests.proposal.reason"),
+              reasonHint: t("clubRequests.proposal.reasonHint"),
+              submit: t("clubRequests.proposal.submit"),
               submitting: t("clubRequests.actions.submitting"),
               title: t("clubRequests.fields.title"),
             }}
+            maxFounders={MAX_FOUNDERS - 1}
+            minFounders={FOUNDERS_REQUIRED - 1}
           />
         </CollapsibleFormSection>
       ) : null}
 
-      <FilterPanel
-        action="/club-requests"
-        clearHref="/club-requests"
-        clearLabel={t("filters.clear")}
-        resultCountLabel={tf("filters.showingResults", {
-          count: requestRows.length,
-        })}
-        submitLabel={t("filters.filter")}
-      >
-        <SearchField
-          defaultValue={searchQuery}
-          label={t("filters.search")}
-          placeholder={t("clubRequests.filters.searchPlaceholder")}
-        />
-        <SelectFilter
-          defaultValue={selectedCategory ?? ""}
-          label={t("filters.category")}
-          name="category"
-          options={[
-            { label: t("filters.all"), value: "" },
-            ...categoryOptions,
-          ]}
-        />
-        <SelectFilter
-          defaultValue={selectedStatus}
-          label={t("filters.status")}
-          name="status"
-          options={[
-            { label: t("filters.all"), value: "all" },
-            { label: t("clubRequests.status.pendingReview"), value: "pending" },
-            { label: t("clubRequests.status.approved"), value: "approved" },
-            { label: t("clubRequests.status.rejected"), value: "rejected" },
-            { label: t("status.archived"), value: "archived" },
-          ]}
-        />
-      </FilterPanel>
 
-      <section className="section-card">
-        <div className="section-header">
-          <h2 className="section-title">
-            {isStaff
-              ? t("clubRequests.list.staffTitle")
-              : t("clubRequests.list.studentTitle")}
-          </h2>
-        </div>
+      <div className="flex flex-col gap-2.5">
+        <nav aria-label={t("filters.status")} className="cl-filters">
+          {([
+            ["all", t("clubRequests.page.allStatuses")],
+            ["pending", t("clubRequests.status.pendingReview")],
+            ["approved", t("clubRequests.status.approved")],
+            ["rejected", t("clubRequests.status.rejected")],
+            ...(isStaff ? [["archived", t("status.archived")] as const] : []),
+          ] as const).map(([value, label]) => (
+            <Link
+              aria-current={selectedStatus === value ? "page" : undefined}
+              className="cl-chip"
+              href={clubRequestsPageHref(1, { category: selectedCategory ?? "", q: searchQuery, status: value })}
+              key={value}
+              prefetch={false}
+            >
+              {label}
+            </Link>
+          ))}
+          <form action="/club-requests" className="cl-search" role="search">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <span className="sr-only">{t("filters.search")}</span>
+            <input defaultValue={searchQuery} name="q" placeholder={t("clubRequests.filters.searchPlaceholder")} type="search" />
+            <input name="status" type="hidden" value={selectedStatus} />
+            {selectedCategory ? <input name="category" type="hidden" value={selectedCategory} /> : null}
+          </form>
+        </nav>
+        <nav aria-label={t("filters.category")} className="cl-filters">
+          <Link
+            aria-current={!selectedCategory ? "page" : undefined}
+            className="cl-chip"
+            href={clubRequestsPageHref(1, { category: "", q: searchQuery, status: selectedStatus })}
+            prefetch={false}
+          >
+            {t("clubRequests.page.allCategories")}
+          </Link>
+          {categoryOptions.map((option) => (
+            <Link
+              aria-current={selectedCategory === option.value ? "page" : undefined}
+              className="cl-chip"
+              data-c=""
+              href={clubRequestsPageHref(1, { category: option.value, q: searchQuery, status: selectedStatus })}
+              key={option.value}
+              prefetch={false}
+              style={{ "--c": categoryColor(option.value) } as React.CSSProperties}
+            >
+              {option.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+
+      <div className="cl-split">
+      <div className="cl-main">
+
+      <section className="flex min-w-0 flex-col gap-3">
         {requestsError ? (
           <div className="p-4">
             <div className="notice-box notice-danger" role="status">
@@ -307,7 +359,7 @@ export default async function ClubRequestsPage({
             </div>
           </div>
         ) : requestRows.length ? (
-          <div className="grid gap-3 p-3 lg:grid-cols-2">
+          <div className="flex flex-col gap-3">
             {requestRows.map((request) => {
               const supportCount = supportCounts.get(request.id) ?? 0;
               const supportRate = activeStudentCount
@@ -316,26 +368,31 @@ export default async function ClubRequestsPage({
               const isSupported = supportedRequestIds.has(request.id);
 
               return (
-                <article
-                  className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-                  key={request.id}
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h3 className="break-words text-lg font-bold leading-snug text-slate-950">
-                        {request.title}
-                      </h3>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {request.category ? (
-                          <CategoryBadge category={request.category}>
-                            {categoryLabel(request.category, t)}
-                          </CategoryBadge>
-                        ) : null}
-                        <StatusBadge status={request.status}>
-                          {requestStatusLabel(request.status, t)}
-                        </StatusBadge>
-                      </div>
+                <article className="cl-card cl-idea" key={request.id}>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap gap-2">
+                      <CategoryLabel
+                        category={request.category}
+                        label={request.category ? categoryLabel(request.category, t) : null}
+                      />
+                      <span
+                        className="cl-tag"
+                        data-tone={
+                          request.status === "approved"
+                            ? "ok"
+                            : request.status === "pending"
+                              ? "warn"
+                              : undefined
+                        }
+                      >
+                        {requestStatusLabel(request.status, t)}
+                      </span>
                     </div>
+                    <h3 className="mt-2 break-words text-lg font-bold leading-snug text-[var(--foreground)]">
+                      {request.title}
+                    </h3>
+                  </div>
+                  <div className="cl-idea-side">
                     <SupportSummary
                       labels={{
                         rate: t("clubRequests.fields.supportRate"),
@@ -350,6 +407,16 @@ export default async function ClubRequestsPage({
                     <p className="mt-3 text-sm leading-6 text-slate-600">
                       {request.description}
                     </p>
+                  ) : null}
+
+                  {request.reason ? (
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      <b>{t("clubRequests.proposal.why")}</b> {request.reason}
+                    </p>
+                  ) : null}
+
+                  {isStaff && foundersByRequest.get(request.id)?.length ? (
+                    <FounderList founders={foundersByRequest.get(request.id) ?? []} t={t} />
                   ) : null}
 
                   <dl className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
@@ -388,7 +455,7 @@ export default async function ClubRequestsPage({
                       {request.converted_club_id ? (
                         <Link
                           className="mt-2 inline-flex cursor-pointer text-sm font-bold text-teal-700 hover:text-teal-800"
-                          href={`/clubs?q=${encodeURIComponent(request.title)}`}
+                          href={`/clubs/${request.converted_club_id}`}
                           prefetch={false}
                         >
                           {t("clubRequests.messages.becameClub")}
@@ -397,7 +464,9 @@ export default async function ClubRequestsPage({
                     </div>
                   ) : null}
 
-                  {request.status === "rejected" && request.rejection_reason ? (
+                  {request.status === "rejected" &&
+                  request.rejection_reason &&
+                  (isStaff || request.created_by_profile_id === profile.id) ? (
                     <div className="notice-box notice-danger mt-3">
                       <p className="font-bold">
                         {t("clubRequests.fields.rejectionReason")}
@@ -407,6 +476,12 @@ export default async function ClubRequestsPage({
                   ) : null}
 
                   <ClubRequestActions
+                    advisorLabel={t("clubRequests.proposal.advisor")}
+                    advisorOptions={advisorOptions.map((staff) => ({
+                      id: staff.id,
+                      label: staff.full_name || t("clubRequests.fallback.staff"),
+                    }))}
+                    canDecide={canDecide}
                     isStaff={isStaff}
                     isSupported={isSupported}
                     labels={{
@@ -480,17 +555,39 @@ export default async function ClubRequestsPage({
           />
         ) : null}
       </section>
+      </div>
+
+      <aside className="cl-side">
+        <Widget title={t("clubRequests.page.howItWorks")}>
+          <ol className="cl-steps">
+            {[1, 2, 3, 4].map((step) => (
+              <li key={step}>
+                <b>{t(`clubRequests.page.step${step}Title`)}</b>
+                <span>{t(`clubRequests.page.step${step}Text`)}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="text-[12.5px] text-[var(--muted)]">{t("clubRequests.staffDecisionNotice")}</p>
+        </Widget>
+      </aside>
+      </div>
     </div>
   );
 }
 
 function ClubRequestActions({
+  advisorLabel,
+  advisorOptions,
+  canDecide,
   isStaff,
   isSupported,
   labels,
   profileRole,
   request,
 }: {
+  advisorLabel: string;
+  advisorOptions: Array<{ id: string; label: string }>;
+  canDecide: boolean;
   isStaff: boolean;
   isSupported: boolean;
   labels: {
@@ -512,10 +609,25 @@ function ClubRequestActions({
   if (isStaff) {
     return (
       <div className="mt-4 flex flex-col gap-2">
-        {request.status === "pending" ? (
+        {request.status === "pending" && canDecide ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <form action={approveClubRequest}>
+            <form action={approveClubRequest} className="grid gap-2 sm:flex sm:flex-wrap sm:items-end">
               <input name="club_request_id" type="hidden" value={request.id} />
+              <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-slate-800 sm:w-64">
+                {advisorLabel}
+                <select
+                  className="h-10 cursor-pointer rounded-md border bg-white px-3 text-base font-normal outline-none transition"
+                  name="advisor_profile_id"
+                  required
+                >
+                  <option value="">—</option>
+                  {advisorOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <PendingSubmitButton
                 className="btn btn-primary w-full sm:w-auto"
                 pendingLabel={labels.approving}
@@ -547,7 +659,7 @@ function ClubRequestActions({
           <form action={archiveClubRequest}>
             <input name="club_request_id" type="hidden" value={request.id} />
             <PendingSubmitButton
-              className="btn btn-secondary min-h-10 w-full sm:w-auto"
+              className="btn btn-quiet min-h-10 w-full sm:w-auto"
               pendingLabel={labels.archiving}
               toastMessage={labels.archiving}
             >
@@ -597,19 +709,16 @@ function SupportSummary({
   supportRate: number | null;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-2 text-center sm:min-w-44">
-      <div>
-        <p className="text-lg font-black leading-none text-slate-950">
-          {supportCount}
-        </p>
-        <p className="mt-1 text-xs font-bold text-slate-500">{labels.supporters}</p>
+    <div className="cl-support">
+      <p>
+        <b>{supportCount}</b> {labels.supporters}
+      </p>
+      <div className="cl-bar" style={{ "--c": "var(--cl-green)" } as React.CSSProperties}>
+        <i style={{ width: `${Math.min(100, supportRate ?? 0)}%` }} />
       </div>
-      <div>
-        <p className="text-lg font-black leading-none text-slate-950">
-          {supportRate === null ? "-" : `${supportRate}%`}
-        </p>
-        <p className="mt-1 text-xs font-bold text-slate-500">{labels.rate}</p>
-      </div>
+      <p className="text-[12.5px] text-[var(--muted)]">
+        {labels.rate}: {supportRate === null ? "-" : `${supportRate}%`}
+      </p>
     </div>
   );
 }

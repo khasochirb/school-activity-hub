@@ -7,11 +7,13 @@ import {
   getDictionary,
   translate,
 } from "@/lib/i18n/dictionary";
+import { logServerError } from "@/lib/errors/server-error";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type InviteRecord = {
+  audience: string;
   id: string;
   school_id: string;
   student_roster_id: string | null;
@@ -42,6 +44,7 @@ export async function redeemInviteCode(
   const rawCode = String(formData.get("invite_code") ?? "");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
   const normalizedCode = normalizeInviteCode(rawCode);
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
@@ -64,11 +67,17 @@ export async function redeemInviteCode(
     };
   }
 
+  // Checked here as well as in the browser: a typo in a new password locks the
+  // student out on day one.
+  if (password !== confirmPassword) {
+    return { message: t("auth.errors.passwordMismatch"), success: false };
+  }
+
   const admin = createAdminClient();
   const now = new Date().toISOString();
   const { data: invite } = await admin
     .from("invite_codes")
-    .select("id, school_id, student_roster_id, status, use_count, expires_at, redeemed_at")
+    .select("id, school_id, student_roster_id, status, use_count, expires_at, redeemed_at, audience")
     .eq("code_hash", hashInviteCode(normalizedCode))
     .maybeSingle<InviteRecord>();
 
@@ -114,10 +123,9 @@ export async function redeemInviteCode(
     });
 
   if (createUserError || !createdUser.user) {
+    logServerError("Join account creation failed", createUserError);
     return {
-      message:
-        createUserError?.message ??
-        t("auth.join.errors.accountCreateFailed"),
+      message: t("auth.join.errors.accountCreateFailed"),
       success: false,
     };
   }
@@ -158,10 +166,9 @@ export async function redeemInviteCode(
 
   if (linkError || !linkedStudent) {
     await cleanupCreatedStudentAccount(userId, invite.school_id);
+    logServerError("Join roster link failed", linkError);
     return {
-      message:
-        linkError?.message ??
-        t("auth.join.errors.rosterClaimed"),
+      message: t("auth.join.errors.rosterClaimed"),
       success: false,
     };
   }
@@ -186,10 +193,9 @@ export async function redeemInviteCode(
 
   if (redeemError || !redeemedInvite) {
     await cleanupCreatedStudentAccount(userId, invite.school_id);
+    logServerError("Join invite redeem failed", redeemError);
     return {
-      message:
-        redeemError?.message ??
-        t("auth.join.errors.inviteUsedDuringSignup"),
+      message: t("auth.join.errors.inviteUsedDuringSignup"),
       success: false,
     };
   }
@@ -229,6 +235,11 @@ function validateInvite(
 
   if (!invite.student_roster_id) {
     return t("auth.join.errors.inviteNoRoster");
+  }
+
+  // A parent code never creates a student account.
+  if (invite.audience !== "student") {
+    return t("auth.join.errors.parentCode");
   }
 
   return null;

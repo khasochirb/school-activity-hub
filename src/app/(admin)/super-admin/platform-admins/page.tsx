@@ -390,7 +390,7 @@ function PlatformAdminActions({
         className={
           row.status === "active"
             ? "btn btn-secondary h-10 w-full sm:w-auto"
-            : "btn btn-primary h-10 w-full sm:w-auto"
+            : "btn btn-soft h-10 w-full sm:w-auto"
         }
         pendingLabel={
           row.status === "active" ? labels.deactivating : labels.reactivating

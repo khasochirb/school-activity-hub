@@ -15,7 +15,8 @@ type ButtonVariant = "primary" | "secondary";
 
 export function CollapsibleFormSection({
   children,
-  collapsedSummary = true,
+  collapsedSummary = false,
+  defaultOpen = false,
   description,
   hideLabel,
   id,
@@ -24,6 +25,8 @@ export function CollapsibleFormSection({
 }: {
   children: React.ReactNode;
   collapsedSummary?: boolean;
+  // Starts open; a user who hid it keeps it hidden on the next visit.
+  defaultOpen?: boolean;
   description: string;
   hideLabel: string;
   id: string;
@@ -32,7 +35,7 @@ export function CollapsibleFormSection({
 }) {
   const summaryId = `${id}-summary`;
   const contentId = `${id}-form`;
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const contentRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
@@ -71,6 +74,8 @@ export function CollapsibleFormSection({
     const frameId = window.requestAnimationFrame(() => {
       if (readStoredOpenState(id)) {
         setOpen(true);
+      } else if (defaultOpen && readStoredClosedState(id)) {
+        setIsOpen(false);
       }
 
       openFromHash();
@@ -82,7 +87,7 @@ export function CollapsibleFormSection({
       window.cancelAnimationFrame(frameId);
       window.removeEventListener("hashchange", openFromHash);
     };
-  }, [id, setOpen]);
+  }, [defaultOpen, id, setOpen]);
 
   useEffect(() => {
     function handleToggle(event: Event) {
@@ -234,6 +239,14 @@ function storageKey(id: string) {
 function readStoredOpenState(id: string) {
   try {
     return window.localStorage.getItem(storageKey(id)) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function readStoredClosedState(id: string) {
+  try {
+    return window.localStorage.getItem(storageKey(id)) === "false";
   } catch {
     return false;
   }

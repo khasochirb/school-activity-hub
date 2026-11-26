@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/i18n/date-format";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SwitchToSchoolButton } from "../../../_components/school-switcher";
 import {
   EmptyState,
   HeaderActionLink,
@@ -45,6 +46,12 @@ type SchoolConnection = {
   status: "pending" | "approved" | "rejected" | "blocked" | "archived";
 };
 
+type SchoolClub = {
+  id: string;
+  name: string;
+  status: "active" | "archived";
+};
+
 type DetailPageParams = {
   schoolId: string;
 };
@@ -68,6 +75,7 @@ export default async function SuperAdminSchoolDetailPage({
   searchParams: Promise<DetailSearchParams>;
 }) {
   const platformAdmin = await requirePlatformAdmin();
+  const currentSchoolId = platformAdmin.school_id;
   const { schoolId } = await params;
 
   if (!isUuid(schoolId)) {
@@ -90,6 +98,7 @@ export default async function SuperAdminSchoolDetailPage({
     teacherCountResult,
     studentCountResult,
     { data: connections, error: connectionsError },
+    clubsResult,
   ] = await Promise.all([
     admin
       .from("schools")
@@ -119,6 +128,12 @@ export default async function SuperAdminSchoolDetailPage({
         `requester_school_id.eq.${schoolId},receiver_school_id.eq.${schoolId}`,
       )
       .returns<SchoolConnection[]>(),
+    admin
+      .from("clubs")
+      .select("id, name, status")
+      .eq("school_id", schoolId)
+      .order("name")
+      .returns<SchoolClub[]>(),
   ]);
 
   if (schoolError) {
@@ -141,6 +156,7 @@ export default async function SuperAdminSchoolDetailPage({
     schoolAdminsResult.error ||
       teacherCountResult.error ||
       studentCountResult.error ||
+      clubsResult.error ||
       connectionsError,
   );
 
@@ -203,6 +219,40 @@ export default async function SuperAdminSchoolDetailPage({
           label={t("superAdmin.schoolDetail.connectionsSummary.active")}
           value={activeConnections}
         />
+      </section>
+
+      {/* Platform admins work in one school at a time: switching here makes
+          every school page in the console (home, approvals, activities, clubs,
+          students, invite codes, reports) show this school and only this one. */}
+      <section className="section-card section-card-padded">
+        <h2 className="section-title">{t("superAdmin.sites.console.sectionManage")}</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <SwitchToSchoolButton
+            disabled={currentSchoolId === school.id}
+            label={
+              currentSchoolId === school.id
+                ? t("superAdmin.sites.console.currentSchool")
+                : t("superAdmin.sites.console.switchToSchool")
+            }
+            schoolId={school.id}
+          />
+          <a className="btn btn-secondary" href={`/s/${school.slug}`} rel="noreferrer" target="_blank">
+            /s/{school.slug} ↗
+          </a>
+        </div>
+        {clubsResult.data?.length ? (
+          <>
+            <h3 className="mt-5 text-sm font-semibold">{t("nav.clubs")}</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {clubsResult.data.map((club) => (
+                <Link className="btn btn-secondary" href={`/clubs/${club.id}`} key={club.id} prefetch={false}>
+                  {club.name}
+                  {club.status === "archived" ? ` (${t("status.archived")})` : ""}
+                </Link>
+              ))}
+            </div>
+          </>
+        ) : null}
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">

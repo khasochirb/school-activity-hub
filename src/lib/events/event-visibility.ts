@@ -22,7 +22,9 @@ export function canViewEvent({
   const isStaff = profile.role === "school_admin" || profile.role === "teacher";
 
   if (event.school_id === profile.school_id) {
-    return isStaff || event.status === "approved";
+    // Completed events stay readable, so attended history and portfolio links
+    // keep working. RLS already lets students read them.
+    return isStaff || event.status === "approved" || event.status === "completed";
   }
 
   return (

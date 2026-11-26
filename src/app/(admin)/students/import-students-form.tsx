@@ -45,7 +45,7 @@ export function ImportStudentsForm({
           {labels.fileLabel}
           <input
             accept=".csv,text/csv"
-            className="min-h-11 cursor-pointer rounded-md border bg-white px-3 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-[var(--primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#2f2112]"
+            className="min-h-11 cursor-pointer rounded-md border bg-white px-3 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-[var(--primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[var(--primary-contrast)]"
             name="csv_file"
             required
             type="file"

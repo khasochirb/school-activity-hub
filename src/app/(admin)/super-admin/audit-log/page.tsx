@@ -359,7 +359,7 @@ function AuditFilterPanel({
           />
         </label>
         <div className="compact-filter-actions">
-          <button className="btn btn-primary min-h-11 md:min-h-10" type="submit">
+          <button className="btn btn-secondary min-h-11 md:min-h-10" type="submit">
             {t("filters.filter")}
           </button>
           <Link

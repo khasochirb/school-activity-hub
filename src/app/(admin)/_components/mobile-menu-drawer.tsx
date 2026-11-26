@@ -26,11 +26,14 @@ export function MobileMenuDrawer({
   closeLabel,
   header,
   menuLabel,
+  trigger,
 }: {
   children: ReactNode;
   closeLabel: string;
   header: ReactNode;
   menuLabel: string;
+  /** Replaces the default "≡ More" button content, e.g. an avatar. */
+  trigger?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -178,7 +181,7 @@ export function MobileMenuDrawer({
   const drawer =
     open && typeof document !== "undefined"
       ? createPortal(
-          <div className="fixed inset-0 z-[80] lg:hidden">
+          <div className="fixed inset-0 z-[80]">
             <button
               aria-label={closeLabel}
               className={`mobile-drawer-backdrop absolute inset-0 cursor-pointer bg-slate-950/55 ${
@@ -202,7 +205,7 @@ export function MobileMenuDrawer({
                 <div className="min-w-0 flex-1">{header}</div>
                 <button
                   aria-label={closeLabel}
-                  className="btn btn-secondary flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 text-xl leading-none"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xl leading-none text-[var(--muted)] transition hover:bg-[var(--card-soft)] hover:text-[var(--foreground)]"
                   onClick={() => closeDrawer()}
                   ref={closeButtonRef}
                   type="button"
@@ -223,12 +226,12 @@ export function MobileMenuDrawer({
       : null;
 
   return (
-    <div className="shrink-0 lg:hidden">
+    <div className="shrink-0">
       <button
         aria-controls={panelId}
         aria-expanded={open}
         aria-label={menuLabel}
-        className="btn btn-secondary min-h-11 gap-2 px-3"
+        className={trigger ? "topbar-me" : "btn btn-secondary min-h-11 gap-2 px-3"}
         onClick={() => {
           restoreScrollRef.current = true;
           setClosing(false);
@@ -237,14 +240,18 @@ export function MobileMenuDrawer({
         ref={triggerRef}
         type="button"
       >
-        <span aria-hidden="true" className="grid w-4 gap-1">
-          <span className="h-0.5 rounded-full bg-current" />
-          <span className="h-0.5 rounded-full bg-current" />
-          <span className="h-0.5 rounded-full bg-current" />
-        </span>
-        <span className="hidden text-sm font-bold min-[360px]:inline">
-          {menuLabel}
-        </span>
+        {trigger ?? (
+          <>
+            <span aria-hidden="true" className="grid w-4 gap-1">
+              <span className="h-0.5 rounded-full bg-current" />
+              <span className="h-0.5 rounded-full bg-current" />
+              <span className="h-0.5 rounded-full bg-current" />
+            </span>
+            <span className="hidden text-sm font-bold min-[360px]:inline">
+              {menuLabel}
+            </span>
+          </>
+        )}
       </button>
       {drawer}
     </div>

@@ -275,7 +275,8 @@ function ChartBar({
           style={
             {
               "--chart-scale": value / maximum,
-              backgroundColor: variant === "secondary" ? "#64748b" : "#d68a43",
+              backgroundColor:
+                variant === "secondary" ? "var(--accent)" : "var(--primary)",
             } as CSSProperties
           }
         />
@@ -323,7 +324,8 @@ function AccessibleTable({
   title: string;
 }) {
   return (
-    <table className="report-visually-hidden">
+    <div className="report-visually-hidden">
+    <table>
       <caption>{title}</caption>
       <thead><tr>{columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr></thead>
       <tbody>
@@ -336,6 +338,7 @@ function AccessibleTable({
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 

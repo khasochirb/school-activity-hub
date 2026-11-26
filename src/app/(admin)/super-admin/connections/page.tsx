@@ -432,7 +432,7 @@ function ConnectionCard({
 
   return (
     <article className="p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
         <div>
           <h3 className="font-medium text-zinc-950">
             <SchoolName school={requester} t={t} />
@@ -490,7 +490,7 @@ function ConnectionActions({
       >
         <input name="connection_id" type="hidden" value={connection.id} />
         <PendingSubmitButton
-          className="btn btn-primary h-10 w-full sm:w-auto"
+          className="btn btn-soft h-10 w-full sm:w-auto"
           name="decision"
           pendingLabel={labels.approving}
           value="approve"

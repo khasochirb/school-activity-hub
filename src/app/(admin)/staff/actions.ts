@@ -151,6 +151,7 @@ async function getCurrentSchoolAdminProfile(): Promise<AdminProfile | null> {
     .from("profiles")
     .select("id, school_id, role")
     .eq("id", user.id)
+    .eq("status", "active")
     .maybeSingle<AdminProfile>();
 
   if (!profile || profile.role !== "school_admin") {

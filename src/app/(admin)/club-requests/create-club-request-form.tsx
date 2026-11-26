@@ -1,14 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { submitKeepingInput } from "@/components/submit-keeping-input";
+import { useActionState, useEffect, useRef } from "react";
 import { ActionToast } from "@/components/toast-provider";
-import {
-  createClubRequest,
-  type CreateClubRequestState,
-} from "./actions";
+import { FounderPicker, type FounderPickerLabels } from "./founder-picker";
+import { createClubProposal, type ProposalState } from "./proposal-actions";
 
-const initialState: CreateClubRequestState = {
+const initialState: ProposalState = {
   message: "",
   success: false,
 };
@@ -21,7 +19,12 @@ type CategoryOption = {
 type CreateClubRequestFormLabels = {
   category: string;
   description: string;
+  founders: string;
+  foundersHint: string;
   noCategory: string;
+  picker: FounderPickerLabels;
+  reason: string;
+  reasonHint: string;
   submit: string;
   submitting: string;
   title: string;
@@ -30,15 +33,25 @@ type CreateClubRequestFormLabels = {
 export function CreateClubRequestForm({
   categories,
   labels,
+  maxFounders,
+  minFounders,
 }: {
   categories: CategoryOption[];
   labels: CreateClubRequestFormLabels;
+  maxFounders: number;
+  minFounders: number;
 }) {
-  const [state, formAction] = useActionState(createClubRequest, initialState);
+  const [state, formAction, pending] = useActionState(createClubProposal, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Fields stay after a mistake; they clear only once the idea is sent.
+  useEffect(() => {
+    if (state.success) formRef.current?.reset();
+  }, [state]);
 
   return (
     <form
-      action={formAction}
+      onSubmit={submitKeepingInput(formAction)} ref={formRef}
       className="compact-form-xl grid gap-3 md:grid-cols-[minmax(16rem,2fr)_minmax(12rem,1fr)]"
     >
       <ActionToast message={state.message} success={state.success} />
@@ -71,6 +84,21 @@ export function CreateClubRequestForm({
           name="description"
         />
       </label>
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-800 md:col-span-2">
+        {labels.reason}
+        <span className="text-sm font-normal text-slate-600">{labels.reasonHint}</span>
+        <textarea
+          className="min-h-28 rounded-md border px-3 py-2 text-base font-normal outline-none transition"
+          maxLength={2000}
+          name="reason"
+          required
+        />
+      </label>
+      <fieldset className="flex flex-col gap-2 md:col-span-2">
+        <legend className="text-sm font-semibold text-slate-800">{labels.founders}</legend>
+        <p className="text-sm text-slate-600">{labels.foundersHint}</p>
+        <FounderPicker key={state.success ? state.message : "picker"} labels={labels.picker} max={maxFounders} min={minFounders} />
+      </fieldset>
       {state.message ? (
         <p
           className={
@@ -85,6 +113,7 @@ export function CreateClubRequestForm({
       ) : null}
       <div className="md:col-span-2">
         <SubmitButton
+        pending={pending}
           submitLabel={labels.submit}
           submittingLabel={labels.submitting}
         />
@@ -94,13 +123,14 @@ export function CreateClubRequestForm({
 }
 
 function SubmitButton({
+  pending,
   submitLabel,
   submittingLabel,
 }: {
+  pending: boolean;
   submitLabel: string;
   submittingLabel: string;
 }) {
-  const { pending } = useFormStatus();
 
   return (
     <button

@@ -17,29 +17,26 @@ type BadgeVariant =
 export function PageHeader({
   actions,
   description,
-  eyebrow,
   title,
 }: {
   actions?: React.ReactNode;
-  description: string;
+  description?: string;
+  /** Kept for callers; the Clean design shows no label above the title. */
   eyebrow?: string;
   title: string;
 }) {
   return (
-    <section className="page-header">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          {eyebrow ? <p className="page-eyebrow">{eyebrow}</p> : null}
-          <h1 className="page-title">{title}</h1>
-          <p className="page-description">{description}</p>
-        </div>
-        {actions ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-            {actions}
-          </div>
-        ) : null}
+    <div className="cl-head">
+      <div className="min-w-0">
+        <h1>{title}</h1>
+        {description ? <p>{description}</p> : null}
       </div>
-    </section>
+      {actions ? (
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          {actions}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -126,7 +123,8 @@ export function HeaderActionLink({
 
 export function CollapsibleFormSection({
   children,
-  collapsedSummary = true,
+  collapsedSummary = false,
+  defaultOpen = false,
   description,
   hideLabel,
   id,
@@ -135,6 +133,7 @@ export function CollapsibleFormSection({
 }: {
   children: React.ReactNode;
   collapsedSummary?: boolean;
+  defaultOpen?: boolean;
   description: string;
   hideLabel: string;
   id: string;
@@ -144,6 +143,7 @@ export function CollapsibleFormSection({
   return (
     <ClientCollapsibleFormSection
       collapsedSummary={collapsedSummary}
+      defaultOpen={defaultOpen}
       description={description}
       hideLabel={hideLabel}
       id={id}
@@ -197,18 +197,18 @@ export function FilterPanel({
   submitLabel: string;
 }) {
   return (
-    <section className="compact-filter-card section-card section-card-padded">
+    <section className="compact-filter-card cl-filterpanel">
       <form
         action={action}
         className="compact-filter-grid"
       >
         {children}
         <div className="compact-filter-actions">
-          <button className="btn btn-primary min-h-11 md:min-h-10" type="submit">
+          <button className="btn btn-secondary min-h-11 md:min-h-10" type="submit">
             {submitLabel}
           </button>
           <Link
-            className="btn btn-secondary min-h-11 gap-2 md:min-h-10"
+            className="btn btn-quiet min-h-11 gap-2 md:min-h-10"
             href={clearHref}
             prefetch={false}
           >
@@ -216,10 +216,10 @@ export function FilterPanel({
             <PendingLinkIndicator />
           </Link>
         </div>
+        <p className="filter-result-count text-sm text-slate-600">
+          {resultCountLabel}
+        </p>
       </form>
-      <p className="mt-2 text-sm font-medium text-slate-600">
-        {resultCountLabel}
-      </p>
     </section>
   );
 }

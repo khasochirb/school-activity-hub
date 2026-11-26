@@ -9,6 +9,8 @@ import {
   CLUB_PROFILE_LIMITS,
   CLUB_PROFILE_THEMES,
   type ClubProfileField,
+  type ClubProfileFlagField,
+  type ClubProfileTextField,
   type ClubProfileTheme,
   type ClubProfileValues,
 } from "@/lib/clubs/club-profile";
@@ -21,6 +23,8 @@ type ClubProfileFormLabels = {
   cancel: string;
   characterCount: string;
   fields: Record<ClubProfileField, string>;
+  firstVisitDescription: string;
+  firstVisitTitle: string;
   save: string;
   saving: string;
   themeDescription: string;
@@ -45,7 +49,14 @@ export function ClubProfileForm({
   const [state, formAction] = useActionState(updateClubProfile, initialState);
   const [values, setValues] = useState(initialValues);
 
-  function updateValue(field: ClubProfileField, value: string) {
+  function updateValue(
+    field: ClubProfileTextField | "themeKey",
+    value: string,
+  ) {
+    setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateFlag(field: ClubProfileFlagField, value: boolean) {
     setValues((current) => ({ ...current, [field]: value }));
   }
 
@@ -156,6 +167,31 @@ export function ClubProfileForm({
 
       <fieldset className="rounded-md border border-[var(--border)] p-3">
         <legend className="px-1 text-sm font-semibold text-slate-800">
+          {labels.firstVisitTitle}
+        </legend>
+        <p className="mb-3 text-sm text-slate-600">
+          {labels.firstVisitDescription}
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {(["beginnersWelcome", "firstVisitFree"] as const).map((field) => (
+            <label
+              className="motion-choice flex min-w-0 items-center gap-2 rounded-md border border-[var(--border)] p-3 text-sm font-semibold text-slate-800 has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--primary-soft)]"
+              key={field}
+            >
+              <input
+                checked={values[field]}
+                name={field === "beginnersWelcome" ? "beginners_welcome" : "first_visit_free"}
+                onChange={(event) => updateFlag(field, event.target.checked)}
+                type="checkbox"
+              />
+              <span className="min-w-0 break-words">{labels.fields[field]}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="rounded-md border border-[var(--border)] p-3">
+        <legend className="px-1 text-sm font-semibold text-slate-800">
           {labels.fields.themeKey}
         </legend>
         <p className="mb-3 text-sm text-slate-600">{labels.themeDescription}</p>
@@ -215,12 +251,12 @@ function ProfileTextField({
   value,
 }: {
   error?: string;
-  field: Exclude<ClubProfileField, "themeKey">;
+  field: ClubProfileTextField;
   label: string;
   labels: ClubProfileFormLabels;
   limit: number;
   multiline?: boolean;
-  onChange: (field: ClubProfileField, value: string) => void;
+  onChange: (field: ClubProfileTextField, value: string) => void;
   value: string;
 }) {
   const inputName = toSnakeCase(field);
@@ -273,6 +309,6 @@ function SaveButton({ labels }: { labels: ClubProfileFormLabels }) {
   );
 }
 
-function toSnakeCase(field: Exclude<ClubProfileField, "themeKey">) {
+function toSnakeCase(field: ClubProfileTextField) {
   return field.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }

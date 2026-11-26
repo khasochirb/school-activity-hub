@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { getActivityCategoryTone } from "@/lib/activity-category-styles";
 import { redirect } from "next/navigation";
 import { PendingLinkIndicator } from "@/components/pending-link-indicator";
 import { getCurrentEventActor } from "@/lib/auth/event-access";
+import { getCurrentPlatformAdminProfile } from "@/lib/auth/platform-admin";
 import {
   DetailsDisclosure,
   EmptyState,
@@ -20,7 +22,6 @@ import {
   getDashboardActivityRange,
   type DashboardActivityEvent,
 } from "@/lib/dashboard/activity-summary";
-import type { EventQuickViewItem } from "@/components/events/event-quick-view-modal";
 import { getEventCalendarLinks } from "@/lib/events/event-calendar";
 import type { EventExperienceLevel } from "@/lib/events/event-decision-info";
 import {
@@ -28,19 +29,42 @@ import {
   type EventCostType,
 } from "@/lib/events/event-practical-details";
 import { EVENT_QUICK_VIEW_SELECT } from "@/lib/events/event-selects";
-import { getEventQuickViewLabels } from "@/lib/events/event-quick-view-labels";
 import {
+  formatCalendarDateBadge,
   formatDateTime,
   formatTime,
 } from "@/lib/i18n/date-format";
+import { getEventPosterDeliveryUrl } from "@/lib/events/event-poster";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import type { Locale } from "@/lib/i18n/locales";
 import { timeServer } from "@/lib/server-timing";
 import { getServerBaseUrl } from "@/lib/server-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { loadStudentInterests } from "@/lib/students/student-interests";
+import {
+  matchClubsToInterests,
+  type ClubsForInterests,
+} from "@/lib/students/student-journey";
+import {
+  colorVar,
+  Cover,
+  EventCard,
+  initialsOf,
+  PageHead,
+  Section,
+  WeekStrip,
+  Widget,
+  ClubAvatar,
+  CategoryLabel,
+  type CleanEventCardData,
+  type CleanEventCardLabels,
+  type WeekDay,
+} from "../_components/clean-ui";
+import { categoryColor } from "@/lib/ui/category-colors";
+import { ActionMenu } from "../_components/action-menu";
 import { DashboardCharts } from "./dashboard-charts";
-import { StudentUpcomingEvents } from "./student-upcoming-events";
+import type { StudentUpcomingEvent } from "./student-upcoming-events";
 import { AnimatedMetricValue } from "./animated-metric-value";
 
 type Profile = {
@@ -91,6 +115,7 @@ type UpcomingEvent = {
   required_materials: string | null;
   expected_commitment: string | null;
   cancellation_notice: string | null;
+  poster_path: string | null;
 };
 
 type DashboardEventAttendee = {
@@ -168,6 +193,14 @@ export default async function DashboardPage({
     const supabase = await createClient();
     const params = await searchParams;
     const requestedSchoolId = getSearchValue(params.school);
+
+    // Without a school picked there is nothing to show here. The profile check
+    // is the overview's own rule: without it the two pages would send an admin
+    // with no active profile back and forth.
+    if (!requestedSchoolId && (await getCurrentPlatformAdminProfile())) {
+      redirect("/super-admin");
+    }
+
     const platformSchoolResult = await getPlatformDashboardSchools(supabase);
     const selectedSchool = platformSchoolResult.schools.find(
       (school) => school.id === requestedSchoolId,
@@ -215,14 +248,16 @@ export default async function DashboardPage({
             profile.school_id,
           )
         : Promise.resolve(null);
-    const [analytics, latestAnnouncements] = await Promise.all([
+    const [analytics, latestAnnouncements, identity] = await Promise.all([
       getStaffAnalytics(admin, profile.school_id),
       announcementPromise,
+      getHomeIdentity(await createClient(), profile.id),
     ]);
 
     return (
       <StaffDashboard
         analytics={analytics}
+        identity={identity}
         latestAnnouncements={latestAnnouncements}
         locale={locale}
         t={t}
@@ -232,16 +267,33 @@ export default async function DashboardPage({
   }
 
   const supabase = await createClient();
-  const [analytics, baseUrl, latestAnnouncements] = await Promise.all([
-    getStudentAnalytics(admin, profile),
-    getServerBaseUrl(),
-    getLatestDashboardAnnouncements(supabase, profile.school_id),
+  const [analytics, baseUrl, latestAnnouncements, clubsForYou, identity] =
+    await Promise.all([
+      getStudentAnalytics(admin, profile),
+      getServerBaseUrl(),
+      getLatestDashboardAnnouncements(supabase, profile.school_id),
+      getStudentClubsForYou(supabase, profile),
+      getHomeIdentity(supabase, profile.id),
+    ]);
+  const [history, clubDetails] = await Promise.all([
+    analytics.currentStudent
+      ? getStudentActivityHistory(admin, profile.school_id, analytics.currentStudent.id)
+      : Promise.resolve({ attended: 0, kinds: 0 }),
+    getHomeClubDetails(supabase, [
+      ...clubsForYou.joined.map((club) => club.id),
+      ...clubsForYou.forYou.map(({ club }) => club.id),
+      ...clubsForYou.open.slice(0, 5).map((club) => club.id),
+    ]),
   ]);
 
   return (
     <StudentDashboard
       analytics={analytics}
       baseUrl={baseUrl}
+      clubDetails={clubDetails}
+      clubsForYou={clubsForYou}
+      history={history}
+      identity={identity}
       latestAnnouncements={latestAnnouncements}
       locale={locale}
       profile={profile}
@@ -391,96 +443,205 @@ function PlatformDashboard({
 
 function StaffDashboard({
   analytics,
+  identity,
   latestAnnouncements,
   locale,
   t,
   tf,
 }: {
   analytics: Awaited<ReturnType<typeof getStaffAnalytics>>;
+  identity: HomeIdentity;
   latestAnnouncements: DashboardAnnouncementsResult | null;
   locale: Locale;
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
 }) {
-  return (
-    <DashboardShell
-      description={t("dashboard.description")}
-      eyebrow={t("dashboard.welcomeBack")}
-      title={t("dashboard.title")}
-      actions={<DashboardHeaderActions t={t} />}
-    >
-      <WelcomeOverview t={t} />
-      <NeedsAttention analytics={analytics} locale={locale} t={t} />
-      <NextSteps analytics={analytics} t={t} tf={tf} />
-      <QuickActions t={t} />
-      {latestAnnouncements ? (
-        <LatestAnnouncementsSection
-          locale={locale}
-          result={latestAnnouncements}
-          showCreateAction
-          t={t}
-          tf={tf}
-        />
-      ) : null}
-      <section aria-labelledby="dashboard-overview-title" className="space-y-3">
-        <div>
-          <h2 className="section-title" id="dashboard-overview-title">
-            {t("dashboard.analytics.overview")}
-          </h2>
-        </div>
-        <MetricGrid>
-          <MetricCard
-            href="/clubs"
-            locale={locale}
-            label={t("dashboard.stats.activeClubs")}
-            value={analytics.activeClubs}
-          />
-          <MetricCard
-            href="/events"
-            locale={locale}
-            label={t("dashboard.stats.upcomingEvents")}
-            value={analytics.upcomingApprovedEvents}
-          />
-          <MetricCard
-            href="/reports"
-            locale={locale}
-            label={t("dashboard.stats.upcomingRegistrations")}
-            value={analytics.upcomingRegistrations}
-          />
-          <MetricCard
-            href="/reports"
-            locale={locale}
-            label={t("dashboard.stats.recentParticipation")}
-            value={analytics.recentParticipation}
-          />
-        </MetricGrid>
-      </section>
+  const todo =
+    (analytics.pendingApprovals > 0 ? 1 : 0) +
+    (analytics.studentsWithoutInviteCodes > 0 ? 1 : 0);
+  const clubNames = new Map(analytics.upcomingEventClubs.map((club) => [club.id, club.name]));
+  const weeks = analytics.activitySummary.weeks.map((week) => week.count);
+  const cardLabels = getHomeEventCardLabels(t);
+  const stats = [
+    { href: "/clubs", label: t("dashboard.stats.activeClubs"), spark: null, value: analytics.activeClubs },
+    { href: "/events", label: t("dashboard.stats.upcomingEvents"), spark: weeks, value: analytics.upcomingApprovedEvents },
+    { href: "/reports", label: t("dashboard.stats.upcomingRegistrations"), spark: null, value: analytics.upcomingRegistrations },
+    { href: "/reports", label: t("dashboard.stats.recentParticipation"), spark: null, value: analytics.recentParticipation },
+  ];
 
-      <DashboardCharts
-        locale={locale}
-        summary={analytics.activitySummary}
-        t={t}
+  return (
+    <div className="cl-page">
+      <PageHead
+        action={<DashboardHeaderActions t={t} />}
+        subtitle={tf("dashboard.home.staffSubtitle", {
+          events: analytics.upcomingApprovedEvents,
+          todo,
+        })}
+        title={
+          identity.firstName
+            ? `${greetingFor(identity.timeZone, t)}, ${identity.firstName}`
+            : greetingFor(identity.timeZone, t)
+        }
       />
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        <UpcomingEventsSection
-          events={analytics.upcomingEvents}
-          locale={locale}
-          t={t}
-        />
-        <RecentCheckinsSection
-          checkins={analytics.recentCheckins}
-          locale={locale}
-          t={t}
-        />
+      <section aria-label={t("dashboard.analytics.overview")} className="cl-stats">
+        {stats.map((stat) => (
+          <Link
+            aria-label={`${stat.label}: ${formatNumber(stat.value, locale)}`}
+            className="cl-card cl-stat"
+            href={stat.href}
+            key={stat.label}
+            prefetch={false}
+          >
+            <span className="cl-muted">{stat.label}</span>
+            <b>{formatNumber(stat.value, locale)}</b>
+            {stat.spark && Math.max(...stat.spark) > 0 ? (
+              <span aria-hidden="true" className="cl-spark">
+                {stat.spark.map((count, index) => (
+                  <i
+                    key={index}
+                    style={{
+                      height: `${Math.max(12, (count / Math.max(...stat.spark)) * 100)}%`,
+                    }}
+                  />
+                ))}
+              </span>
+            ) : null}
+          </Link>
+        ))}
+      </section>
+
+      <div className="cl-split">
+        <div className="cl-main">
+          <NeedsAttention analytics={analytics} locale={locale} t={t} />
+
+          <Section
+            link={{ href: "/events", label: t("dashboard.home.allEvents") }}
+            title={t("dashboard.home.thisWeek")}
+          >
+            <WeekStrip
+              days={buildWeekDays(
+                analytics.upcomingEvents.map((event) => ({
+                  category: event.category,
+                  id: event.id,
+                  startsAt: event.starts_at,
+                })),
+                identity.timeZone,
+                locale,
+                t("dashboard.home.today"),
+              )}
+              label={t("dashboard.home.thisWeek")}
+            />
+            {analytics.upcomingEvents.length ? (
+              <div className="cl-egrid">
+                {analytics.upcomingEvents.slice(0, 4).map((event) => {
+                  const attendees = analytics.upcomingEventAttendees.filter(
+                    (attendee) => attendee.event_id === event.id,
+                  ).length;
+                  const tile = formatCalendarDateBadge(event.starts_at, locale);
+                  const categoryKey = event.category
+                    ? getActivityCategoryTranslationKey(event.category)
+                    : null;
+
+                  return (
+                    <EventCard
+                      action={
+                        <ActionMenu
+                          items={[
+                            { href: `/events/${event.id}/attendance`, label: t("dashboard.home.attendanceQr") },
+                            { href: `/events/${event.id}`, label: t("dashboard.home.openEvent") },
+                          ]}
+                          label={t("common.moreActions")}
+                        />
+                      }
+                      event={{
+                        attendeeCount: attendees,
+                        canJoin: false,
+                        capacity: event.capacity,
+                        categoryLabel: categoryKey ? t(categoryKey) : event.category,
+                        categoryValue: event.category,
+                        day: String(Number(tile.day)),
+                        hostName: (event.club_id && clubNames.get(event.club_id)) || identity.schoolName,
+                        id: event.id,
+                        isFull: false,
+                        location: event.location,
+                        month: tile.month,
+                        posterUrl: event.poster_path
+                          ? getEventPosterDeliveryUrl(event.id, event.poster_path)
+                          : null,
+                        registrationStatus: null,
+                        title: event.title,
+                        whenLabel: formatInZone(event.starts_at, identity.timeZone, locale, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          weekday: "long",
+                        }),
+                      }}
+                      key={event.id}
+                      labels={cardLabels}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="cl-card cl-empty">{t("dashboard.upcoming.emptyTitle")}</p>
+            )}
+          </Section>
+
+          {latestAnnouncements ? (
+            <LatestAnnouncementsSection
+              locale={locale}
+              result={latestAnnouncements}
+              showCreateAction
+              t={t}
+              tf={tf}
+            />
+          ) : null}
+
+          <NextSteps analytics={analytics} t={t} tf={tf} />
+        </div>
+
+        <aside className="cl-side">
+          <RecentCheckinsSection
+            checkins={analytics.recentCheckins}
+            locale={locale}
+            t={t}
+          />
+          <Widget title={t("dashboard.home.byCategory")}>
+            {analytics.activitySummary.categories.length ? (
+              analytics.activitySummary.categories.slice(0, 6).map((item) => {
+                const key = getActivityCategoryTranslationKey(item.category);
+                const max = Math.max(...analytics.activitySummary.categories.map((c) => c.count));
+
+                return (
+                  <div className="cl-goal" key={item.category}>
+                    <div>
+                      <span>{key ? t(key) : item.category}</span>
+                      <b>{item.count}</b>
+                    </div>
+                    <div className="cl-bar" style={colorVar(categoryColor(item.category))}>
+                      <i style={{ width: `${(item.count / max) * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-[var(--muted)]">{t("dashboard.upcoming.emptyTitle")}</p>
+            )}
+          </Widget>
+        </aside>
       </div>
-    </DashboardShell>
+    </div>
   );
 }
 
 function StudentDashboard({
   analytics,
   baseUrl,
+  clubDetails,
+  clubsForYou,
+  history,
+  identity,
   latestAnnouncements,
   locale,
   profile,
@@ -489,102 +650,766 @@ function StudentDashboard({
 }: {
   analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
   baseUrl: string;
+  clubDetails: Map<string, HomeClubDetail>;
+  clubsForYou: StudentClubsForYou;
+  history: { attended: number; kinds: number };
+  identity: HomeIdentity;
   latestAnnouncements: DashboardAnnouncementsResult;
   locale: Locale;
   profile: Profile;
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
 }) {
-  const quickViewEvents = buildStudentQuickViewEvents(
-    analytics,
-    profile,
-    locale,
-    t,
-    baseUrl,
+  const events = buildStudentQuickViewEvents(analytics, profile, locale, t, baseUrl, identity.timeZone);
+  const startsById = new Map(
+    analytics.upcomingEvents.map((event) => [event.id, event.starts_at]),
   );
+  const mine = events.filter(
+    (event) =>
+      event.registrationStatus === "registered" ||
+      event.registrationStatus === "attended",
+  );
+  const next = mine[0] ?? events[0] ?? null;
+  const nextStartsAt = next ? startsById.get(next.id) ?? null : null;
+  const cardLabels = getHomeEventCardLabels(t);
+  const goals = [
+    { label: t("dashboard.home.goalFirstClub"), total: 1, value: Math.min(analytics.joinedClubs, 1) },
+    { label: t("dashboard.home.goalKinds"), total: 3, value: Math.min(history.kinds, 3) },
+    { label: t("dashboard.home.goalAttend"), total: 5, value: Math.min(history.attended, 5) },
+  ];
 
   return (
-    <DashboardShell
-      description={t("dashboard.studentDescription")}
-      eyebrow={t("dashboard.welcomeBack")}
-      title={t("dashboard.title")}
-    >
-      <StudentWelcomeOverview t={t} />
+    <div className="cl-page">
+      <PageHead
+        subtitle={
+          identity.schoolName
+            ? tf("dashboard.home.subtitle", { school: identity.schoolName })
+            : undefined
+        }
+        title={
+          identity.firstName
+            ? `${greetingFor(identity.timeZone, t)}, ${identity.firstName}`
+            : greetingFor(identity.timeZone, t)
+        }
+      />
+
+      <StudentNextEventCard
+        analytics={analytics}
+        events={events}
+        locale={locale}
+        t={t}
+      />
+
       {!analytics.currentStudent ? (
-        <section className="notice-box notice-warning">
-          <p>{t("dashboard.student.noRosterWarning")}</p>
-        </section>
+        <p className="notice-box notice-warning">
+          {t("dashboard.student.noRosterWarning")}
+        </p>
+      ) : (
+        <p className="cl-statline">
+          <span>
+            <b>{formatNumber(analytics.registeredUpcomingEvents, locale)}</b>
+            {t("dashboard.statline.going")}
+          </span>
+          <span>
+            <b>{formatNumber(analytics.joinedClubs, locale)}</b>
+            {t("dashboard.statline.clubs")}
+          </span>
+          <span>
+            <b>{formatNumber(history.attended, locale)}</b>
+            {t("dashboard.home.attended")}
+          </span>
+        </p>
+      )}
+
+      {next && !mine.length ? (
+        <Link className="cl-card cl-upnext" href={`/events/${next.id}`} prefetch={false}>
+          <span className="min-w-0">
+            <small>
+              {mine.length ? t("dashboard.home.upNextForYou") : t("dashboard.home.comingUpNext")}
+              {nextStartsAt
+                ? ` · ${formatInZone(nextStartsAt, identity.timeZone, locale, { weekday: "long" })}`
+                : ""}
+            </small>
+            <b className="cl-upnext-title">{next.title}</b>
+            <span className="block text-[var(--muted)]">
+              {nextStartsAt
+                ? `${formatInZone(nextStartsAt, identity.timeZone, locale, {
+                    day: "numeric",
+                    month: "long",
+                    weekday: "long",
+                  })} · ${formatInZone(nextStartsAt, identity.timeZone, locale, {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}`
+                : next.dateTimeLabel}
+            </span>
+            {next.location ? (
+              <span className="mt-1 flex items-center gap-1.5 text-[var(--muted)]">
+                <PinIcon />
+                {next.location}
+              </span>
+            ) : null}
+            <span className="mt-2.5 block text-[13px] text-[var(--muted)]">
+              <b className="inline text-[15px] text-[var(--foreground)]">{next.attendeeCount}</b>{" "}
+              {cardLabels.goingCount}
+            </span>
+          </span>
+          <Cover
+            category={next.categoryValue}
+            className="cl-sq"
+            imageUrl={next.posterUrl}
+            initials={initialsOf(next.hostName || next.title)}
+          />
+        </Link>
       ) : null}
 
-      <LatestAnnouncementsSection
-        locale={locale}
-        result={latestAnnouncements}
-        showCreateAction={false}
-        t={t}
-        tf={tf}
+      <WeekStrip
+        days={buildWeekDays(
+          analytics.upcomingEvents.map((event) => ({
+            category: event.category,
+            id: event.id,
+            startsAt: event.starts_at,
+          })),
+          identity.timeZone,
+          locale,
+          t("dashboard.home.today"),
+        )}
+        label={t("dashboard.home.thisWeek")}
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label={t("dashboard.studentStats.joinedClubs")}
-          locale={locale}
-          value={analytics.joinedClubs}
-          href="/clubs"
-        />
-        <MetricCard
-          label={t("dashboard.studentStats.registeredUpcomingEvents")}
-          locale={locale}
-          value={analytics.registeredUpcomingEvents}
-          href="/events?filter=registered"
-        />
-        <MetricCard
-          label={t("dashboard.stats.recentParticipation")}
-          locale={locale}
-          value={analytics.recentParticipation}
-          href="/events?filter=registered"
-        />
-        <MetricCard
-          label={t("dashboard.studentStats.availableOpportunities")}
-          locale={locale}
-          value={analytics.activitySummary.total}
-          href="/events"
-        />
-      </section>
+      <div className="cl-split">
+        <div className="cl-main">
+          <StudentUpcomingEventsGrid
+            events={events.slice(0, 4).map((event) => ({
+              attendeeCount: event.attendeeCount,
+              canJoin:
+                event.status === "approved" &&
+                event.hasCurrentStudent &&
+                event.canRegister,
+              capacity: event.capacity,
+              categoryLabel: event.categoryLabel,
+              categoryValue: event.categoryValue,
+              day: event.tileDay,
+              hostName: event.hostName,
+              id: event.id,
+              isFull: event.isFull,
+              location: event.location,
+              month: event.tileMonth,
+              posterUrl: event.posterUrl,
+              registrationStatus: event.registrationStatus,
+              title: event.title,
+              whenLabel: startsById.get(event.id)
+                ? formatInZone(startsById.get(event.id) as string, identity.timeZone, locale, {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    weekday: "long",
+                  })
+                : event.dateTimeLabel,
+            }))}
+            labels={cardLabels}
+            t={t}
+            tf={tf}
+            total={events.length}
+          />
 
-      <DashboardCharts
-        locale={locale}
-        summary={analytics.activitySummary}
-        t={t}
-      />
+          <StudentClubsForYouSection
+            clubDetails={clubDetails}
+            clubsForYou={clubsForYou}
+            t={t}
+            tf={tf}
+          />
+        </div>
 
-      {quickViewEvents.length ? (
-        <StudentUpcomingEvents
-          description={t("dashboard.upcoming.description")}
-          events={quickViewEvents}
-          labels={getEventQuickViewLabels(t)}
-          locationNotSet={t("dashboard.upcoming.locationNotSet")}
-          title={t("dashboard.upcoming.title")}
-        />
-      ) : (
-        <UpcomingEventsSection events={[]} locale={locale} t={t} />
-      )}
-    </DashboardShell>
+        <aside className="cl-side">
+          <StudentMyClubsSection clubDetails={clubDetails} clubs={clubsForYou.joined} t={t} />
+
+          <Widget
+            link={{ href: "/portfolio", label: t("dashboard.home.addToPortfolio") }}
+            title={t("dashboard.home.yourGoals")}
+          >
+            {goals.map((goal) => (
+              <div className="cl-goal" key={goal.label}>
+                <div>
+                  <span>{goal.label}</span>
+                  <b>
+                    {goal.value}/{goal.total}
+                  </b>
+                </div>
+                <div
+                  className="cl-bar"
+                  style={colorVar(goal.value >= goal.total ? "var(--cl-green)" : "var(--cl-sun)")}
+                >
+                  <i style={{ width: `${(goal.value / goal.total) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </Widget>
+
+          <LatestAnnouncementsSection
+            compact
+            locale={locale}
+            result={latestAnnouncements}
+            showCreateAction={false}
+            t={t}
+            tf={tf}
+          />
+        </aside>
+      </div>
+    </div>
   );
 }
 
+function StudentUpcomingEventsGrid({
+  events,
+  labels,
+  t,
+  tf,
+  total,
+}: {
+  events: CleanEventCardData[];
+  labels: CleanEventCardLabels;
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+  total: number;
+}) {
+  return (
+    <Section
+      link={
+        total
+          ? { href: "/events", label: tf("dashboard.home.seeAll", { count: total }) }
+          : undefined
+      }
+      title={t("dashboard.home.comingUp")}
+    >
+      {events.length ? (
+        <div className="cl-egrid">
+          {events.map((event) => (
+            <EventCard event={event} key={event.id} labels={labels} />
+          ))}
+        </div>
+      ) : (
+        <p className="cl-card cl-empty">{t("dashboard.upcoming.emptyTitle")}</p>
+      )}
+    </Section>
+  );
+}
+
+function getHomeEventCardLabels(t: (key: string) => string): CleanEventCardLabels {
+  return {
+    full: t("dashboard.home.full"),
+    going: t("dashboard.home.going"),
+    goingCount: t("dashboard.home.goingCount"),
+    join: t("dashboard.home.join"),
+    joining: t("dashboard.home.joining"),
+    spotsLeft: t("dashboard.home.spotsLeft"),
+  };
+}
+
+type HomeClubDetail = {
+  logoUrl: string | null;
+  schedule: string | null;
+};
+
+// Meeting times and logos for the clubs shown on Home, under RLS.
+async function getHomeClubDetails(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clubIds: string[],
+) {
+  const ids = Array.from(new Set(clubIds));
+  const details = new Map<string, HomeClubDetail>();
+
+  if (!ids.length) return details;
+
+  const { data } = await timeServer("dashboard.query.home-club-details", () =>
+    supabase
+      .from("club_profiles")
+      .select("club_id, meeting_schedule, logo_path, updated_at")
+      .in("club_id", ids)
+      .returns<
+        Array<{
+          club_id: string;
+          logo_path: string | null;
+          meeting_schedule: string | null;
+          updated_at: string | null;
+        }>
+      >(),
+  );
+
+  for (const row of data ?? []) {
+    details.set(row.club_id, {
+      logoUrl: row.logo_path
+        ? `/clubs/${row.club_id}/media/logo?v=${encodeURIComponent(row.updated_at ?? "")}`
+        : null,
+      schedule: row.meeting_schedule,
+    });
+  }
+
+  return details;
+}
+
+function greetingFor(timeZone: string, t: (key: string) => string) {
+  let hour = new Date().getUTCHours();
+
+  try {
+    hour = Number(
+      new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone }).format(
+        new Date(),
+      ),
+    ) % 24;
+  } catch {
+    // Unknown time zone: fall back to UTC.
+  }
+
+  return hour < 12
+    ? t("dashboard.home.goodMorning")
+    : hour < 18
+      ? t("dashboard.home.goodAfternoon")
+      : t("dashboard.home.goodEvening");
+}
+
+function formatInZone(
+  value: string,
+  timeZone: string,
+  locale: Locale,
+  options: Intl.DateTimeFormatOptions,
+) {
+  try {
+    return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
+      ...options,
+      timeZone,
+    }).format(new Date(value));
+  } catch {
+    return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", options).format(
+      new Date(value),
+    );
+  }
+}
+
+function dayKeyInZone(date: Date, timeZone: string) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(date);
+  } catch {
+    return date.toISOString().slice(0, 10);
+  }
+}
+
+function buildWeekDays(
+  events: Array<{ category: string | null; id: string; startsAt: string }>,
+  timeZone: string,
+  locale: Locale,
+  todayLabel: string,
+): WeekDay[] {
+  const now = new Date();
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(now.getTime() + index * 24 * 60 * 60 * 1000);
+    const key = dayKeyInZone(date, timeZone);
+    const weekday = formatInZone(date.toISOString(), timeZone, locale, { weekday: "short" });
+    const onDay = events.filter((event) => dayKeyInZone(new Date(event.startsAt), timeZone) === key);
+
+    return {
+      colors: onDay.map((event) => categoryColor(event.category)),
+      day: Number(key.slice(8, 10)),
+      href: `/events?day=${key}`,
+      isToday: index === 0,
+      label: index === 0 ? todayLabel : weekday,
+      weekday,
+    };
+  });
+}
+
+function PinIcon() {
+  return (
+    <svg aria-hidden="true" className="h-[15px] w-[15px] flex-none" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 24 24">
+      <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  );
+}
+
+// The student's next registered activity, first thing on the home screen. From
+// an hour before it starts until it ends, the button is the check-in itself.
+function StudentNextEventCard({
+  analytics,
+  events,
+  locale,
+  t,
+}: {
+  analytics: Awaited<ReturnType<typeof getStudentAnalytics>>;
+  events: ReturnType<typeof buildStudentQuickViewEvents>;
+  locale: Locale;
+  t: (key: string) => string;
+}) {
+  const next = events.find((event) => event.registrationStatus === "registered");
+  const raw = next
+    ? analytics.upcomingEvents.find((event) => event.id === next.id)
+    : undefined;
+
+  if (!next || !raw) {
+    return null;
+  }
+
+  const now = analytics.loadedAt;
+  const startsAt = new Date(raw.starts_at).getTime();
+  const endsAt = new Date(raw.ends_at).getTime();
+  const checkInOpen = now >= startsAt - 60 * 60 * 1000 && now <= endsAt;
+
+  return (
+    <section className="next-event-card" aria-labelledby="next-event-title">
+      {next.posterUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img alt="" className="next-event-poster" loading="lazy" src={next.posterUrl} />
+      ) : (
+        <span
+          aria-hidden="true"
+          className="next-event-date"
+          data-category-tone={getActivityCategoryTone(next.categoryValue)}
+        >
+          <span className="next-event-date-month">{next.tileMonth}</span>
+          <span className="next-event-date-day">{next.tileDay}</span>
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="next-event-eyebrow">
+          {t("events.registration.youAreRegistered")}
+          {startsAt > now ? <> · {relativeTimeLabel(startsAt - now, locale)}</> : null}
+        </p>
+        <h2 className="next-event-title" id="next-event-title">
+          {next.title}
+        </h2>
+        <p className="next-event-meta">
+          {next.dateTimeLabel}
+          {next.location ? <> · {next.location}</> : null}
+        </p>
+      </div>
+      <Link
+        className={[
+          "btn min-h-11 w-full px-4 sm:w-auto",
+          checkInOpen ? "btn-primary" : "btn-secondary",
+        ].join(" ")}
+        href={checkInOpen ? `/check-in/${next.id}` : `/events/${next.id}`}
+        prefetch={false}
+      >
+        {checkInOpen ? t("checkIn.actions.checkIn") : t("common.viewDetails")}
+      </Link>
+    </section>
+  );
+}
+
+function relativeTimeLabel(milliseconds: number, locale: Locale) {
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const minutes = Math.round(milliseconds / 60000);
+
+  if (minutes < 90) {
+    return format.format(Math.max(minutes, 1), "minute");
+  }
+
+  const hours = Math.round(minutes / 60);
+
+  if (hours < 36) {
+    return format.format(hours, "hour");
+  }
+
+  return format.format(Math.round(hours / 24), "day");
+}
+
+type StudentClubsForYou = {
+  available: boolean;
+  // Every club matching the student's interests is one they already joined.
+  allMatchesJoined: boolean;
+  forYou: ClubsForInterests<StudentHomeClub>["forYou"];
+  hasInterests: boolean;
+  // Interests with no club at all at the school, joined or not.
+  interestsWithoutClubs: string[];
+  joined: StudentHomeClub[];
+  // Active clubs the student has not joined, shown before interests are picked.
+  open: StudentHomeClub[];
+};
+
+type StudentHomeClub = {
+  category: string | null;
+  id: string;
+  name: string;
+};
+
+// Runs as the signed-in student, under RLS. Clubs the student already belongs
+// to are left out, so home only suggests something new.
+async function getStudentClubsForYou(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profile: Profile,
+): Promise<StudentClubsForYou> {
+  const [{ available, interests }, { data: clubs }, { data: roster }] =
+    await Promise.all([
+      loadStudentInterests(supabase, profile.id),
+      supabase
+        .from("clubs")
+        .select("id, name, category")
+        .eq("school_id", profile.school_id)
+        .eq("status", "active")
+        .order("name")
+        .returns<StudentHomeClub[]>(),
+      supabase
+        .from("student_rosters")
+        .select("id")
+        .eq("school_id", profile.school_id)
+        .eq("profile_id", profile.id)
+        .eq("status", "active")
+        .maybeSingle<{ id: string }>(),
+    ]);
+  const { data: memberships } = roster
+    ? await supabase
+        .from("club_memberships")
+        .select("club_id")
+        .eq("school_id", profile.school_id)
+        .eq("student_roster_id", roster.id)
+        .eq("status", "active")
+        .returns<{ club_id: string }[]>()
+    : { data: [] };
+  const joined = new Set((memberships ?? []).map((row) => row.club_id));
+  const allClubs = clubs ?? [];
+  const everyMatch = matchClubsToInterests(allClubs, interests, allClubs.length);
+  const notJoined = matchClubsToInterests(
+    allClubs.filter((club) => !joined.has(club.id)),
+    interests,
+    3,
+  );
+
+  return {
+    allMatchesJoined:
+      everyMatch.forYou.length > 0 && notJoined.forYou.length === 0,
+    available,
+    forYou: notJoined.forYou,
+    hasInterests: interests.length > 0,
+    interestsWithoutClubs: everyMatch.interestsWithoutClubs,
+    joined: allClubs.filter((club) => joined.has(club.id)),
+    open: allClubs.filter((club) => !joined.has(club.id)),
+  };
+}
+
+function StudentClubRow({
+  club,
+  detail,
+  label,
+  logoUrl,
+}: {
+  club: StudentHomeClub;
+  detail: string | null;
+  label?: string | null;
+  logoUrl?: string | null;
+}) {
+  return (
+    <Link className="cl-row" href={`/clubs/${club.id}`} prefetch={false}>
+      <ClubAvatar category={club.category} logoUrl={logoUrl} name={club.name} size={40} />
+      <span className="cl-grow">
+        <span className="cl-row-title">{club.name}</span>
+        {detail ? <span className="cl-row-sub">{detail}</span> : null}
+      </span>
+      {label && club.category ? (
+        <span className="cl-row-end">
+          <CategoryLabel category={club.category} label={label} />
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function StudentMyClubsSection({
+  clubDetails,
+  clubs,
+  t,
+}: {
+  clubDetails: Map<string, HomeClubDetail>;
+  clubs: StudentHomeClub[];
+  t: (key: string) => string;
+}) {
+  return (
+    <Widget title={t("dashboard.home.yourClubs")}>
+      {clubs.length ? (
+        <div className="-mx-1 flex flex-col">
+          {clubs.map((club) => (
+            <Link
+              className="flex items-center gap-3 rounded-lg px-1 py-1.5 hover:bg-[var(--cl-hover)]"
+              href={`/clubs/${club.id}`}
+              key={club.id}
+              prefetch={false}
+            >
+              <ClubAvatar
+                category={club.category}
+                logoUrl={clubDetails.get(club.id)?.logoUrl}
+                name={club.name}
+              />
+              <span className="cl-grow">
+                <span className="cl-row-title text-sm">{club.name}</span>
+                {clubDetails.get(club.id)?.schedule ? (
+                  <span className="cl-row-sub text-[12.5px]">
+                    {clubDetails.get(club.id)?.schedule}
+                  </span>
+                ) : null}
+              </span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-[var(--muted)]">{t("studentProfile.clubs.empty")}</p>
+          <Link className="cl-widget-link" href="/clubs" prefetch={false}>
+            {t("studentProfile.clubs.find")} →
+          </Link>
+        </>
+      )}
+    </Widget>
+  );
+}
+
+function StudentClubsForYouSection({
+  clubDetails,
+  clubsForYou,
+  t,
+  tf,
+}: {
+  clubDetails: Map<string, HomeClubDetail>;
+  clubsForYou: StudentClubsForYou;
+  t: (key: string) => string;
+  tf: (key: string, values: Record<string, string | number>) => string;
+}) {
+  const {
+    allMatchesJoined,
+    available,
+    forYou,
+    hasInterests,
+    interestsWithoutClubs,
+    open,
+  } = clubsForYou;
+  const allClubs = { href: "/clubs", label: t("dashboard.home.allClubs") };
+
+  // Before interests are picked, list the open clubs so a student always
+  // sees what they can join.
+  if (!hasInterests) {
+    if (!available && !open.length) {
+      return null;
+    }
+
+    return (
+      <Section link={allClubs} title={t("dashboard.home.clubsYouMightLike")}>
+        {available ? (
+          <Link className="cl-card cl-row" href="/profile/interests" prefetch={false}>
+            <span className="cl-grow">
+              <span className="cl-row-title">{t("studentProfile.clubsForYou.promptTitle")}</span>
+              <span className="cl-row-sub">{t("studentProfile.clubsForYou.promptDescription")}</span>
+            </span>
+            <span className="cl-btn-soft">{t("studentProfile.interests.pick")}</span>
+          </Link>
+        ) : null}
+        {open.length ? (
+          <div className="cl-card cl-rows">
+            {open.slice(0, 5).map((club) => (
+              <StudentClubRow
+                club={club}
+                detail={clubDetails.get(club.id)?.schedule ?? null}
+                key={club.id}
+                label={club.category ? studentCategoryLabel(club.category, t) : null}
+                logoUrl={clubDetails.get(club.id)?.logoUrl}
+              />
+            ))}
+          </div>
+        ) : null}
+      </Section>
+    );
+  }
+
+  return (
+    <Section link={allClubs} title={t("dashboard.home.clubsYouMightLike")}>
+      {forYou.length ? (
+        <div className="cl-card cl-rows">
+          {forYou.map(({ club, matchedInterest }) => (
+            <StudentClubRow
+              club={club}
+              detail={
+                clubDetails.get(club.id)?.schedule ??
+                tf("studentProfile.clubsForYou.reason", {
+                  interest: studentCategoryLabel(matchedInterest, t),
+                })
+              }
+              key={club.id}
+              label={club.category ? studentCategoryLabel(club.category, t) : null}
+              logoUrl={clubDetails.get(club.id)?.logoUrl}
+            />
+          ))}
+        </div>
+      ) : allMatchesJoined ? (
+        <p className="cl-card cl-empty">
+          {t("studentProfile.clubsForYou.noneLeft")}
+        </p>
+      ) : null}
+      {!forYou.length && interestsWithoutClubs.length ? (
+        <div className="cl-card cl-rows">
+          {interestsWithoutClubs.map((interest) => (
+            <div className="cl-row" key={interest}>
+              <span className="cl-grow text-sm text-[var(--muted)]">
+                {tf("studentProfile.clubsForYou.noClubYet", {
+                  interest: studentCategoryLabel(interest, t),
+                })}
+              </span>
+              <Link className="cl-btn-soft" href="/club-requests" prefetch={false}>
+                {t("studentProfile.clubsForYou.propose")}
+              </Link>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </Section>
+  );
+}
+
+function studentCategoryLabel(category: string, t: (key: string) => string) {
+  const key = getActivityCategoryTranslationKey(category);
+
+  return key ? t(key) : category;
+}
+
 function LatestAnnouncementsSection({
+  compact = false,
   locale,
   result,
   showCreateAction,
   t,
   tf,
 }: {
+  compact?: boolean;
   locale: Locale;
   result: DashboardAnnouncementsResult;
   showCreateAction: boolean;
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
 }) {
+  if (compact) {
+    return (
+      <Widget
+        link={{ href: "/announcements", label: t("dashboard.home.allNotices") }}
+        title={t("dashboard.home.notices")}
+      >
+        {result.failed ? (
+          <p className="text-sm text-[var(--muted)]">
+            {t("dashboard.latestAnnouncements.unavailableTitle")}
+          </p>
+        ) : result.announcements.length ? (
+          result.announcements.slice(0, 2).map((announcement) => (
+            <div className="min-w-0" key={announcement.id}>
+              <b className="block break-words text-sm">{announcement.title}</b>
+              <p className="mt-0.5 line-clamp-3 break-words text-[13px] text-[var(--muted)]">
+                {announcement.body}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-[var(--muted)]">
+            {t("dashboard.latestAnnouncements.emptyTitle")}
+          </p>
+        )}
+      </Widget>
+    );
+  }
+
   return (
     <section
       aria-labelledby="dashboard-latest-announcements-title"
@@ -684,55 +1509,26 @@ function DashboardShell({
 }
 
 function DashboardHeaderActions({ t }: { t: (key: string) => string }) {
+  // One main button. Everything staff can create lives in its menu.
   return (
-    <>
-      <HeaderActionLink
-        href="/students#add-student"
-        prefetch={false}
-        variant="secondary"
-      >
-        {t("dashboard.quickActions.addStudents.label")}
-      </HeaderActionLink>
-      <HeaderActionLink
-        href="/invite-codes#generate-invite"
-        prefetch={false}
-        variant="secondary"
-      >
-        {t("dashboard.quickActions.generateInviteCodes.label")}
-      </HeaderActionLink>
-      <HeaderActionLink
-        href="/events#create-event"
-        prefetch={false}
-      >
-        {t("dashboard.quickActions.createEvent.label")}
-      </HeaderActionLink>
-    </>
-  );
-}
-
-function WelcomeOverview({ t }: { t: (key: string) => string }) {
-  return (
-    <section className="section-card section-card-padded">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center">
-        <div>
-          <p className="page-eyebrow">{t("dashboard.staffWelcome.eyebrow")}</p>
-          <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
-            {t("dashboard.staffWelcome.title")}
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {t("dashboard.staffWelcome.description")}
-          </p>
-        </div>
-        <div className="rounded-md border border-teal-100 bg-teal-50 p-3">
-          <p className="text-sm font-bold text-teal-950">
-            {t("dashboard.recommendedFlow.title")}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-teal-900">
-            {t("dashboard.recommendedFlow.description")}
-          </p>
-        </div>
-      </div>
-    </section>
+    <ActionMenu
+      buttonClassName="btn btn-primary min-h-11 gap-1.5"
+      buttonLabel={<>+ {t("dashboard.home.newMenu")}</>}
+      items={[
+        {
+          hint: t("dashboard.quickActions.createEvent.description"),
+          href: "/events#create-event",
+          label: t("dashboard.quickActions.createEvent.label"),
+        },
+        { href: "/clubs#create-club", label: t("dashboard.quickActions.createClub.label") },
+        { href: "/announcements", label: t("announcements.actions.create") },
+        "divider",
+        { href: "/students#add-student", label: t("dashboard.quickActions.addStudents.label") },
+        { href: "/invite-codes#generate-invite", label: t("dashboard.quickActions.generateInviteCodes.label") },
+        { href: "/reports", label: t("dashboard.quickActions.viewReports.label") },
+      ]}
+      label={t("dashboard.home.newMenu")}
+    />
   );
 }
 
@@ -745,9 +1541,7 @@ function NextSteps({
   t: (key: string) => string;
   tf: (key: string, values: Record<string, string | number>) => string;
 }) {
-  const inviteCodesMissing =
-    analytics.activeStudents > 0 &&
-    analytics.activeInviteCodes < analytics.activeStudents;
+  const inviteCodesMissing = analytics.studentsWithoutInviteCodes > 0;
   const steps = [
     {
       action: t("dashboard.nextSteps.steps.addStudents.title"),
@@ -962,165 +1756,46 @@ function NeedsAttention({
   ].filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   return (
-    <section className="section-card">
-      <div className="section-header">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="section-title">{t("dashboard.attention.title")}</h2>
-            <p className="section-description">
-              {t("dashboard.attention.description")}
-            </p>
-          </div>
-          <Link
-            className="btn btn-secondary w-full sm:w-auto"
-            href="/reports"
-            prefetch={false}
-          >
-            {t("common.viewAll")}
-            <PendingLinkIndicator />
-          </Link>
-        </div>
-      </div>
+    <Section title={t("dashboard.home.needsYou")}>
       {attentionItems.length ? (
-        <div className="grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-4">
+        <ul className="divide-y divide-[var(--cl-line)] cl-card overflow-hidden">
           {attentionItems.map((item) => (
-            <Link
-              className="interactive-card group rounded-md border border-slate-200 bg-white p-3 shadow-sm"
-              href={item.href}
-              key={item.title}
-              prefetch={false}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
-                    {item.title}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {item.description}
-                  </p>
-                </div>
-                <StatusBadge variant={item.variant}>
-                  {formatNumber(item.count, locale)}
-                </StatusBadge>
-              </div>
-              <p className="mt-3 flex items-center gap-2 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
-                {item.action}
-                <PendingLinkIndicator />
-              </p>
-            </Link>
+            <li key={item.title}>
+              <Link
+                aria-label={`${item.title}: ${formatNumber(item.count, locale)}. ${item.action}`}
+                className="cl-row"
+                href={item.href}
+                prefetch={false}
+              >
+                <span className="cl-dot" style={colorVar(attentionColor(item.variant))} />
+                <span className="cl-grow">
+                  <span className="cl-row-title">
+                    {formatNumber(item.count, locale)} · {item.title}
+                  </span>
+                  <span className="cl-row-sub">{item.description}</span>
+                </span>
+                <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" viewBox="0 0 24 24">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
-        <div className="p-4">
-          <EmptyState
-            description={t("dashboard.attention.emptyDescription")}
-            title={t("dashboard.attention.emptyTitle")}
-          />
-        </div>
+        <p className="cl-card cl-empty">{t("dashboard.attention.emptyTitle")}</p>
       )}
-    </section>
+    </Section>
   );
 }
 
-function StudentWelcomeOverview({ t }: { t: (key: string) => string }) {
-  return (
-    <section className="section-card overflow-hidden">
-      <div className="p-4 sm:p-5">
-        <p className="page-eyebrow">{t("dashboard.studentEyebrow")}</p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-xl">
-          {t("dashboard.studentOverviewTitle")}
-        </h2>
-        <p className="mt-2 max-w-3xl text-base leading-7 text-slate-600 sm:text-sm sm:leading-6">
-          {t("dashboard.studentOverviewDescription")}
-        </p>
-      </div>
-      <div className="grid gap-3 border-t border-slate-200 p-4 sm:grid-cols-3">
-        <Link
-          className="btn btn-primary min-h-12 w-full text-base sm:text-sm"
-          href="/events"
-          prefetch={false}
-        >
-          {t("dashboard.browseEvents")}
-          <PendingLinkIndicator />
-        </Link>
-        <Link
-          className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
-          href="/clubs"
-          prefetch={false}
-        >
-          {t("dashboard.joinClubs")}
-          <PendingLinkIndicator />
-        </Link>
-        <Link
-          className="btn btn-secondary min-h-12 w-full text-base sm:text-sm"
-          href="/events?filter=registered"
-          prefetch={false}
-        >
-          {t("dashboard.viewRegisteredEvents")}
-          <PendingLinkIndicator />
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function QuickActions({ t }: { t: (key: string) => string }) {
-  const actions = [
-    {
-      description: t("dashboard.quickActions.addStudents.description"),
-      href: "/students#add-student",
-      label: t("dashboard.quickActions.addStudents.label"),
-    },
-    {
-      description: t("dashboard.quickActions.generateInviteCodes.description"),
-      href: "/invite-codes#generate-invite",
-      label: t("dashboard.quickActions.generateInviteCodes.label"),
-    },
-    {
-      description: t("dashboard.quickActions.createClub.description"),
-      href: "/clubs#create-club",
-      label: t("dashboard.quickActions.createClub.label"),
-    },
-    {
-      description: t("dashboard.quickActions.createEvent.description"),
-      href: "/events#create-event",
-      label: t("dashboard.quickActions.createEvent.label"),
-    },
-    {
-      description: t("dashboard.quickActions.viewReports.description"),
-      href: "/reports",
-      label: t("dashboard.quickActions.viewReports.label"),
-    },
-  ];
-
-  return (
-    <section className="section-card">
-      <div className="section-header">
-        <h2 className="section-title">{t("dashboard.quickActions.title")}</h2>
-      </div>
-      <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-5">
-        {actions.map((action) => (
-          <Link
-            className="interactive-card group rounded-md border border-slate-200 bg-white p-3 shadow-sm"
-            href={action.href}
-            key={action.href}
-            prefetch={false}
-          >
-            <p className="text-sm font-bold text-slate-950 transition group-hover:text-teal-800">
-              {action.label}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {action.description}
-            </p>
-            <p className="mt-3 flex items-center gap-2 text-sm font-bold text-teal-700 transition group-hover:text-teal-800">
-              {t("common.open")}
-              <PendingLinkIndicator />
-            </p>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
+function attentionColor(variant: "default" | "info" | "success" | "warning") {
+  return variant === "warning"
+    ? "var(--cl-amber)"
+    : variant === "info"
+      ? "var(--cl-coral)"
+      : variant === "success"
+        ? "var(--primary)"
+        : "var(--cl-faint)";
 }
 
 function MetricGrid({ children }: { children: React.ReactNode }) {
@@ -1168,55 +1843,6 @@ function MetricCard({
   );
 }
 
-function UpcomingEventsSection({
-  events,
-  locale,
-  t,
-}: {
-  events: UpcomingEvent[];
-  locale: Locale;
-  t: (key: string) => string;
-}) {
-  return (
-    <section className="section-card">
-      <div className="section-header">
-        <h2 className="section-title">{t("dashboard.upcoming.title")}</h2>
-        <p className="section-description">
-          {t("dashboard.upcoming.description")}
-        </p>
-      </div>
-      {events.length ? (
-        <ul className="dashboard-upcoming-list divide-y divide-slate-200">
-          {events.map((event) => (
-            <li className="p-4" key={event.id}>
-              <p className="font-semibold text-slate-950">{event.title}</p>
-              <p className="mt-1 text-sm text-slate-600">
-                {formatDateTime(event.starts_at, locale)} -{" "}
-                {formatTime(event.ends_at, locale)}
-              </p>
-              <p className="mt-1 text-sm text-slate-600">
-                {event.location || t("dashboard.upcoming.locationNotSet")}
-              </p>
-              {event.cancellation_notice ? (
-                <span className="badge badge-warning mt-2 w-fit">
-                  {t("events.supervisionSchedule.scheduleUpdate")}
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="p-4">
-          <EmptyState
-            description={t("dashboard.upcoming.emptyDescription")}
-            title={t("dashboard.upcoming.emptyTitle")}
-          />
-        </div>
-      )}
-    </section>
-  );
-}
-
 function RecentCheckinsSection({
   checkins,
   locale,
@@ -1227,45 +1853,32 @@ function RecentCheckinsSection({
   t: (key: string) => string;
 }) {
   return (
-    <section className="section-card">
-      <div className="section-header">
-        <h2 className="section-title">{t("dashboard.checkins.title")}</h2>
-        <p className="section-description">
-          {t("dashboard.checkins.description")}
-        </p>
-      </div>
+    <Widget title={t("dashboard.checkins.title")}>
       {checkins.length ? (
-        <ul className="divide-y divide-slate-200">
-          {checkins.map((checkin) => (
-            <li className="p-4" key={checkin.id}>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="font-semibold text-slate-950">
-                    {studentName(checkin.student_rosters, t)}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {checkin.events?.title ?? t("dashboard.fallback.event")}
-                  </p>
-                </div>
-                <span className="badge badge-success w-fit">
-                  {checkInMethodLabel(checkin.method, t)}
+        <div className="cl-feed">
+          {checkins.slice(0, 5).map((checkin) => {
+            const name = studentName(checkin.student_rosters, t);
+
+            return (
+              <div key={checkin.id}>
+                <span aria-hidden="true" className="cl-av">
+                  {initialsOf(name)}
+                </span>
+                <span className="min-w-0">
+                  {name} · <b>{checkin.events?.title ?? t("dashboard.fallback.event")}</b>
+                  <span className="cl-row-sub text-[12.5px]">
+                    {formatDateTime(checkin.checked_in_at, locale)} ·{" "}
+                    {checkInMethodLabel(checkin.method, t)}
+                  </span>
                 </span>
               </div>
-              <p className="mt-2 text-sm text-slate-600">
-                {formatDateTime(checkin.checked_in_at, locale)}
-              </p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="p-4">
-          <EmptyState
-            description={t("dashboard.checkins.emptyDescription")}
-            title={t("dashboard.checkins.emptyTitle")}
-          />
+            );
+          })}
         </div>
+      ) : (
+        <p className="text-sm text-[var(--muted)]">{t("dashboard.checkins.emptyTitle")}</p>
       )}
-    </section>
+    </Widget>
   );
 }
 
@@ -1281,6 +1894,7 @@ async function getStaffAnalytics(
   ).toISOString();
   const [
     activeStudents,
+    studentsWithoutAccounts,
     activeInviteCodes,
     activeClubs,
     upcomingRegistrations,
@@ -1291,6 +1905,7 @@ async function getStaffAnalytics(
     pendingApprovals,
   ] = await Promise.all([
     getActiveStudentCount(admin, schoolId),
+    getActiveStudentCount(admin, schoolId, { withoutAccount: true }),
     getActiveInviteCodeCount(admin, schoolId, now),
     getActiveClubCount(admin, schoolId),
     getUpcomingRegistrationCount(admin, schoolId, now),
@@ -1301,8 +1916,13 @@ async function getStaffAnalytics(
     getPendingApprovalEventCount(admin, schoolId),
   ]);
   const activitySummary = buildDashboardActivitySummary(activityEvents, nowDate);
+  const upcomingContext = await getStudentUpcomingEventContext(
+    admin,
+    schoolId,
+    upcomingEvents,
+  );
   const studentsWithoutInviteCodes = Math.max(
-    activeStudents - activeInviteCodes,
+    studentsWithoutAccounts - activeInviteCodes,
     0,
   );
 
@@ -1317,6 +1937,8 @@ async function getStaffAnalytics(
     upcomingApprovedEvents: activitySummary.total,
     upcomingRegistrations,
     upcomingEvents,
+    upcomingEventAttendees: upcomingContext.upcomingEventAttendees,
+    upcomingEventClubs: upcomingContext.upcomingEventClubs,
     recentCheckins,
   };
 }
@@ -1382,6 +2004,7 @@ async function getStudentAnalytics(
     return {
       activitySummary,
       currentStudent,
+      loadedAt: nowDate.getTime(),
       ...eventContext,
       joinedClubs: 0,
       recentParticipation: 0,
@@ -1410,6 +2033,7 @@ async function getStudentAnalytics(
   return {
     activitySummary,
     currentStudent,
+    loadedAt: nowDate.getTime(),
     ...eventContext,
     joinedClubs,
     recentParticipation,
@@ -1571,15 +2195,21 @@ async function getCurrentStudent(
 async function getActiveStudentCount(
   admin: ReturnType<typeof createAdminClient>,
   schoolId: string,
+  { withoutAccount = false }: { withoutAccount?: boolean } = {},
 ) {
   const { count } = await timeServer(
-    "dashboard.query.active-student-count",
-    () =>
-      admin
+    withoutAccount
+      ? "dashboard.query.students-without-account-count"
+      : "dashboard.query.active-student-count",
+    () => {
+      const query = admin
         .from("student_rosters")
         .select("id", { count: "exact", head: true })
         .eq("school_id", schoolId)
-        .eq("status", "active"),
+        .eq("status", "active");
+
+      return withoutAccount ? query.is("profile_id", null) : query;
+    },
   );
 
   return count ?? 0;
@@ -1749,6 +2379,60 @@ async function getRegisteredUpcomingEventCount(
   return count ?? 0;
 }
 
+type HomeIdentity = {
+  firstName: string;
+  schoolName: string;
+  timeZone: string;
+};
+
+// Runs as the signed-in user, under RLS: their own name and their school.
+async function getHomeIdentity(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileId: string,
+): Promise<HomeIdentity> {
+  const { data } = await timeServer("dashboard.query.home-identity", () =>
+    supabase
+      .from("profiles")
+      .select("full_name, schools(name, timezone)")
+      .eq("id", profileId)
+      .maybeSingle<{
+        full_name: string | null;
+        schools: { name: string; timezone: string | null } | null;
+      }>(),
+  );
+
+  return {
+    firstName: (data?.full_name ?? "").trim().split(/\s+/)[0] ?? "",
+    schoolName: data?.schools?.name ?? "",
+    timeZone: data?.schools?.timezone || "UTC",
+  };
+}
+
+// Everything the student has signed up for or attended, for the goals card.
+async function getStudentActivityHistory(
+  admin: ReturnType<typeof createAdminClient>,
+  schoolId: string,
+  studentRosterId: string,
+) {
+  const { data } = await timeServer("dashboard.query.student-activity-history", () =>
+    admin
+      .from("event_attendees")
+      .select("status, events!event_attendees_event_school_fk!inner(category)")
+      .eq("school_id", schoolId)
+      .eq("student_roster_id", studentRosterId)
+      .in("status", ["registered", "attended"])
+      .returns<Array<{ status: string; events: { category: string | null } | null }>>(),
+  );
+  const rows = data ?? [];
+
+  return {
+    attended: rows.filter((row) => row.status === "attended").length,
+    kinds: new Set(
+      rows.map((row) => row.events?.category).filter((value): value is string => Boolean(value)),
+    ).size,
+  };
+}
+
 async function getStudentRecentParticipationCount(
   admin: ReturnType<typeof createAdminClient>,
   profileId: string,
@@ -1783,7 +2467,7 @@ async function getUpcomingEvents(
         .eq("status", "approved")
         .gte("starts_at", now)
         .order("starts_at", { ascending: true })
-        .limit(5)
+        .limit(12)
         .returns<UpcomingEvent[]>(),
   );
 
@@ -1796,7 +2480,8 @@ function buildStudentQuickViewEvents(
   locale: Locale,
   t: (key: string) => string,
   baseUrl: string,
-): EventQuickViewItem[] {
+  timeZone?: string,
+): StudentUpcomingEvent[] {
   const clubNameById = new Map(
     analytics.upcomingEventClubs.map((club) => [club.id, club.name]),
   );
@@ -1836,7 +2521,14 @@ function buildStudentQuickViewEvents(
       ? responsibleStaffById.get(event.responsible_staff_id)
       : null;
 
+    const tile = formatCalendarDateBadge(event.starts_at, locale, timeZone);
+
     return {
+      posterUrl: event.poster_path
+        ? getEventPosterDeliveryUrl(event.id, event.poster_path)
+        : null,
+      tileDay: String(Number(tile.day)),
+      tileMonth: tile.month,
       accessibilityLabel:
         event.accessibility_notes ??
         t("events.decisionInfo.accessibilityNotProvided"),
@@ -1862,9 +2554,10 @@ function buildStudentQuickViewEvents(
       ),
       costNotes: event.cost_notes,
       costType: event.cost_type,
-      dateTimeLabel: `${formatDateTime(event.starts_at, locale)} - ${formatTime(
+      dateTimeLabel: `${formatDateTime(event.starts_at, locale, timeZone)} - ${formatTime(
         event.ends_at,
         locale,
+        timeZone,
       )}`,
       description: event.description,
       eligibilityLabel:

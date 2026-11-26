@@ -6,20 +6,27 @@ import {
   useCallback,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent,
 } from "react";
 import {
-  EventPrimaryAction,
   EventQuickViewModal,
   type EventQuickViewItem,
   type EventQuickViewLabels,
 } from "@/components/events/event-quick-view-modal";
 import { getActivityCategoryTone } from "@/lib/activity-category-styles";
-import { CategoryBadge, StatusBadge } from "../_components/page-ui";
+import { joinEvent } from "@/app/(admin)/events/actions";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { categoryColor } from "@/lib/ui/category-colors";
+import { ActionMenu } from "../_components/action-menu";
+
+const colorVar = (color: string) => ({ "--c": color }) as CSSProperties;
 
 export type EventBrowserItem = EventQuickViewItem & {
   categoryValue: string | null;
   dateBadgeLabel: string;
+  dayKey: string;
+  dayLabel: string;
   endsAt: string;
   isMyClubEvent: boolean;
   isPartnerEvent: boolean;
@@ -27,11 +34,18 @@ export type EventBrowserItem = EventQuickViewItem & {
   posterMonth: string;
   posterUrl: string | null;
   startsAt: string;
+  timeRangeLabel: string;
   visualInitials: string;
+  weekdayLabel: string;
 };
 
 export type EventBrowserLabels = EventQuickViewLabels & {
+  goingCount: string;
+  join: string;
+  moreActions: string;
   myClub: string;
+  openEvent: string;
+  spotsLeft: string;
   noPoster: string;
   partnerSchool: string;
   posterAlt: string;
@@ -58,18 +72,35 @@ export function EventBrowser({
 
   return (
     <>
-      <div className="space-y-4 p-3 sm:p-4">
-        {items.map((item) => (
-          <EventCard
-            item={item}
-            key={item.id}
-            labels={labels}
-            onOpen={(trigger) => openModal(item.id, trigger)}
-            registerTrigger={(node) => {
-              if (node) triggerRefs.current.set(item.id, node);
-              else triggerRefs.current.delete(item.id);
-            }}
-          />
+      <div className="cl-tl">
+        {groupByDay(items).map((day) => (
+          <section
+            aria-label={`${day.label}, ${day.weekday}`}
+            className="cl-tlday"
+            key={day.key}
+          >
+            <p className="cl-tlhead">
+              <span aria-hidden="true" className="cl-dtile">
+                <span>{day.month}</span>
+                <b>{day.dayOfMonth}</b>
+              </span>
+              <small>{day.weekday}</small>
+            </p>
+            <div className="flex min-w-0 flex-col gap-3">
+              {day.items.map((item) => (
+                <EventCard
+                  item={item}
+                  key={item.id}
+                  labels={labels}
+                  onOpen={(trigger) => openModal(item.id, trigger)}
+                  registerTrigger={(node) => {
+                    if (node) triggerRefs.current.set(item.id, node);
+                    else triggerRefs.current.delete(item.id);
+                  }}
+                />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 
@@ -97,6 +128,9 @@ function EventCard({
   const [posterFailed, setPosterFailed] = useState(false);
   const categoryTone = getActivityCategoryTone(item.categoryValue);
   const hasPoster = Boolean(item.posterUrl && !posterFailed);
+  const isRegistered =
+    item.registrationStatus === "registered" ||
+    item.registrationStatus === "attended";
 
   function handleCardClick(event: MouseEvent<HTMLElement>) {
     const target = event.target as HTMLElement;
@@ -106,153 +140,164 @@ function EventCard({
 
   return (
     <article
-      className="interactive-card group grid min-w-0 cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--card-shadow)] focus-within:border-[#f2af68] md:grid-cols-[minmax(13rem,0.85fr)_minmax(0,2fr)]"
+      className="cl-card cl-tlcard interactive-card group"
       data-category-tone={categoryTone}
       onClick={handleCardClick}
     >
-      <div
-        className="relative aspect-[16/10] min-h-0 min-w-0 overflow-hidden border-b border-[var(--border)] bg-[var(--card-soft)] md:aspect-[4/5] md:border-b-0 md:border-r"
-        data-category-tone={categoryTone}
-      >
+      <div className="min-w-0">
+        <span className="cl-time">{item.timeRangeLabel}</span>
+        <Link
+          className="cl-tl-title focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+          href={`/events/${item.id}`}
+        >
+          {item.title}
+        </Link>
+        <p className="cl-ri">
+          <span
+            aria-hidden="true"
+            className="cl-clubav"
+            style={{ ...colorVar(categoryColor(item.categoryValue)), fontSize: 9, height: 18, width: 18, borderRadius: 5 }}
+          >
+            {item.visualInitials.slice(0, 1)}
+          </span>
+          <span className="min-w-0 break-words">{item.hostName}</span>
+        </p>
+        {item.location ? (
+          <p className="cl-ri">
+            <PinIcon />
+            <span className="min-w-0 break-words">{item.location}</span>
+          </p>
+        ) : null}
+        {item.cancellationNotice || item.status !== "approved" || item.isPartnerEvent ? (
+          <p className="mt-2 flex flex-wrap gap-1.5">
+            {item.cancellationNotice ? (
+              <span className="cl-tag" data-tone="warn">{labels.scheduleUpdate}</span>
+            ) : null}
+            {item.status !== "approved" ? (
+              <span className="cl-tag" data-tone="warn">{item.statusLabel}</span>
+            ) : null}
+            {item.isPartnerEvent ? (
+              <span className="cl-tag" data-tone="blue">{labels.partnerSchool}</span>
+            ) : null}
+          </p>
+        ) : null}
+        <div className="cl-tl-ft">
+          {item.categoryLabel ? (
+            <span className="cl-cat" style={colorVar(categoryColor(item.categoryValue))}>
+              {item.categoryLabel}
+            </span>
+          ) : null}
+          <span className="cl-tl-meta">
+            {labels.goingCount.replace("{count}", String(item.attendeeCount))}
+            {item.remainingSpaces !== null
+              ? ` · ${labels.spotsLeft.replace("{count}", String(item.remainingSpaces))}`
+              : ""}
+            {item.costType && item.costType !== "free" ? ` · ${item.costLabel}` : ""}
+          </span>
+          <span className="cl-tl-action">
+            {item.isStaff ? (
+              <ActionMenu
+                items={[
+                  { href: `/events/${item.id}`, label: labels.openEvent },
+                  ...(item.canManageEvent
+                    ? [{ href: `/events/${item.id}/attendance`, label: labels.attendanceQr }]
+                    : []),
+                ]}
+                label={labels.moreActions}
+              />
+            ) : isRegistered ? (
+              <span className="cl-btn-soft cl-btn-done">✓ {labels.registered}</span>
+            ) : item.status === "approved" && item.hasCurrentStudent && item.canRegister ? (
+              <form action={joinEvent}>
+                <input name="event_id" type="hidden" value={item.id} />
+                <PendingSubmitButton
+                  className="cl-btn-soft disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={item.isFull}
+                  pendingLabel={labels.joining}
+                  toastMessage={labels.joining}
+                >
+                  {item.isFull ? labels.registrationFull : labels.join}
+                </PendingSubmitButton>
+              </form>
+            ) : (
+              <button
+                className="cl-btn-soft"
+                onClick={(event) => onOpen(event.currentTarget)}
+                ref={registerTrigger}
+                type="button"
+              >
+                {labels.viewEvent}
+              </button>
+            )}
+          </span>
+        </div>
+      </div>
+
+      <div className="event-tl-cover" data-category-tone={categoryTone}>
         {hasPoster && item.posterUrl ? (
           <Image
             alt={labels.posterAlt.replace("{event}", item.title)}
             className="object-cover"
             fill
             onError={() => setPosterFailed(true)}
-            sizes="(max-width: 767px) 100vw, (max-width: 1200px) 34vw, 320px"
+            sizes="(max-width: 639px) 104px, 124px"
             src={item.posterUrl}
             unoptimized
           />
         ) : (
           <div
             aria-label={labels.noPoster}
-            className="event-card-poster-fallback flex h-full w-full flex-col items-center justify-center gap-3 px-5 text-center"
+            className="event-card-poster-fallback cl-cover h-full w-full"
             role="img"
+            style={colorVar(categoryColor(item.categoryValue))}
           >
-            <span
-              aria-hidden="true"
-              className="event-card-category-mark flex h-16 w-16 items-center justify-center rounded-2xl border text-xl font-black"
-            >
-              {item.visualInitials}
-            </span>
-            <span className="max-w-48 break-words text-sm font-semibold text-slate-700">
-              {labels.noPoster}
-            </span>
+            <span aria-hidden="true">{item.visualInitials}</span>
           </div>
         )}
-
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-4 pb-4 pt-12 text-white"
-        >
-          <span className="text-4xl font-black leading-none drop-shadow-sm">
-            {item.posterDay}
-          </span>
-          <span className="rounded-md bg-black/45 px-2 py-1 text-sm font-bold uppercase backdrop-blur-sm">
-            {item.posterMonth}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex min-w-0 flex-col p-4 sm:p-5">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
-          <span className="min-w-0 break-words">{item.hostName}</span>
-          <span aria-hidden="true">&middot;</span>
-          <span className="break-words">{item.dateTimeLabel}</span>
-        </div>
-
-        <Link
-          className="mt-2 w-fit max-w-full break-words text-xl font-black leading-tight text-slate-950 hover:text-[var(--primary-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2af68] sm:text-2xl"
-          href={`/events/${item.id}`}
-        >
-          {item.title}
-        </Link>
-
-        <p className="mt-2 line-clamp-3 break-words text-sm leading-6 text-slate-600">
-          {item.description || labels.noDescription}
-        </p>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {item.categoryLabel ? (
-            <CategoryBadge category={item.categoryValue}>
-              {item.categoryLabel}
-            </CategoryBadge>
-          ) : null}
-          <StatusBadge status={item.status}>{item.statusLabel}</StatusBadge>
-          {item.registrationStatus === "registered" ||
-          item.registrationStatus === "attended" ? (
-            <StatusBadge variant="success">{labels.registered}</StatusBadge>
-          ) : null}
-          {item.isMyClubEvent ? (
-            <StatusBadge variant="info">{labels.myClub}</StatusBadge>
-          ) : null}
-          {item.isPartnerEvent ? (
-            <StatusBadge variant="info">{labels.partnerSchool}</StatusBadge>
-          ) : null}
-          {item.permissionRequired ? (
-            <StatusBadge variant="warning">{labels.permissionRequired}</StatusBadge>
-          ) : null}
-          {item.experienceLabel ? (
-            <StatusBadge variant="info">{item.experienceLabel}</StatusBadge>
-          ) : null}
-          {item.hasEligibilityInfo ? (
-            <StatusBadge>{labels.eligibility}</StatusBadge>
-          ) : null}
-          {item.cancellationNotice ? (
-            <StatusBadge variant="warning">{labels.scheduleUpdate}</StatusBadge>
-          ) : null}
-        </div>
-
-        <dl className="mt-4 grid min-w-0 gap-3 border-y border-[var(--border)] py-3 text-sm sm:grid-cols-3">
-          <CardDetail label={labels.location} value={item.location || "-"} />
-          <CardDetail label={labels.cost} value={item.costLabel} />
-          <CardDetail
-            label={labels.registration}
-            value={`${item.attendeeCount}${
-              item.capacity === null ? "" : ` / ${item.capacity}`
-            }`}
-          />
-        </dl>
-
-        <div className="mt-auto pt-4">
-          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-slate-600">
-            {item.remainingSpaces !== null ? (
-              <span className="break-words">
-                {labels.spacesRemaining}: {item.remainingSpaces}
-              </span>
-            ) : null}
-            {item.registrationStateLabel ? (
-              <span className="break-words">{item.registrationStateLabel}</span>
-            ) : null}
-          </div>
-          <div
-            className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              className="btn btn-secondary min-h-11 w-full sm:w-auto"
-              onClick={(event) => onOpen(event.currentTarget)}
-              ref={registerTrigger}
-              type="button"
-            >
-              {labels.viewEvent}
-            </button>
-            <div className="w-full sm:w-auto">
-              <EventPrimaryAction item={item} labels={labels} />
-            </div>
-          </div>
-        </div>
       </div>
     </article>
   );
 }
 
-function CardDetail({ label, value }: { label: string; value: string }) {
+function PinIcon() {
   return (
-    <div className="min-w-0">
-      <dt className="text-xs font-bold uppercase text-slate-500">{label}</dt>
-      <dd className="mt-1 break-words font-semibold text-slate-800">{value}</dd>
-    </div>
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4 flex-none"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.9"
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
   );
+}
+
+function groupByDay(items: EventBrowserItem[]) {
+  const days: {
+    dayOfMonth: string;
+    items: EventBrowserItem[];
+    key: string;
+    label: string;
+    month: string;
+    weekday: string;
+  }[] = [];
+  for (const item of items) {
+    const last = days[days.length - 1];
+    if (last && last.key === item.dayKey) last.items.push(item);
+    else
+      days.push({
+        dayOfMonth: item.posterDay,
+        items: [item],
+        key: item.dayKey,
+        label: item.dayLabel,
+        month: item.posterMonth,
+        weekday: item.weekdayLabel,
+      });
+  }
+  return days;
 }
