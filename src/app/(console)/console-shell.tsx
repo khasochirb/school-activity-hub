@@ -3,7 +3,9 @@ import { logout } from "@/app/(admin)/actions";
 import { BrandGlyph } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { Locale } from "@/lib/i18n/locales";
+import type { ThemePreference } from "@/lib/theme";
 import { ConsoleNavLink } from "./console-nav-link";
 
 export type ConsoleShellLabels = {
@@ -28,6 +30,11 @@ export type ConsoleShellLabels = {
   schools: string;
   sectionManage: string;
   sectionSystem: string;
+  theme: string;
+  themeDark: string;
+  themeLight: string;
+  themeSwitch: string;
+  themeSystem: string;
 };
 
 const ICONS: Record<string, string[]> = {
@@ -53,7 +60,7 @@ function Icon({ name }: { name: string }) {
 }
 
 // The console frame: a sidebar with grouped navigation and the signed-in admin
-// at the bottom, then the page. Always dark, whatever the app theme is.
+// at the bottom, then the page. Follows the app theme, switched at the bottom.
 export function ConsoleShell({
   children,
   email,
@@ -61,7 +68,9 @@ export function ConsoleShell({
   locale,
   name,
   schoolSwitcher,
+  theme,
 }: {
+  theme: ThemePreference;
   children: ReactNode;
   /** Picks the one school the school pages below show. */
   schoolSwitcher?: ReactNode;
@@ -136,6 +145,17 @@ export function ConsoleShell({
             <b>{name}</b>
             <small>{email}</small>
           </span>
+          <div className="console-theme">
+            <span>{labels.theme}</span>
+            <ThemeToggle
+              compact
+              currentTheme={theme}
+              label={labels.theme}
+              labels={{ dark: labels.themeDark, light: labels.themeLight, system: labels.themeSystem }}
+              showLabel={false}
+              switchLabel={labels.themeSwitch}
+            />
+          </div>
           <div className="console-account">
             <LanguageSwitcher className="w-24" compact currentLocale={locale} label={labels.language} />
             <form action={logout}>
