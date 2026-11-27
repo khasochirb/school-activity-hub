@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getCurrentTheme } from "@/lib/get-theme";
 import { getDictionary, translate } from "@/lib/i18n/dictionary";
 import { getCurrentLocale } from "@/lib/i18n/get-locale";
 import { ConsoleShell } from "./console-shell";
@@ -19,6 +20,7 @@ export async function ConsoleFrame({
   const locale = await getCurrentLocale();
   const dictionary = getDictionary(locale);
   const t = (key: string) => translate(dictionary, key);
+  const theme = await getCurrentTheme();
 
   return (
     <ConsoleShell
@@ -45,10 +47,16 @@ export async function ConsoleFrame({
         schools: t("nav.schools"),
         sectionManage: t("superAdmin.sites.console.sectionManage"),
         sectionSystem: t("superAdmin.sites.console.sectionSystem"),
+        theme: t("theme.label"),
+        themeDark: t("theme.dark"),
+        themeLight: t("theme.light"),
+        themeSwitch: t("theme.switch"),
+        themeSystem: t("theme.system"),
       }}
       locale={locale}
       name={name}
       schoolSwitcher={schoolSwitcher}
+      theme={theme}
     >
       {children}
     </ConsoleShell>

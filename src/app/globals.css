@@ -7237,36 +7237,77 @@ html[data-theme="dark"] .cl-land::before {
    An analytics-dashboard frame after Vercel Analytics, Featurebase and
    Cloudflare (Mobbin): near-black sidebar with grouped navigation, a thin top
    bar, one card with the figures over the chart, ranked lists with a bar behind
-   each row. Always dark; colours are local to .console so the app theme never
-   leaks in. State always carries its word, never colour alone. */
+   each row. Follows the app theme (light, dark or system); every colour is a
+   --c- token local to .console. State always carries its word, never colour
+   alone. */
 .console {
-  --c-bg: #0a0b0d;
-  --c-side: #0e1013;
-  --c-card: #121418;
-  --c-raise: #181b21;
-  --c-line: rgba(255, 255, 255, 0.08);
-  --c-line-strong: rgba(255, 255, 255, 0.14);
-  --c-text: #e8eaee;
-  --c-muted: #8b919c;
-  --c-faint: #5d636e;
-  --c-blue: #4f7dff;
-  --c-ok: #5fd29a;
-  --c-ok-soft: rgba(95, 210, 154, 0.12);
-  --c-warn: #f0b04a;
-  --c-warn-soft: rgba(240, 176, 74, 0.13);
-  --c-fail: #ff7a5c;
-  --c-fail-soft: rgba(255, 122, 92, 0.14);
+  --c-bg: #f6f7f9;
+  --c-side: #ffffff;
+  --c-card: #ffffff;
+  --c-raise: #eef0f4;
+  --c-line: rgba(15, 18, 24, 0.08);
+  --c-line-strong: rgba(15, 18, 24, 0.16);
+  --c-border-strong: rgba(15, 18, 24, 0.26);
+  --c-text: #14171c;
+  --c-muted: #5b6270;
+  --c-faint: #868c97;
+  --c-blue: #2f5fe8;
+  --c-link: #2549c7;
+  --c-blue-soft: rgba(47, 95, 232, 0.1);
+  --c-blue-border: rgba(47, 95, 232, 0.35);
+  --c-topbar: rgba(246, 247, 249, 0.92);
+  --c-input: #ffffff;
+  --c-placeholder: #8a909b;
+  --c-shadow-lift: 0 2px 4px rgba(15, 18, 24, 0.06), 0 12px 32px rgba(15, 18, 24, 0.1);
+  --c-ok: #12804a;
+  --c-ok-soft: rgba(18, 128, 74, 0.1);
+  --c-warn: #a35a00;
+  --c-warn-soft: rgba(240, 176, 74, 0.18);
+  --c-fail: #c0262d;
+  --c-fail-soft: rgba(192, 38, 45, 0.09);
+  --c-fail-soft-hover: rgba(192, 38, 45, 0.16);
   display: grid;
   min-height: 100vh;
   flex: 1 1 auto;
   grid-template-columns: 15.5rem minmax(0, 1fr);
   background: var(--c-bg);
   color: var(--c-text);
-  color-scheme: dark;
+  color-scheme: light;
   font-size: 14px;
 }
 
-.console a {
+:is(html.dark, html[data-theme="dark"]) .console {
+  --c-bg: #0a0b0d;
+  --c-side: #0e1013;
+  --c-card: #121418;
+  --c-raise: #181b21;
+  --c-line: rgba(255, 255, 255, 0.08);
+  --c-line-strong: rgba(255, 255, 255, 0.14);
+  --c-border-strong: rgba(255, 255, 255, 0.24);
+  --c-text: #e8eaee;
+  --c-muted: #8b919c;
+  --c-faint: #5d636e;
+  --c-blue: #4f7dff;
+  --c-link: #9db5ff;
+  --c-blue-soft: rgba(79, 125, 255, 0.16);
+  --c-blue-border: rgba(79, 125, 255, 0.4);
+  --c-topbar: rgba(10, 11, 13, 0.92);
+  --c-input: #0e1013;
+  --c-placeholder: #7b818c;
+  --c-shadow-lift: 0 8px 28px rgba(0, 0, 0, 0.5);
+  --c-ok: #5fd29a;
+  --c-ok-soft: rgba(95, 210, 154, 0.12);
+  --c-warn: #f0b04a;
+  --c-warn-soft: rgba(240, 176, 74, 0.13);
+  --c-fail: #ff7a5c;
+  --c-fail-soft: rgba(255, 122, 92, 0.14);
+  --c-fail-soft-hover: rgba(255, 122, 92, 0.24);
+  color-scheme: dark;
+}
+
+/* Low specificity, so button-style links (.cl-btn-soft, .btn) keep their own
+   text colour instead of inheriting the colour of the box around them. */
+:where(.console) a {
   color: inherit;
   text-decoration: none;
 }
@@ -7394,7 +7435,7 @@ html[data-theme="dark"] .cl-land::before {
   gap: 12px;
   border-bottom: 1px solid var(--c-line);
   padding: 12px 28px;
-  background: rgba(10, 11, 13, 0.92);
+  background: var(--c-topbar);
 }
 
 .console-crumb {
@@ -7724,7 +7765,7 @@ html[data-theme="dark"] .cl-land::before {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 7px;
-  background: rgba(79, 125, 255, 0.14);
+  background: var(--c-blue-soft);
 }
 
 .console-ranks a,
@@ -7834,7 +7875,7 @@ html[data-theme="dark"] .cl-land::before {
 
 .console-table a,
 .console-ranks a {
-  color: #9db5ff;
+  color: var(--c-link);
   font-weight: 600;
 }
 
@@ -7845,20 +7886,19 @@ html[data-theme="dark"] .cl-land::before {
 }
 
 /* The school app's pages inside the console. Their tokens take the console's
-   colours whatever the app theme is; "dark" on the same element switches the
-   few rules that name a theme instead of a token. */
+   colours, which follow the app theme like the rest of the app. */
 .console-app {
   --background: var(--c-bg);
   --foreground: var(--c-text);
   --card: var(--c-card);
   --card-soft: var(--c-raise);
   --border: var(--c-line-strong);
-  --border-strong: rgba(255, 255, 255, 0.24);
-  --muted: #a3a9b4;
-  --primary: #4f7dff;
-  --primary-strong: #9db5ff;
-  --primary-soft: rgba(79, 125, 255, 0.16);
-  --primary-border: rgba(79, 125, 255, 0.4);
+  --border-strong: var(--c-border-strong);
+  --muted: var(--c-muted);
+  --primary: var(--c-blue);
+  --primary-strong: var(--c-link);
+  --primary-soft: var(--c-blue-soft);
+  --primary-border: var(--c-blue-border);
   --primary-contrast: #fff;
   --ink: var(--c-text);
   --ink-contrast: var(--c-bg);
@@ -7870,8 +7910,8 @@ html[data-theme="dark"] .cl-land::before {
   --panel-gradient: var(--c-card);
   --stat-gradient: var(--c-card);
   --empty-gradient: var(--c-raise);
-  --input-bg: #0e1013;
-  --input-placeholder: #7b818c;
+  --input-bg: var(--c-input);
+  --input-placeholder: var(--c-placeholder);
   --row-hover: var(--c-raise);
   --card-overlay: var(--c-card);
   --card-soft-overlay: var(--c-raise);
@@ -7881,13 +7921,13 @@ html[data-theme="dark"] .cl-land::before {
   --btn-secondary-hover: var(--c-raise);
   --btn-secondary-text: var(--c-text);
   --danger-soft: var(--c-fail-soft);
-  --danger-soft-hover: rgba(255, 122, 92, 0.24);
-  --cl-faint: #7b818c;
+  --danger-soft-hover: var(--c-fail-soft-hover);
+  --cl-faint: var(--c-faint);
   --cl-line: var(--c-line);
   --cl-line-strong: var(--c-line-strong);
   --cl-hover: var(--c-raise);
   --cl-shadow: none;
-  --cl-shadow-lift: 0 8px 28px rgba(0, 0, 0, 0.5);
+  --cl-shadow-lift: var(--c-shadow-lift);
   --cl-green: var(--c-ok);
   --cl-green-soft: var(--c-ok-soft);
   --cl-amber: var(--c-warn);
@@ -7905,8 +7945,10 @@ html[data-theme="dark"] .cl-land::before {
 
 .console-action { border-radius: 8px; padding: 7px 12px; background: var(--c-blue); color: #fff; font-size: 0.82rem; font-weight: 650; }
 .console a.console-action { color: #fff; }
-.console-panel-link { color: #9db5ff; font-size: 0.8rem; font-weight: 600; }
-.console a.console-panel-link { color: #9db5ff; }
+.console-panel-link { color: var(--c-link); font-size: 0.8rem; font-weight: 600; }
+.console a.console-panel-link { color: var(--c-link); }
+.console-theme { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--c-muted); font-size: 0.78rem; font-weight: 600; }
+.console-theme > div { width: 7.5rem; }
 .console-kpis-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); border-bottom: 0; }
 .console-funnel { display: grid; gap: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .console-funnel li { display: flex; min-width: 0; flex-direction: column; gap: 4px; border: 1px solid var(--c-line); border-radius: 10px; padding: 12px 14px; background: var(--c-raise); }
@@ -8433,9 +8475,9 @@ html[data-theme="dark"] .cl-land::before {
 .family-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-control); }
 /* Platform console: the school picker above the school pages. */
 .school-switcher { margin: 2px 8px 8px; }
-.school-switcher select { width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 8px; background: rgb(255 255 255 / 0.06); color: inherit; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.school-switcher select { width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid var(--c-line-strong, rgb(255 255 255 / 0.14)); border-radius: 8px; background: var(--c-raise, rgb(255 255 255 / 0.06)); color: inherit; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
 .school-switcher select option { color: #111; }
-.school-switcher p { margin-top: 6px; color: #fca5a5; font-size: 12.5px; line-height: 1.4; }
+.school-switcher p { margin-top: 6px; color: var(--c-fail, #fca5a5); font-size: 12.5px; line-height: 1.4; }
 
 /* Filter dropdowns next to the chips (Students: grade and class). */
 .cl-filter-selects { display: inline-flex; flex-wrap: wrap; gap: 8px; }
@@ -8622,7 +8664,7 @@ html[data-theme="dark"] .cl-land::before {
     border-top: 0;
     padding: 8px 10px;
   }
-  .console-user > :not(.console-account) {
+  .console-user > :not(.console-account, .console-theme) {
     display: none;
   }
   .console-brand small {

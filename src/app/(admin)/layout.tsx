@@ -94,7 +94,7 @@ export default async function AdminLayout({
           />
         }
       >
-        <div className="console-app app-surface dark">
+        <div className="console-app app-surface">
           <main>{children}</main>
         </div>
       </ConsoleFrame>
