@@ -20,6 +20,7 @@ export const NOTIFICATION_KINDS = [
   "leave_requested",
   "leave_approved",
   "leave_rejected",
+  "club_post",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

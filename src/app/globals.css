@@ -8657,3 +8657,33 @@ html[data-theme="dark"] .cl-land::before {
 .student-pick-results small, .student-pick-chosen small { color: var(--muted); font-size: 12.5px; font-weight: 500; }
 .student-pick-chosen { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--primary-border); border-radius: var(--radius-control); background: var(--primary-soft); }
 .student-pick-chosen > span { display: grid; }
+
+/* Club life: posts, members and meeting attendance on the club page. */
+.club-post-form, .club-attendance-form { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--card); }
+.club-post-form textarea, .club-attendance-head input { width: 100%; min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--card); color: var(--foreground); font: inherit; }
+.club-post-form-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.club-form-ok { color: var(--success, #15803d); font-size: 13.5px; }
+.club-form-error { color: var(--danger, #dc2626); font-size: 13.5px; }
+.club-posts { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.club-posts li { display: grid; gap: 6px; padding: 14px; }
+.club-posts header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.club-posts small { color: var(--muted); font-size: 12.5px; }
+.club-posts p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.club-members, .club-meetings ul, .club-attendance-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.club-members li, .club-meetings li, .club-attendance-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--card); }
+.club-members li > span:first-child, .club-meetings li > span:first-child, .club-attendance-list li > span:first-child { display: grid; min-width: 0; }
+.club-members small, .club-meetings small, .club-attendance-list small { color: var(--muted); font-size: 12.5px; }
+.club-members-end { display: inline-flex; align-items: center; gap: 8px; }
+.club-meetings h3 { margin: 4px 0 8px; font-size: 15px; font-weight: 700; }
+.club-attendance-head { display: flex; flex-wrap: wrap; gap: 10px; }
+.club-attendance-head label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.club-attendance-head label.grow { flex: 1 1 12rem; }
+.club-attendance-form > .join-link-btn { justify-self: start; padding-left: 0; }
+.club-attendance-choice { display: inline-flex; gap: 4px; }
+.club-attendance-choice label { cursor: pointer; }
+.club-attendance-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.club-attendance-choice span { display: inline-block; padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.club-attendance-choice input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+.club-attendance-choice label[data-status="present"] input:checked + span { border-color: #16a34a; background: #16a34a; color: #fff; }
+.club-attendance-choice label[data-status="absent"] input:checked + span { border-color: #dc2626; background: #dc2626; color: #fff; }
+.club-attendance-choice label[data-status="excused"] input:checked + span { border-color: #d97706; background: #d97706; color: #fff; }

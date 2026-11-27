@@ -27,6 +27,10 @@ import { DetailTabs } from "../../_components/detail-tabs";
 import { CategoryLabel, Cover } from "../../_components/clean-ui";
 import { joinClub } from "../actions";
 import { AttachmentsPanel } from "../../attachments/attachments-panel";
+import { getClubAccess } from "@/lib/clubs/club-access";
+import { getClubLife } from "@/lib/clubs/club-life";
+import { DEFAULT_EVENT_TIME_ZONE, eventCalendarDayKey } from "@/lib/events/event-calendar-range";
+import { ClubAttendanceTab, ClubMembersTab, ClubPostsTab } from "./club-life-tabs";
 import { ClassmatesFromClass } from "../../_components/classmates-from-class";
 
 type Club = {
@@ -180,6 +184,19 @@ export default async function ClubProfilePage({
         : Promise.resolve({ data: [] }),
     ]);
   const eventRows = upcomingEvents ?? [];
+  // Inside the club: posts for members; members and attendance for the
+  // leader, the supervising teacher and school admins.
+  const lifeAccess = actor.profile
+    ? await getClubAccess(createAdminClient(), actor.profile, club.id)
+    : null;
+  const canManageClub = Boolean(lifeAccess?.canReview);
+  const isClubMember = Boolean(lifeAccess?.isMember);
+  const life = await getClubLife(createAdminClient(), club.id, {
+    canManage: canManageClub,
+    isMember: isClubMember,
+    rosterId: lifeAccess?.rosterId ?? null,
+  });
+  const todayKey = eventCalendarDayKey(new Date().toISOString(), DEFAULT_EVENT_TIME_ZONE);
   const classmateNames = ((classmateRows ?? []) as Array<{ display_name: string }>).map(
     (row) => row.display_name,
   );
@@ -562,6 +579,33 @@ export default async function ClubProfilePage({
                 id: "events",
                 label: tf("clubs.profile.tabs.events", { count: eventRows.length }),
               },
+              ...(canManageClub || isClubMember
+                ? [
+                    {
+                      content: (
+                        <ClubPostsTab canManage={canManageClub} clubId={club.id} life={life} locale={locale} t={t} />
+                      ),
+                      id: "posts",
+                      label: t("clubs.life.tabs.posts"),
+                    },
+                  ]
+                : []),
+              ...(canManageClub
+                ? [
+                    {
+                      content: <ClubMembersTab life={life} locale={locale} t={t} tf={tf} />,
+                      id: "members",
+                      label: tf("clubs.life.tabs.members", { count: life.members.length }),
+                    },
+                    {
+                      content: (
+                        <ClubAttendanceTab clubId={club.id} life={life} locale={locale} t={t} tf={tf} today={todayKey} />
+                      ),
+                      id: "attendance",
+                      label: t("clubs.life.tabs.attendance"),
+                    },
+                  ]
+                : []),
             ]}
           />
         </div>
@@ -582,6 +626,15 @@ export default async function ClubProfilePage({
                     : t("clubs.profile.membership.notJoined")
                 }
               />
+              {life.myAttendance && life.myAttendance.total ? (
+                <DetailItem
+                  label={t("clubs.life.myAttendance")}
+                  value={tf("clubs.life.attendanceRate", {
+                    present: life.myAttendance.present,
+                    total: life.myAttendance.total,
+                  })}
+                />
+              ) : null}
               <DetailItem
                 label={t("clubs.profile.membership.memberCount")}
                 value={tf("clubs.profile.membership.memberCountValue", {
