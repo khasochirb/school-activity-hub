@@ -54,17 +54,26 @@ export function Section({
 }
 
 export function Widget({
+  action,
   children,
   link,
   title,
 }: {
+  action?: ReactNode;
   children: ReactNode;
   link?: { href: string; label: string };
   title: string;
 }) {
   return (
     <div className="cl-card cl-widget">
-      <h3>{title}</h3>
+      {action ? (
+        <div className="cl-widget-head">
+          <h3>{title}</h3>
+          {action}
+        </div>
+      ) : (
+        <h3>{title}</h3>
+      )}
       {children}
       {link ? (
         <Link className="cl-widget-link" href={link.href} prefetch={false}>

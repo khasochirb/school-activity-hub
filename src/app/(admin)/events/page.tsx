@@ -208,6 +208,7 @@ type EventStatusFilter =
 
 type EventsSearchParams = {
   category?: string | string[];
+  cal?: string | string[];
   day?: string | string[];
   filter?: string | string[];
   month?: string | string[];
@@ -418,9 +419,23 @@ export default async function EventsPage({
     });
   }
 
+  // The sidebar month card can be paged to any month (?cal=YYYY-MM); without
+  // it, it shows the picked day's month, else this month.
+  const todayMonth = currentCalendarMonth(new Date(), calendarTimeZone);
+  const miniCalendarMonth = getSearchParam(params.cal)
+    ? parseCalendarMonth(getSearchParam(params.cal), new Date(), calendarTimeZone)
+    : selectedDay
+      ? selectedDay.slice(0, 7)
+      : todayMonth;
   const miniCalendarDays =
     selectedView === "list" && profile.school_id
-      ? await getMiniCalendarDays(supabase, profile.school_id, calendarTimeZone, isStaff)
+      ? await getMiniCalendarDays(
+          supabase,
+          profile.school_id,
+          miniCalendarMonth,
+          calendarTimeZone,
+          isStaff,
+        )
       : [];
   const eventIds = events.map((event) => event.id);
   const [
@@ -1172,11 +1187,28 @@ export default async function EventsPage({
         </div>
 
         <aside className="cl-side">
-          <Widget title={monthTitle(calendarTimeZone, locale)}>
+          <Widget
+            action={
+              <MiniCalendarNav
+                labels={{
+                  next: t("events.calendar.nextMonth"),
+                  previous: t("events.calendar.previousMonth"),
+                  today: t("events.calendar.today"),
+                }}
+                month={miniCalendarMonth}
+                monthHref={(month) =>
+                  eventsMiniCalendarHref(month === todayMonth ? null : month, params)
+                }
+                todayMonth={todayMonth}
+              />
+            }
+            title={monthTitle(miniCalendarMonth, locale)}
+          >
             <MiniCalendar
               dayHref={(dayKey) => eventsDayHref(dayKey === selectedDay ? null : dayKey, params)}
               eventDays={miniCalendarDays}
               locale={locale}
+              month={miniCalendarMonth}
               selectedDay={selectedDay}
               timeZone={calendarTimeZone}
             />
@@ -2294,6 +2326,31 @@ function eventsDayHref(dayKey: string | null, params: EventsSearchParams) {
   return query ? `/events?${query}` : "/events";
 }
 
+// Pages the sidebar month card only; the list and its filters stay as they are.
+function eventsMiniCalendarHref(month: string | null, params: EventsSearchParams) {
+  const nextParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (key === "cal") {
+      return;
+    }
+
+    const paramValue = Array.isArray(value) ? value[0] : value;
+
+    if (paramValue) {
+      nextParams.set(key, paramValue);
+    }
+  });
+
+  if (month) {
+    nextParams.set("cal", month);
+  }
+
+  const query = nextParams.toString();
+
+  return query ? `/events?${query}` : "/events";
+}
+
 function dayTitle(dayKey: string, timeZone: string, locale: string) {
   try {
     return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
@@ -2313,10 +2370,10 @@ function dayTitle(dayKey: string, timeZone: string, locale: string) {
 async function getMiniCalendarDays(
   supabase: SupabaseClient,
   schoolId: string,
+  month: string,
   timeZone: string,
   isStaff: boolean,
 ) {
-  const month = currentCalendarMonth(new Date(), timeZone);
   const range = getMonthCalendarQueryRange(month, timeZone);
   let query = supabase
     .from("events")
@@ -2341,16 +2398,61 @@ async function getMiniCalendarDays(
   }));
 }
 
-function monthTitle(timeZone: string, locale: string) {
+function monthTitle(month: string, locale: string) {
   try {
     return new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
       month: "long",
-      timeZone,
+      timeZone: "UTC",
       year: "numeric",
-    }).format(new Date());
+    }).format(new Date(`${month}-15T12:00:00Z`));
   } catch {
     return "";
   }
+}
+
+function MiniCalendarNav({
+  labels,
+  month,
+  monthHref,
+  todayMonth,
+}: {
+  labels: { next: string; previous: string; today: string };
+  month: string;
+  monthHref: (month: string) => string;
+  todayMonth: string;
+}) {
+  return (
+    <div className="cl-cal-nav">
+      {month !== todayMonth ? (
+        <Link
+          className="cl-cal-today"
+          href={monthHref(todayMonth)}
+          prefetch={false}
+          scroll={false}
+        >
+          {labels.today}
+        </Link>
+      ) : null}
+      <Link
+        aria-label={labels.previous}
+        href={monthHref(offsetCalendarMonth(month, -1))}
+        prefetch={false}
+        scroll={false}
+        title={labels.previous}
+      >
+        <span aria-hidden="true">‹</span>
+      </Link>
+      <Link
+        aria-label={labels.next}
+        href={monthHref(offsetCalendarMonth(month, 1))}
+        prefetch={false}
+        scroll={false}
+        title={labels.next}
+      >
+        <span aria-hidden="true">›</span>
+      </Link>
+    </div>
+  );
 }
 
 // The draft's month card: today highlighted, a dot under days with events.
@@ -2358,12 +2460,14 @@ function MiniCalendar({
   dayHref,
   eventDays,
   locale,
+  month: visibleMonth,
   selectedDay,
   timeZone,
 }: {
   dayHref: (dayKey: string) => string;
   eventDays: Array<{ category: string | null; dayKey: string }>;
   locale: string;
+  month: string;
   selectedDay: string | null;
   timeZone: string;
 }) {
@@ -2375,7 +2479,7 @@ function MiniCalendar({
     todayKey = new Date().toISOString().slice(0, 10);
   }
 
-  const [year, month] = todayKey.split("-").map(Number);
+  const [year, month] = visibleMonth.split("-").map(Number);
   const first = new Date(Date.UTC(year, month - 1, 1));
   const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const lead = (first.getUTCDay() + 6) % 7;
